@@ -45,6 +45,9 @@
 - [本地存储决策](docs/decisions/0002-local-storage.md)
 - [第 2 周验收清单](docs/acceptance/week-02.md)
 - [第 2 周手动验收测试单](docs/testing/week-02-manual-test-guide.md)
+- [新项目 README 模板](templates/new-project/README.md)
+- [新项目 AI 规则模板](templates/new-project/AGENTS.md)
+- [新项目启动提示词](templates/new-project/START_PROMPT.md)
 
 ## 本地启动
 
