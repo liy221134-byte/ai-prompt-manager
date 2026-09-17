@@ -44,10 +44,16 @@ function createInitialPrompts() {
 
 // 第一次使用时写入示例数据；以后即使删光卡片，也不会重新自动填充。
 export function loadPromptLibrary() {
+  const storedPrompts = loadStoredPromptLibrary();
+
+  return storedPrompts ?? createInitialPrompts();
+}
+
+export function loadStoredPromptLibrary() {
   const storedValue = window.localStorage.getItem(PROMPT_STORAGE_KEY);
 
   if (!storedValue) {
-    return createInitialPrompts();
+    return null;
   }
 
   const parsedValue = JSON.parse(storedValue) as Partial<StoredPromptLibrary>;

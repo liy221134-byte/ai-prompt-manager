@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 3 周：完成本地数据安全、导出、导入和迁移闭环。
+第 4 周：完成本机共享数据库和多浏览器数据同步。
 
 当前版本支持：
 
@@ -18,12 +18,18 @@
 - 导入备份前预览新增、更新和跳过结果
 - 合并提示词时不删除本机现有数据
 - 记录最近一次备份时间
+- 使用本机 SQLite 数据库保存提示词
+- 本地 Chrome 和 Codex 浏览器共享同一份数据
+- 自动检测旧浏览器数据并提供安全迁移
+- 数据库关闭后重新启动，数据仍然保留
 
-当前版本不包含注册登录、云端数据库、多设备同步和团队协作。
+当前版本不包含注册登录、云端数据库、跨设备同步和团队协作。
 
 ## 本地数据说明
 
-提示词当前保存在当前浏览器的 `localStorage` 中。关闭页面或重启电脑后数据仍然存在，但清除浏览器网站数据会删除提示词，也无法跨设备访问。
+提示词当前保存在本机 `.data/prompts.sqlite` 数据库中。同一台电脑上的不同浏览器访问同一个本地服务时，会看到同一份数据。
+
+数据库文件不会提交到 Git。当前数据服务只在本机运行，不代表已经支持云端或跨设备同步。浏览器 `localStorage` 只作为旧数据迁移来源和页面缓存。
 
 ## 产品目标
 
@@ -51,6 +57,8 @@
 - [第 2 周手动验收测试单](docs/testing/week-02-manual-test-guide.md)
 - [备份格式决策](docs/decisions/0003-backup-format.md)
 - [第 3 周验收清单](docs/acceptance/week-03.md)
+- [本机 SQLite 决策](docs/decisions/0004-local-sqlite.md)
+- [第 4 周验收清单](docs/acceptance/week-04.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)
