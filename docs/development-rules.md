@@ -98,3 +98,9 @@
 暂时不要修改代码，等我确认方案后再实施。
 ```
 
+## 八、新项目模板
+
+- [新项目 README 模板](../templates/new-project/README.md)
+- [新项目 AGENTS.md 模板](../templates/new-project/AGENTS.md)
+- [新项目启动提示词](../templates/new-project/START_PROMPT.md)
+
