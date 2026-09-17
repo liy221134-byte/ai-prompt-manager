@@ -9,6 +9,19 @@ export type PromptCardData = {
   updatedAt: string;
 };
 
+export type PromptDraft = Omit<
+  PromptCardData,
+  "id" | "createdAt" | "updatedAt"
+>;
+
+export const promptCategories = [
+  "产品设计",
+  "软件开发",
+  "AI效能",
+  "内容创作",
+  "数据分析",
+] as const;
+
 // 第一周使用静态数据，但字段与后续数据库模型保持一致。
 export const promptCards: PromptCardData[] = [
   {
