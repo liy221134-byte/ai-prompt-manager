@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --page-background: #eef6ff;
+  --ink-primary: #0f172a;
+  --ink-secondary: #475569;
+  --line-soft: #dbe7f5;
+  --brand-blue: #1d4ed8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--page-background);
+}
+
+body {
+  margin: 0;
+  font-family:
+    "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+}
+
+::selection {
+  background: #bfdbfe;
+  color: var(--ink-primary);
+}
