@@ -31,11 +31,31 @@
 
 ## 本地启动
 
-项目依赖安装完成后，在项目根目录运行：
+第一次运行前，在项目根目录安装依赖：
+
+```powershell
+npm install
+```
+
+启动开发服务器：
 
 ```powershell
 npm run dev
 ```
 
-然后使用浏览器打开终端中显示的本地地址。
+然后使用浏览器打开 `http://localhost:3000`。
 
+## 工程检查
+
+以下命令会依次执行代码检查、类型检查和生产构建：
+
+```powershell
+npm run check
+```
+
+## 当前技术栈
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Lucide React
