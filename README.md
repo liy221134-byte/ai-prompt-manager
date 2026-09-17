@@ -39,10 +39,12 @@
 
 - [产品范围](docs/product-brief.md)
 - [8 周路线图](docs/roadmap.md)
+- [开发规则与协作提示词](docs/development-rules.md)
 - [技术选型](docs/decisions/0001-tech-stack.md)
 - [第 1 周验收清单](docs/acceptance/week-01.md)
 - [本地存储决策](docs/decisions/0002-local-storage.md)
 - [第 2 周验收清单](docs/acceptance/week-02.md)
+- [第 2 周手动验收测试单](docs/testing/week-02-manual-test-guide.md)
 
 ## 本地启动
 
