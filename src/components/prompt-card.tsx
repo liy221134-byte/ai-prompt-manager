@@ -1,16 +1,18 @@
 import {
+  ArrowRight,
   CalendarDays,
   FileText,
-  Sparkles,
   Tags,
   Target,
 } from "lucide-react";
 
 import type { PromptCardData } from "@/data/prompts";
+import { extractVariables } from "@/lib/prompt-utils";
 
 type PromptCardProps = {
   prompt: PromptCardData;
   index: number;
+  onOpen: (prompt: PromptCardData) => void;
 };
 
 const categoryStyles: Record<string, string> = {
@@ -29,12 +31,13 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
-export function PromptCard({ prompt, index }: PromptCardProps) {
+export function PromptCard({ prompt, index, onOpen }: PromptCardProps) {
   const categoryStyle =
     categoryStyles[prompt.category] ?? fallbackCategoryStyle;
+  const variableCount = extractVariables(prompt.content).length;
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-[#dbe7f5] bg-white shadow-[0_10px_28px_rgba(30,64,175,0.07)]">
+    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-[#dbe7f5] bg-white shadow-[0_10px_28px_rgba(30,64,175,0.07)] transition-shadow hover:shadow-[0_16px_36px_rgba(30,64,175,0.12)]">
       <div className="border-b border-slate-100 px-5 pb-5 pt-5">
         <div className="flex items-start justify-between gap-4">
           <span
@@ -87,7 +90,7 @@ export function PromptCard({ prompt, index }: PromptCardProps) {
         </div>
 
         <div className="mt-3 flex-1 border-l-2 border-blue-200 pl-4">
-          <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+          <p className="prompt-preview whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
             {prompt.content}
           </p>
         </div>
@@ -97,8 +100,19 @@ export function PromptCard({ prompt, index }: PromptCardProps) {
         <span className="flex items-center gap-1.5 text-xs text-slate-500">
           <CalendarDays aria-hidden="true" className="size-3.5" />
           更新于 {formatDate(prompt.updatedAt)}
+          <span aria-hidden="true" className="text-slate-300">
+            ·
+          </span>
+          {variableCount > 0 ? `${variableCount} 个变量` : "可直接复制"}
         </span>
-        <Sparkles aria-hidden="true" className="size-4 text-blue-500" />
+        <button
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900"
+          onClick={() => onOpen(prompt)}
+          type="button"
+        >
+          查看详情
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </button>
       </footer>
     </article>
   );
