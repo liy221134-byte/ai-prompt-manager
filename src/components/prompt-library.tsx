@@ -3,6 +3,7 @@
 import {
   BookOpenText,
   CheckCircle2,
+  DatabaseBackup,
   Layers3,
   Plus,
   Search,
@@ -17,6 +18,7 @@ import {
 } from "react";
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
 import { PromptEditorDrawer } from "@/components/prompt-editor-drawer";
@@ -26,10 +28,14 @@ import {
   type PromptDraft,
 } from "@/data/prompts";
 import {
+  loadLastBackupAt,
   loadPromptLibrary,
+  saveLastBackupAt,
   savePromptLibrary,
 } from "@/lib/prompt-storage";
+import { downloadPromptBackup } from "@/lib/backup-download";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
+import type { PromptImportPlan } from "@/lib/prompt-backup";
 
 type EditorState =
   | {
@@ -55,6 +61,8 @@ export function PromptLibrary() {
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
+  const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
 
@@ -79,6 +87,7 @@ export function PromptLibrary() {
 
       try {
         setPrompts(loadPromptLibrary());
+        setLastBackupAt(loadLastBackupAt());
       } catch {
         notify("本地数据无法读取，当前显示示例提示词");
       } finally {
@@ -196,6 +205,29 @@ export function PromptLibrary() {
     notify("提示词已删除");
   }
 
+  function handleExport() {
+    const exportedAt = downloadPromptBackup(prompts);
+
+    saveLastBackupAt(exportedAt);
+    setLastBackupAt(exportedAt);
+    return exportedAt;
+  }
+
+  function handleImport(plan: PromptImportPlan) {
+    setPrompts(plan.mergedPrompts);
+    setIsBackupManagerOpen(false);
+
+    const result = [
+      plan.addCount > 0 ? `新增 ${plan.addCount} 条` : "",
+      plan.updateCount > 0 ? `更新 ${plan.updateCount} 条` : "",
+      plan.skipCount > 0 ? `跳过 ${plan.skipCount} 条` : "",
+    ]
+      .filter(Boolean)
+      .join("，");
+
+    notify(result ? `导入完成：${result}` : "导入完成：没有需要变更的内容");
+  }
+
   const hasSearchQuery = Boolean(searchQuery.trim());
 
   return (
@@ -234,8 +266,8 @@ export function PromptLibrary() {
           </p>
         </div>
 
-        <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-          <label className="relative flex-1">
+        <div className="mt-9 flex flex-col gap-3 lg:flex-row">
+          <label className="relative min-w-0 flex-1">
             <span className="sr-only">搜索提示词</span>
             <Search
               aria-hidden="true"
@@ -259,14 +291,24 @@ export function PromptLibrary() {
             )}
           </label>
 
-          <button
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            onClick={() => setEditorState({ mode: "create" })}
-            type="button"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            新增提示词
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
+            <button
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700"
+              onClick={() => setIsBackupManagerOpen(true)}
+              type="button"
+            >
+              <DatabaseBackup aria-hidden="true" className="size-4" />
+              数据管理
+            </button>
+            <button
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              onClick={() => setEditorState({ mode: "create" })}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              新增提示词
+            </button>
+          </div>
         </div>
 
         {filteredPrompts.length > 0 ? (
@@ -348,6 +390,18 @@ export function PromptLibrary() {
           onClose={() => setEditorState(null)}
           onSave={handleSave}
           prompt={editingPrompt}
+        />
+      )}
+
+      {isBackupManagerOpen && (
+        <BackupManagerDialog
+          lastBackupAt={lastBackupAt}
+          onClose={() => setIsBackupManagerOpen(false)}
+          onExport={handleExport}
+          onImport={handleImport}
+          onNotify={notify}
+          promptCount={prompts.length}
+          prompts={prompts}
         />
       )}
 

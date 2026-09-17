@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 2 周：完成个人提示词库的本地使用闭环。
+第 3 周：完成本地数据安全、导出、导入和迁移闭环。
 
 当前版本支持：
 
@@ -14,6 +14,10 @@
 - 自动识别 `{{变量}}`
 - 填写变量、生成最终内容并一键复制
 - 使用浏览器本地存储保存数据
+- 导出全部提示词为 JSON 备份
+- 导入备份前预览新增、更新和跳过结果
+- 合并提示词时不删除本机现有数据
+- 记录最近一次备份时间
 
 当前版本不包含注册登录、云端数据库、多设备同步和团队协作。
 
@@ -45,6 +49,8 @@
 - [本地存储决策](docs/decisions/0002-local-storage.md)
 - [第 2 周验收清单](docs/acceptance/week-02.md)
 - [第 2 周手动验收测试单](docs/testing/week-02-manual-test-guide.md)
+- [备份格式决策](docs/decisions/0003-backup-format.md)
+- [第 3 周验收清单](docs/acceptance/week-03.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)

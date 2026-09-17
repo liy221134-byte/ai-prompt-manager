@@ -2,13 +2,20 @@ import { promptCards, type PromptCardData } from "../data/prompts.ts";
 
 export const PROMPT_STORAGE_KEY = "ai-prompt-manager:prompts";
 export const PROMPT_STORAGE_VERSION = 1;
+export const LAST_BACKUP_STORAGE_KEY = "ai-prompt-manager:last-backup-at";
 
 type StoredPromptLibrary = {
   version: number;
   prompts: PromptCardData[];
 };
 
-function isPromptCard(value: unknown): value is PromptCardData {
+function isValidDateString(value: unknown) {
+  return (
+    typeof value === "string" && !Number.isNaN(new Date(value).getTime())
+  );
+}
+
+export function isPromptCard(value: unknown): value is PromptCardData {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -23,8 +30,8 @@ function isPromptCard(value: unknown): value is PromptCardData {
     prompt.tags.every((tag) => typeof tag === "string") &&
     typeof prompt.content === "string" &&
     typeof prompt.useCase === "string" &&
-    typeof prompt.createdAt === "string" &&
-    typeof prompt.updatedAt === "string"
+    isValidDateString(prompt.createdAt) &&
+    isValidDateString(prompt.updatedAt)
   );
 }
 
@@ -66,4 +73,12 @@ export function savePromptLibrary(prompts: PromptCardData[]) {
     PROMPT_STORAGE_KEY,
     JSON.stringify(storedValue),
   );
+}
+
+export function loadLastBackupAt() {
+  return window.localStorage.getItem(LAST_BACKUP_STORAGE_KEY);
+}
+
+export function saveLastBackupAt(date: string) {
+  window.localStorage.setItem(LAST_BACKUP_STORAGE_KEY, date);
 }
