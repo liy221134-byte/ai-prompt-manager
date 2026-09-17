@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  LAST_BACKUP_STORAGE_KEY,
   PROMPT_STORAGE_KEY,
+  loadLastBackupAt,
   loadPromptLibrary,
+  saveLastBackupAt,
   savePromptLibrary,
 } from "../src/lib/prompt-storage.ts";
 
@@ -63,4 +66,15 @@ test("无法识别的数据格式会抛出错误", () => {
   };
 
   assert.throws(loadPromptLibrary, /无法识别/);
+});
+
+test("最近备份时间可以保存并再次读取", () => {
+  const localStorage = createLocalStorageMock();
+  globalThis.window = { localStorage };
+  const backupDate = "2026-09-17T08:00:00.000Z";
+
+  saveLastBackupAt(backupDate);
+
+  assert.equal(loadLastBackupAt(), backupDate);
+  assert.equal(localStorage.getItem(LAST_BACKUP_STORAGE_KEY), backupDate);
 });
