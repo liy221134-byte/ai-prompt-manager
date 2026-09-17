@@ -1,6 +1,13 @@
 "use client";
 
-import { Eye, FilePenLine, Plus, Save, X } from "lucide-react";
+import {
+  Eye,
+  FilePenLine,
+  LoaderCircle,
+  Plus,
+  Save,
+  X,
+} from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
@@ -16,7 +23,7 @@ type PromptEditorDrawerProps = {
   mode: "create" | "edit";
   prompt?: PromptCardData;
   onClose: () => void;
-  onSave: (draft: PromptDraft) => void;
+  onSave: (draft: PromptDraft) => Promise<void>;
 };
 
 type FormErrors = Partial<
@@ -40,6 +47,8 @@ export function PromptEditorDrawer({
   const [tagDraft, setTagDraft] = useState("");
   const [contentMode, setContentMode] = useState<"edit" | "preview">("edit");
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useModalBehavior(onClose);
 
@@ -90,20 +99,31 @@ export function PromptEditorDrawer({
     return Object.keys(nextErrors).length === 0;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    onSave({
-      title: title.trim(),
-      category: category.trim(),
-      tags: normalizeTags(tags),
-      content: content.trim(),
-      useCase: useCase.trim(),
-    });
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await onSave({
+        title: title.trim(),
+        category: category.trim(),
+        tags: normalizeTags(tags),
+        content: content.trim(),
+        useCase: useCase.trim(),
+      });
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "保存提示词失败。",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -339,21 +359,37 @@ export function PromptEditorDrawer({
             </div>
           </div>
 
-          <footer className="flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
-            <button
-              className="h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-              onClick={onClose}
-              type="button"
-            >
-              取消
-            </button>
-            <button
-              className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-              type="submit"
-            >
-              <Save aria-hidden="true" className="size-4" />
-              保存提示词
-            </button>
+          <footer className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+            {saveError && (
+              <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {saveError}
+              </p>
+            )}
+            <div className="flex items-center justify-end gap-3">
+              <button
+                className="h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isSaving}
+                onClick={onClose}
+                type="button"
+              >
+                取消
+              </button>
+              <button
+                className="inline-flex h-11 min-w-28 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={isSaving}
+                type="submit"
+              >
+                {isSaving ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="size-4 animate-spin"
+                  />
+                ) : (
+                  <Save aria-hidden="true" className="size-4" />
+                )}
+                {isSaving ? "正在保存" : "保存提示词"}
+              </button>
+            </div>
           </footer>
         </form>
       </aside>

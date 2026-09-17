@@ -7,6 +7,7 @@ import {
   Download,
   FileCheck2,
   FilePlus2,
+  LoaderCircle,
   RefreshCcw,
   Upload,
   X,
@@ -26,7 +27,7 @@ type BackupManagerDialogProps = {
   prompts: Parameters<typeof createPromptImportPlan>[0];
   onClose: () => void;
   onExport: () => string;
-  onImport: (plan: PromptImportPlan) => void;
+  onImport: (plan: PromptImportPlan) => Promise<void>;
   onNotify: (message: string) => void;
 };
 
@@ -79,6 +80,10 @@ export function BackupManagerDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importPlan, setImportPlan] = useState<PromptImportPlan | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importSubmitError, setImportSubmitError] = useState<string | null>(
+    null,
+  );
+  const [isImporting, setIsImporting] = useState(false);
 
   useModalBehavior(onClose);
 
@@ -120,12 +125,23 @@ export function BackupManagerDialog({
     }
   }
 
-  function handleConfirmImport() {
+  async function handleConfirmImport() {
     if (!importPlan) {
       return;
     }
 
-    onImport(importPlan);
+    setIsImporting(true);
+    setImportSubmitError(null);
+
+    try {
+      await onImport(importPlan);
+    } catch (error) {
+      setImportSubmitError(
+        error instanceof Error ? error.message : "导入备份失败。",
+      );
+    } finally {
+      setIsImporting(false);
+    }
   }
 
   const hasPendingChanges = Boolean(
@@ -331,6 +347,12 @@ export function BackupManagerDialog({
                   })}
                 </div>
               </div>
+
+              {importSubmitError && (
+                <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {importSubmitError}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -339,9 +361,11 @@ export function BackupManagerDialog({
           <footer className="flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
             <button
               className="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              disabled={isImporting}
               onClick={() => {
                 setImportPlan(null);
                 setImportError(null);
+                setImportSubmitError(null);
               }}
               type="button"
             >
@@ -349,16 +373,25 @@ export function BackupManagerDialog({
             </button>
             <button
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-              disabled={!hasPendingChanges}
+              disabled={!hasPendingChanges || isImporting}
               onClick={handleConfirmImport}
               type="button"
             >
-              {importPlan.updateCount > 0 ? (
+              {isImporting ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="size-4 animate-spin"
+                />
+              ) : importPlan.updateCount > 0 ? (
                 <RefreshCcw aria-hidden="true" className="size-4" />
               ) : (
                 <FilePlus2 aria-hidden="true" className="size-4" />
               )}
-              {hasPendingChanges ? "确认导入" : "无需变更"}
+              {isImporting
+                ? "正在导入"
+                : hasPendingChanges
+                  ? "确认导入"
+                  : "无需变更"}
             </button>
           </footer>
         )}

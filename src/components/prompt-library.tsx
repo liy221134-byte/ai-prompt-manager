@@ -5,7 +5,9 @@ import {
   CheckCircle2,
   DatabaseBackup,
   Layers3,
+  LoaderCircle,
   Plus,
+  RefreshCcw,
   Search,
   X,
 } from "lucide-react";
@@ -19,23 +21,35 @@ import {
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
+import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
 import { PromptEditorDrawer } from "@/components/prompt-editor-drawer";
 import {
-  promptCards,
   type PromptCardData,
   type PromptDraft,
 } from "@/data/prompts";
 import {
   loadLastBackupAt,
-  loadPromptLibrary,
+  loadStoredPromptLibrary,
   saveLastBackupAt,
   savePromptLibrary,
 } from "@/lib/prompt-storage";
 import { downloadPromptBackup } from "@/lib/backup-download";
+import {
+  createPromptOnServer,
+  deletePromptOnServer,
+  fetchPromptLibrary,
+  mergePromptsOnServer,
+  updatePromptOnServer,
+} from "@/lib/prompt-api";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
-import type { PromptImportPlan } from "@/lib/prompt-backup";
+import {
+  createPromptImportPlan,
+  PROMPT_BACKUP_TYPE,
+  PROMPT_BACKUP_VERSION,
+  type PromptImportPlan,
+} from "@/lib/prompt-backup";
 
 type EditorState =
   | {
@@ -55,8 +69,12 @@ function createPromptId() {
 }
 
 export function PromptLibrary() {
-  const [prompts, setPrompts] = useState<PromptCardData[]>(promptCards);
-  const [isStorageReady, setIsStorageReady] = useState(false);
+  const [prompts, setPrompts] = useState<PromptCardData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [migrationPrompts, setMigrationPrompts] = useState<
+    PromptCardData[] | null
+  >(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [editorState, setEditorState] = useState<EditorState | null>(null);
@@ -78,50 +96,75 @@ export function PromptLibrary() {
     }, 3200);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadTimer = window.setTimeout(() => {
-      if (cancelled) {
-        return;
+  const cachePrompts = useCallback(
+    (nextPrompts: PromptCardData[]) => {
+      try {
+        savePromptLibrary(nextPrompts);
+      } catch {
+        notify("数据已保存，但浏览器缓存更新失败");
       }
+    },
+    [notify],
+  );
+
+  const loadFromServer = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      const library = await fetchPromptLibrary();
+      let storedPrompts: PromptCardData[] | null = null;
+      let nextMigrationPrompts: PromptCardData[] | null = null;
 
       try {
-        setPrompts(loadPromptLibrary());
+        storedPrompts = loadStoredPromptLibrary();
+      } catch {
+        notify("本机旧数据无法读取，已使用共享数据库");
+      }
+
+      if (storedPrompts) {
+        const localChanges = createPromptImportPlan(library.prompts, {
+          type: PROMPT_BACKUP_TYPE,
+          version: PROMPT_BACKUP_VERSION,
+          exportedAt: new Date().toISOString(),
+          prompts: storedPrompts,
+        });
+
+        if (localChanges.addCount + localChanges.updateCount > 0) {
+          nextMigrationPrompts = storedPrompts;
+        }
+      }
+
+      setPrompts(library.prompts);
+      setMigrationPrompts(nextMigrationPrompts);
+
+      try {
         setLastBackupAt(loadLastBackupAt());
       } catch {
-        notify("本地数据无法读取，当前显示示例提示词");
-      } finally {
-        setIsStorageReady(true);
+        setLastBackupAt(null);
       }
+
+      if (!nextMigrationPrompts) {
+        cachePrompts(library.prompts);
+      }
+    } catch (error) {
+      setLoadError(
+        error instanceof Error ? error.message : "本机数据服务连接失败。",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [cachePrompts, notify]);
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      void loadFromServer();
     }, 0);
 
     return () => {
-      cancelled = true;
       window.clearTimeout(loadTimer);
     };
-  }, [notify]);
-
-  useEffect(() => {
-    if (!isStorageReady) {
-      return;
-    }
-
-    let errorTimer: number | undefined;
-
-    try {
-      savePromptLibrary(prompts);
-    } catch {
-      errorTimer = window.setTimeout(() => {
-        notify("本地保存失败，请检查浏览器存储设置");
-      }, 0);
-    }
-
-    return () => {
-      if (errorTimer) {
-        window.clearTimeout(errorTimer);
-      }
-    };
-  }, [isStorageReady, notify, prompts]);
+  }, [loadFromServer]);
 
   useEffect(
     () => () => {
@@ -155,21 +198,22 @@ export function PromptLibrary() {
       ? prompts.find((prompt) => prompt.id === editorState.promptId)
       : undefined;
 
-  function handleSave(draft: PromptDraft) {
+  async function handleSave(draft: PromptDraft) {
     const now = new Date().toISOString();
 
-    if (editorState?.mode === "edit" && editingPrompt) {
-      setPrompts((currentPrompts) =>
-        currentPrompts.map((prompt) =>
-          prompt.id === editingPrompt.id
-            ? {
-                ...prompt,
-                ...draft,
-                updatedAt: now,
-              }
-            : prompt,
-        ),
-      );
+    if (editorState?.mode === "edit") {
+      if (!editingPrompt) {
+        throw new Error("没有找到要编辑的提示词。");
+      }
+
+      const library = await updatePromptOnServer({
+        ...editingPrompt,
+        ...draft,
+        updatedAt: now,
+      });
+
+      setPrompts(library.prompts);
+      cachePrompts(library.prompts);
       setEditorState(null);
       notify("提示词已更新");
       return;
@@ -181,21 +225,24 @@ export function PromptLibrary() {
       createdAt: now,
       updatedAt: now,
     };
+    const library = await createPromptOnServer(newPrompt);
 
-    setPrompts((currentPrompts) => [newPrompt, ...currentPrompts]);
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
     setEditorState(null);
     setSelectedPromptId(newPrompt.id);
     notify("提示词已保存");
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!promptToDelete) {
       return;
     }
 
-    setPrompts((currentPrompts) =>
-      currentPrompts.filter((prompt) => prompt.id !== promptToDelete.id),
-    );
+    const library = await deletePromptOnServer(promptToDelete.id);
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
     setDeletePromptId(null);
 
     if (selectedPromptId === promptToDelete.id) {
@@ -213,19 +260,48 @@ export function PromptLibrary() {
     return exportedAt;
   }
 
-  function handleImport(plan: PromptImportPlan) {
-    setPrompts(plan.mergedPrompts);
+  async function handleImport(plan: PromptImportPlan) {
+    const result = await mergePromptsOnServer(plan.backup.prompts);
+
+    setPrompts(result.prompts);
+    cachePrompts(result.prompts);
     setIsBackupManagerOpen(false);
 
-    const result = [
-      plan.addCount > 0 ? `新增 ${plan.addCount} 条` : "",
-      plan.updateCount > 0 ? `更新 ${plan.updateCount} 条` : "",
-      plan.skipCount > 0 ? `跳过 ${plan.skipCount} 条` : "",
+    const resultText = [
+      result.addCount > 0 ? `新增 ${result.addCount} 条` : "",
+      result.updateCount > 0 ? `更新 ${result.updateCount} 条` : "",
+      result.skipCount > 0 ? `跳过 ${result.skipCount} 条` : "",
     ]
       .filter(Boolean)
       .join("，");
 
-    notify(result ? `导入完成：${result}` : "导入完成：没有需要变更的内容");
+    notify(
+      resultText
+        ? `导入完成：${resultText}`
+        : "导入完成：没有需要变更的内容",
+    );
+  }
+
+  async function handleMergeLocalPrompts() {
+    if (!migrationPrompts) {
+      return;
+    }
+
+    const result = await mergePromptsOnServer(migrationPrompts);
+
+    setPrompts(result.prompts);
+    cachePrompts(result.prompts);
+    setMigrationPrompts(null);
+
+    const resultText = [
+      result.addCount > 0 ? `新增 ${result.addCount} 条` : "",
+      result.updateCount > 0 ? `更新 ${result.updateCount} 条` : "",
+      result.skipCount > 0 ? `跳过 ${result.skipCount} 条` : "",
+    ]
+      .filter(Boolean)
+      .join("，");
+
+    notify(resultText ? `本机数据已合并：${resultText}` : "本机数据已经同步");
   }
 
   const hasSearchQuery = Boolean(searchQuery.trim());
@@ -242,13 +318,22 @@ export function PromptLibrary() {
               <p className="text-sm font-semibold text-slate-900">
                 提示词资产库
               </p>
-              <p className="text-xs text-slate-500">个人工作台</p>
+              <p className="text-xs text-slate-500">本机共享数据</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2 text-sm text-slate-600">
-            <Layers3 aria-hidden="true" className="size-4 text-blue-600" />
-            <span>{prompts.length} 条提示词</span>
+            {isLoading ? (
+              <LoaderCircle
+                aria-hidden="true"
+                className="size-4 animate-spin text-blue-600"
+              />
+            ) : (
+              <Layers3 aria-hidden="true" className="size-4 text-blue-600" />
+            )}
+            <span>
+              {isLoading ? "正在连接" : `${prompts.length} 条提示词`}
+            </span>
           </div>
         </div>
       </header>
@@ -274,7 +359,8 @@ export function PromptLibrary() {
               className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
             />
             <input
-              className="h-11 w-full rounded-lg border border-[#dbe7f5] bg-white pl-10 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 w-full rounded-lg border border-[#dbe7f5] bg-white pl-10 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              disabled={isLoading || Boolean(loadError)}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="搜索标题、分类、标签或正文"
               value={searchQuery}
@@ -292,8 +378,9 @@ export function PromptLibrary() {
           </label>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-            <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700"
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              disabled={isLoading || Boolean(loadError)}
               onClick={() => setIsBackupManagerOpen(true)}
               type="button"
             >
@@ -301,7 +388,8 @@ export function PromptLibrary() {
               数据管理
             </button>
             <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              disabled={isLoading || Boolean(loadError)}
               onClick={() => setEditorState({ mode: "create" })}
               type="button"
             >
@@ -311,7 +399,39 @@ export function PromptLibrary() {
           </div>
         </div>
 
-        {filteredPrompts.length > 0 ? (
+        {isLoading ? (
+          <div
+            aria-label="正在加载提示词"
+            className="mt-8 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3"
+          >
+            {[0, 1, 2].map((item) => (
+              <div
+                className="h-96 animate-pulse rounded-lg border border-[#dbe7f5] bg-white"
+                key={item}
+              />
+            ))}
+          </div>
+        ) : loadError ? (
+          <div className="mt-8 flex min-h-72 flex-col items-center justify-center rounded-lg border border-red-200 bg-white px-6 text-center">
+            <span className="flex size-12 items-center justify-center rounded-lg bg-red-50 text-red-700">
+              <RefreshCcw aria-hidden="true" className="size-5" />
+            </span>
+            <h2 className="mt-4 text-lg font-semibold text-slate-900">
+              本机数据服务连接失败
+            </h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
+              {loadError}
+            </p>
+            <button
+              className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              onClick={() => void loadFromServer()}
+              type="button"
+            >
+              <RefreshCcw aria-hidden="true" className="size-4" />
+              重新连接
+            </button>
+          </div>
+        ) : filteredPrompts.length > 0 ? (
           <div className="mt-8 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredPrompts.map((prompt, index) => (
               <PromptCard
@@ -410,6 +530,18 @@ export function PromptLibrary() {
           onCancel={() => setDeletePromptId(null)}
           onConfirm={handleDelete}
           prompt={promptToDelete}
+        />
+      )}
+
+      {migrationPrompts && (
+        <MigrationDialog
+          localPromptCount={migrationPrompts.length}
+          onDismiss={() => {
+            setMigrationPrompts(null);
+            notify("本机旧数据尚未合并");
+          }}
+          onMerge={handleMergeLocalPrompts}
+          serverPromptCount={prompts.length}
         />
       )}
 
