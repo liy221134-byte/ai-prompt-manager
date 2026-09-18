@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 4 周：完成本机共享数据库和多浏览器数据同步。
+第 5 周：完成 Vercel + Supabase 免费云端部署。
 
 当前版本支持：
 
@@ -23,7 +23,7 @@
 - 自动检测旧浏览器数据并提供安全迁移
 - 数据库关闭后重新启动，数据仍然保留
 
-当前版本不包含注册登录、云端数据库、跨设备同步和团队协作。
+当前版本包含个人邮箱密码登录、Supabase 云数据库和跨设备同步，不包含团队协作。
 
 ## 本地数据说明
 
@@ -59,6 +59,9 @@
 - [第 3 周验收清单](docs/acceptance/week-03.md)
 - [本机 SQLite 决策](docs/decisions/0004-local-sqlite.md)
 - [第 4 周验收清单](docs/acceptance/week-04.md)
+- [云端部署指南](docs/cloud-deployment.md)
+- [云端架构决策](docs/decisions/0005-cloud-architecture.md)
+- [第 5 周验收清单](docs/acceptance/week-05.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)
