@@ -10,6 +10,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  ShieldCheck,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import {
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { AiCaptureDrawer } from "@/components/ai-capture-drawer";
+import { RuleCenterDrawer } from "@/components/rule-center-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
@@ -102,6 +104,7 @@ export function PromptLibrary({
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
+  const [isRuleCenterOpen, setIsRuleCenterOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -425,6 +428,15 @@ export function PromptLibrary({
 
           <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
             <button
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading || Boolean(loadError)}
+              onClick={() => setIsRuleCenterOpen(true)}
+              type="button"
+            >
+              <ShieldCheck aria-hidden="true" className="size-4" />
+              规则资产
+            </button>
+            <button
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isLoading || Boolean(loadError)}
               onClick={() => setIsAiCaptureOpen(true)}
@@ -555,6 +567,13 @@ export function PromptLibrary({
           }
           onNotify={notify}
           prompt={selectedPrompt}
+        />
+      )}
+
+      {isRuleCenterOpen && (
+        <RuleCenterDrawer
+          onClose={() => setIsRuleCenterOpen(false)}
+          onNotify={notify}
         />
       )}
 
