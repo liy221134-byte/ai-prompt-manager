@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   DatabaseBackup,
   Layers3,
+  LogOut,
   LoaderCircle,
   Plus,
   RefreshCcw,
@@ -36,13 +37,6 @@ import {
   savePromptLibrary,
 } from "@/lib/prompt-storage";
 import { downloadPromptBackup } from "@/lib/backup-download";
-import {
-  createPromptOnServer,
-  deletePromptOnServer,
-  fetchPromptLibrary,
-  mergePromptsOnServer,
-  updatePromptOnServer,
-} from "@/lib/prompt-api";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
 import {
   createPromptImportPlan,
@@ -50,6 +44,12 @@ import {
   PROMPT_BACKUP_VERSION,
   type PromptImportPlan,
 } from "@/lib/prompt-backup";
+import {
+  createSupabasePromptDataSource,
+  localPromptDataSource,
+  type PromptDataSource,
+} from "@/lib/prompt-source";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type EditorState =
   | {
@@ -60,6 +60,12 @@ type EditorState =
       promptId: string;
     };
 
+type PromptLibraryProps = {
+  dataMode: "local" | "supabase";
+  onSignOut?: () => Promise<void>;
+  userEmail?: string | null;
+};
+
 function createPromptId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -68,7 +74,20 @@ function createPromptId() {
   return `prompt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function PromptLibrary() {
+export function PromptLibrary({
+  dataMode,
+  onSignOut,
+  userEmail,
+}: PromptLibraryProps) {
+  const dataSource = useMemo<PromptDataSource>(() => {
+    if (dataMode === "supabase") {
+      return createSupabasePromptDataSource(getSupabaseBrowserClient());
+    }
+
+    return localPromptDataSource;
+  }, [dataMode]);
+  const serviceName =
+    dataMode === "supabase" ? "云端数据服务" : "本机数据服务";
   const [prompts, setPrompts] = useState<PromptCardData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -112,7 +131,7 @@ export function PromptLibrary() {
     setLoadError(null);
 
     try {
-      const library = await fetchPromptLibrary();
+      const library = await dataSource.fetchLibrary();
       let storedPrompts: PromptCardData[] | null = null;
       let nextMigrationPrompts: PromptCardData[] | null = null;
 
@@ -149,12 +168,12 @@ export function PromptLibrary() {
       }
     } catch (error) {
       setLoadError(
-        error instanceof Error ? error.message : "本机数据服务连接失败。",
+        error instanceof Error ? error.message : `${serviceName}连接失败。`,
       );
     } finally {
       setIsLoading(false);
     }
-  }, [cachePrompts, notify]);
+  }, [cachePrompts, dataSource, notify, serviceName]);
 
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
@@ -206,7 +225,7 @@ export function PromptLibrary() {
         throw new Error("没有找到要编辑的提示词。");
       }
 
-      const library = await updatePromptOnServer({
+      const library = await dataSource.updatePrompt({
         ...editingPrompt,
         ...draft,
         updatedAt: now,
@@ -225,7 +244,7 @@ export function PromptLibrary() {
       createdAt: now,
       updatedAt: now,
     };
-    const library = await createPromptOnServer(newPrompt);
+    const library = await dataSource.createPrompt(newPrompt);
 
     setPrompts(library.prompts);
     cachePrompts(library.prompts);
@@ -239,7 +258,7 @@ export function PromptLibrary() {
       return;
     }
 
-    const library = await deletePromptOnServer(promptToDelete.id);
+    const library = await dataSource.deletePrompt(promptToDelete.id);
 
     setPrompts(library.prompts);
     cachePrompts(library.prompts);
@@ -261,7 +280,9 @@ export function PromptLibrary() {
   }
 
   async function handleImport(plan: PromptImportPlan) {
-    const result = await mergePromptsOnServer(plan.backup.prompts);
+    const result = await dataSource.mergePrompts(
+      plan.backup.prompts,
+    );
 
     setPrompts(result.prompts);
     cachePrompts(result.prompts);
@@ -287,7 +308,7 @@ export function PromptLibrary() {
       return;
     }
 
-    const result = await mergePromptsOnServer(migrationPrompts);
+    const result = await dataSource.mergePrompts(migrationPrompts);
 
     setPrompts(result.prompts);
     cachePrompts(result.prompts);
@@ -318,22 +339,43 @@ export function PromptLibrary() {
               <p className="text-sm font-semibold text-slate-900">
                 提示词资产库
               </p>
-              <p className="text-xs text-slate-500">本机共享数据</p>
+              <p className="text-xs text-slate-500">
+                {dataMode === "supabase" ? "云端共享数据" : "本机共享数据"}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2 text-sm text-slate-600">
-            {isLoading ? (
-              <LoaderCircle
-                aria-hidden="true"
-                className="size-4 animate-spin text-blue-600"
-              />
-            ) : (
-              <Layers3 aria-hidden="true" className="size-4 text-blue-600" />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2 text-sm text-slate-600">
+              {isLoading ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="size-4 animate-spin text-blue-600"
+                />
+              ) : (
+                <Layers3
+                  aria-hidden="true"
+                  className="size-4 text-blue-600"
+                />
+              )}
+              <span>
+                {isLoading ? "正在连接" : `${prompts.length} 条提示词`}
+              </span>
+            </div>
+
+            {onSignOut && (
+              <button
+                aria-label="退出登录"
+                className="flex size-10 items-center justify-center rounded-lg border border-[#dbe7f5] bg-white text-slate-500 transition-colors hover:border-blue-300 hover:text-blue-700"
+                onClick={() => void onSignOut()}
+                title={
+                  userEmail ? `退出 ${userEmail}` : "退出登录"
+                }
+                type="button"
+              >
+                <LogOut aria-hidden="true" className="size-4" />
+              </button>
             )}
-            <span>
-              {isLoading ? "正在连接" : `${prompts.length} 条提示词`}
-            </span>
           </div>
         </div>
       </header>
@@ -417,7 +459,7 @@ export function PromptLibrary() {
               <RefreshCcw aria-hidden="true" className="size-5" />
             </span>
             <h2 className="mt-4 text-lg font-semibold text-slate-900">
-              本机数据服务连接失败
+              {serviceName}连接失败
             </h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
               {loadError}
