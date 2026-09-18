@@ -4,11 +4,15 @@
 
 ## 当前阶段
 
-第 5 周：完成 Vercel + Supabase 免费云端部署。
+第 6 周：完成 DeepSeek AI 智能采集流程。
 
 当前版本支持：
 
 - 浏览和搜索提示词
+- 粘贴原始内容并由 DeepSeek 自动生成结构
+- 自动建议标题、分类、标签、正文和适用场景
+- AI 结果进入编辑器，用户确认后才保存
+- AI API Key 仅保存在服务端环境变量
 - 新增、编辑和删除提示词
 - Markdown 编辑与预览
 - 自动识别 `{{变量}}`
@@ -62,6 +66,8 @@
 - [云端部署指南](docs/cloud-deployment.md)
 - [云端架构决策](docs/decisions/0005-cloud-architecture.md)
 - [第 5 周验收清单](docs/acceptance/week-05.md)
+- [AI 供应商决策](docs/decisions/0006-ai-provider-abstraction.md)
+- [第 6 周验收清单](docs/acceptance/week-06.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)
