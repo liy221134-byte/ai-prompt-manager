@@ -52,6 +52,7 @@
 ## 文档
 
 - [产品范围](docs/product-brief.md)
+- [项目文档索引](docs/INDEX.md)
 - [8 周路线图](docs/roadmap.md)
 - [开发规则与协作提示词](docs/development-rules.md)
 - [技术选型](docs/decisions/0001-tech-stack.md)
