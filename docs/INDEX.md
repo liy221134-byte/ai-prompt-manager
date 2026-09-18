@@ -21,6 +21,7 @@
 
 - [产品范围](product-brief.md)
 - [8 周路线图](roadmap.md)
+- [2.0 需求草案](v2-requirements-draft.md)
 - [2.0 需求池](v2-backlog.md)
 
 ### 决策
