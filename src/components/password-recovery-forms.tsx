@@ -76,7 +76,7 @@ export function RequestPasswordResetForm() {
     setErrorMessage(null);
 
     const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
+      redirectTo: `${window.location.origin}/auth/confirm?next=/auth/update-password`,
     });
 
     if (error) {
