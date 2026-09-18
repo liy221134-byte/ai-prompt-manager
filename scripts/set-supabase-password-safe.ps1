@@ -8,7 +8,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $envPath = Join-Path $projectRoot ".env.local"
 
 if (-not (Test-Path -LiteralPath $envPath)) {
-  throw "没有找到 .env.local。"
+  throw "Could not find .env.local."
 }
 
 $values = @{}
@@ -23,7 +23,7 @@ $supabaseUrl = $values["NEXT_PUBLIC_SUPABASE_URL"]
 $serviceRoleKey = $values["SUPABASE_SERVICE_ROLE_KEY"]
 
 if (-not $supabaseUrl -or -not $serviceRoleKey) {
-  throw "Supabase URL 或 Service Role Key 尚未配置。"
+  throw "Supabase URL or Service Role Key is not configured."
 }
 
 $headers = @{
@@ -44,16 +44,16 @@ if ($Email) {
 } elseif ($users.Count -eq 1) {
   $user = $users[0]
 } else {
-  Write-Host "检测到多个账号，请输入要设置密码的邮箱："
+  Write-Host "Multiple users found. Enter the email address:"
   $selectedEmail = Read-Host
   $user = $users | Where-Object { $_.email -eq $selectedEmail } | Select-Object -First 1
 }
 
 if (-not $user) {
-  throw "没有找到要设置密码的 Supabase 用户。"
+  throw "Supabase user was not found."
 }
 
-$securePassword = Read-Host "请输入新密码（至少 8 个字符）" -AsSecureString
+$securePassword = Read-Host "Enter the new password (at least 8 characters)" -AsSecureString
 $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
 
 try {
@@ -64,7 +64,7 @@ try {
 
 if ($password.Length -lt 8) {
   $password = $null
-  throw "密码至少需要 8 个字符。"
+  throw "Password must contain at least 8 characters."
 }
 
 $body = @{
@@ -82,4 +82,4 @@ try {
   $body = $null
 }
 
-Write-Host "密码已更新。现在可以使用邮箱和新密码登录。"
+Write-Host "Password updated. You can now sign in with email and password."
