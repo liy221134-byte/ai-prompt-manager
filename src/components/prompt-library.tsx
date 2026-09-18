@@ -10,6 +10,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  WandSparkles,
   X,
 } from "lucide-react";
 import {
@@ -21,6 +22,7 @@ import {
 } from "react";
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { AiCaptureDrawer } from "@/components/ai-capture-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
@@ -54,6 +56,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 type EditorState =
   | {
       mode: "create";
+      initialDraft?: PromptDraft;
     }
   | {
       mode: "edit";
@@ -98,6 +101,7 @@ export function PromptLibrary({
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
+  const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -420,6 +424,15 @@ export function PromptLibrary({
           </label>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
+            <button
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading || Boolean(loadError)}
+              onClick={() => setIsAiCaptureOpen(true)}
+              type="button"
+            >
+              <WandSparkles aria-hidden="true" className="size-4" />
+              智能采集
+            </button>
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               disabled={isLoading || Boolean(loadError)}
@@ -545,9 +558,28 @@ export function PromptLibrary({
         />
       )}
 
+      {isAiCaptureOpen && (
+        <AiCaptureDrawer
+          onClose={() => setIsAiCaptureOpen(false)}
+          onRecognized={(draft) => {
+            setIsAiCaptureOpen(false);
+            setEditorState({ mode: "create", initialDraft: draft });
+            notify("AI 识别完成，请确认后保存");
+          }}
+        />
+      )}
+
       {editorState && (
         <PromptEditorDrawer
-          key={editingPrompt?.id ?? "new-prompt"}
+          key={
+            editingPrompt?.id ??
+            (editorState.mode === "create" && editorState.initialDraft
+              ? "ai-draft"
+              : "new-prompt")
+          }
+          initialDraft={
+            editorState.mode === "create" ? editorState.initialDraft : undefined
+          }
           mode={editorState.mode}
           onClose={() => setEditorState(null)}
           onSave={handleSave}

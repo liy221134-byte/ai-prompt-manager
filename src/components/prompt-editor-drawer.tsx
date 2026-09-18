@@ -22,6 +22,7 @@ import { normalizeTags } from "@/lib/prompt-utils";
 type PromptEditorDrawerProps = {
   mode: "create" | "edit";
   prompt?: PromptCardData;
+  initialDraft?: PromptDraft;
   onClose: () => void;
   onSave: (draft: PromptDraft) => Promise<void>;
 };
@@ -36,14 +37,16 @@ const inputClassName =
 export function PromptEditorDrawer({
   mode,
   prompt,
+  initialDraft,
   onClose,
   onSave,
 }: PromptEditorDrawerProps) {
-  const [title, setTitle] = useState(prompt?.title ?? "");
-  const [category, setCategory] = useState(prompt?.category ?? "");
-  const [useCase, setUseCase] = useState(prompt?.useCase ?? "");
-  const [content, setContent] = useState(prompt?.content ?? "");
-  const [tags, setTags] = useState<string[]>(prompt?.tags ?? []);
+  const initialValue = prompt ?? initialDraft;
+  const [title, setTitle] = useState(initialValue?.title ?? "");
+  const [category, setCategory] = useState(initialValue?.category ?? "");
+  const [useCase, setUseCase] = useState(initialValue?.useCase ?? "");
+  const [content, setContent] = useState(initialValue?.content ?? "");
+  const [tags, setTags] = useState<string[]>(initialValue?.tags ?? []);
   const [tagDraft, setTagDraft] = useState("");
   const [contentMode, setContentMode] = useState<"edit" | "preview">("edit");
   const [errors, setErrors] = useState<FormErrors>({});
