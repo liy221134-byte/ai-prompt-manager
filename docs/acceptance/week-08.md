@@ -34,15 +34,44 @@
 
 ## 待发布门禁
 
-- [ ] 远程 Supabase 数据库迁移已执行并验证
-- [ ] 远程 Supabase `prompt_versions` 表、索引和 RLS 策略已生效
-- [ ] 远程 Supabase RPC `commit_prompt_merge`、`restore_prompt_merge`、`empty_prompt_trash`、`purge_expired_prompt_versions` 已执行并验证
-- [ ] 远程 Supabase 迁移顾问已验证迁移安全性与账号隔离
-- [ ] 云端每日清理任务实际运行并产生预期结果
-- [ ] 真实账号之间不能读取或修改彼此的提示词、垃圾箱和恢复记录
-- [ ] 云端合并、垃圾箱、恢复和刷新后数据一致性通过人工验收
-- [ ] 本地浏览器端完整流程通过人工验收
-- [ ] 远程 Production 验证与回滚演练通过
+按顺序执行。第 1 步必须在合并 `main` 之前完成，否则线上代码会依赖还不存在的表和函数。
+迁移只做新增（`if not exists`），可以重复执行，不会删除任何现有数据。
+
+### 第 1 步：执行云端迁移
+
+- [ ] 打开 Supabase 项目 → SQL Editor，粘贴 `supabase/migrations/202609200001_add_prompt_merge_trash.sql` 全文并运行
+- [ ] 验证字段已生效：`prompts` 表应多出 `deleted_at`、`deleted_reason`、`merged_into_prompt_id`、`merge_version_id` 四个字段
+- [ ] 验证表和索引已创建：`select indexname from pg_indexes where tablename = 'prompt_versions';` 应返回 `prompt_versions_user_prompt_idx` 和 `prompt_versions_user_expires_idx`
+- [ ] 验证 RLS 已开启：`select relrowsecurity from pg_class where relname = 'prompt_versions';` 应为 `true`
+- [ ] 验证四个函数已创建：`select proname from pg_proc where proname in ('commit_prompt_merge','restore_prompt_merge','empty_prompt_trash','purge_expired_prompt_versions');` 应返回 4 行
+- [ ] 打开 Database → Advisors 运行检查，确认没有 error 级别的问题
+
+### 第 2 步：合并并部署
+
+- [ ] 确认第 1 步全部通过后，把 `feat/v0.8.0-ai-prompt-merge` 合并到 `main` 并推送
+- [ ] 等待 Vercel 构建完成。构建命令是 `npm run check`，代码检查、类型检查、测试和构建四项都通过才会部署
+- [ ] 确认生产环境使用 `NEXT_PUBLIC_DATA_MODE=supabase`，且 Service Role Key 只在服务端配置
+
+### 第 3 步：人工验收（本地 + 云端）
+
+- [ ] 本地模式完整流程：新增、编辑、搜索、填写变量、一键复制、AI 合并、垃圾箱恢复、清空垃圾箱
+- [ ] 云端用账号 A 完成一次 AI 合并：目标更新、来源进入垃圾箱、生成恢复快照
+- [ ] 云端恢复合并记录：目标旧内容和来源都正确恢复
+- [ ] 云端清空垃圾箱：恢复记录一并删除
+- [ ] 刷新页面后数据保持一致
+- [ ] 用账号 B 登录，确认看不到账号 A 的提示词、垃圾箱和恢复记录
+
+### 第 4 步：清理任务验证
+
+- [ ] 手动触发一次清理：`curl -H "Authorization: Bearer $CRON_SECRET" https://<生产域名>/api/health/db`
+- [ ] 确认返回正常，且过期的垃圾箱和恢复快照被删除
+- [ ] 确认 Vercel Cron 已注册，每天 03:00 自动执行一次
+
+### 第 5 步：生产验证与回滚演练
+
+- [ ] 在生产环境走一遍核心流程：找到提示词 → 填写变量 → 一键复制
+- [ ] 在 Vercel Deployments 找到上一个 Ready 版本执行 Promote，确认回滚后服务可用
+- [ ] 回滚后重新部署最新版本，确认最终状态正确
 
 ## 完成标准
 
