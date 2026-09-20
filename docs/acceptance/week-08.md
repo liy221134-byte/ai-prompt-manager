@@ -48,9 +48,20 @@
 
 ### 第 2 步：合并并部署
 
-- [ ] 确认第 1 步全部通过后，把 `feat/v0.8.0-ai-prompt-merge` 合并到 `main` 并推送
+- [ ] 确认第 1 步全部通过后，按下面的顺序合并到 `main`。`docs/engineering-seed-pack` 里是新的项目规则，需要和 v0.8.0 一起并入
 - [ ] 等待 Vercel 构建完成。构建命令是 `npm run check`，代码检查、类型检查、测试和构建四项都通过才会部署
 - [ ] 确认生产环境使用 `NEXT_PUBLIC_DATA_MODE=supabase`，且 Service Role Key 只在服务端配置
+
+```powershell
+git checkout main
+git pull
+git merge feat/v0.8.0-ai-prompt-merge
+git merge docs/engineering-seed-pack
+git push
+```
+
+说明：第二次合并预计在 `README.md`、`docs/INDEX.md`、`docs/product-brief.md` 三个文件冲突，
+两边的改动都要保留。
 
 ### 第 3 步：人工验收（本地 + 云端）
 
