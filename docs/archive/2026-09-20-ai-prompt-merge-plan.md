@@ -1,3 +1,7 @@
+> **已归档（2026-09-20）**：本计划对应的实现已完成并进入评审修复阶段，保留仅供回溯。
+> 新的开发流程不再单独产出实施计划，改为《设计 + 任务清单》一份文档，规则见项目根目录
+> `AGENTS.md` 的「设计门」。本文件中 "REQUIRED SUB-SKILL" 指向的旧技能链路同样不再使用。
+
 # AI Prompt Merge Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

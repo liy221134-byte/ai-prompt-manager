@@ -27,7 +27,7 @@
 ### 设计
 
 - [v0.8.0 AI 合并与垃圾箱设计](superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
-- [v0.8.0 AI 合并与垃圾箱实施计划](superpowers/plans/2026-09-20-ai-prompt-merge.md)
+- [v0.8.0 AI 合并与垃圾箱实施计划（已归档）](archive/2026-09-20-ai-prompt-merge-plan.md)
 
 ### 决策
 
