@@ -105,6 +105,7 @@ export type PromptLifecycleFields = {
   deletedAt: string | null;
   deletedReason: PromptDeletedReason | null;
   mergedIntoPromptId: string | null;
+  mergeVersionId: string | null;
 };
 
 export type PromptContentData = {
@@ -149,6 +150,7 @@ export type PromptVersionData = {
 deletedAt: null,
 deletedReason: null,
 mergedIntoPromptId: null,
+mergeVersionId: null,
 ```
 
 In `PromptLibrary.handleSave()`, when creating a new prompt, add:
@@ -157,6 +159,7 @@ In `PromptLibrary.handleSave()`, when creating a new prompt, add:
 deletedAt: null,
 deletedReason: null,
 mergedIntoPromptId: null,
+mergeVersionId: null,
 ```
 
 - [ ] **Step 4: 实现纯函数**
@@ -664,7 +667,8 @@ Add:
 alter table public.prompts
   add column if not exists deleted_at timestamptz,
   add column if not exists deleted_reason text,
-  add column if not exists merged_into_prompt_id text;
+  add column if not exists merged_into_prompt_id text,
+  add column if not exists merge_version_id text;
 
 create table if not exists public.prompt_versions (
   user_id uuid not null references auth.users(id) on delete cascade,

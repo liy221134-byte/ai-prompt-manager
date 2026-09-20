@@ -193,6 +193,7 @@ AI 合并时：
 | `deleted_at` | `timestamptz` | 为空表示正常，非空表示在垃圾箱 |
 | `deleted_reason` | `text` | `manual` 或 `merge` |
 | `merged_into_prompt_id` | `text` | AI 合并目标的稳定标识 |
+| `merge_version_id` | `text` | 本次 AI 合并的恢复快照标识 |
 
 新增索引：
 
