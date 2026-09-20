@@ -1503,9 +1503,7 @@ await dataSource.commitAiMerge({
     ...editedDraft,
     updatedAt: now,
   },
-  sourcePromptIds: selectedPrompts
-    .filter((prompt) => prompt.id !== target.id)
-    .map((prompt) => prompt.id),
+  sourcePromptIds: selectedPrompts.map((prompt) => prompt.id),
   version,
 });
 ```
