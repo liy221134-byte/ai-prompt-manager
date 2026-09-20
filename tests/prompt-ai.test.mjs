@@ -3,8 +3,23 @@ import test from "node:test";
 
 import {
   buildAiExtractionMessages,
+  buildAiMergeMessages,
   normalizeExtractedPrompt,
+  normalizeMergedPrompt,
+  validateAiMergeRequest,
 } from "../src/lib/prompt-ai.ts";
+
+function sourcePrompt(overrides = {}) {
+  return {
+    id: "a",
+    title: "A",
+    category: "AI",
+    tags: [],
+    content: "内容 A",
+    useCase: "场景 A",
+    ...overrides,
+  };
+}
 
 test("可以解析标准 JSON 结果", () => {
   const result = normalizeExtractedPrompt(
@@ -60,4 +75,164 @@ test("提取消息包含系统约束和用户原文", () => {
   assert.equal(messages[0].role, "system");
   assert.match(messages[0].content, /只输出 JSON/);
   assert.equal(messages[1].content, "请帮我整理这段提示词");
+});
+
+test("合并提示词会返回结构化草稿和合并说明", () => {
+  const draft = normalizeMergedPrompt(
+    JSON.stringify({
+      title: "通用代码审查助手",
+      category: "软件开发",
+      tags: ["代码审查", "风险"],
+      content: "请审查 {{代码}}",
+      useCase: "提交代码前检查风险。",
+      mergeSummary: ["保留安全检查", "合并输出格式"],
+    }),
+  );
+
+  assert.equal(draft.title, "通用代码审查助手");
+  assert.deepEqual(draft.mergeSummary, [
+    "保留安全检查",
+    "合并输出格式",
+  ]);
+});
+
+test("合并请求包含两条来源提示词和可选要求", () => {
+  const messages = buildAiMergeMessages({
+    prompts: [
+      {
+        id: "a",
+        title: "A",
+        category: "AI",
+        tags: [],
+        content: "内容 A",
+        useCase: "场景 A",
+      },
+      {
+        id: "b",
+        title: "B",
+        category: "AI",
+        tags: [],
+        content: "内容 B",
+        useCase: "场景 B",
+      },
+    ],
+    mergeInstruction: "合并成通用版本",
+  });
+
+  assert.match(messages[0].content, /只输出 JSON/);
+  assert.match(messages[1].content, /合并成通用版本/);
+});
+
+test("合并规范化保留变量占位符", () => {
+  const draft = normalizeMergedPrompt(
+    JSON.stringify({
+      title: "合并助手",
+      category: "AI",
+      tags: [],
+      content: "请审查 {{代码}} 并处理 {{需求}}",
+      useCase: "测试",
+      mergeSummary: [],
+    }),
+  );
+
+  assert.equal(draft.content, "请审查 {{代码}} 并处理 {{需求}}");
+});
+
+test("合并输入会拒绝少于两条的请求", () => {
+  const result = validateAiMergeRequest({ prompts: [sourcePrompt()] });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /至少 2 条/);
+});
+
+test("合并输入会拒绝超过五条的请求", () => {
+  const prompts = Array.from({ length: 6 }, (_, index) =>
+    sourcePrompt({ id: `p-${index}` }),
+  );
+  const result = validateAiMergeRequest({ prompts });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /最多合并 5 条/);
+});
+
+test("合并输入会拒绝缺少正文的提示词", () => {
+  const result = validateAiMergeRequest({
+    prompts: [
+      sourcePrompt(),
+      sourcePrompt({ id: "b", content: "" }),
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /正文/);
+});
+
+test("合并输入会拒绝超长的单条正文", () => {
+  const result = validateAiMergeRequest({
+    prompts: [
+      sourcePrompt(),
+      sourcePrompt({ id: "b", content: "x".repeat(20001) }),
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /20000/);
+});
+
+test("合并输入会拒绝超长的正文总和", () => {
+  const result = validateAiMergeRequest({
+    prompts: [
+      sourcePrompt({ id: "a", content: "x".repeat(15000) }),
+      sourcePrompt({ id: "b", content: "x".repeat(15000) }),
+      sourcePrompt({ id: "c", content: "x".repeat(15000) }),
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /40000/);
+});
+
+test("合并输入会拒绝超长的合并要求", () => {
+  const result = validateAiMergeRequest({
+    prompts: [sourcePrompt(), sourcePrompt({ id: "b" })],
+    mergeInstruction: "x".repeat(2001),
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /2000/);
+});
+
+test("合并输入会接受合法的请求", () => {
+  const result = validateAiMergeRequest({
+    prompts: [sourcePrompt(), sourcePrompt({ id: "b" })],
+    mergeInstruction: "合并成通用版本",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.value.prompts.length, 2);
+  assert.equal(result.value.mergeInstruction, "合并成通用版本");
+});
+
+test("合并规范化会限制字段长度和数量", () => {
+  const draft = normalizeMergedPrompt(
+    JSON.stringify({
+      title: "标".repeat(61),
+      category: "类".repeat(31),
+      tags: Array.from({ length: 9 }, (_, index) => `标签${index}`),
+      content: "内".repeat(30001),
+      useCase: "用".repeat(241),
+      mergeSummary: Array.from(
+        { length: 7 },
+        (_, index) => `说明${index}`.padEnd(241, "字"),
+      ),
+    }),
+  );
+
+  assert.equal(draft.title.length, 60);
+  assert.equal(draft.category.length, 30);
+  assert.equal(draft.tags.length, 8);
+  assert.equal(draft.content.length, 30000);
+  assert.equal(draft.useCase.length, 240);
+  assert.equal(draft.mergeSummary.length, 6);
+  assert.ok(draft.mergeSummary.every((item) => item.length <= 240));
 });
