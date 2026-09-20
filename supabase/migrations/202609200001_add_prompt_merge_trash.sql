@@ -94,8 +94,12 @@ begin
     raise exception '未登录。';
   end if;
 
-  if array_length(p_source_prompt_ids, 1) < 2
-    or array_length(p_source_prompt_ids, 1) > 5
+  if p_source_prompt_ids is null then
+    raise exception '合并来源数量无效。';
+  end if;
+
+  if cardinality(p_source_prompt_ids) < 2
+    or cardinality(p_source_prompt_ids) > 5
     or not p_prompt_id = any(p_source_prompt_ids)
   then
     raise exception '合并来源数量无效。';
@@ -125,7 +129,7 @@ begin
     v_source_count := v_source_count + 1;
   end loop;
 
-  if v_source_count <> array_length(p_source_prompt_ids, 1) then
+  if v_source_count <> cardinality(p_source_prompt_ids) then
     raise exception '部分来源提示词不存在。';
   end if;
 
@@ -190,7 +194,7 @@ begin
 
   get diagnostics v_archived_count = row_count;
 
-  if v_archived_count <> array_length(p_source_prompt_ids, 1) - 1 then
+  if v_archived_count <> cardinality(p_source_prompt_ids) - 1 then
     raise exception '合并来源归档失败。';
   end if;
 end;
@@ -288,6 +292,29 @@ as $$
   delete from public.prompts
   where deleted_at is not null
     and deleted_at <= now() - interval '30 days';
+$$;
+
+-- 清空当前用户的垃圾箱与全部合并恢复记录，整个函数在单一事务中执行。
+create or replace function public.empty_prompt_trash()
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then
+    raise exception '未登录。';
+  end if;
+
+  delete from public.prompt_versions
+  where user_id = v_user_id;
+
+  delete from public.prompts
+  where user_id = v_user_id
+    and deleted_at is not null;
+end;
 $$;
 
 revoke execute on function public.purge_expired_prompt_versions() from public;
