@@ -33,6 +33,7 @@ import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
 import { PromptEditorDrawer } from "@/components/prompt-editor-drawer";
+import { PromptOptimizeDrawer } from "@/components/prompt-optimize-drawer";
 import { PromptTrashDialog } from "@/components/prompt-trash-dialog";
 import {
   type PromptCardData,
@@ -140,6 +141,12 @@ export function PromptLibrary({
   const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
+  const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
+  // 记录优化记录属于哪条提示词，避免切换详情时显示上一条的回退入口。
+  const [optimizeVersionState, setOptimizeVersionState] = useState<{
+    promptId: string;
+    version: PromptVersionData | null;
+  } | null>(null);
   const [isTrashOpen, setIsTrashOpen] = useState(false);
   const [trashPrompts, setTrashPrompts] = useState<PromptCardData[]>([]);
   const [recoveryRecords, setRecoveryRecords] = useState<
@@ -287,6 +294,38 @@ export function PromptLibrary({
     [],
   );
 
+  // 打开详情时查一下这条提示词有没有可以回退的优化记录。
+  useEffect(() => {
+    if (!selectedPromptId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    dataSource
+      .fetchOptimizeVersion(selectedPromptId)
+      .then((response) => {
+        if (!cancelled) {
+          setOptimizeVersionState({
+            promptId: selectedPromptId,
+            version: response.version,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOptimizeVersionState({
+            promptId: selectedPromptId,
+            version: null,
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dataSource, selectedPromptId]);
+
   const filteredPrompts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
 
@@ -306,6 +345,13 @@ export function PromptLibrary({
   const selectedPrompt = prompts.find(
     (prompt) => prompt.id === selectedPromptId,
   );
+  const optimizePrompt = prompts.find(
+    (prompt) => prompt.id === optimizePromptId,
+  );
+  const optimizeVersion =
+    optimizeVersionState?.promptId === selectedPromptId
+      ? optimizeVersionState.version
+      : null;
   const effectiveMergeSelection = useMemo(
     () => reconcileMergeSelection(mergeSelection, prompts),
     [mergeSelection, prompts],
@@ -508,6 +554,49 @@ export function PromptLibrary({
     }
 
     notify("已合并，来源可在垃圾箱恢复");
+  }
+
+  function refreshOptimizeVersion(promptId: string) {
+    dataSource
+      .fetchOptimizeVersion(promptId)
+      .then((response) =>
+        setOptimizeVersionState({ promptId, version: response.version }),
+      )
+      .catch(() => setOptimizeVersionState({ promptId, version: null }));
+  }
+
+  function handleOptimizeSaved(library: PromptLibraryResponse) {
+    const promptId = optimizePromptId;
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
+    setOptimizePromptId(null);
+
+    if (promptId) {
+      setSelectedPromptId(promptId);
+      refreshOptimizeVersion(promptId);
+    }
+
+    notify("优化结果已保存，可以回到优化前");
+  }
+
+  async function handleRestoreOptimize(
+    prompt: PromptCardData,
+    versionId: string,
+  ) {
+    try {
+      const library = await dataSource.restoreAiOptimize(
+        prompt.id,
+        versionId,
+      );
+
+      setPrompts(library.prompts);
+      cachePrompts(library.prompts);
+      setOptimizeVersionState(null);
+      notify("已回到优化前");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "回到优化前失败");
+    }
   }
 
   function handleExport() {
@@ -842,7 +931,7 @@ export function PromptLibrary({
         <PromptDetailDrawer
           key={selectedPrompt.id}
           onClose={() => {
-            if (!editorState && !deletePromptId) {
+            if (!editorState && !deletePromptId && !optimizePromptId) {
               setSelectedPromptId(null);
             }
           }}
@@ -850,8 +939,21 @@ export function PromptLibrary({
           onEdit={(prompt) =>
             setEditorState({ mode: "edit", promptId: prompt.id })
           }
+          onOptimize={(prompt) => setOptimizePromptId(prompt.id)}
+          onRestoreOptimize={handleRestoreOptimize}
           onNotify={notify}
+          optimizeVersion={optimizeVersion}
           prompt={selectedPrompt}
+        />
+      )}
+
+      {optimizePrompt && (
+        <PromptOptimizeDrawer
+          dataSource={dataSource}
+          onClose={() => setOptimizePromptId(null)}
+          onNotify={notify}
+          onSaved={handleOptimizeSaved}
+          prompt={optimizePrompt}
         />
       )}
 
