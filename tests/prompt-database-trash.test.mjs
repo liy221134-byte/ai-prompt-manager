@@ -33,6 +33,7 @@ function prompt(overrides = {}) {
     deletedAt: null,
     deletedReason: null,
     mergedIntoPromptId: null,
+    mergeVersionId: null,
     ...overrides,
   };
 }
@@ -274,6 +275,171 @@ test("恢复合并记录会恢复目标和仍处于合并归档状态的来源",
   }
 });
 
+test("合并会为归档来源记录本次合并版本", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    context.database.commitPromptMerge({
+      prompt: prompt({ title: "合并后的提示词" }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion(),
+    });
+
+    const source = context.database.listTrash()[0];
+
+    assert.equal(source.id, "prompt-b");
+    assert.equal(source.mergedIntoPromptId, "prompt-a");
+    assert.equal(source.mergeVersionId, "version-1");
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("恢复旧合并记录不会复活被新一次合并归档的来源", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    context.database.commitPromptMerge({
+      prompt: prompt({ title: "合并结果 v1" }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion(),
+    });
+    context.database.restorePrompt("prompt-b");
+    context.database.commitPromptMerge({
+      prompt: prompt({ title: "合并结果 v2" }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion({
+        versionId: "version-2",
+        promptId: "prompt-a",
+        sourcePromptIds: ["prompt-a", "prompt-b"],
+      }),
+    });
+
+    const result = context.database.restoreMergeRecord("version-1");
+
+    assert.ok(result);
+    assert.ok(
+      context.database
+        .listPrompts()
+        .some((item) => item.id === "prompt-a" && item.title === "提示词 A"),
+    );
+    assert.equal(
+      context.database.listPrompts().some((item) => item.id === "prompt-b"),
+      false,
+    );
+    assert.equal(
+      context.database.listTrash().find((item) => item.id === "prompt-b")
+        .mergeVersionId,
+      "version-2",
+    );
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("恢复合并记录拒绝已恢复快照", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    context.database.commitPromptMerge({
+      prompt: prompt({ title: "合并后的提示词" }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion(),
+    });
+
+    assert.ok(context.database.restoreMergeRecord("version-1"));
+    assert.equal(context.database.restoreMergeRecord("version-1"), null);
+    assert.equal(context.database.listMergeRecoveryRecords().length, 0);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("恢复合并记录拒绝过期快照", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    context.database.commitPromptMerge({
+      prompt: prompt({ title: "合并后的提示词" }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion(),
+    });
+
+    const rawDatabase = new DatabaseSync(context.databasePath);
+    rawDatabase
+      .prepare(
+        "UPDATE prompt_versions SET expires_at = ? WHERE version_id = ?",
+      )
+      .run("2020-01-01T00:00:00.000Z", "version-1");
+    rawDatabase.close();
+
+    assert.equal(context.database.restoreMergeRecord("version-1"), null);
+    assert.ok(
+      context.database
+        .listPrompts()
+        .some(
+          (item) => item.id === "prompt-a" && item.title === "合并后的提示词",
+        ),
+    );
+    assert.equal(context.database.listTrash().length, 1);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("合并提交忽略调用方时间戳并使用服务端当前时间", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    const before = Date.now();
+
+    context.database.commitPromptMerge({
+      prompt: prompt({
+        title: "合并后的提示词",
+        updatedAt: "2000-01-01T00:00:00.000Z",
+      }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion({
+        createdAt: "2000-01-01T00:00:00.000Z",
+        expiresAt: "2000-01-02T00:00:00.000Z",
+      }),
+    });
+
+    const after = Date.now();
+    const target = context.database
+      .listPrompts()
+      .find((item) => item.id === "prompt-a");
+    const source = context.database.listTrash()[0];
+    const version = context.database.listMergeRecoveryRecords()[0];
+    const targetTime = Date.parse(target.updatedAt);
+    const sourceTime = Date.parse(source.deletedAt);
+    const createdAt = Date.parse(version.createdAt);
+    const expiresAt = Date.parse(version.expiresAt);
+
+    assert.ok(targetTime >= before && targetTime <= after);
+    assert.ok(sourceTime >= before && sourceTime <= after);
+    assert.ok(createdAt >= before && createdAt <= after);
+    assert.ok(expiresAt > createdAt);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
 test("目标进入垃圾箱后恢复合并记录返回空且不消费快照", () => {
   const context = createContext();
 
@@ -383,27 +549,24 @@ test("purgeExpiredTrash 清理过期垃圾箱和恢复快照", () => {
   const context = createContext();
 
   try {
+    context.database.createPrompt(prompt());
     context.database.createPrompt(
-      prompt({ updatedAt: "2026-08-01T00:00:00.000Z" }),
-    );
-    context.database.createPrompt(
-      prompt({
-        id: "prompt-b",
-        title: "提示词 B",
-        updatedAt: "2026-08-01T00:00:00.000Z",
-      }),
+      prompt({ id: "prompt-b", title: "提示词 B" }),
     );
     context.database.commitPromptMerge({
-      prompt: prompt({
-        title: "合并后的提示词",
-        updatedAt: "2026-08-01T00:00:00.000Z",
-      }),
+      prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion({
-        createdAt: "2026-08-01T00:00:00.000Z",
-        expiresAt: "2026-09-01T00:00:00.000Z",
-      }),
+      version: createVersion(),
     });
+
+    const rawDatabase = new DatabaseSync(context.databasePath);
+    rawDatabase
+      .prepare("UPDATE prompts SET deleted_at = ? WHERE id = ?")
+      .run("2026-08-01T00:00:00.000Z", "prompt-b");
+    rawDatabase
+      .prepare("UPDATE prompt_versions SET expires_at = ? WHERE version_id = ?")
+      .run("2026-08-31T00:00:00.000Z", "version-1");
+    rawDatabase.close();
 
     assert.equal(
       context.database.purgeExpiredTrash(new Date("2026-10-01T00:00:00.000Z")),

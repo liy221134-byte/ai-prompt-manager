@@ -4,7 +4,8 @@
 alter table public.prompts
   add column if not exists deleted_at timestamptz,
   add column if not exists deleted_reason text,
-  add column if not exists merged_into_prompt_id text;
+  add column if not exists merged_into_prompt_id text,
+  add column if not exists merge_version_id text;
 
 create table if not exists public.prompt_versions (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -71,7 +72,6 @@ create or replace function public.commit_prompt_merge(
   p_tags text[],
   p_content text,
   p_use_case text,
-  p_updated_at timestamptz,
   p_source_prompt_ids text[],
   p_version_id text
 )
@@ -83,7 +83,12 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_target public.prompts%rowtype;
-  v_source_count integer;
+  v_source_count integer := 0;
+  v_source_id text;
+  v_updated_at timestamptz := now();
+  v_expires_at timestamptz := now() + interval '30 days';
+  v_updated_count integer;
+  v_archived_count integer;
 begin
   if v_user_id is null then
     raise exception '未登录。';
@@ -108,12 +113,17 @@ begin
     raise exception '目标提示词不存在。';
   end if;
 
-  select count(*)
-  into v_source_count
-  from public.prompts
-  where user_id = v_user_id
-    and id = any(p_source_prompt_ids)
-    and deleted_at is null;
+  -- 锁定所有来源行，避免计数后、归档前发生并发状态变化。
+  for v_source_id in
+    select id
+    from public.prompts
+    where user_id = v_user_id
+      and id = any(p_source_prompt_ids)
+      and deleted_at is null
+    for update
+  loop
+    v_source_count := v_source_count + 1;
+  end loop;
 
   if v_source_count <> array_length(p_source_prompt_ids, 1) then
     raise exception '部分来源提示词不存在。';
@@ -142,11 +152,11 @@ begin
     v_target.tags,
     v_target.content,
     v_target.use_case,
-    p_updated_at,
+    v_updated_at,
     'merge_before',
     p_source_prompt_ids,
     null,
-    p_updated_at + interval '30 days'
+    v_expires_at
   );
 
   update public.prompts
@@ -156,20 +166,33 @@ begin
     tags = p_tags,
     content = p_content,
     use_case = p_use_case,
-    updated_at = p_updated_at
+    updated_at = v_updated_at
   where user_id = v_user_id
     and id = p_prompt_id
     and deleted_at is null;
 
+  get diagnostics v_updated_count = row_count;
+
+  if v_updated_count <> 1 then
+    raise exception '目标提示词更新失败。';
+  end if;
+
   update public.prompts
   set
-    deleted_at = p_updated_at,
+    deleted_at = v_updated_at,
     deleted_reason = 'merge',
-    merged_into_prompt_id = p_prompt_id
+    merged_into_prompt_id = p_prompt_id,
+    merge_version_id = p_version_id
   where user_id = v_user_id
     and id = any(p_source_prompt_ids)
     and id <> p_prompt_id
     and deleted_at is null;
+
+  get diagnostics v_archived_count = row_count;
+
+  if v_archived_count <> array_length(p_source_prompt_ids, 1) - 1 then
+    raise exception '合并来源归档失败。';
+  end if;
 end;
 $$;
 
@@ -196,10 +219,12 @@ begin
   from public.prompt_versions
   where user_id = v_user_id
     and version_id = p_version_id
+    and restored_at is null
+    and expires_at > now()
   for update;
 
   if not found then
-    raise exception '恢复记录不存在。';
+    raise exception '恢复记录不存在或已过期。';
   end if;
 
   -- 消费快照前，目标提示词必须存在且仍处于活跃状态。
@@ -232,17 +257,21 @@ begin
   set
     deleted_at = null,
     deleted_reason = null,
-    merged_into_prompt_id = null
+    merged_into_prompt_id = null,
+    merge_version_id = null
   where user_id = v_user_id
     and id = any(v_version.source_prompt_ids)
     and id <> v_version.prompt_id
     and deleted_reason = 'merge'
-    and merged_into_prompt_id = v_version.prompt_id;
+    and merged_into_prompt_id = v_version.prompt_id
+    and merge_version_id = v_version.version_id;
 
   update public.prompt_versions
   set restored_at = now()
   where user_id = v_user_id
-    and version_id = p_version_id;
+    and version_id = p_version_id
+    and restored_at is null
+    and expires_at > now();
 end;
 $$;
 
@@ -260,3 +289,6 @@ as $$
   where deleted_at is not null
     and deleted_at <= now() - interval '30 days';
 $$;
+
+revoke execute on function public.purge_expired_prompt_versions() from public;
+grant execute on function public.purge_expired_prompt_versions() to service_role;

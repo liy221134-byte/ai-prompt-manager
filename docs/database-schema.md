@@ -30,6 +30,7 @@
 | `deleted_at` | `timestamptz` | 否 | 为空表示正常，非空表示在垃圾箱 |
 | `deleted_reason` | `text` | 否 | `manual` 或 `merge` |
 | `merged_into_prompt_id` | `text` | 否 | AI 合并目标的稳定标识，仅合并归档来源时填写 |
+| `merge_version_id` | `text` | 否 | 归档来源所属的合并实例标识，用于区分同一次合并 |
 
 主键：
 
@@ -111,9 +112,9 @@ RLS 账号隔离。
 
 | 函数 | 用途 |
 | --- | --- |
-| `commit_prompt_merge(...)` | 原子保存一次合并：校验来源、快照目标旧内容、更新目标、归档其他来源 |
+| `commit_prompt_merge(...)` | 原子保存一次合并：校验并锁定来源、快照目标旧内容、更新目标、按版本归档其他来源 |
 | `restore_prompt_merge(version_id)` | 恢复合并前目标内容，并只恢复仍被该次合并归档的来源 |
-| `purge_expired_prompt_versions()` | 删除过期恢复快照和已删除超过 30 天的垃圾箱记录，仅服务端清理调用 |
+| `purge_expired_prompt_versions()` | 删除过期恢复快照和已删除超过 30 天的垃圾箱记录，仅授予 `service_role` 执行 |
 
 ## 保留规则
 
@@ -121,7 +122,8 @@ RLS 账号隔离。
 - 云端由每日清理任务调用 `purge_expired_prompt_versions()` 删除过期数据。
 - 本地模式在应用启动时清理过期数据。
 - 恢复合并前版本时，目标提示词必须仍存在且处于活跃状态；来源只恢复仍由
-  该次合并归档、未被后续手动操作改变状态的记录。
+  该次合并归档、未被后续手动操作改变状态的记录，并通过 `merge_version_id`
+  区分同一次合并。
 
 ## 设计决策
 

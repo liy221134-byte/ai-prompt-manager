@@ -59,6 +59,7 @@ function rowToPrompt(row: SupabasePromptRow): PromptCardData {
     deletedAt: null,
     deletedReason: null,
     mergedIntoPromptId: null,
+    mergeVersionId: null,
   };
 }
 

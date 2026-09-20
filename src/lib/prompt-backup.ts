@@ -1,4 +1,7 @@
-import type { PromptCardData } from "../data/prompts.ts";
+import type {
+  PromptCardData,
+  PromptContentData,
+} from "../data/prompts.ts";
 import { isPromptCard } from "./prompt-storage.ts";
 
 export const PROMPT_BACKUP_TYPE = "ai-prompt-manager-backup";
@@ -28,6 +31,19 @@ export type PromptImportPlan = {
   updateCount: number;
   skipCount: number;
 };
+
+function promptToContentData(prompt: PromptCardData): PromptContentData {
+  return {
+    id: prompt.id,
+    title: prompt.title,
+    category: prompt.category,
+    tags: [...prompt.tags],
+    content: prompt.content,
+    useCase: prompt.useCase,
+    createdAt: prompt.createdAt,
+    updatedAt: prompt.updatedAt,
+  };
+}
 
 function isValidDate(value: string) {
   return !Number.isNaN(new Date(value).getTime());
@@ -81,7 +97,13 @@ export function parsePromptBackup(content: string): PromptBackup {
     type: PROMPT_BACKUP_TYPE,
     version: PROMPT_BACKUP_VERSION,
     exportedAt: backup.exportedAt,
-    prompts: backup.prompts,
+    prompts: backup.prompts.map((prompt) => ({
+      ...prompt,
+      deletedAt: null,
+      deletedReason: null,
+      mergedIntoPromptId: null,
+      mergeVersionId: null,
+    })),
   };
 }
 
@@ -89,13 +111,17 @@ export function createPromptBackup(
   prompts: PromptCardData[],
   exportedAt = new Date().toISOString(),
 ) {
+  const backupFile = {
+    type: PROMPT_BACKUP_TYPE,
+    version: PROMPT_BACKUP_VERSION,
+    exportedAt,
+    prompts: prompts.map(promptToContentData),
+  } satisfies Omit<PromptBackup, "prompts"> & {
+    prompts: PromptContentData[];
+  };
+
   return JSON.stringify(
-    {
-      type: PROMPT_BACKUP_TYPE,
-      version: PROMPT_BACKUP_VERSION,
-      exportedAt,
-      prompts,
-    } satisfies PromptBackup,
+    backupFile,
     null,
     2,
   );

@@ -4,6 +4,7 @@ export type PromptLifecycleFields = {
   deletedAt: string | null;
   deletedReason: PromptDeletedReason | null;
   mergedIntoPromptId: string | null;
+  mergeVersionId: string | null;
 };
 
 export type PromptContentData = {
@@ -75,6 +76,7 @@ export const promptCards: PromptCardData[] = [
     deletedAt: null,
     deletedReason: null,
     mergedIntoPromptId: null,
+    mergeVersionId: null,
   },
   {
     id: "prompt-code-review",
@@ -102,6 +104,7 @@ export const promptCards: PromptCardData[] = [
     deletedAt: null,
     deletedReason: null,
     mergedIntoPromptId: null,
+    mergeVersionId: null,
   },
   {
     id: "prompt-optimizer",
@@ -129,5 +132,6 @@ export const promptCards: PromptCardData[] = [
     deletedAt: null,
     deletedReason: null,
     mergedIntoPromptId: null,
+    mergeVersionId: null,
   },
 ];

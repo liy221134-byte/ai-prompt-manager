@@ -26,6 +26,7 @@ type PromptRow = {
   deleted_at: string | null;
   deleted_reason: "manual" | "merge" | null;
   merged_into_prompt_id: string | null;
+  merge_version_id: string | null;
 };
 
 type PromptVersionRow = {
@@ -78,6 +79,7 @@ function rowToPrompt(row: PromptRow): PromptCardData {
     deletedAt: row.deleted_at,
     deletedReason: row.deleted_reason,
     mergedIntoPromptId: row.merged_into_prompt_id,
+    mergeVersionId: row.merge_version_id,
   };
 }
 
@@ -191,6 +193,12 @@ export class PromptDatabase {
     if (!this.hasColumn("prompts", "merged_into_prompt_id")) {
       this.database.exec(
         "ALTER TABLE prompts ADD COLUMN merged_into_prompt_id TEXT",
+      );
+    }
+
+    if (!this.hasColumn("prompts", "merge_version_id")) {
+      this.database.exec(
+        "ALTER TABLE prompts ADD COLUMN merge_version_id TEXT",
       );
     }
   }
@@ -362,7 +370,8 @@ export class PromptDatabase {
             updated_at,
             deleted_at,
             deleted_reason,
-            merged_into_prompt_id
+            merged_into_prompt_id,
+            merge_version_id
           FROM prompts
           WHERE deleted_at IS NULL
           ORDER BY updated_at DESC, id ASC
@@ -388,7 +397,8 @@ export class PromptDatabase {
             updated_at,
             deleted_at,
             deleted_reason,
-            merged_into_prompt_id
+            merged_into_prompt_id,
+            merge_version_id
           FROM prompts
           WHERE deleted_at IS NOT NULL
           ORDER BY deleted_at DESC, id ASC
@@ -444,7 +454,11 @@ export class PromptDatabase {
         .prepare(
           `
             UPDATE prompts
-            SET deleted_at = ?, deleted_reason = ?, merged_into_prompt_id = NULL
+            SET
+              deleted_at = ?,
+              deleted_reason = ?,
+              merged_into_prompt_id = NULL,
+              merge_version_id = NULL
             WHERE id = ? AND deleted_at IS NULL
           `,
         )
@@ -466,7 +480,11 @@ export class PromptDatabase {
         .prepare(
           `
             UPDATE prompts
-            SET deleted_at = NULL, deleted_reason = NULL, merged_into_prompt_id = NULL
+            SET
+              deleted_at = NULL,
+              deleted_reason = NULL,
+              merged_into_prompt_id = NULL,
+              merge_version_id = NULL
             WHERE id = ? AND deleted_at IS NOT NULL
           `,
         )
@@ -610,6 +628,11 @@ export class PromptDatabase {
       throw new Error("恢复快照与目标提示词不一致。");
     }
 
+    const now = new Date().toISOString();
+    const expiresAt = new Date(
+      Date.now() + PROMPT_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
     return this.transaction(() => {
       const target = this.database
         .prepare("SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL")
@@ -631,7 +654,12 @@ export class PromptDatabase {
         }
       }
 
-      const versionResult = this.insertPromptVersion(input.version);
+      const versionResult = this.insertPromptVersion({
+        ...input.version,
+        createdAt: now,
+        expiresAt,
+        restoredAt: null,
+      });
 
       if (Number(versionResult.changes) !== 1) {
         throw new Error("恢复快照写入失败。");
@@ -651,7 +679,7 @@ export class PromptDatabase {
           JSON.stringify(input.prompt.tags),
           input.prompt.content,
           input.prompt.useCase,
-          input.prompt.updatedAt,
+          now,
           targetId,
         );
 
@@ -668,14 +696,19 @@ export class PromptDatabase {
           .prepare(
             `
               UPDATE prompts
-              SET deleted_at = ?, deleted_reason = ?, merged_into_prompt_id = ?
+              SET
+                deleted_at = ?,
+                deleted_reason = ?,
+                merged_into_prompt_id = ?,
+                merge_version_id = ?
               WHERE id = ? AND deleted_at IS NULL
             `,
           );
         const result = sourceUpdate.run(
-          input.prompt.updatedAt,
+          now,
           "merge",
           targetId,
+          input.version.versionId,
           promptId,
         );
 
@@ -717,6 +750,8 @@ export class PromptDatabase {
   }
 
   restoreMergeRecord(versionId: string) {
+    const now = new Date().toISOString();
+
     return this.transaction(() => {
       const row = this.database
         .prepare(
@@ -735,10 +770,10 @@ export class PromptDatabase {
               restored_at,
               expires_at
             FROM prompt_versions
-            WHERE version_id = ? AND restored_at IS NULL
+            WHERE version_id = ? AND restored_at IS NULL AND expires_at > ?
           `,
         )
-        .get(versionId) as PromptVersionRow | undefined;
+        .get(versionId, now) as PromptVersionRow | undefined;
 
       if (!row) {
         return null;
@@ -763,7 +798,11 @@ export class PromptDatabase {
         const source = this.database
           .prepare(
             `
-              SELECT deleted_at, deleted_reason, merged_into_prompt_id
+              SELECT
+                deleted_at,
+                deleted_reason,
+                merged_into_prompt_id,
+                merge_version_id
               FROM prompts
               WHERE id = ?
             `,
@@ -773,6 +812,7 @@ export class PromptDatabase {
                 deleted_at: string | null;
                 deleted_reason: "manual" | "merge" | null;
                 merged_into_prompt_id: string | null;
+                merge_version_id: string | null;
               }
             | undefined;
 
@@ -780,13 +820,12 @@ export class PromptDatabase {
           source &&
           source.deleted_at !== null &&
           source.deleted_reason === "merge" &&
-          source.merged_into_prompt_id === version.promptId
+          source.merged_into_prompt_id === version.promptId &&
+          source.merge_version_id === version.versionId
         ) {
           restorableSourceIds.add(promptId);
         }
       }
-
-      const restoredAt = new Date().toISOString();
 
       const targetUpdate = this.database
         .prepare(
@@ -802,7 +841,7 @@ export class PromptDatabase {
           JSON.stringify(version.tags),
           version.content,
           version.useCase,
-          restoredAt,
+          now,
           version.promptId,
         );
 
@@ -815,13 +854,18 @@ export class PromptDatabase {
           .prepare(
             `
               UPDATE prompts
-              SET deleted_at = NULL, deleted_reason = NULL, merged_into_prompt_id = NULL
+              SET
+                deleted_at = NULL,
+                deleted_reason = NULL,
+                merged_into_prompt_id = NULL,
+                merge_version_id = NULL
               WHERE id = ? AND deleted_at IS NOT NULL
                 AND deleted_reason = 'merge'
                 AND merged_into_prompt_id = ?
+                AND merge_version_id = ?
             `,
           )
-          .run(promptId, version.promptId);
+          .run(promptId, version.promptId, version.versionId);
 
         if (Number(sourceUpdate.changes) !== 1) {
           throw new Error("合并来源恢复失败。");
@@ -830,9 +874,15 @@ export class PromptDatabase {
 
       const versionUpdate = this.database
         .prepare(
-          "UPDATE prompt_versions SET restored_at = ? WHERE version_id = ? AND restored_at IS NULL",
+          `
+            UPDATE prompt_versions
+            SET restored_at = ?
+            WHERE version_id = ?
+              AND restored_at IS NULL
+              AND expires_at > ?
+          `,
         )
-        .run(restoredAt, versionId);
+        .run(now, versionId, now);
 
       if (Number(versionUpdate.changes) !== 1) {
         throw new Error("恢复记录更新失败。");
