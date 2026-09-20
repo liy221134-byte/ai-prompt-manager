@@ -41,27 +41,28 @@
 
 ## Supabase 配置确认
 
-- [ ] Email 登录已启用
-- [ ] 本地 Redirect URL 已配置
-- [ ] 生产 Redirect URL 已配置
-- [ ] Publishable Key 或兼容的 Anon Key 已配置
-- [ ] `prompts` 表 RLS 和用户隔离策略已启用
+- [x] Email 登录已启用
+- [x] 本地 Redirect URL 已配置
+- [x] 生产 Redirect URL 已配置
+- [x] Publishable Key 或兼容的 Anon Key 已配置
+- [x] `prompts` 表 RLS 和用户隔离策略已启用
 
 ## 本地与生产验证
 
-- [ ] 未登录访问 `/` 会跳转到 `/login`
-- [ ] 登录成功后可以进入提示词库
-- [ ] 登录后刷新页面仍保持登录
-- [ ] 退出登录后不能通过返回按钮看到云端数据
+- [x] 未登录访问 `/` 会跳转到 `/login`
+- [x] 登录成功后可以进入提示词库
+- [x] 登录后刷新页面仍保持登录
+- [x] 退出登录后不能通过返回按钮看到云端数据
 - [ ] 登录状态失效后再次访问页面会跳转到 `/login`
-- [ ] 未登录请求 `/api/ai/extract-prompt` 返回 `401`
-- [ ] 云端模式下请求 `/api/prompts` 返回 `404`
+- [x] 未登录请求 `/api/ai/extract-prompt` 返回 `401`
+- [x] 未登录请求 `/api/prompts` 返回 `401`
+- [ ] 登录后云端模式请求本机 SQLite API 返回 `404`
 - [ ] 本地模式仍可正常读取、新增、编辑、删除和导入提示词
 - [ ] 不同账号之间不能读取或修改彼此的提示词
 - [ ] Vercel 缺少 Supabase 配置时显示配置错误，不进入本机数据模式
-- [ ] Vercel Production 使用 Node.js `24.x`
-- [ ] Vercel Build Command 显示为 `npm run check`
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` 只配置在 Production 环境
+- [x] Vercel Production 使用 Node.js `24.x`
+- [x] Vercel Build Command 显示为 `npm run check`
+- [x] `SUPABASE_SERVICE_ROLE_KEY` 只配置在 Production 环境
 - [ ] Preview 环境如需密码重置，已配置对应 Redirect URL
 
 ## 完成标准
