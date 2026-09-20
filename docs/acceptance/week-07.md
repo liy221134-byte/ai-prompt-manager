@@ -15,6 +15,9 @@
 - [x] 站外登录返回地址会被安全过滤
 - [x] 增加登录返回地址和路由策略测试
 - [x] 本地模式保持原有使用方式
+- [x] Vercel 配置缺失时页面和 API 安全关闭
+- [x] Vercel 构建命令固定为 `npm run check`
+- [x] Node.js 版本固定为 `24.x`
 
 ## Supabase 配置确认
 
@@ -35,6 +38,11 @@
 - [ ] 云端模式下请求 `/api/prompts` 返回 `404`
 - [ ] 本地模式仍可正常读取、新增、编辑、删除和导入提示词
 - [ ] 不同账号之间不能读取或修改彼此的提示词
+- [ ] Vercel 缺少 Supabase 配置时显示配置错误，不进入本机数据模式
+- [ ] Vercel Production 使用 Node.js `24.x`
+- [ ] Vercel Build Command 显示为 `npm run check`
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` 只配置在 Production 环境
+- [ ] Preview 环境如需密码重置，已配置对应 Redirect URL
 
 ## 完成标准
 

@@ -1,5 +1,16 @@
+import {
+  getRuntimeConfigurationError,
+  isSupabaseDataMode,
+} from "./runtime-config";
+
 export function rejectLocalApiInCloudMode() {
-  if (process.env.NEXT_PUBLIC_DATA_MODE !== "supabase") {
+  const configurationError = getRuntimeConfigurationError();
+
+  if (configurationError) {
+    return Response.json({ error: configurationError }, { status: 503 });
+  }
+
+  if (!isSupabaseDataMode()) {
     return null;
   }
 

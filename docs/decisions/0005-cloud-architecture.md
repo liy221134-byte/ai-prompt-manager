@@ -34,6 +34,8 @@ NEXT_PUBLIC_DATA_MODE=supabase
 4. Service Role Key 只允许存在于服务端环境变量。
 5. 浏览器只能使用公开 URL 和 Publishable Key；旧项目可继续使用 Anon Key 兼容配置。
 6. 不把 `.env.local`、Key 或数据库密码提交到 Git。
+7. Vercel 部署必须使用 Supabase；配置错误时安全关闭，禁止降级到 SQLite。
+8. Service Role Key 只配置到 Production，不自动下发到 Preview。
 
 ## 免费层限制
 

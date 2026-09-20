@@ -32,6 +32,7 @@
 - [本机 SQLite](decisions/0004-local-sqlite.md)
 - [云端架构](decisions/0005-cloud-architecture.md)
 - [AI 供应商抽象](decisions/0006-ai-provider-abstraction.md)
+- [生产配置安全关闭](decisions/0007-production-configuration-hardening.md)
 
 ### 数据与运维
 

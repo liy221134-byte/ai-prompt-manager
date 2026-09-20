@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "../../../../lib/supabase/server";
+import { isSupabaseDataMode } from "../../../../lib/server/runtime-config";
 import {
   buildAiExtractionMessages,
   normalizeExtractedPrompt,
@@ -21,7 +22,7 @@ function createErrorResponse(message: string, status: number) {
 }
 
 export async function POST(request: Request) {
-  if (process.env.NEXT_PUBLIC_DATA_MODE === "supabase") {
+  if (isSupabaseDataMode()) {
     const supabase = await getSupabaseServerClient();
     const {
       data: { user },

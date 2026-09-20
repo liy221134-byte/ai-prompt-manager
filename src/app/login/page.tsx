@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { PasswordAuthGate } from "@/components/password-auth-gate";
 import { getSafeNextPath } from "@/lib/auth-routing";
+import { isSupabaseDataMode } from "@/lib/server/runtime-config";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ type LoginPageProps = {
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  if (process.env.NEXT_PUBLIC_DATA_MODE !== "supabase") {
+  if (!isSupabaseDataMode()) {
     redirect("/");
   }
 

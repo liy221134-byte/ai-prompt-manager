@@ -38,7 +38,12 @@ GitHub
    https://你的项目地址.vercel.app/**
    ```
 
-5. 在 Supabase Users 中创建用户，或为已有用户设置密码。
+5. Preview 环境默认不要求验证密码重置。如果需要在 Preview 中测试：
+   - 先取得该 Preview 部署的完整域名。
+   - 将对应域名加入 Supabase Redirect URL。
+   - 不要把 Production 的 Service Role Key 自动暴露给临时 Preview。
+
+6. 在 Supabase Users 中创建用户，或为已有用户设置密码。
 
 ## 第三步：准备本地云端环境变量
 
@@ -104,9 +109,24 @@ SUPABASE_SERVICE_ROLE_KEY=...
 CRON_SECRET=...
    ```
 
-4. 部署应用。
-5. 将 Vercel 地址加入 Supabase Auth 的 Redirect URL。
-6. 重新部署。
+4. 在 Vercel 项目设置中确认 Node.js 版本为 `24.x`。
+5. 确认 Build Command 使用仓库中的 `npm run check`。
+6. 按环境设置变量：
+
+   ```text
+   Production 和 Preview：
+   NEXT_PUBLIC_DATA_MODE=supabase
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+
+   仅 Production：
+   SUPABASE_SERVICE_ROLE_KEY=...
+   CRON_SECRET=...
+   ```
+
+7. 部署应用。
+8. 将 Vercel 正式地址加入 Supabase Auth 的 Redirect URL。
+9. 重新部署。
 
 ## 第七步：验证生产环境
 
@@ -120,6 +140,7 @@ CRON_SECRET=...
 - JSON 备份和导入仍可使用。
 - Vercel 环境变量没有进入 Git。
 - `/api/health/db` 能正常运行。
+- 删除或写错 `NEXT_PUBLIC_DATA_MODE` 时页面和 API 返回 `503`，不会读取本机 SQLite。
 
 ## 免费层维护
 
@@ -129,3 +150,10 @@ CRON_SECRET=...
 - 每月手动导出一次 JSON 备份。
 - 如果 Supabase 项目被暂停，进入后台恢复。
 - 免费服务不提供长期在线保证。
+
+## 配置错误处理
+
+- Vercel 运行环境只允许 `NEXT_PUBLIC_DATA_MODE=supabase`。
+- Supabase URL 或公开 Key 缺失时，应用返回明确的中文配置错误。
+- 不允许线上环境自动降级为本机 SQLite。
+- 修改环境变量后必须重新部署，运行时不会读取本地 `.env.local`。

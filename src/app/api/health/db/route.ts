@@ -1,10 +1,20 @@
 import { getSupabaseServiceClient } from "../../../../lib/supabase/service";
+import {
+  getRuntimeConfigurationError,
+  isSupabaseDataMode,
+} from "../../../../lib/server/runtime-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  if (process.env.NEXT_PUBLIC_DATA_MODE !== "supabase") {
+  const configurationError = getRuntimeConfigurationError();
+
+  if (configurationError) {
+    return Response.json({ error: configurationError }, { status: 503 });
+  }
+
+  if (!isSupabaseDataMode()) {
     return Response.json({ ok: true, mode: "local" });
   }
 
