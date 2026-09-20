@@ -41,6 +41,10 @@
 - [备份与恢复](operations/backup.md)
 - [常见问题](faq.md)
 
+### 工程学习
+
+- [工程能力学习计划](learning/engineering-readiness.md)
+
 ### 验收与测试
 
 - [第 1 周验收](acceptance/week-01.md)

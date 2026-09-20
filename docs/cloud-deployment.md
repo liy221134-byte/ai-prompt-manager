@@ -10,6 +10,38 @@ GitHub
 -> Supabase PostgreSQL
 ```
 
+## 运行链路
+
+### 页面访问
+
+```text
+浏览器
+-> Vercel
+-> Next.js 页面和 Proxy
+-> Supabase Auth 验证会话
+-> 受保护页面
+```
+
+### 数据读写
+
+```text
+浏览器
+-> 受保护的 Next.js API
+-> Supabase API
+-> PostgreSQL 和 RLS
+```
+
+### AI 采集
+
+```text
+浏览器
+-> 受保护的 Next.js AI API
+-> DeepSeek
+-> 返回结构化建议
+-> 用户确认
+-> Supabase PostgreSQL
+```
+
 本地开发继续使用 SQLite，云端生产环境使用 Supabase。通过 `NEXT_PUBLIC_DATA_MODE` 切换。
 
 ## 第一步：初始化 Supabase 数据库
