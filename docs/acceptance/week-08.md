@@ -91,7 +91,7 @@ git push
 ### 数据库
 
 - 迁移已核实生效：`prompts` 的四个生命周期字段、`prompt_versions` 表、两个索引和四条 RLS 策略均存在，四个 RPC 都是 `SECURITY INVOKER`。
-- 迁移历史表为空：之前的迁移是手工在 SQL Editor 里执行的，没有留下历史记录。后续要做 GitHub 自动部署之前，需要先做一次历史对账。
+- 迁移历史表原本为空（早期迁移是手工在 SQL Editor 里执行的）；2026-09-20 已对齐为 `202609180001 create_prompts` 和 `202609200001 add_prompt_merge_trash`，与仓库文件名一致，具备自动部署条件。
 - 顾问检查：安全项没有 error；性能项发现四条 `auth_rls_initplan` 告警——`prompt_versions` 的策略写成 `auth.uid()`，与 `prompts` 的 `(select auth.uid())` 写法不一致。
 - 修复：迁移文件统一改成 `(select auth.uid())` 并重新应用到线上，复查后告警消失，只剩三条「索引尚未被使用」（功能上线前属正常）。
 - 仍待处理的安全建议：Auth 的「已泄露密码保护」当前是关闭状态，建议在控制台打开。
