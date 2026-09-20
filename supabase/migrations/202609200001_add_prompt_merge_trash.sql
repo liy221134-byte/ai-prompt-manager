@@ -40,29 +40,29 @@ create policy "Users can read own prompt versions"
 on public.prompt_versions
 for select
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can insert own prompt versions" on public.prompt_versions;
 create policy "Users can insert own prompt versions"
 on public.prompt_versions
 for insert
 to authenticated
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can update own prompt versions" on public.prompt_versions;
 create policy "Users can update own prompt versions"
 on public.prompt_versions
 for update
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can delete own prompt versions" on public.prompt_versions;
 create policy "Users can delete own prompt versions"
 on public.prompt_versions
 for delete
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 -- 原子提交一次合并：快照目标旧内容、更新目标、归档其他来源。
 create or replace function public.commit_prompt_merge(
