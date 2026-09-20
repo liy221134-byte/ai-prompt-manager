@@ -47,14 +47,16 @@ GitHub
 ```text
 NEXT_PUBLIC_DATA_MODE=supabase
 NEXT_PUBLIC_SUPABASE_URL=你的 Supabase 项目 URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=你的 Supabase Anon Key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=你的 Supabase Publishable Key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=旧项目可选，使用 Anon Key 时填写
 SUPABASE_SERVICE_ROLE_KEY=你的 Service Role Key
 CRON_SECRET=自行生成的一串随机字符串
 ```
 
 规则：
 
-- `NEXT_PUBLIC_SUPABASE_URL` 和 Anon Key 可以用于浏览器。
+- `NEXT_PUBLIC_SUPABASE_URL` 和 Publishable Key 可以用于浏览器。
+- 旧项目没有 Publishable Key 时，可以改用 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。
 - Service Role Key 只能放在服务端环境变量中。
 - 不把 `.env.local` 提交到 Git。
 - 不把任何 Key 发送到聊天中。
@@ -69,9 +71,14 @@ npm run dev
 
 验证：
 
-- 页面显示邮箱密码登录界面。
+- 直接访问 `/` 时会跳转到 `/login`。
+- `/login` 显示邮箱密码登录界面。
 - 邮箱和密码可以登录成功。
+- 登录后返回原本访问的受保护页面。
 - 登录后只显示当前用户自己的提示词。
+- 退出登录后再次访问 `/` 会回到 `/login`。
+- 未登录直接请求 `/api/ai/extract-prompt` 返回 `401`。
+- 云端模式下请求本机提示词 API 返回 `404`。
 - 本地浏览器缓存中的旧数据可以迁移到 Supabase。
 - 新增、编辑和删除可以写入云端。
 
@@ -89,11 +96,12 @@ npm run dev
 3. 添加以下环境变量：
 
    ```text
-   NEXT_PUBLIC_DATA_MODE=supabase
-   NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   SUPABASE_SERVICE_ROLE_KEY=...
-   CRON_SECRET=...
+NEXT_PUBLIC_DATA_MODE=supabase
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+# 旧项目可改为 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+CRON_SECRET=...
    ```
 
 4. 部署应用。
@@ -103,6 +111,8 @@ npm run dev
 ## 第七步：验证生产环境
 
 - 邮箱密码登录成功。
+- 未登录访问 `/` 时会跳转到 `/login`。
+- 登录后会回到原本要访问的页面。
 - 未登录用户不能读取提示词。
 - 登录用户只能读取自己的数据。
 - 新增、编辑和删除刷新后仍然存在。
@@ -119,4 +129,3 @@ npm run dev
 - 每月手动导出一次 JSON 备份。
 - 如果 Supabase 项目被暂停，进入后台恢复。
 - 免费服务不提供长期在线保证。
-

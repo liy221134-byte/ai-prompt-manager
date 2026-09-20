@@ -13,7 +13,7 @@ export async function updateSupabaseSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headers) {
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
@@ -23,11 +23,15 @@ export async function updateSupabaseSession(request: NextRequest) {
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);
         }
+
+        for (const [name, value] of Object.entries(headers)) {
+          response.headers.set(name, value);
+        }
       },
     },
   });
 
-  await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
 
-  return response;
+  return { response, claims: data?.claims ?? null };
 }
