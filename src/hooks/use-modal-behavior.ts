@@ -2,9 +2,20 @@
 
 import { useEffect } from "react";
 
-export function useModalBehavior(onClose: () => void) {
+export function useModalBehavior(
+  onClose: () => void,
+  disabled = false,
+) {
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    if (disabled) {
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -12,12 +23,11 @@ export function useModalBehavior(onClose: () => void) {
       }
     }
 
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [disabled, onClose]);
 }

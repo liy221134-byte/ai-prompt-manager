@@ -23,7 +23,11 @@ import {
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import type { PromptMergeDraft } from "@/lib/prompt-ai";
 import type { PromptLibraryResponse } from "@/lib/prompt-api";
-import { createMergeVersion } from "@/lib/prompt-merge-draft";
+import {
+  createMergeVersion,
+  getMergeErrorMessage,
+  normalizeMergeDraft,
+} from "@/lib/prompt-merge-draft";
 import type { PromptDataSource } from "@/lib/prompt-source";
 import { normalizeTags } from "@/lib/prompt-utils";
 
@@ -73,8 +77,9 @@ export function AiMergeDrawer({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
+  const isBusy = isGenerating || isSaving;
 
-  useModalBehavior(onClose);
+  useModalBehavior(onClose, isBusy);
 
   function addTags(rawValue: string) {
     const nextTags = rawValue
@@ -141,7 +146,7 @@ export function AiMergeDrawer({
   }
 
   async function handleGenerate() {
-    if (prompts.length < 2 || isGenerating) {
+    if (prompts.length < 2 || isBusy) {
       return;
     }
 
@@ -159,7 +164,11 @@ export function AiMergeDrawer({
           mergeInstruction,
         }),
       });
-      const responseBody = (await response.json()) as MergeResponse;
+      const responseBody = (await response
+        .json()
+        .catch(() => {
+          throw new SyntaxError("AI 返回内容无法识别，请稍后重试。");
+        })) as MergeResponse;
 
       if (
         !response.ok ||
@@ -185,9 +194,7 @@ export function AiMergeDrawer({
       onNotify("AI 合并草稿已生成，请确认后保存");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "AI 合并草稿生成失败，请稍后重试。",
+        getMergeErrorMessage(error, "AI 合并草稿生成失败，请稍后重试。"),
       );
     } finally {
       setIsGenerating(false);
@@ -197,7 +204,13 @@ export function AiMergeDrawer({
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!draft || !target || prompts.length < 2 || !validateForm()) {
+    if (
+      !draft ||
+      !target ||
+      prompts.length < 2 ||
+      isBusy ||
+      !validateForm()
+    ) {
       return;
     }
 
@@ -206,6 +219,7 @@ export function AiMergeDrawer({
 
     const now = new Date().toISOString();
     const sourcePromptIds = prompts.map((prompt) => prompt.id);
+    const normalizedDraft = normalizeMergeDraft(draft);
     const version = createMergeVersion({
       target,
       sourcePromptIds,
@@ -216,8 +230,7 @@ export function AiMergeDrawer({
       const library = await dataSource.commitAiMerge({
         prompt: {
           ...target,
-          ...draft,
-          tags: normalizeTags(draft.tags),
+          ...normalizedDraft,
           updatedAt: now,
         },
         sourcePromptIds,
@@ -226,22 +239,21 @@ export function AiMergeDrawer({
 
       onSaved(library);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "保存合并结果失败。",
-      );
+      setErrorMessage(getMergeErrorMessage(error, "保存合并结果失败。"));
     } finally {
       setIsSaving(false);
     }
   }
 
-  const saveDisabled = !draft || !target || prompts.length < 2 || isSaving;
+  const saveDisabled = !draft || !target || prompts.length < 2 || isBusy;
   const targetTitle = draft?.title.trim() || target?.title || "目标提示词";
 
   return (
     <div className="fixed inset-0 z-50">
       <button
         aria-label="关闭 AI 合并面板"
-        className="absolute inset-0 cursor-default bg-slate-950/35 backdrop-blur-[2px]"
+        className="absolute inset-0 cursor-default bg-slate-950/35 backdrop-blur-[2px] disabled:cursor-not-allowed"
+        disabled={isBusy}
         onClick={onClose}
         type="button"
       />
@@ -270,7 +282,8 @@ export function AiMergeDrawer({
 
           <button
             aria-label="关闭 AI 合并面板"
-            className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isBusy}
             onClick={onClose}
             type="button"
           >
@@ -358,7 +371,7 @@ export function AiMergeDrawer({
                 </span>
                 <button
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                  disabled={isGenerating || prompts.length < 2}
+                  disabled={isBusy || prompts.length < 2}
                   onClick={handleGenerate}
                   type="button"
                 >
@@ -639,7 +652,7 @@ export function AiMergeDrawer({
             <div className="flex items-center justify-end gap-3">
               <button
                 className="h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isSaving || isGenerating}
+                disabled={isBusy}
                 onClick={onClose}
                 type="button"
               >

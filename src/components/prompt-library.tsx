@@ -664,7 +664,7 @@ export function PromptLibrary({
                 }
                 index={index}
                 isMergeTarget={
-                  mergeSelection.targetPromptId === prompt.id
+                  effectiveMergeSelection.targetPromptId === prompt.id
                 }
                 key={prompt.id}
                 onOpen={(selected) => setSelectedPromptId(selected.id)}
