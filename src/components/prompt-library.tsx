@@ -26,6 +26,7 @@ import {
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { AiCaptureDrawer } from "@/components/ai-capture-drawer";
+import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
@@ -49,6 +50,7 @@ import {
   PROMPT_BACKUP_VERSION,
   type PromptImportPlan,
 } from "@/lib/prompt-backup";
+import type { PromptLibraryResponse } from "@/lib/prompt-api";
 import {
   createSupabasePromptDataSource,
   localPromptDataSource,
@@ -88,6 +90,26 @@ function createPromptId() {
   return `prompt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function reconcileMergeSelection(
+  selection: PromptMergeSelection,
+  prompts: PromptCardData[],
+): PromptMergeSelection {
+  const activePromptIds = new Set(prompts.map((prompt) => prompt.id));
+  const selectedPromptIds = selection.selectedPromptIds.filter((id) =>
+    activePromptIds.has(id),
+  );
+  const targetPromptId = selectedPromptIds.includes(
+    selection.targetPromptId ?? "",
+  )
+    ? selection.targetPromptId
+    : (selectedPromptIds[0] ?? null);
+
+  return {
+    selectedPromptIds,
+    targetPromptId,
+  };
+}
+
 export function PromptLibrary({
   dataMode,
   onSignOut,
@@ -114,6 +136,7 @@ export function PromptLibrary({
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+  const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [isMergeSelectionMode, setIsMergeSelectionMode] = useState(false);
   const [mergeSelection, setMergeSelection] =
     useState<PromptMergeSelection>(createEmptySelection);
@@ -227,14 +250,29 @@ export function PromptLibrary({
   const selectedPrompt = prompts.find(
     (prompt) => prompt.id === selectedPromptId,
   );
-  const mergeTargetPrompt = mergeSelection.targetPromptId
-    ? prompts.find((prompt) => prompt.id === mergeSelection.targetPromptId)
+  const effectiveMergeSelection = useMemo(
+    () => reconcileMergeSelection(mergeSelection, prompts),
+    [mergeSelection, prompts],
+  );
+  const mergeTargetPrompt = effectiveMergeSelection.targetPromptId
+    ? prompts.find(
+        (prompt) => prompt.id === effectiveMergeSelection.targetPromptId,
+      )
     : undefined;
-  const mergeSelectionCount = mergeSelection.selectedPromptIds.length;
-  const mergeCanStart = canStartMerge(mergeSelection);
+  const mergeSelectionCount = effectiveMergeSelection.selectedPromptIds.length;
+  const mergeCanStart = canStartMerge(effectiveMergeSelection);
   const selectedMergePromptIds = useMemo(
-    () => new Set(mergeSelection.selectedPromptIds),
-    [mergeSelection.selectedPromptIds],
+    () => new Set(effectiveMergeSelection.selectedPromptIds),
+    [effectiveMergeSelection.selectedPromptIds],
+  );
+  const mergeSelectedPrompts = useMemo(
+    () =>
+      effectiveMergeSelection.selectedPromptIds
+        .map((promptId) =>
+          prompts.find((prompt) => prompt.id === promptId),
+        )
+        .filter((prompt): prompt is PromptCardData => Boolean(prompt)),
+    [effectiveMergeSelection.selectedPromptIds, prompts],
   );
   const promptToDelete = prompts.find(
     (prompt) => prompt.id === deletePromptId,
@@ -314,12 +352,53 @@ export function PromptLibrary({
 
   function handleToggleMergeSelection(prompt: PromptCardData) {
     setMergeSelection((selection) =>
-      togglePromptSelection(selection, prompt.id),
+      togglePromptSelection(
+        reconcileMergeSelection(selection, prompts),
+        prompt.id,
+      ),
     );
   }
 
   function handleSetMergeTarget(prompt: PromptCardData) {
-    setMergeSelection((selection) => setMergeTarget(selection, prompt.id));
+    setMergeSelection((selection) =>
+      setMergeTarget(reconcileMergeSelection(selection, prompts), prompt.id),
+    );
+  }
+
+  function handleStartMerge() {
+    const reconciledSelection = reconcileMergeSelection(
+      mergeSelection,
+      prompts,
+    );
+
+    setMergeSelection(reconciledSelection);
+
+    if (!canStartMerge(reconciledSelection)) {
+      notify(
+        reconciledSelection.selectedPromptIds.length < 2
+          ? "请至少选择 2 条有效提示词"
+          : "请重新选择合并目标",
+      );
+      return;
+    }
+
+    setIsAiMergeOpen(true);
+  }
+
+  function handleAiMergeSaved(library: PromptLibraryResponse) {
+    const targetId = effectiveMergeSelection.targetPromptId;
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
+    setMergeSelection(createEmptySelection());
+    setIsMergeSelectionMode(false);
+    setIsAiMergeOpen(false);
+
+    if (targetId) {
+      setSelectedPromptId(targetId);
+    }
+
+    notify("已合并，来源可在垃圾箱恢复");
   }
 
   function handleExport() {
@@ -486,6 +565,7 @@ export function PromptLibrary({
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 disabled={!mergeCanStart}
+                onClick={handleStartMerge}
                 type="button"
               >
                 <GitMerge aria-hidden="true" className="size-4" />
@@ -667,6 +747,19 @@ export function PromptLibrary({
           }}
         />
       )}
+
+      {isAiMergeOpen &&
+        effectiveMergeSelection.targetPromptId &&
+        mergeSelectedPrompts.length >= 2 && (
+          <AiMergeDrawer
+            dataSource={dataSource}
+            onClose={() => setIsAiMergeOpen(false)}
+            onNotify={notify}
+            onSaved={handleAiMergeSaved}
+            prompts={mergeSelectedPrompts}
+            targetPromptId={effectiveMergeSelection.targetPromptId}
+          />
+        )}
 
       {editorState && (
         <PromptEditorDrawer
