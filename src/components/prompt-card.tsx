@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   CalendarDays,
+  Check,
   FileText,
   Tags,
   Target,
@@ -13,6 +14,12 @@ type PromptCardProps = {
   prompt: PromptCardData;
   index: number;
   onOpen: (prompt: PromptCardData) => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  isMergeTarget?: boolean;
+  canSelect?: boolean;
+  onToggleSelection?: (prompt: PromptCardData) => void;
+  onSetMergeTarget?: (prompt: PromptCardData) => void;
 };
 
 const categoryStyles: Record<string, string> = {
@@ -31,13 +38,32 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
-export function PromptCard({ prompt, index, onOpen }: PromptCardProps) {
+export function PromptCard({
+  prompt,
+  index,
+  onOpen,
+  selectionMode = false,
+  selected = false,
+  isMergeTarget = false,
+  canSelect = true,
+  onToggleSelection,
+  onSetMergeTarget,
+}: PromptCardProps) {
   const categoryStyle =
     categoryStyles[prompt.category] ?? fallbackCategoryStyle;
   const variableCount = extractVariables(prompt.content).length;
+  const cardClassName = selectionMode
+    ? `flex h-full flex-col overflow-hidden rounded-lg border bg-white transition-shadow ${
+        isMergeTarget
+          ? "border-blue-500 ring-2 ring-blue-100"
+          : selected
+            ? "border-blue-300 ring-2 ring-blue-50"
+            : "border-[#dbe7f5] shadow-[0_10px_28px_rgba(30,64,175,0.07)] hover:shadow-[0_16px_36px_rgba(30,64,175,0.12)]"
+      }`
+    : "flex h-full flex-col overflow-hidden rounded-lg border border-[#dbe7f5] bg-white shadow-[0_10px_28px_rgba(30,64,175,0.07)] transition-shadow hover:shadow-[0_16px_36px_rgba(30,64,175,0.12)]";
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-[#dbe7f5] bg-white shadow-[0_10px_28px_rgba(30,64,175,0.07)] transition-shadow hover:shadow-[0_16px_36px_rgba(30,64,175,0.12)]">
+    <article className={cardClassName}>
       <div className="border-b border-slate-100 px-5 pb-5 pt-5">
         <div className="flex items-start justify-between gap-4">
           <span
@@ -45,9 +71,37 @@ export function PromptCard({ prompt, index, onOpen }: PromptCardProps) {
           >
             {prompt.category}
           </span>
-          <span className="font-mono text-xs font-medium text-slate-400">
-            {String(index + 1).padStart(2, "0")}
-          </span>
+          {selectionMode ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {isMergeTarget && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
+                  <Target aria-hidden="true" className="size-3" />
+                  目标
+                </span>
+              )}
+              <button
+                aria-checked={selected}
+                aria-label={
+                  selected ? `取消选择 ${prompt.title}` : `选择 ${prompt.title}`
+                }
+                className={`flex size-7 items-center justify-center rounded-md border transition-colors ${
+                  selected
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-300 bg-white text-transparent hover:border-blue-400"
+                } disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-transparent`}
+                disabled={!selected && !canSelect}
+                onClick={() => onToggleSelection?.(prompt)}
+                role="checkbox"
+                type="button"
+              >
+                <Check aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <span className="font-mono text-xs font-medium text-slate-400">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+          )}
         </div>
 
         <h2 className="mt-4 text-xl font-semibold leading-7 text-slate-950">
@@ -105,14 +159,26 @@ export function PromptCard({ prompt, index, onOpen }: PromptCardProps) {
           </span>
           {variableCount > 0 ? `${variableCount} 个变量` : "可直接复制"}
         </span>
-        <button
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900"
-          onClick={() => onOpen(prompt)}
-          type="button"
-        >
-          查看详情
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          {selectionMode && selected && !isMergeTarget && onSetMergeTarget && (
+            <button
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900"
+              onClick={() => onSetMergeTarget(prompt)}
+              type="button"
+            >
+              <Target aria-hidden="true" className="size-4" />
+              设为目标
+            </button>
+          )}
+          <button
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900"
+            onClick={() => onOpen(prompt)}
+            type="button"
+          >
+            查看详情
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </button>
+        </div>
       </footer>
     </article>
   );

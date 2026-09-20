@@ -4,12 +4,15 @@ import {
   BookOpenText,
   CheckCircle2,
   DatabaseBackup,
+  GitMerge,
   Layers3,
+  ListChecks,
   LogOut,
   LoaderCircle,
   Plus,
   RefreshCcw,
   Search,
+  Target,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -51,6 +54,14 @@ import {
   localPromptDataSource,
   type PromptDataSource,
 } from "@/lib/prompt-source";
+import {
+  canStartMerge,
+  createEmptySelection,
+  MAX_MERGE_PROMPTS,
+  setMergeTarget,
+  togglePromptSelection,
+  type PromptMergeSelection,
+} from "@/lib/prompt-merge-selection";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type EditorState =
@@ -103,6 +114,9 @@ export function PromptLibrary({
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+  const [isMergeSelectionMode, setIsMergeSelectionMode] = useState(false);
+  const [mergeSelection, setMergeSelection] =
+    useState<PromptMergeSelection>(createEmptySelection);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
@@ -213,6 +227,15 @@ export function PromptLibrary({
   const selectedPrompt = prompts.find(
     (prompt) => prompt.id === selectedPromptId,
   );
+  const mergeTargetPrompt = mergeSelection.targetPromptId
+    ? prompts.find((prompt) => prompt.id === mergeSelection.targetPromptId)
+    : undefined;
+  const mergeSelectionCount = mergeSelection.selectedPromptIds.length;
+  const mergeCanStart = canStartMerge(mergeSelection);
+  const selectedMergePromptIds = useMemo(
+    () => new Set(mergeSelection.selectedPromptIds),
+    [mergeSelection.selectedPromptIds],
+  );
   const promptToDelete = prompts.find(
     (prompt) => prompt.id === deletePromptId,
   );
@@ -277,6 +300,26 @@ export function PromptLibrary({
     }
 
     notify("提示词已删除");
+  }
+
+  function handleEnterMergeSelection() {
+    setMergeSelection(createEmptySelection());
+    setIsMergeSelectionMode(true);
+  }
+
+  function handleExitMergeSelection() {
+    setMergeSelection(createEmptySelection());
+    setIsMergeSelectionMode(false);
+  }
+
+  function handleToggleMergeSelection(prompt: PromptCardData) {
+    setMergeSelection((selection) =>
+      togglePromptSelection(selection, prompt.id),
+    );
+  }
+
+  function handleSetMergeTarget(prompt: PromptCardData) {
+    setMergeSelection((selection) => setMergeTarget(selection, prompt.id));
   }
 
   function handleExport() {
@@ -427,35 +470,76 @@ export function PromptLibrary({
             )}
           </label>
 
-          <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-            <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isLoading || Boolean(loadError)}
-              onClick={() => setIsAiCaptureOpen(true)}
-              type="button"
-            >
-              <WandSparkles aria-hidden="true" className="size-4" />
-              智能采集
-            </button>
+          {isMergeSelectionMode ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:shrink-0">
+              <div className="flex h-11 items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 text-sm font-medium text-slate-700">
+                <ListChecks aria-hidden="true" className="size-4 text-blue-600" />
+                <span>已选 {mergeSelectionCount} 条</span>
+              </div>
+              <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 text-sm font-medium text-slate-700">
+                <Target aria-hidden="true" className="size-4 shrink-0 text-blue-600" />
+                <span className="max-w-56 truncate">
+                  目标：
+                  {mergeTargetPrompt ? mergeTargetPrompt.title : "未选择"}
+                </span>
+              </div>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={!mergeCanStart}
+                type="button"
+              >
+                <GitMerge aria-hidden="true" className="size-4" />
+                开始合并
+              </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700"
+                onClick={handleExitMergeSelection}
+                type="button"
+              >
+                <X aria-hidden="true" className="size-4" />
+                退出选择
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading || Boolean(loadError)}
+                onClick={handleEnterMergeSelection}
+                type="button"
+              >
+                <GitMerge aria-hidden="true" className="size-4" />
+                AI 合并
+              </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading || Boolean(loadError)}
+                onClick={() => setIsAiCaptureOpen(true)}
+                type="button"
+              >
+                <WandSparkles aria-hidden="true" className="size-4" />
+                智能采集
+              </button>
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              disabled={isLoading || Boolean(loadError)}
-              onClick={() => setIsBackupManagerOpen(true)}
-              type="button"
-            >
-              <DatabaseBackup aria-hidden="true" className="size-4" />
-              数据管理
-            </button>
-            <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-              disabled={isLoading || Boolean(loadError)}
-              onClick={() => setEditorState({ mode: "create" })}
-              type="button"
-            >
-              <Plus aria-hidden="true" className="size-4" />
-              新增提示词
-            </button>
-          </div>
+                disabled={isLoading || Boolean(loadError)}
+                onClick={() => setIsBackupManagerOpen(true)}
+                type="button"
+              >
+                <DatabaseBackup aria-hidden="true" className="size-4" />
+                数据管理
+              </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={isLoading || Boolean(loadError)}
+                onClick={() => setEditorState({ mode: "create" })}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                新增提示词
+              </button>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -494,10 +578,21 @@ export function PromptLibrary({
           <div className="mt-8 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredPrompts.map((prompt, index) => (
               <PromptCard
+                canSelect={
+                  selectedMergePromptIds.has(prompt.id) ||
+                  mergeSelectionCount < MAX_MERGE_PROMPTS
+                }
                 index={index}
+                isMergeTarget={
+                  mergeSelection.targetPromptId === prompt.id
+                }
                 key={prompt.id}
                 onOpen={(selected) => setSelectedPromptId(selected.id)}
+                onSetMergeTarget={handleSetMergeTarget}
+                onToggleSelection={handleToggleMergeSelection}
                 prompt={prompt}
+                selected={selectedMergePromptIds.has(prompt.id)}
+                selectionMode={isMergeSelectionMode}
               />
             ))}
           </div>
