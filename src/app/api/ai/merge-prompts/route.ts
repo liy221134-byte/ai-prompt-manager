@@ -61,6 +61,7 @@ export async function POST(request: Request) {
 
   const abortController = new AbortController();
   const timeout = setTimeout(() => abortController.abort(), 50000);
+  let content: string | undefined;
 
   try {
     const response = await fetch(`${apiBaseUrl}/chat/completions`, {
@@ -83,19 +84,24 @@ export async function POST(request: Request) {
     }
 
     const responseBody = (await response.json()) as ChatCompletionResponse;
-    const content = responseBody.choices?.[0]?.message?.content;
+    content = responseBody.choices?.[0]?.message?.content;
+  } catch (error) {
+    console.error("AI 提示词合并调用失败", error);
+    return createErrorResponse("AI 合并超时或网络连接失败。", 502);
+  } finally {
+    clearTimeout(timeout);
+  }
 
-    if (!content) {
-      return createErrorResponse("AI 没有返回可用内容。", 502);
-    }
+  if (!content) {
+    return createErrorResponse("AI 没有返回可用内容。", 502);
+  }
 
+  try {
     return Response.json({
       draft: normalizeMergedPrompt(content),
     });
   } catch (error) {
-    console.error("AI 提示词合并失败", error);
-    return createErrorResponse("AI 合并超时或网络连接失败。", 502);
-  } finally {
-    clearTimeout(timeout);
+    console.error("AI 提示词合并结果格式错误", error);
+    return createErrorResponse("AI 合并结果格式错误，请重试。", 502);
   }
 }

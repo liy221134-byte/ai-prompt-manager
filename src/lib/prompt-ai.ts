@@ -31,6 +31,15 @@ export type PromptMergeDraft = PromptDraft & {
   mergeSummary: string[];
 };
 
+const AI_MERGE_INPUT_LIMITS = {
+  id: 100,
+  title: 60,
+  category: 30,
+  tags: 8,
+  tag: 20,
+  useCase: 240,
+} as const;
+
 export const aiExtractionSystemPrompt = `
 你是一个 AI 提示词结构化助手。请把用户提供的原始内容整理成可以在提示词资产库中保存的数据。
 
@@ -79,7 +88,7 @@ export const aiMergeSystemPrompt = `
 6. 标题简洁，最多 60 个字符；分类使用一个简短分类名称。
 7. 标签最多 8 个，每个标签最多 20 个字符。
 8. 适用场景说明这条合并后的提示词适合解决什么问题。
-9. mergeSummary 用 2 至 6 条简短说明概括主要合并决策。
+9. mergeSummary 用 1 至 6 条简短说明概括主要合并决策。
 10. 只输出 JSON，不要输出 Markdown 代码围栏或额外说明。
 
 输出格式：
@@ -172,13 +181,62 @@ export function validateAiMergeRequest(
       return { ok: false, error: `第 ${index + 1} 条来源提示词缺少标识。` };
     }
 
-    if (
-      !isString(prompt.title) ||
-      !isString(prompt.category) ||
-      !isString(prompt.useCase) ||
-      !isStringArray(prompt.tags)
-    ) {
+    if (prompt.id.length > AI_MERGE_INPUT_LIMITS.id) {
+      return {
+        ok: false,
+        error: `第 ${index + 1} 条来源提示词标识不能超过 ${AI_MERGE_INPUT_LIMITS.id} 个字符。`,
+      };
+    }
+
+    if (!isString(prompt.title)) {
       return { ok: false, error: `第 ${index + 1} 条来源提示词字段不完整。` };
+    }
+
+    if (prompt.title.length > AI_MERGE_INPUT_LIMITS.title) {
+      return {
+        ok: false,
+        error: `第 ${index + 1} 条来源提示词标题不能超过 ${AI_MERGE_INPUT_LIMITS.title} 个字符。`,
+      };
+    }
+
+    if (!isString(prompt.category)) {
+      return { ok: false, error: `第 ${index + 1} 条来源提示词字段不完整。` };
+    }
+
+    if (prompt.category.length > AI_MERGE_INPUT_LIMITS.category) {
+      return {
+        ok: false,
+        error: `第 ${index + 1} 条来源提示词分类不能超过 ${AI_MERGE_INPUT_LIMITS.category} 个字符。`,
+      };
+    }
+
+    if (!isString(prompt.useCase)) {
+      return { ok: false, error: `第 ${index + 1} 条来源提示词字段不完整。` };
+    }
+
+    if (prompt.useCase.length > AI_MERGE_INPUT_LIMITS.useCase) {
+      return {
+        ok: false,
+        error: `第 ${index + 1} 条来源提示词适用场景不能超过 ${AI_MERGE_INPUT_LIMITS.useCase} 个字符。`,
+      };
+    }
+
+    if (!isStringArray(prompt.tags)) {
+      return { ok: false, error: `第 ${index + 1} 条来源提示词字段不完整。` };
+    }
+
+    if (prompt.tags.length > AI_MERGE_INPUT_LIMITS.tags) {
+      return {
+        ok: false,
+        error: `第 ${index + 1} 条来源提示词标签不能超过 ${AI_MERGE_INPUT_LIMITS.tags} 个。`,
+      };
+    }
+
+    if (prompt.tags.some((tag) => tag.length > AI_MERGE_INPUT_LIMITS.tag)) {
+      return {
+        ok: false,
+        error: `第 ${index + 1} 条来源提示词单个标签不能超过 ${AI_MERGE_INPUT_LIMITS.tag} 个字符。`,
+      };
     }
 
     if (!isString(prompt.content) || !prompt.content.trim()) {
@@ -296,6 +354,10 @@ export function normalizeMergedPrompt(content: string): PromptMergeDraft {
         .map((item) => item.slice(0, 240))
         .slice(0, 6)
     : [];
+
+  if (mergeSummary.length === 0) {
+    throw new Error("AI 没有返回有效的合并说明。");
+  }
 
   return {
     title:

@@ -131,11 +131,49 @@ test("合并规范化保留变量占位符", () => {
       tags: [],
       content: "请审查 {{代码}} 并处理 {{需求}}",
       useCase: "测试",
-      mergeSummary: [],
+      mergeSummary: ["合并为通用版本"],
     }),
   );
 
   assert.equal(draft.content, "请审查 {{代码}} 并处理 {{需求}}");
+});
+
+test("合并规范化拒绝空合并说明", () => {
+  assert.throws(
+    () =>
+      normalizeMergedPrompt(
+        JSON.stringify({
+          title: "合并助手",
+          category: "AI",
+          tags: [],
+          content: "请审查 {{代码}}",
+          useCase: "测试",
+          mergeSummary: [],
+        }),
+      ),
+    /合并说明/,
+  );
+});
+
+test("合并规范化拒绝缺少正文", () => {
+  assert.throws(
+    () =>
+      normalizeMergedPrompt(
+        JSON.stringify({
+          title: "合并助手",
+          category: "AI",
+          tags: [],
+          content: "",
+          useCase: "测试",
+          mergeSummary: ["合并"],
+        }),
+      ),
+    /正文/,
+  );
+});
+
+test("合并规范化拒绝畸形 JSON", () => {
+  assert.throws(() => normalizeMergedPrompt("这不是 JSON"), /JSON/);
 });
 
 test("合并输入会拒绝少于两条的请求", () => {
@@ -200,6 +238,52 @@ test("合并输入会拒绝超长的合并要求", () => {
 
   assert.equal(result.ok, false);
   assert.match(result.error, /2000/);
+});
+
+test("合并输入会接受恰好达到正文、总和和合并要求上限", () => {
+  const singleContentAtLimit = validateAiMergeRequest({
+    prompts: [
+      sourcePrompt({ content: "x".repeat(20000) }),
+      sourcePrompt({ id: "b" }),
+    ],
+  });
+  const totalContentAtLimit = validateAiMergeRequest({
+    prompts: [
+      sourcePrompt({ id: "a", content: "x".repeat(20000) }),
+      sourcePrompt({ id: "b", content: "y".repeat(20000) }),
+    ],
+  });
+  const instructionAtLimit = validateAiMergeRequest({
+    prompts: [sourcePrompt(), sourcePrompt({ id: "b" })],
+    mergeInstruction: "x".repeat(2000),
+  });
+
+  assert.equal(singleContentAtLimit.ok, true);
+  assert.equal(totalContentAtLimit.ok, true);
+  assert.equal(instructionAtLimit.ok, true);
+});
+
+test("合并输入会拒绝超长的元数据", () => {
+  const cases = [
+    { overrides: { id: "x".repeat(101) }, pattern: /标识/ },
+    { overrides: { title: "标".repeat(61) }, pattern: /标题/ },
+    { overrides: { category: "类".repeat(31) }, pattern: /分类/ },
+    { overrides: { useCase: "用".repeat(241) }, pattern: /适用场景/ },
+    {
+      overrides: { tags: Array.from({ length: 9 }, (_, index) => `标签${index}`) },
+      pattern: /标签/,
+    },
+    { overrides: { tags: ["超".repeat(21)] }, pattern: /单个标签/ },
+  ];
+
+  for (const { overrides, pattern } of cases) {
+    const result = validateAiMergeRequest({
+      prompts: [sourcePrompt(), sourcePrompt({ id: "b", ...overrides })],
+    });
+
+    assert.equal(result.ok, false);
+    assert.match(result.error, pattern);
+  }
 });
 
 test("合并输入会接受合法的请求", () => {
