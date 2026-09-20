@@ -1,5 +1,12 @@
 export type PromptDeletedReason = "manual" | "merge";
 
+// 恢复快照的来源类型：合并前、优化前、回退前。
+// 三种快照共用 prompt_versions 表，查询时必须按类型过滤，避免互相消费。
+export type PromptVersionReason =
+  | "merge_before"
+  | "optimize_before"
+  | "restore_before";
+
 export type PromptLifecycleFields = {
   deletedAt: string | null;
   deletedReason: PromptDeletedReason | null;
@@ -34,7 +41,7 @@ export type PromptVersionData = {
   content: string;
   useCase: string;
   createdAt: string;
-  versionReason: "merge_before";
+  versionReason: PromptVersionReason;
   sourcePromptIds: string[];
   restoredAt: string | null;
   expiresAt: string;

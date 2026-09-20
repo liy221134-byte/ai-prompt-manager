@@ -285,6 +285,35 @@ test("云端恢复记录查询会过滤已恢复记录并映射快照字段", as
   );
 });
 
+// v0.9 的 AI 优化快照同样存在 prompt_versions 里，云端查询必须按原因过滤。
+test("云端恢复记录查询只取合并快照，排除优化快照", async () => {
+  const fake = createFakeSupabase({
+    versionRows: [
+      createVersionRow(),
+      createVersionRow({
+        version_id: "version-optimize",
+        version_reason: "optimize_before",
+        source_prompt_ids: [],
+      }),
+    ],
+  });
+  const dataSource = createSupabasePromptDataSource(fake.client);
+
+  const response = await dataSource.fetchMergeRecoveryRecords();
+
+  assert.equal(response.records.length, 1);
+  assert.equal(response.records[0].versionId, "version-1");
+  assert.ok(
+    fake.callbacks.filters.some(
+      (filter) =>
+        filter.tableName === "prompt_versions" &&
+        filter.kind === "eq" &&
+        filter.column === "version_reason" &&
+        filter.value === "merge_before",
+    ),
+  );
+});
+
 test("云端清空垃圾箱只调用一个原子 RPC", async () => {
   const fake = createFakeSupabase({
     promptRows: [toPromptRow(createPrompt())],

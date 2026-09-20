@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   PromptCardData,
   PromptVersionData,
+  PromptVersionReason,
 } from "../data/prompts.ts";
 import {
   commitAiMergeOnServer,
@@ -97,7 +98,7 @@ type SupabasePromptVersionRow = {
   content: string;
   use_case: string;
   created_at: string;
-  version_reason: "merge_before";
+  version_reason: PromptVersionReason;
   source_prompt_ids: string[];
   restored_at: string | null;
   expires_at: string;
@@ -336,6 +337,7 @@ export function createSupabasePromptDataSource(
           "user_id, version_id, prompt_id, title, category, tags, content, use_case, created_at, version_reason, source_prompt_ids, restored_at, expires_at",
         )
         .is("restored_at", null)
+        .eq("version_reason", "merge_before")
         .order("created_at", { ascending: false });
 
       if (error) {

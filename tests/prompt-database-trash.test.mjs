@@ -84,6 +84,80 @@ test("AI 合并会更新目标、归档来源并保存恢复快照", () => {
   }
 });
 
+// v0.9 的 AI 优化也会写 prompt_versions 快照，这些快照不能混进合并恢复记录里。
+test("合并恢复记录只包含合并快照，不包含优化快照", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    context.database.createPrompt(prompt({ id: "prompt-c", title: "提示词 C" }));
+
+    context.database.commitPromptMerge({
+      prompt: prompt({
+        title: "合并后的提示词",
+        updatedAt: "2026-09-20T01:00:00.000Z",
+      }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      versionId: "version-merge",
+    });
+
+    // 直接写入一条优化快照，模拟 v0.9 的「AI 优化」结果。
+    const raw = new DatabaseSync(context.databasePath);
+    raw
+      .prepare(
+        `
+          INSERT INTO prompt_versions (
+            version_id,
+            prompt_id,
+            title,
+            category,
+            tags_json,
+            content,
+            use_case,
+            created_at,
+            version_reason,
+            source_prompt_ids_json,
+            restored_at,
+            expires_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        "version-optimize",
+        "prompt-c",
+        "优化前标题",
+        "AI效能",
+        JSON.stringify(["测试"]),
+        "优化前正文",
+        "优化前场景",
+        "2026-09-20T02:00:00.000Z",
+        "optimize_before",
+        JSON.stringify([]),
+        null,
+        "2099-01-01T00:00:00.000Z",
+      );
+    raw.close();
+
+    const records = context.database.listMergeRecoveryRecords();
+
+    assert.equal(records.length, 1);
+    assert.equal(records[0].versionId, "version-merge");
+
+    // 优化快照不能被合并恢复通道消费。
+    assert.equal(context.database.restoreMergeRecord("version-optimize"), null);
+
+    const stillPending = context.database
+      .listMergeRecoveryRecords()
+      .filter((record) => record.versionId === "version-optimize");
+
+    assert.equal(stillPending.length, 0);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
 test("合并提交拒绝数量不足的来源集合", () => {
   const context = createContext();
 

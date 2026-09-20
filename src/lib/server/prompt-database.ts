@@ -6,6 +6,7 @@ import {
   promptCards,
   type PromptCardData,
   type PromptVersionData,
+  type PromptVersionReason,
 } from "../../data/prompts.ts";
 import {
   createPromptImportPlan,
@@ -38,7 +39,7 @@ type PromptVersionRow = {
   content: string;
   use_case: string;
   created_at: string;
-  version_reason: "merge_before";
+  version_reason: PromptVersionReason;
   source_prompt_ids_json: string;
   restored_at: string | null;
   expires_at: string;
@@ -772,7 +773,7 @@ export class PromptDatabase {
             restored_at,
             expires_at
           FROM prompt_versions
-          WHERE restored_at IS NULL
+          WHERE restored_at IS NULL AND version_reason = 'merge_before'
           ORDER BY created_at DESC, version_id ASC
         `,
       )
@@ -802,7 +803,10 @@ export class PromptDatabase {
               restored_at,
               expires_at
             FROM prompt_versions
-            WHERE version_id = ? AND restored_at IS NULL AND expires_at > ?
+            WHERE version_id = ?
+              AND restored_at IS NULL
+              AND expires_at > ?
+              AND version_reason = 'merge_before'
           `,
         )
         .get(versionId, now) as PromptVersionRow | undefined;
@@ -928,7 +932,9 @@ export class PromptDatabase {
   permanentlyDeleteMergeRecord(versionId: string) {
     return this.transaction(() => {
       const deleteResult = this.database
-        .prepare("DELETE FROM prompt_versions WHERE version_id = ?")
+        .prepare(
+          "DELETE FROM prompt_versions WHERE version_id = ? AND version_reason = 'merge_before'",
+        )
         .run(versionId);
 
       if (Number(deleteResult.changes) > 0) {
