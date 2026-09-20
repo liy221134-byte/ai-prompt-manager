@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  PROMPT_BACKUP_TYPE,
+  PROMPT_BACKUP_VERSION,
   createPromptBackup,
   createPromptImportPlan,
   parsePromptBackup,
@@ -140,4 +142,56 @@ test("导入不会删除当前库中不存在于备份的提示词", () => {
   assert.ok(
     plan.mergedPrompts.some((prompt) => prompt.title === "本机保留项"),
   );
+});
+
+test("备份导入不会恢复已经进入垃圾箱的提示词", () => {
+  const activePrompts = [];
+  const trashedPromptIds = new Set(["prompt-deleted"]);
+  const plan = createPromptImportPlan(activePrompts, {
+    type: PROMPT_BACKUP_TYPE,
+    version: PROMPT_BACKUP_VERSION,
+    exportedAt: "2026-09-20T00:00:00.000Z",
+    prompts: [
+      {
+        id: "prompt-deleted",
+        title: "已删除",
+        category: "AI效能",
+        tags: [],
+        content: "内容",
+        useCase: "测试。",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(
+    plan.mergedPrompts.filter(
+      (prompt) => !trashedPromptIds.has(prompt.id),
+    ).length,
+    0,
+  );
+});
+
+test("备份导出只包含提示词内容字段", () => {
+  const prompt = createPrompt({
+    deletedAt: "2026-09-18T00:00:00.000Z",
+    deletedReason: "manual",
+    mergedIntoPromptId: "prompt-2",
+    mergeVersionId: "version-1",
+  });
+  const backup = JSON.parse(
+    createPromptBackup([prompt], "2026-09-20T08:00:00.000Z"),
+  );
+
+  assert.deepEqual(backup.prompts[0], {
+    id: "prompt-1",
+    title: "测试提示词",
+    category: "AI效能",
+    tags: ["测试"],
+    content: "请处理 {{内容}}",
+    useCase: "自动化测试",
+    createdAt: "2026-09-17T00:00:00.000Z",
+    updatedAt: "2026-09-17T00:00:00.000Z",
+  });
 });

@@ -32,7 +32,9 @@ export type PromptImportPlan = {
   skipCount: number;
 };
 
-function promptToContentData(prompt: PromptCardData): PromptContentData {
+export function promptToContentData(
+  prompt: PromptCardData,
+): PromptContentData {
   return {
     id: prompt.id,
     title: prompt.title,

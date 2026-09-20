@@ -43,6 +43,15 @@ export async function GET(request: Request) {
       throw error;
     }
 
+    // 清理失败只记录日志，不把每日心跳整体判定为失败。
+    const { error: purgeError } = await supabase.rpc(
+      "purge_expired_prompt_versions",
+    );
+
+    if (purgeError) {
+      console.error("清理过期提示词恢复数据失败", purgeError);
+    }
+
     return Response.json({ ok: true, mode: "supabase" });
   } catch (error) {
     console.error("Supabase 心跳检查失败", error);

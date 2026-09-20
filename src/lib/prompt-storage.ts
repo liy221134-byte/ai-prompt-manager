@@ -15,6 +15,18 @@ function isValidDateString(value: unknown) {
   );
 }
 
+// 旧版本地记录只有内容字段，读取时补齐生命周期字段，避免迁移后被误判为无效数据。
+function normalizeStoredPrompt(prompt: PromptCardData): PromptCardData {
+  return {
+    ...prompt,
+    tags: [...prompt.tags],
+    deletedAt: prompt.deletedAt ?? null,
+    deletedReason: prompt.deletedReason ?? null,
+    mergedIntoPromptId: prompt.mergedIntoPromptId ?? null,
+    mergeVersionId: prompt.mergeVersionId ?? null,
+  };
+}
+
 export function isPromptCard(value: unknown): value is PromptCardData {
   if (!value || typeof value !== "object") {
     return false;
@@ -66,7 +78,7 @@ export function loadStoredPromptLibrary() {
     throw new Error("本地提示词数据格式无法识别。");
   }
 
-  return parsedValue.prompts;
+  return parsedValue.prompts.map(normalizeStoredPrompt);
 }
 
 export function savePromptLibrary(prompts: PromptCardData[]) {

@@ -170,6 +170,9 @@ export class PromptDatabase {
       )
       .run("seed_initialized", "0");
 
+    // 启动时先清理超过 30 天的垃圾箱和恢复快照，避免过期数据重新进入列表。
+    this.purgeExpiredTrash();
+
     this.seedInitialPrompts();
   }
 
