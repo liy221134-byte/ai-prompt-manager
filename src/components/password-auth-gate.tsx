@@ -8,11 +8,13 @@ import {
   LockKeyhole,
   Mail,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import type { Session, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { PromptLibrary } from "@/components/prompt-library";
+import { getSafeNextPath } from "@/lib/auth-routing";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { getBrowserClientInitialization } from "@/lib/supabase/browser-init";
 
 function getLoginErrorMessage(message: string) {
   const normalizedMessage = message.toLowerCase();
@@ -35,9 +37,15 @@ function getLoginErrorMessage(message: string) {
   return "登录失败，请稍后重试。";
 }
 
-export function PasswordAuthGate() {
+type PasswordAuthGateProps = {
+  redirectTo?: string;
+};
+
+export function PasswordAuthGate({
+  redirectTo = "/",
+}: PasswordAuthGateProps) {
+  const router = useRouter();
   const clientRef = useRef<SupabaseClient | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");
@@ -46,39 +54,18 @@ export function PasswordAuthGate() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    let subscription: { unsubscribe: () => void } | undefined;
-
     const initializationTimer = window.setTimeout(() => {
-      try {
-        const supabase = getSupabaseBrowserClient();
-        clientRef.current = supabase;
+      const initialization = getBrowserClientInitialization(
+        getSupabaseBrowserClient,
+      );
 
-        void supabase.auth.getSession().then(({ data }) => {
-          setSession(data.session);
-          setIsLoading(false);
-        });
-
-        const authState = supabase.auth.onAuthStateChange(
-          (_event, nextSession) => {
-            setSession(nextSession);
-            setIsLoading(false);
-          },
-        );
-
-        subscription = authState.data.subscription;
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Supabase 登录服务无法启动。",
-        );
-        setIsLoading(false);
-      }
+      clientRef.current = initialization.client;
+      setErrorMessage(initialization.errorMessage);
+      setIsLoading(initialization.isLoading);
     }, 0);
 
     return () => {
       window.clearTimeout(initializationTimer);
-      subscription?.unsubscribe();
     };
   }, []);
 
@@ -101,22 +88,19 @@ export function PasswordAuthGate() {
 
     if (error) {
       setErrorMessage(getLoginErrorMessage(error.message));
-    } else {
-      setSession(data.session);
-      setPassword("");
-    }
-
-    setIsSubmitting(false);
-  }
-
-  async function handleSignOut() {
-    const client = clientRef.current;
-
-    if (!client) {
+      setIsSubmitting(false);
       return;
     }
 
-    await client.auth.signOut();
+    if (data.session) {
+      setPassword("");
+      router.replace(getSafeNextPath(redirectTo));
+      router.refresh();
+      return;
+    }
+
+    setErrorMessage("登录未完成，请确认邮箱后重试。");
+    setIsSubmitting(false);
   }
 
   if (isLoading) {
@@ -130,16 +114,6 @@ export function PasswordAuthGate() {
           正在连接云端账户
         </div>
       </main>
-    );
-  }
-
-  if (session?.user) {
-    return (
-      <PromptLibrary
-        dataMode="supabase"
-        onSignOut={handleSignOut}
-        userEmail={session.user.email}
-      />
     );
   }
 
@@ -232,14 +206,14 @@ export function PasswordAuthGate() {
             {isSubmitting ? "正在登录" : "登录"}
           </button>
         </form>
-      <div className="mt-5 text-center">
-        <a
-          className="text-sm font-medium text-blue-700 hover:text-blue-900"
-          href="/auth/reset-password"
-        >
-          忘记密码
-        </a>
-      </div>
+        <div className="mt-5 text-center">
+          <a
+            className="text-sm font-medium text-blue-700 hover:text-blue-900"
+            href="/auth/reset-password"
+          >
+            忘记密码
+          </a>
+        </div>
 
         <p className="mt-5 text-xs leading-5 text-slate-400">
           登录后只有你的账户能够读取和修改这些提示词。

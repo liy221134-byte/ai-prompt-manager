@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 6 周：完成 DeepSeek AI 智能采集流程。
+第 7 周：生产加固，完善 Supabase 登录与服务端路由保护。
 
 当前版本支持：
 
@@ -26,6 +26,12 @@
 - 本地 Chrome 和 Codex 浏览器共享同一份数据
 - 自动检测旧浏览器数据并提供安全迁移
 - 数据库关闭后重新启动，数据仍然保留
+- 使用 Supabase 邮箱密码登录
+- 未登录访问受保护页面时自动跳转 `/login`
+- 登录后返回用户原本要访问的页面
+- 服务端和 API 双重校验登录状态
+- Vercel 配置错误时安全关闭，不降级到本机 SQLite
+- Vercel 构建强制执行完整工程检查
 
 当前版本包含个人邮箱密码登录、Supabase 云数据库和跨设备同步，不包含团队协作。
 
@@ -54,6 +60,8 @@
 - [产品范围](docs/product-brief.md)
 - [项目文档索引](docs/INDEX.md)
 - [8 周路线图](docs/roadmap.md)
+- [2.0 需求草案](docs/v2-requirements-draft.md)
+- [工程能力学习计划](docs/learning/engineering-readiness.md)
 - [开发规则与协作提示词](docs/development-rules.md)
 - [技术选型](docs/decisions/0001-tech-stack.md)
 - [第 1 周验收清单](docs/acceptance/week-01.md)

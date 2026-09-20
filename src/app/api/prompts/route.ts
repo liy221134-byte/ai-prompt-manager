@@ -1,4 +1,5 @@
 import { isPromptCard } from "../../../lib/prompt-storage.ts";
+import { rejectLocalApiInCloudMode } from "../../../lib/server/local-data-api.ts";
 import { getPromptDatabase } from "../../../lib/server/prompt-database.ts";
 
 export const runtime = "nodejs";
@@ -9,6 +10,12 @@ function createErrorResponse(message: string, status: number) {
 }
 
 export async function GET() {
+  const cloudModeError = rejectLocalApiInCloudMode();
+
+  if (cloudModeError) {
+    return cloudModeError;
+  }
+
   try {
     return Response.json(getPromptDatabase().getLibrarySnapshot());
   } catch (error) {
@@ -18,6 +25,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const cloudModeError = rejectLocalApiInCloudMode();
+
+  if (cloudModeError) {
+    return cloudModeError;
+  }
+
   let body: unknown;
 
   try {

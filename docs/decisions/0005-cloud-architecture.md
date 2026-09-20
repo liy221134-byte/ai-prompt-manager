@@ -32,8 +32,10 @@ NEXT_PUBLIC_DATA_MODE=supabase
 2. `prompts` 表必须启用 RLS。
 3. 匿名用户不能读取或修改提示词。
 4. Service Role Key 只允许存在于服务端环境变量。
-5. 浏览器只能使用公开 URL 和 Anon Key。
+5. 浏览器只能使用公开 URL 和 Publishable Key；旧项目可继续使用 Anon Key 兼容配置。
 6. 不把 `.env.local`、Key 或数据库密码提交到 Git。
+7. Vercel 部署必须使用 Supabase；配置错误时安全关闭，禁止降级到 SQLite。
+8. Service Role Key 只配置到 Production，不自动下发到 Preview。
 
 ## 免费层限制
 
@@ -42,4 +44,3 @@ NEXT_PUBLIC_DATA_MODE=supabase
 - 免费方案没有付费级别的 SLA。
 - 每日心跳只能降低暂停概率，不能保证永不暂停。
 - 免费政策未来可能调整。
-

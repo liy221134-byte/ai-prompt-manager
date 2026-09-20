@@ -1,4 +1,5 @@
 import { isPromptCard } from "../../../../lib/prompt-storage.ts";
+import { rejectLocalApiInCloudMode } from "../../../../lib/server/local-data-api.ts";
 import { getPromptDatabase } from "../../../../lib/server/prompt-database.ts";
 
 export const runtime = "nodejs";
@@ -15,6 +16,12 @@ function createErrorResponse(message: string, status: number) {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
+  const cloudModeError = rejectLocalApiInCloudMode();
+
+  if (cloudModeError) {
+    return cloudModeError;
+  }
+
   const { id } = await context.params;
   let body: unknown;
 
@@ -45,6 +52,12 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
+  const cloudModeError = rejectLocalApiInCloudMode();
+
+  if (cloudModeError) {
+    return cloudModeError;
+  }
+
   const { id } = await context.params;
 
   try {

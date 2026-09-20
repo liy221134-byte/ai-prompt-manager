@@ -32,6 +32,7 @@
 - [本机 SQLite](decisions/0004-local-sqlite.md)
 - [云端架构](decisions/0005-cloud-architecture.md)
 - [AI 供应商抽象](decisions/0006-ai-provider-abstraction.md)
+- [生产配置安全关闭](decisions/0007-production-configuration-hardening.md)
 
 ### 数据与运维
 
@@ -39,6 +40,10 @@
 - [发布与回滚](operations/release-rollback.md)
 - [备份与恢复](operations/backup.md)
 - [常见问题](faq.md)
+
+### 工程学习
+
+- [工程能力学习计划](learning/engineering-readiness.md)
 
 ### 验收与测试
 
@@ -49,6 +54,7 @@
 - [第 4 周验收](acceptance/week-04.md)
 - [第 5 周验收](acceptance/week-05.md)
 - [第 6 周验收](acceptance/week-06.md)
+- [第 7 周验收](acceptance/week-07.md)
 
 ### 云端部署
 
@@ -67,4 +73,3 @@
 5. 每阶段开始前创建验收清单，完成后逐项验证。
 6. 部署、备份或回滚方式变化时更新运维文档。
 7. 文档必须描述当前真实状态，不能保留已经失效的“待配置”说明。
-
