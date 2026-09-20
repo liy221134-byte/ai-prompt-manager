@@ -1,4 +1,12 @@
-export type PromptCardData = {
+export type PromptDeletedReason = "manual" | "merge";
+
+export type PromptLifecycleFields = {
+  deletedAt: string | null;
+  deletedReason: PromptDeletedReason | null;
+  mergedIntoPromptId: string | null;
+};
+
+export type PromptContentData = {
   id: string;
   title: string;
   category: string;
@@ -9,10 +17,27 @@ export type PromptCardData = {
   updatedAt: string;
 };
 
+export type PromptCardData = PromptContentData & PromptLifecycleFields;
+
 export type PromptDraft = Omit<
-  PromptCardData,
+  PromptContentData,
   "id" | "createdAt" | "updatedAt"
 >;
+
+export type PromptVersionData = {
+  versionId: string;
+  promptId: string;
+  title: string;
+  category: string;
+  tags: string[];
+  content: string;
+  useCase: string;
+  createdAt: string;
+  versionReason: "merge_before";
+  sourcePromptIds: string[];
+  restoredAt: string | null;
+  expiresAt: string;
+};
 
 export const promptCategories = [
   "产品设计",
@@ -47,6 +72,9 @@ export const promptCards: PromptCardData[] = [
 按“风险等级、问题描述、修改建议、待确认问题”输出表格，并按风险从高到低排序。`,
     createdAt: "2026-09-17T02:00:00.000Z",
     updatedAt: "2026-09-17T02:00:00.000Z",
+    deletedAt: null,
+    deletedReason: null,
+    mergedIntoPromptId: null,
   },
   {
     id: "prompt-code-review",
@@ -71,6 +99,9 @@ export const promptCards: PromptCardData[] = [
 先列出问题，再给出理由、影响范围、修复建议和必要的测试用例。不要只做代码风格点评。`,
     createdAt: "2026-09-17T02:05:00.000Z",
     updatedAt: "2026-09-17T02:05:00.000Z",
+    deletedAt: null,
+    deletedReason: null,
+    mergedIntoPromptId: null,
   },
   {
     id: "prompt-optimizer",
@@ -95,5 +126,8 @@ export const promptCards: PromptCardData[] = [
 先说明主要修改，再给出优化后的 Markdown 提示词和变量清单。不要改变原始意图。`,
     createdAt: "2026-09-17T02:10:00.000Z",
     updatedAt: "2026-09-17T02:10:00.000Z",
+    deletedAt: null,
+    deletedReason: null,
+    mergedIntoPromptId: null,
   },
 ];

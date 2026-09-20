@@ -247,6 +247,9 @@ export function PromptLibrary({
       ...draft,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
+      deletedReason: null,
+      mergedIntoPromptId: null,
     };
     const library = await dataSource.createPrompt(newPrompt);
 

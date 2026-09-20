@@ -52,6 +52,9 @@ function rowToPrompt(row: PromptRow): PromptCardData {
     useCase: row.use_case,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    deletedAt: null,
+    deletedReason: null,
+    mergedIntoPromptId: null,
   };
 }
 
