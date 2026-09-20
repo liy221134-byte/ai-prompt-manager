@@ -114,6 +114,8 @@ RLS 账号隔离。
 | --- | --- |
 | `commit_prompt_merge(...)` | 原子保存一次合并：显式拒绝空来源并用 `cardinality()` 校验 2 至 5 条，锁定来源、从目标行生成快照、更新目标、按版本归档其他来源 |
 | `restore_prompt_merge(version_id)` | 恢复合并前目标内容，并只恢复仍被该次合并归档的来源 |
+| `commit_prompt_optimize(...)` | 原子保存一次 AI 优化：从锁定后的当前行生成 `optimize_before` 快照，再更新提示词 |
+| `restore_prompt_optimize(prompt_id, version_id)` | 回到这条提示词最近一次未被消费的优化前快照，并先把当前内容存成 `restore_before` 快照 |
 | `empty_prompt_trash()` | 在单一事务中删除当前用户的全部恢复快照和垃圾箱提示词 |
 | `purge_expired_prompt_versions()` | 删除过期恢复快照和已删除超过 30 天的垃圾箱记录，仅授予 `service_role` 执行 |
 

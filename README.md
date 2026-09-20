@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 8 周：AI 合并与垃圾箱，准备发布 `v0.8.0`。
+第 9 周：提示词 AI 优化，准备发布 `v0.9.0`。
 
 当前版本支持：
 
@@ -19,6 +19,11 @@
 - 合并前目标内容保存为恢复快照
 - 来源提示词进入垃圾箱，支持恢复、永久删除和清空
 - 垃圾箱和恢复快照默认保留 30 天
+- 对单条提示词做 AI 优化，只整理结构，不改变原意
+- 优化说明、正文行级差异对比和变量变化清单
+- 默认锁死变量集合，勾选「允许调整变量」后才允许增删改名
+- 正文明显变短或变长时给出提醒
+- 保存后 30 天内可以一键回到优化前
 - 本地启动清理已包含，云端每日清理代码路径已包含，远程执行待验证
 - 新增、编辑和删除提示词
 - Markdown 编辑与预览
@@ -41,11 +46,11 @@
 - Vercel 构建强制执行完整工程检查
 - JSON 备份只导出内容字段，导入不会恢复垃圾箱中的提示词
 
-当前版本包含个人邮箱密码登录、Supabase 云数据库、跨设备同步、AI 合并和垃圾箱，
-不包含团队协作和完整版本历史。
+当前版本包含个人邮箱密码登录、Supabase 云数据库、跨设备同步、AI 合并、垃圾箱和
+提示词 AI 优化，不包含团队协作和完整版本历史。
 
-本版本代码与本地自动化检查已完成，远程 Supabase 数据库迁移、顾问验证和生产验证
-仍为待发布门禁。
+数据库迁移已经接入自动部署：推送到 `main` 后由 Supabase 自动应用 `supabase/migrations`
+里的新迁移。v0.8.0 的远程迁移、顾问验证和生产验证均已通过。
 
 ## 本地数据说明
 
@@ -97,6 +102,8 @@
 - [第 8 周验收清单](docs/acceptance/week-08.md)
 - [v0.8.0 AI 合并与垃圾箱设计](docs/superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
 - [v0.8.0 AI 合并与垃圾箱实施计划（已归档）](docs/archive/2026-09-20-ai-prompt-merge-plan.md)
+- [v0.9.0 提示词 AI 优化设计](docs/superpowers/specs/2026-09-20-ai-prompt-optimize-design.md)
+- [第 9 周验收清单](docs/acceptance/week-09.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)
