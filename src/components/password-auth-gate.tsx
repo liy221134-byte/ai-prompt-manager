@@ -14,6 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSafeNextPath } from "@/lib/auth-routing";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { getBrowserClientInitialization } from "@/lib/supabase/browser-init";
 
 function getLoginErrorMessage(message: string) {
   const normalizedMessage = message.toLowerCase();
@@ -54,16 +55,13 @@ export function PasswordAuthGate({
 
   useEffect(() => {
     const initializationTimer = window.setTimeout(() => {
-      try {
-        clientRef.current = getSupabaseBrowserClient();
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Supabase 登录服务无法启动。",
-        );
-        setIsLoading(false);
-      }
+      const initialization = getBrowserClientInitialization(
+        getSupabaseBrowserClient,
+      );
+
+      clientRef.current = initialization.client;
+      setErrorMessage(initialization.errorMessage);
+      setIsLoading(initialization.isLoading);
     }, 0);
 
     return () => {
