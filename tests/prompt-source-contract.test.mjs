@@ -17,6 +17,9 @@ const REQUIRED_METHODS = [
   "fetchMergeRecoveryRecords",
   "restoreMergeRecord",
   "permanentlyDeleteMergeRecord",
+  "commitAiOptimize",
+  "fetchOptimizeVersion",
+  "restoreAiOptimize",
 ];
 
 test("本地数据源实现完整契约", () => {

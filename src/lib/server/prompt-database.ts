@@ -755,6 +755,254 @@ export class PromptDatabase {
     });
   }
 
+  // AI 优化的原子提交：先按锁定后的当前行写优化前快照，再更新提示词。
+  commitPromptOptimize(input: { prompt: PromptCardData; versionId: string }) {
+    const promptId = input.prompt.id;
+
+    if (!promptId.trim()) {
+      throw new Error("提示词标识无效。");
+    }
+
+    if (!input.versionId.trim()) {
+      throw new Error("恢复快照标识无效。");
+    }
+
+    const now = new Date().toISOString();
+    const expiresAt = new Date(
+      Date.now() + PROMPT_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    return this.transaction(() => {
+      const targetRow = this.database
+        .prepare(
+          `
+            SELECT
+              id,
+              title,
+              category,
+              tags_json,
+              content,
+              use_case,
+              created_at,
+              updated_at,
+              deleted_at,
+              deleted_reason,
+              merged_into_prompt_id,
+              merge_version_id
+            FROM prompts
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .get(promptId) as PromptRow | undefined;
+
+      if (!targetRow) {
+        throw new Error("提示词不存在或已删除。");
+      }
+
+      const target = rowToPrompt(targetRow);
+      const version: PromptVersionData = {
+        versionId: input.versionId.trim(),
+        promptId: target.id,
+        title: target.title,
+        category: target.category,
+        tags: [...target.tags],
+        content: target.content,
+        useCase: target.useCase,
+        createdAt: now,
+        versionReason: "optimize_before",
+        sourcePromptIds: [],
+        expiresAt,
+        restoredAt: null,
+      };
+      const versionResult = this.insertPromptVersion(version);
+
+      if (Number(versionResult.changes) !== 1) {
+        throw new Error("恢复快照写入失败。");
+      }
+
+      const targetUpdate = this.database
+        .prepare(
+          `
+            UPDATE prompts
+            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .run(
+          input.prompt.title,
+          input.prompt.category,
+          JSON.stringify(input.prompt.tags),
+          input.prompt.content,
+          input.prompt.useCase,
+          now,
+          promptId,
+        );
+
+      if (Number(targetUpdate.changes) !== 1) {
+        throw new Error("提示词更新失败。");
+      }
+
+      this.bumpVersion();
+      return this.getLibrarySnapshot();
+    });
+  }
+
+  // 读取这条提示词最近一次未被消费的优化前快照，供界面判断能否回退。
+  fetchLatestOptimizeVersion(promptId: string) {
+    const row = this.database
+      .prepare(
+        `
+          SELECT
+            version_id,
+            prompt_id,
+            title,
+            category,
+            tags_json,
+            content,
+            use_case,
+            created_at,
+            version_reason,
+            source_prompt_ids_json,
+            restored_at,
+            expires_at
+          FROM prompt_versions
+          WHERE prompt_id = ?
+            AND version_reason = 'optimize_before'
+            AND restored_at IS NULL
+            AND expires_at > ?
+          ORDER BY created_at DESC, version_id ASC
+          LIMIT 1
+        `,
+      )
+      .get(promptId, new Date().toISOString()) as PromptVersionRow | undefined;
+
+    return row ? rowToVersion(row) : null;
+  }
+
+  // 回到优化前：回退本身也会覆盖内容，所以先把当前内容存成 restore_before 快照。
+  restorePromptOptimize(promptId: string, versionId: string) {
+    if (!versionId.trim()) {
+      throw new Error("恢复快照标识无效。");
+    }
+
+    const now = new Date().toISOString();
+    const expiresAt = new Date(
+      Date.now() + PROMPT_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    return this.transaction(() => {
+      const targetRow = this.database
+        .prepare(
+          `
+            SELECT
+              id,
+              title,
+              category,
+              tags_json,
+              content,
+              use_case,
+              created_at,
+              updated_at,
+              deleted_at,
+              deleted_reason,
+              merged_into_prompt_id,
+              merge_version_id
+            FROM prompts
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .get(promptId) as PromptRow | undefined;
+
+      if (!targetRow) {
+        throw new Error("提示词不存在或已删除。");
+      }
+
+      const versionRow = this.database
+        .prepare(
+          `
+            SELECT
+              version_id,
+              prompt_id,
+              title,
+              category,
+              tags_json,
+              content,
+              use_case,
+              created_at,
+              version_reason,
+              source_prompt_ids_json,
+              restored_at,
+              expires_at
+            FROM prompt_versions
+            WHERE prompt_id = ?
+              AND version_reason = 'optimize_before'
+              AND restored_at IS NULL
+              AND expires_at > ?
+            ORDER BY created_at DESC, version_id ASC
+            LIMIT 1
+          `,
+        )
+        .get(promptId, now) as PromptVersionRow | undefined;
+
+      if (!versionRow) {
+        return null;
+      }
+
+      const target = rowToPrompt(targetRow);
+      const version = rowToVersion(versionRow);
+      const restoreVersion: PromptVersionData = {
+        versionId: versionId.trim(),
+        promptId: target.id,
+        title: target.title,
+        category: target.category,
+        tags: [...target.tags],
+        content: target.content,
+        useCase: target.useCase,
+        createdAt: now,
+        versionReason: "restore_before",
+        sourcePromptIds: [],
+        expiresAt,
+        restoredAt: null,
+      };
+      const insertResult = this.insertPromptVersion(restoreVersion);
+
+      if (Number(insertResult.changes) !== 1) {
+        throw new Error("回退快照写入失败。");
+      }
+
+      const updateResult = this.database
+        .prepare(
+          `
+            UPDATE prompts
+            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .run(
+          version.title,
+          version.category,
+          JSON.stringify(version.tags),
+          version.content,
+          version.useCase,
+          now,
+          promptId,
+        );
+
+      if (Number(updateResult.changes) !== 1) {
+        throw new Error("提示词恢复失败。");
+      }
+
+      this.database
+        .prepare(
+          "UPDATE prompt_versions SET restored_at = ? WHERE version_id = ? AND restored_at IS NULL",
+        )
+        .run(now, version.versionId);
+
+      this.bumpVersion();
+      return this.getLibrarySnapshot();
+    });
+  }
+
   listMergeRecoveryRecords() {
     const rows = this.database
       .prepare(

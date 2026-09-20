@@ -154,3 +154,35 @@ export function permanentlyDeleteMergeRecordOnServer(versionId: string) {
     },
   );
 }
+
+export type CommitAiOptimizeInput = {
+  prompt: PromptCardData;
+  versionId: string;
+};
+
+export type PromptOptimizeVersionResponse = {
+  version: PromptVersionData | null;
+};
+
+export function commitAiOptimizeOnServer(input: CommitAiOptimizeInput) {
+  return requestJson<PromptLibraryResponse>("/api/prompts/ai-optimize", {
+    method: "POST",
+    body: JSON.stringify({ input }),
+  });
+}
+
+export function fetchOptimizeVersionOnServer(promptId: string) {
+  return requestJson<PromptOptimizeVersionResponse>(
+    `/api/prompts/ai-optimize/${encodeURIComponent(promptId)}`,
+  );
+}
+
+export function restoreAiOptimizeOnServer(promptId: string, versionId: string) {
+  return requestJson<PromptLibraryResponse>(
+    `/api/prompts/ai-optimize/${encodeURIComponent(promptId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ versionId }),
+    },
+  );
+}

@@ -6,22 +6,27 @@ import type {
   PromptVersionReason,
 } from "../data/prompts.ts";
 import {
+  commitAiOptimizeOnServer,
   commitAiMergeOnServer,
   createPromptOnServer,
   deletePromptOnServer,
   emptyTrashOnServer,
   fetchMergeRecoveryRecordsOnServer,
+  fetchOptimizeVersionOnServer,
   fetchPromptLibrary,
   fetchTrashOnServer,
   mergePromptsOnServer,
   permanentlyDeleteMergeRecordOnServer,
   permanentlyDeletePromptOnServer,
+  restoreAiOptimizeOnServer,
   restoreMergeRecordOnServer,
   restorePromptOnServer,
   updatePromptOnServer,
   type CommitAiMergeInput,
+  type CommitAiOptimizeInput,
   type PromptLibraryResponse,
   type PromptMergeResponse,
+  type PromptOptimizeVersionResponse,
   type PromptRecoveryResponse,
 } from "./prompt-api.ts";
 import {
@@ -54,6 +59,16 @@ export type PromptDataSource = {
   permanentlyDeleteMergeRecord: (
     versionId: string,
   ) => Promise<PromptLibraryResponse>;
+  commitAiOptimize: (
+    input: CommitAiOptimizeInput,
+  ) => Promise<PromptLibraryResponse>;
+  fetchOptimizeVersion: (
+    promptId: string,
+  ) => Promise<PromptOptimizeVersionResponse>;
+  restoreAiOptimize: (
+    promptId: string,
+    versionId: string,
+  ) => Promise<PromptLibraryResponse>;
 };
 
 export const localPromptDataSource: PromptDataSource = {
@@ -70,6 +85,9 @@ export const localPromptDataSource: PromptDataSource = {
   fetchMergeRecoveryRecords: fetchMergeRecoveryRecordsOnServer,
   restoreMergeRecord: restoreMergeRecordOnServer,
   permanentlyDeleteMergeRecord: permanentlyDeleteMergeRecordOnServer,
+  commitAiOptimize: commitAiOptimizeOnServer,
+  fetchOptimizeVersion: fetchOptimizeVersionOnServer,
+  restoreAiOptimize: restoreAiOptimizeOnServer,
 };
 
 type SupabasePromptRow = {
@@ -369,6 +387,61 @@ export function createSupabasePromptDataSource(
 
       if (error) {
         throw new Error("彻底删除云端恢复记录失败。");
+      }
+
+      return fetchLibrary();
+    },
+    async commitAiOptimize(input) {
+      await getCurrentUser(client);
+      const { error } = await client.rpc("commit_prompt_optimize", {
+        p_prompt_id: input.prompt.id,
+        p_title: input.prompt.title,
+        p_category: input.prompt.category,
+        p_tags: input.prompt.tags,
+        p_content: input.prompt.content,
+        p_use_case: input.prompt.useCase,
+        p_version_id: input.versionId,
+      });
+
+      if (error) {
+        throw new Error("保存云端优化结果失败。");
+      }
+
+      return fetchLibrary();
+    },
+    async fetchOptimizeVersion(promptId) {
+      await getCurrentUser(client);
+      const { data, error } = await client
+        .from("prompt_versions")
+        .select(
+          "user_id, version_id, prompt_id, title, category, tags, content, use_case, created_at, version_reason, source_prompt_ids, restored_at, expires_at",
+        )
+        .eq("prompt_id", promptId)
+        .eq("version_reason", "optimize_before")
+        .is("restored_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        throw new Error("读取云端优化记录失败。");
+      }
+
+      const rows = data as SupabasePromptVersionRow[];
+
+      return {
+        version: rows.length > 0 ? rowToVersion(rows[0]) : null,
+      };
+    },
+    async restoreAiOptimize(promptId, versionId) {
+      await getCurrentUser(client);
+      const { error } = await client.rpc("restore_prompt_optimize", {
+        p_prompt_id: promptId,
+        p_version_id: versionId,
+      });
+
+      if (error) {
+        throw new Error("回到云端优化前失败。");
       }
 
       return fetchLibrary();
