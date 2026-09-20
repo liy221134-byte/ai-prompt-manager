@@ -62,6 +62,7 @@
 - [8 周路线图](docs/roadmap.md)
 - [2.0 需求草案](docs/v2-requirements-draft.md)
 - [工程能力学习计划](docs/learning/engineering-readiness.md)
+- [工程方法种子资产包](seed-packs/engineering-foundations/README.md)
 - [开发规则与协作提示词](docs/development-rules.md)
 - [技术选型](docs/decisions/0001-tech-stack.md)
 - [第 1 周验收清单](docs/acceptance/week-01.md)

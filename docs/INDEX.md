@@ -44,6 +44,7 @@
 ### 工程学习
 
 - [工程能力学习计划](learning/engineering-readiness.md)
+- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)
 
 ### 验收与测试
 
