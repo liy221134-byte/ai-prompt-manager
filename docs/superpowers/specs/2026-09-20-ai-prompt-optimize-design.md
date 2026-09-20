@@ -352,15 +352,6 @@ restoreOptimizeVersion
 
 - 沿用 30 天过期策略，并限制单个提示词的优化快照数量。
 
-## 发布顺序
-
-1. 先把 `v0.8.0` 合并到 `main`，云端确认 `prompt_versions` 和清理任务生效。
-2. 扩展 `version_reason` 类型和本地数据库处理。
-3. 实现 AI 优化接口和数据源方法。
-4. 实现优化抽屉、差异对比、优化记录和回退。
-5. 完成自动化测试和人工验收。
-6. 发布新版本。
-
 ## 已定方案
 
 以下 5 项在 2026-09-20 的流程复盘中定稿，实施时按此执行；如果后续发现不合适，
@@ -376,6 +367,20 @@ restoreOptimizeVersion
 4. **同一个提示词最多保留 20 条优化快照**：与 30 天过期策略叠加后足够回溯，同时
    避免单个提示词的版本无限增长。
 5. **版本号为 `v0.9.0`**。
+
+## 任务顺序
+
+一个任务一次提交，按顺序做。表里的文件是预计改动范围，实施时以实际需要为准。
+
+| 序号 | 任务 | 主要改动文件 |
+| --- | --- | --- |
+| 1 | 快照原因类型放宽到 `optimize_before` / `restore_before` | `src/lib/server/prompt-database.ts` |
+| 2 | AI 优化接口与输出校验 | `src/app/api/ai/optimize-prompt/route.ts`、`src/lib/prompt-ai.ts` |
+| 3 | 云端提交与回退函数 | `supabase/migrations/` 新增一个迁移文件 |
+| 4 | 数据源方法：提交、查询优化记录、回退 | `src/lib/prompt-source.ts`、`src/lib/server/prompt-database.ts` |
+| 5 | 优化抽屉：草稿编辑、差异对比、变量变化清单 | `src/components/prompt-optimize-drawer.tsx`、`src/components/prompt-detail-drawer.tsx` |
+| 6 | 优化记录列表和回退入口 | 复用第 5 个任务的组件 |
+| 7 | 自动化测试与人工验收记录 | `tests/`、`docs/acceptance/` |
 
 ## 当前阻塞
 
