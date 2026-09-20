@@ -2,12 +2,17 @@ import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import { promptCards, type PromptCardData } from "../../data/prompts.ts";
+import {
+  promptCards,
+  type PromptCardData,
+  type PromptVersionData,
+} from "../../data/prompts.ts";
 import {
   createPromptImportPlan,
   PROMPT_BACKUP_TYPE,
   PROMPT_BACKUP_VERSION,
 } from "../prompt-backup.ts";
+import { PROMPT_TRASH_RETENTION_DAYS } from "../prompt-lifecycle.ts";
 
 type PromptRow = {
   id: string;
@@ -18,6 +23,24 @@ type PromptRow = {
   use_case: string;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
+  deleted_reason: "manual" | "merge" | null;
+  merged_into_prompt_id: string | null;
+};
+
+type PromptVersionRow = {
+  version_id: string;
+  prompt_id: string;
+  title: string;
+  category: string;
+  tags_json: string;
+  content: string;
+  use_case: string;
+  created_at: string;
+  version_reason: "merge_before";
+  source_prompt_ids_json: string;
+  restored_at: string | null;
+  expires_at: string;
 };
 
 type MetaRow = {
@@ -52,9 +75,26 @@ function rowToPrompt(row: PromptRow): PromptCardData {
     useCase: row.use_case,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    deletedAt: null,
-    deletedReason: null,
-    mergedIntoPromptId: null,
+    deletedAt: row.deleted_at,
+    deletedReason: row.deleted_reason,
+    mergedIntoPromptId: row.merged_into_prompt_id,
+  };
+}
+
+function rowToVersion(row: PromptVersionRow): PromptVersionData {
+  return {
+    versionId: row.version_id,
+    promptId: row.prompt_id,
+    title: row.title,
+    category: row.category,
+    tags: JSON.parse(row.tags_json) as string[],
+    content: row.content,
+    useCase: row.use_case,
+    createdAt: row.created_at,
+    versionReason: row.version_reason,
+    sourcePromptIds: JSON.parse(row.source_prompt_ids_json) as string[],
+    restoredAt: row.restored_at,
+    expiresAt: row.expires_at,
   };
 }
 
@@ -89,6 +129,34 @@ export class PromptDatabase {
       );
     `);
 
+    this.ensurePromptLifecycleColumns();
+
+    this.database.exec(`
+      CREATE TABLE IF NOT EXISTS prompt_versions (
+        version_id TEXT PRIMARY KEY,
+        prompt_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        tags_json TEXT NOT NULL,
+        content TEXT NOT NULL,
+        use_case TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        version_reason TEXT NOT NULL,
+        source_prompt_ids_json TEXT NOT NULL,
+        restored_at TEXT,
+        expires_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS prompt_versions_prompt_idx
+      ON prompt_versions (prompt_id, created_at DESC);
+
+      CREATE INDEX IF NOT EXISTS prompt_versions_expires_idx
+      ON prompt_versions (expires_at);
+
+      CREATE INDEX IF NOT EXISTS prompts_deleted_idx
+      ON prompts (deleted_at);
+    `);
+
     this.database
       .prepare(
         "INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)",
@@ -101,6 +169,30 @@ export class PromptDatabase {
       .run("seed_initialized", "0");
 
     this.seedInitialPrompts();
+  }
+
+  private hasColumn(tableName: string, columnName: string) {
+    const rows = this.database
+      .prepare(`PRAGMA table_info(${tableName})`)
+      .all() as Array<{ name: string }>;
+
+    return rows.some((row) => row.name === columnName);
+  }
+
+  private ensurePromptLifecycleColumns() {
+    if (!this.hasColumn("prompts", "deleted_at")) {
+      this.database.exec("ALTER TABLE prompts ADD COLUMN deleted_at TEXT");
+    }
+
+    if (!this.hasColumn("prompts", "deleted_reason")) {
+      this.database.exec("ALTER TABLE prompts ADD COLUMN deleted_reason TEXT");
+    }
+
+    if (!this.hasColumn("prompts", "merged_into_prompt_id")) {
+      this.database.exec(
+        "ALTER TABLE prompts ADD COLUMN merged_into_prompt_id TEXT",
+      );
+    }
   }
 
   private seedInitialPrompts() {
@@ -171,6 +263,42 @@ export class PromptDatabase {
       );
   }
 
+  private insertPromptVersion(version: PromptVersionData) {
+    this.database
+      .prepare(
+        `
+          INSERT INTO prompt_versions (
+            version_id,
+            prompt_id,
+            title,
+            category,
+            tags_json,
+            content,
+            use_case,
+            created_at,
+            version_reason,
+            source_prompt_ids_json,
+            restored_at,
+            expires_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        version.versionId,
+        version.promptId,
+        version.title,
+        version.category,
+        JSON.stringify(version.tags),
+        version.content,
+        version.useCase,
+        version.createdAt,
+        version.versionReason,
+        JSON.stringify(version.sourcePromptIds),
+        version.restoredAt,
+        version.expiresAt,
+      );
+  }
+
   private updatePromptRow(prompt: PromptCardData) {
     return this.database
       .prepare(
@@ -231,9 +359,39 @@ export class PromptDatabase {
             content,
             use_case,
             created_at,
-            updated_at
+            updated_at,
+            deleted_at,
+            deleted_reason,
+            merged_into_prompt_id
           FROM prompts
+          WHERE deleted_at IS NULL
           ORDER BY updated_at DESC, id ASC
+        `,
+      )
+      .all() as PromptRow[];
+
+    return rows.map(rowToPrompt);
+  }
+
+  listTrash() {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT
+            id,
+            title,
+            category,
+            tags_json,
+            content,
+            use_case,
+            created_at,
+            updated_at,
+            deleted_at,
+            deleted_reason,
+            merged_into_prompt_id
+          FROM prompts
+          WHERE deleted_at IS NOT NULL
+          ORDER BY deleted_at DESC, id ASC
         `,
       )
       .all() as PromptRow[];
@@ -280,9 +438,54 @@ export class PromptDatabase {
   }
 
   deletePrompt(promptId: string) {
+    const deletedAt = new Date().toISOString();
+    const result = this.transaction(() => {
+      const updateResult = this.database
+        .prepare(
+          `
+            UPDATE prompts
+            SET deleted_at = ?, deleted_reason = ?, merged_into_prompt_id = NULL
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .run(deletedAt, "manual", promptId);
+
+      if (updateResult.changes > 0) {
+        this.bumpVersion();
+      }
+
+      return updateResult;
+    });
+
+    return result.changes > 0;
+  }
+
+  restorePrompt(promptId: string) {
+    const result = this.transaction(() => {
+      const updateResult = this.database
+        .prepare(
+          `
+            UPDATE prompts
+            SET deleted_at = NULL, deleted_reason = NULL, merged_into_prompt_id = NULL
+            WHERE id = ? AND deleted_at IS NOT NULL
+          `,
+        )
+        .run(promptId);
+
+      if (updateResult.changes > 0) {
+        this.bumpVersion();
+      }
+
+      return updateResult;
+    });
+
+    return result.changes > 0;
+  }
+
+  permanentlyDeletePrompt(promptId: string) {
     const result = this.transaction(() => {
       const deleteResult = this.database
-        .prepare("DELETE FROM prompts WHERE id = ?")
+        .prepare("DELETE FROM prompts WHERE id = ? AND deleted_at IS NOT NULL")
         .run(promptId);
 
       if (deleteResult.changes > 0) {
@@ -295,21 +498,74 @@ export class PromptDatabase {
     return result.changes > 0;
   }
 
+  emptyTrash() {
+    return this.transaction(() => {
+      const deleteResult = this.database
+        .prepare("DELETE FROM prompts WHERE deleted_at IS NOT NULL")
+        .run();
+      const versionResult = this.database
+        .prepare("DELETE FROM prompt_versions")
+        .run();
+
+      if (Number(deleteResult.changes) + Number(versionResult.changes) > 0) {
+        this.bumpVersion();
+      }
+
+      return Number(deleteResult.changes);
+    });
+  }
+
+  purgeExpiredTrash(now = new Date()) {
+    const nowIso = now.toISOString();
+    const promptCutoff = new Date(
+      now.getTime() -
+        PROMPT_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    return this.transaction(() => {
+      const versionResult = this.database
+        .prepare("DELETE FROM prompt_versions WHERE expires_at <= ?")
+        .run(nowIso);
+      const promptResult = this.database
+        .prepare(
+          "DELETE FROM prompts WHERE deleted_at IS NOT NULL AND deleted_at <= ?",
+        )
+        .run(promptCutoff);
+
+      if (Number(versionResult.changes) + Number(promptResult.changes) > 0) {
+        this.bumpVersion();
+      }
+
+      return Number(versionResult.changes) + Number(promptResult.changes);
+    });
+  }
+
   mergePrompts(importedPrompts: PromptCardData[]): PromptMergeResult {
-    const currentPrompts = this.listPrompts();
-    const plan = createPromptImportPlan(currentPrompts, {
+    const trashedPromptIds = new Set(
+      this.listTrash().map((prompt) => prompt.id),
+    );
+    const importablePrompts = importedPrompts.filter(
+      (prompt) => !trashedPromptIds.has(prompt.id),
+    );
+    const plan = createPromptImportPlan(this.listPrompts(), {
       type: PROMPT_BACKUP_TYPE,
       version: PROMPT_BACKUP_VERSION,
       exportedAt: new Date().toISOString(),
-      prompts: importedPrompts,
+      prompts: importablePrompts,
     });
 
     if (plan.addCount + plan.updateCount > 0) {
       this.transaction(() => {
-        this.database.prepare("DELETE FROM prompts").run();
-
         for (const prompt of plan.mergedPrompts) {
-          this.insertPrompt(prompt);
+          const existing = this.database
+            .prepare("SELECT id FROM prompts WHERE id = ?")
+            .get(prompt.id);
+
+          if (existing) {
+            this.updatePromptRow(prompt);
+          } else {
+            this.insertPrompt(prompt);
+          }
         }
 
         this.bumpVersion();
@@ -320,8 +576,146 @@ export class PromptDatabase {
       ...this.getLibrarySnapshot(),
       addCount: plan.addCount,
       updateCount: plan.updateCount,
-      skipCount: plan.skipCount,
+      skipCount: plan.skipCount + importedPrompts.length - importablePrompts.length,
     };
+  }
+
+  commitPromptMerge(input: {
+    prompt: PromptCardData;
+    sourcePromptIds: string[];
+    version: PromptVersionData;
+  }) {
+    return this.transaction(() => {
+      this.insertPromptVersion(input.version);
+      this.updatePromptRow(input.prompt);
+
+      for (const promptId of input.sourcePromptIds) {
+        this.database
+          .prepare(
+            `
+              UPDATE prompts
+              SET deleted_at = ?, deleted_reason = ?, merged_into_prompt_id = ?
+              WHERE id = ? AND deleted_at IS NULL
+            `,
+          )
+          .run(
+            input.prompt.updatedAt,
+            "merge",
+            input.prompt.id,
+            promptId,
+          );
+      }
+
+      this.bumpVersion();
+      return this.getLibrarySnapshot();
+    });
+  }
+
+  listMergeRecoveryRecords() {
+    const rows = this.database
+      .prepare(
+        `
+          SELECT
+            version_id,
+            prompt_id,
+            title,
+            category,
+            tags_json,
+            content,
+            use_case,
+            created_at,
+            version_reason,
+            source_prompt_ids_json,
+            restored_at,
+            expires_at
+          FROM prompt_versions
+          WHERE restored_at IS NULL
+          ORDER BY created_at DESC, version_id ASC
+        `,
+      )
+      .all() as PromptVersionRow[];
+
+    return rows.map(rowToVersion);
+  }
+
+  restoreMergeRecord(versionId: string) {
+    return this.transaction(() => {
+      const row = this.database
+        .prepare(
+          `
+            SELECT
+              version_id,
+              prompt_id,
+              title,
+              category,
+              tags_json,
+              content,
+              use_case,
+              created_at,
+              version_reason,
+              source_prompt_ids_json,
+              restored_at,
+              expires_at
+            FROM prompt_versions
+            WHERE version_id = ? AND restored_at IS NULL
+          `,
+        )
+        .get(versionId) as PromptVersionRow | undefined;
+
+      if (!row) {
+        return null;
+      }
+
+      const version = rowToVersion(row);
+      const restoredAt = new Date().toISOString();
+
+      this.database
+        .prepare(
+          `
+            UPDATE prompts
+            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
+            WHERE id = ?
+          `,
+        )
+        .run(
+          version.title,
+          version.category,
+          JSON.stringify(version.tags),
+          version.content,
+          version.useCase,
+          restoredAt,
+          version.promptId,
+        );
+
+      for (const promptId of version.sourcePromptIds) {
+        if (promptId === version.promptId) {
+          continue;
+        }
+
+        this.database
+          .prepare(
+            `
+              UPDATE prompts
+              SET deleted_at = NULL, deleted_reason = NULL, merged_into_prompt_id = NULL
+              WHERE id = ?
+            `,
+          )
+          .run(promptId);
+      }
+
+      this.database
+        .prepare(
+          `
+            UPDATE prompt_versions
+            SET restored_at = ?
+            WHERE version_id = ?
+          `,
+        )
+        .run(restoredAt, versionId);
+
+      this.bumpVersion();
+      return this.getLibrarySnapshot();
+    });
   }
 
   close() {

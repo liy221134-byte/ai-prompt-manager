@@ -76,6 +76,10 @@ test("新增、更新和删除提示词会同步保存", () => {
     );
 
     assert.equal(context.database.deletePrompt(prompt.id), true);
+    assert.ok(
+      !context.database.listPrompts().some((item) => item.id === prompt.id),
+    );
+    assert.ok(context.database.listTrash().some((item) => item.id === prompt.id));
     assert.equal(context.database.deletePrompt(prompt.id), false);
   } finally {
     context.database.close();
