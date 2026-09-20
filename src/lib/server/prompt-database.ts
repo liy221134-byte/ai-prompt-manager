@@ -264,7 +264,7 @@ export class PromptDatabase {
   }
 
   private insertPromptVersion(version: PromptVersionData) {
-    this.database
+    return this.database
       .prepare(
         `
           INSERT INTO prompt_versions (
@@ -541,6 +541,12 @@ export class PromptDatabase {
   }
 
   mergePrompts(importedPrompts: PromptCardData[]): PromptMergeResult {
+    const importedPromptIds = importedPrompts.map((prompt) => prompt.id);
+
+    if (new Set(importedPromptIds).size !== importedPromptIds.length) {
+      throw new Error("待合并数据中存在重复的提示词标识。");
+    }
+
     const trashedPromptIds = new Set(
       this.listTrash().map((prompt) => prompt.id),
     );
@@ -585,25 +591,97 @@ export class PromptDatabase {
     sourcePromptIds: string[];
     version: PromptVersionData;
   }) {
-    return this.transaction(() => {
-      this.insertPromptVersion(input.version);
-      this.updatePromptRow(input.prompt);
+    const targetId = input.prompt.id;
+    const sourceIds = input.sourcePromptIds;
 
-      for (const promptId of input.sourcePromptIds) {
-        this.database
+    if (sourceIds.length < 2 || sourceIds.length > 5) {
+      throw new Error("合并来源数量必须是 2 至 5 条。");
+    }
+
+    if (new Set(sourceIds).size !== sourceIds.length) {
+      throw new Error("合并来源存在重复提示词。");
+    }
+
+    if (!sourceIds.includes(targetId)) {
+      throw new Error("目标提示词必须包含在合并来源中。");
+    }
+
+    if (input.version.promptId !== targetId) {
+      throw new Error("恢复快照与目标提示词不一致。");
+    }
+
+    return this.transaction(() => {
+      const target = this.database
+        .prepare("SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL")
+        .get(targetId);
+
+      if (!target) {
+        throw new Error("目标提示词不存在或已删除。");
+      }
+
+      for (const promptId of sourceIds) {
+        const source = this.database
+          .prepare(
+            "SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL",
+          )
+          .get(promptId);
+
+        if (!source) {
+          throw new Error("合并来源不存在或已删除。");
+        }
+      }
+
+      const versionResult = this.insertPromptVersion(input.version);
+
+      if (Number(versionResult.changes) !== 1) {
+        throw new Error("恢复快照写入失败。");
+      }
+
+      const targetUpdate = this.database
+        .prepare(
+          `
+            UPDATE prompts
+            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .run(
+          input.prompt.title,
+          input.prompt.category,
+          JSON.stringify(input.prompt.tags),
+          input.prompt.content,
+          input.prompt.useCase,
+          input.prompt.updatedAt,
+          targetId,
+        );
+
+      if (Number(targetUpdate.changes) !== 1) {
+        throw new Error("目标提示词更新失败。");
+      }
+
+      for (const promptId of sourceIds) {
+        if (promptId === targetId) {
+          continue;
+        }
+
+        const sourceUpdate = this.database
           .prepare(
             `
               UPDATE prompts
               SET deleted_at = ?, deleted_reason = ?, merged_into_prompt_id = ?
               WHERE id = ? AND deleted_at IS NULL
             `,
-          )
-          .run(
-            input.prompt.updatedAt,
-            "merge",
-            input.prompt.id,
-            promptId,
           );
+        const result = sourceUpdate.run(
+          input.prompt.updatedAt,
+          "merge",
+          targetId,
+          promptId,
+        );
+
+        if (Number(result.changes) !== 1) {
+          throw new Error("合并来源归档失败。");
+        }
       }
 
       this.bumpVersion();
@@ -667,14 +745,55 @@ export class PromptDatabase {
       }
 
       const version = rowToVersion(row);
+      const target = this.database
+        .prepare("SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL")
+        .get(version.promptId);
+
+      if (!target) {
+        return null;
+      }
+
+      const restorableSourceIds = new Set<string>();
+
+      for (const promptId of version.sourcePromptIds) {
+        if (promptId === version.promptId) {
+          continue;
+        }
+
+        const source = this.database
+          .prepare(
+            `
+              SELECT deleted_at, deleted_reason, merged_into_prompt_id
+              FROM prompts
+              WHERE id = ?
+            `,
+          )
+          .get(promptId) as
+            | {
+                deleted_at: string | null;
+                deleted_reason: "manual" | "merge" | null;
+                merged_into_prompt_id: string | null;
+              }
+            | undefined;
+
+        if (
+          source &&
+          source.deleted_at !== null &&
+          source.deleted_reason === "merge" &&
+          source.merged_into_prompt_id === version.promptId
+        ) {
+          restorableSourceIds.add(promptId);
+        }
+      }
+
       const restoredAt = new Date().toISOString();
 
-      this.database
+      const targetUpdate = this.database
         .prepare(
           `
             UPDATE prompts
             SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
-            WHERE id = ?
+            WHERE id = ? AND deleted_at IS NULL
           `,
         )
         .run(
@@ -687,31 +806,37 @@ export class PromptDatabase {
           version.promptId,
         );
 
-      for (const promptId of version.sourcePromptIds) {
-        if (promptId === version.promptId) {
-          continue;
-        }
+      if (Number(targetUpdate.changes) !== 1) {
+        throw new Error("目标提示词恢复失败。");
+      }
 
-        this.database
+      for (const promptId of restorableSourceIds) {
+        const sourceUpdate = this.database
           .prepare(
             `
               UPDATE prompts
               SET deleted_at = NULL, deleted_reason = NULL, merged_into_prompt_id = NULL
-              WHERE id = ?
+              WHERE id = ? AND deleted_at IS NOT NULL
+                AND deleted_reason = 'merge'
+                AND merged_into_prompt_id = ?
             `,
           )
-          .run(promptId);
+          .run(promptId, version.promptId);
+
+        if (Number(sourceUpdate.changes) !== 1) {
+          throw new Error("合并来源恢复失败。");
+        }
       }
 
-      this.database
+      const versionUpdate = this.database
         .prepare(
-          `
-            UPDATE prompt_versions
-            SET restored_at = ?
-            WHERE version_id = ?
-          `,
+          "UPDATE prompt_versions SET restored_at = ? WHERE version_id = ? AND restored_at IS NULL",
         )
         .run(restoredAt, versionId);
+
+      if (Number(versionUpdate.changes) !== 1) {
+        throw new Error("恢复记录更新失败。");
+      }
 
       this.bumpVersion();
       return this.getLibrarySnapshot();
