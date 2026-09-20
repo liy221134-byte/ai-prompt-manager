@@ -581,10 +581,16 @@ Add a `commitPromptMerge()` method using one `this.transaction()`:
 commitPromptMerge(input: {
   prompt: PromptCardData;
   sourcePromptIds: string[];
-  version: PromptVersionData;
+  versionId: string;
 }) {
   return this.transaction(() => {
-    this.insertPromptVersion(input.version);
+    const target = /* 在事务中读取当前活跃目标行 */;
+    const version = {
+      versionId: input.versionId,
+      ...target,
+      sourcePromptIds: [...input.sourcePromptIds],
+    };
+    this.insertPromptVersion(version);
     this.updatePromptRow(input.prompt);
 
     for (const promptId of input.sourcePromptIds) {
@@ -646,7 +652,7 @@ git commit -m "feat: add local prompt trash and recovery"
 
 **Interfaces:**
 - Consumes: Task 1 的数据字段。
-- Produces: `prompt_versions` 表；`commit_prompt_merge(...)`；`restore_prompt_merge(...)`；`purge_expired_prompt_versions(...)`。
+- Produces: `prompt_versions` 表；`commit_prompt_merge(...)`；`restore_prompt_merge(...)`；`empty_prompt_trash()`；`purge_expired_prompt_versions(...)`。
 
 - [ ] **Step 1: 创建迁移文件**
 
@@ -736,8 +742,12 @@ begin
     raise exception '未登录。';
   end if;
 
-  if array_length(p_source_prompt_ids, 1) < 2
-    or array_length(p_source_prompt_ids, 1) > 5
+  if p_source_prompt_ids is null then
+    raise exception '合并来源数量无效。';
+  end if;
+
+  if cardinality(p_source_prompt_ids) < 2
+    or cardinality(p_source_prompt_ids) > 5
     or not p_prompt_id = any(p_source_prompt_ids)
   then
     raise exception '合并来源数量无效。';
@@ -762,7 +772,7 @@ begin
     and id = any(p_source_prompt_ids)
     and deleted_at is null;
 
-  if v_source_count <> array_length(p_source_prompt_ids, 1) then
+  if v_source_count <> cardinality(p_source_prompt_ids) then
     raise exception '部分来源提示词不存在。';
   end if;
 
@@ -1033,7 +1043,7 @@ Define:
 export type CommitAiMergeInput = {
   prompt: PromptCardData;
   sourcePromptIds: string[];
-  version: PromptVersionData;
+  versionId: string;
 };
 
 export type PromptRecoveryResponse = {
@@ -1074,13 +1084,14 @@ Add:
 - trash query with `not("deleted_at", "is", null)`
 - restore via update
 - permanent delete
-- empty trash
+- empty trash via `empty_prompt_trash()` RPC
 - `commit_prompt_merge` RPC
 - recovery list
 - restore RPC
 
-Update `mergePrompts()` so it first fetches trashed prompt IDs and removes
-those IDs from imported backup data before planning and upserting. This
+Update `mergePrompts()` so it passes trashed prompt IDs into the shared
+`createPromptImportPlan()` before upserting. The backup preview uses the same
+function, so trashed IDs are consistently shown and handled as skipped. This
 prevents a backup import from resurrecting a prompt that is still in the
 30-day trash period.
 
@@ -1388,14 +1399,10 @@ git commit -m "feat: add prompt merge selection"
 
 - [ ] **Step 1: 写草稿操作测试**
 
-Create pure helpers in `src/lib/prompt-merge-draft.ts`:
+Create a pure helper in `src/lib/prompt-merge-draft.ts`:
 
 ```typescript
-createMergeVersion(input: {
-  target: PromptCardData;
-  sourcePromptIds: string[];
-  createdAt: string;
-}): PromptVersionData
+createMergeVersionId(): string
 ```
 
 Create `tests/prompt-merge-draft.test.mjs`:
@@ -1404,33 +1411,10 @@ Create `tests/prompt-merge-draft.test.mjs`:
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createMergeVersion } from "../src/lib/prompt-merge-draft.ts";
+import { createMergeVersionId } from "../src/lib/prompt-merge-draft.ts";
 
-const target = {
-  id: "prompt-a",
-  title: "提示词 A",
-  category: "AI效能",
-  tags: ["测试"],
-  content: "请处理 {{内容}}",
-  useCase: "测试合并。",
-  createdAt: "2026-09-20T00:00:00.000Z",
-  updatedAt: "2026-09-20T00:00:00.000Z",
-  deletedAt: null,
-  deletedReason: null,
-  mergedIntoPromptId: null,
-};
-
-test("合并恢复快照保留目标、来源和 30 天过期时间", () => {
-  const version = createMergeVersion({
-    target,
-    sourcePromptIds: ["prompt-a", "prompt-b"],
-    createdAt: "2026-09-20T01:00:00.000Z",
-  });
-
-  assert.match(version.versionId, /^version-/);
-  assert.equal(version.promptId, "prompt-a");
-  assert.deepEqual(version.sourcePromptIds, ["prompt-a", "prompt-b"]);
-  assert.equal(version.expiresAt, "2026-10-20T01:00:00.000Z");
+test("合并提交使用客户端生成的稳定版本标识", () => {
+  assert.match(createMergeVersionId(), /^version-/);
 });
 ```
 
@@ -1495,12 +1479,6 @@ Extract shared field controls only if it removes real duplication.
 Build:
 
 ```typescript
-const version = createMergeVersion({
-  target,
-  sourcePromptIds: selectedPrompts.map((prompt) => prompt.id),
-  createdAt: now,
-});
-
 await dataSource.commitAiMerge({
   prompt: {
     ...target,
@@ -1508,7 +1486,7 @@ await dataSource.commitAiMerge({
     updatedAt: now,
   },
   sourcePromptIds: selectedPrompts.map((prompt) => prompt.id),
-  version,
+  versionId: createMergeVersionId(),
 });
 ```
 

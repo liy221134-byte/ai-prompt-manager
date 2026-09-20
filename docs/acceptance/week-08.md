@@ -17,21 +17,26 @@
 - [x] 合并草稿先预览和编辑，用户确认后才保存；失败或取消不会修改数据
 - [x] 保存前会统一去除首尾空格并规范化标签，合并说明只读
 - [x] 合并保存为一次原子操作，目标更新、来源归档和恢复快照任一步失败会整体回滚
+- [x] 空来源数组会在写入快照和目标前被拒绝并回滚
 - [x] 来源提示词进入垃圾箱，并记录 `deleted_reason=merge`、`merged_into_prompt_id` 和 `merge_version_id`
 - [x] 目标提示词合并前内容保存为 `prompt_versions` 恢复快照，默认保留 30 天
+- [x] 恢复快照内容由服务端从锁定后的目标行生成，客户端只提供 `versionId`
 - [x] 垃圾箱支持恢复、永久删除和清空，清空会同时删除恢复记录
+- [x] 云端清空垃圾箱通过单个 `empty_prompt_trash()` RPC 原子执行
 - [x] 恢复合并记录会恢复目标旧内容，以及仍处于该次合并归档状态的来源
 - [x] 已恢复、已过期或状态已改变的记录不会被重复消费
 - [x] 本地模式在数据库初始化时清理过期垃圾箱和恢复快照
 - [x] 备份只导出提示词内容字段，不包含生命周期字段
 - [x] 备份导入会把生命周期字段规范化为空，并跳过已在垃圾箱中的提示词
-- [x] `npm run check` 已通过：lint、typecheck、91 项测试和 build
+- [x] 备份导入预览使用与实际导入相同的垃圾箱过滤规则，垃圾箱中的标识显示为跳过
+- [x] Supabase 数据源假客户端测试覆盖垃圾箱过滤、RPC 参数、恢复查询、清空 RPC 和失败分支
+- [x] `npm run check` 已通过：lint、typecheck、101 项测试和 build
 
 ## 待发布门禁
 
 - [ ] 远程 Supabase 数据库迁移已执行并验证
 - [ ] 远程 Supabase `prompt_versions` 表、索引和 RLS 策略已生效
-- [ ] 远程 Supabase RPC `commit_prompt_merge`、`restore_prompt_merge`、`purge_expired_prompt_versions` 已执行并验证
+- [ ] 远程 Supabase RPC `commit_prompt_merge`、`restore_prompt_merge`、`empty_prompt_trash`、`purge_expired_prompt_versions` 已执行并验证
 - [ ] 远程 Supabase 迁移顾问已验证迁移安全性与账号隔离
 - [ ] 云端每日清理任务实际运行并产生预期结果
 - [ ] 真实账号之间不能读取或修改彼此的提示词、垃圾箱和恢复记录
