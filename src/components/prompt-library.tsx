@@ -13,6 +13,7 @@ import {
   RefreshCcw,
   Search,
   Target,
+  Trash2,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -32,9 +33,11 @@ import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
 import { PromptEditorDrawer } from "@/components/prompt-editor-drawer";
+import { PromptTrashDialog } from "@/components/prompt-trash-dialog";
 import {
   type PromptCardData,
   type PromptDraft,
+  type PromptVersionData,
 } from "@/data/prompts";
 import {
   loadLastBackupAt,
@@ -137,6 +140,13 @@ export function PromptLibrary({
   const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
+  const [trashPrompts, setTrashPrompts] = useState<PromptCardData[]>([]);
+  const [recoveryRecords, setRecoveryRecords] = useState<
+    PromptVersionData[]
+  >([]);
+  const [isTrashLoading, setIsTrashLoading] = useState(false);
+  const [trashError, setTrashError] = useState<string | null>(null);
   const [isMergeSelectionMode, setIsMergeSelectionMode] = useState(false);
   const [mergeSelection, setMergeSelection] =
     useState<PromptMergeSelection>(createEmptySelection);
@@ -215,6 +225,46 @@ export function PromptLibrary({
       setIsLoading(false);
     }
   }, [cachePrompts, dataSource, notify, serviceName]);
+
+  const fetchTrashData = useCallback(async () => {
+    const [trashLibrary, recoveryResponse] = await Promise.all([
+      dataSource.fetchTrash(),
+      dataSource.fetchMergeRecoveryRecords(),
+    ]);
+
+    return {
+      prompts: trashLibrary.prompts,
+      records: recoveryResponse.records,
+    };
+  }, [dataSource]);
+
+  const loadTrash = useCallback(
+    async (showLoading = true) => {
+      if (showLoading) {
+        setIsTrashLoading(true);
+      }
+
+      setTrashError(null);
+
+      try {
+        const trashData = await fetchTrashData();
+
+        setTrashPrompts(trashData.prompts);
+        setRecoveryRecords(trashData.records);
+      } catch (error) {
+        setTrashError(
+          error instanceof Error
+            ? error.message
+            : `${serviceName}垃圾箱读取失败。`,
+        );
+      } finally {
+        if (showLoading) {
+          setIsTrashLoading(false);
+        }
+      }
+    },
+    [fetchTrashData, serviceName],
+  );
 
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
@@ -337,7 +387,44 @@ export function PromptLibrary({
       setSelectedPromptId(null);
     }
 
-    notify("提示词已删除");
+    notify("提示词已移入垃圾箱");
+  }
+
+  function handleOpenTrash() {
+    setIsTrashOpen(true);
+    void loadTrash();
+  }
+
+  async function handleRestorePrompt(promptId: string) {
+    const library = await dataSource.restorePrompt(promptId);
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
+    await loadTrash(false);
+  }
+
+  async function handlePermanentlyDeletePrompt(promptId: string) {
+    const library = await dataSource.permanentlyDeletePrompt(promptId);
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
+    await loadTrash(false);
+  }
+
+  async function handleEmptyTrash() {
+    const library = await dataSource.emptyTrash();
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
+    await loadTrash(false);
+  }
+
+  async function handleRestoreMergeRecord(versionId: string) {
+    const library = await dataSource.restoreMergeRecord(versionId);
+
+    setPrompts(library.prompts);
+    cachePrompts(library.prompts);
+    await loadTrash(false);
   }
 
   function handleEnterMergeSelection() {
@@ -601,6 +688,15 @@ export function PromptLibrary({
                 智能采集
               </button>
               <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError)}
+                onClick={handleOpenTrash}
+                type="button"
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+                垃圾箱
+              </button>
+              <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 disabled={isLoading || Boolean(loadError)}
                 onClick={() => setIsBackupManagerOpen(true)}
@@ -788,6 +884,22 @@ export function PromptLibrary({
           onNotify={notify}
           promptCount={prompts.length}
           prompts={prompts}
+        />
+      )}
+
+      {isTrashOpen && (
+        <PromptTrashDialog
+          isLoading={isTrashLoading}
+          loadError={trashError}
+          onClose={() => setIsTrashOpen(false)}
+          onEmptyTrash={handleEmptyTrash}
+          onNotify={notify}
+          onPermanentlyDeletePrompt={handlePermanentlyDeletePrompt}
+          onRestoreMergeRecord={handleRestoreMergeRecord}
+          onRestorePrompt={handleRestorePrompt}
+          onRetry={() => void loadTrash()}
+          prompts={trashPrompts}
+          records={recoveryRecords}
         />
       )}
 

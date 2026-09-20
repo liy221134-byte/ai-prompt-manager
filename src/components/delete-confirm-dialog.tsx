@@ -35,7 +35,7 @@ export function DeleteConfirmDialog({
       await onConfirm();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "删除提示词失败。",
+        error instanceof Error ? error.message : "移入垃圾箱失败。",
       );
     } finally {
       setIsDeleting(false);
@@ -45,7 +45,7 @@ export function DeleteConfirmDialog({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-5">
       <button
-        aria-label="取消删除"
+        aria-label="取消移入垃圾箱"
         className="absolute inset-0 cursor-default bg-slate-950/45 backdrop-blur-[2px]"
         onClick={onCancel}
         type="button"
@@ -58,7 +58,7 @@ export function DeleteConfirmDialog({
         role="alertdialog"
       >
         <button
-          aria-label="取消删除"
+          aria-label="取消移入垃圾箱"
           className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
           onClick={onCancel}
           type="button"
@@ -74,10 +74,10 @@ export function DeleteConfirmDialog({
           className="mt-5 text-lg font-semibold text-slate-950"
           id="delete-dialog-title"
         >
-          确认删除这条提示词？
+          确认移入垃圾箱？
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          “{prompt.title}”将从本机提示词库中移除，当前操作无法直接撤销。
+          “{prompt.title}”将移入垃圾箱，30 天内可以恢复。
         </p>
 
         {errorMessage && (
@@ -109,7 +109,7 @@ export function DeleteConfirmDialog({
             ) : (
               <Trash2 aria-hidden="true" className="size-4" />
             )}
-            {isDeleting ? "正在删除" : "删除提示词"}
+            {isDeleting ? "正在移入" : "移入垃圾箱"}
           </button>
         </div>
       </section>
