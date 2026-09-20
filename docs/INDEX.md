@@ -17,6 +17,11 @@
 
 ## 当前文档
 
+### 规则与协作
+
+- [项目规则（唯一规则源）](../AGENTS.md)
+- [开发规则说明（给人看的版本）](development-rules.md)
+
 ### 产品
 
 - [产品范围](product-brief.md)
