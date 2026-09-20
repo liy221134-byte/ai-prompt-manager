@@ -147,30 +147,32 @@ test("导入不会删除当前库中不存在于备份的提示词", () => {
 test("备份导入不会恢复已经进入垃圾箱的提示词", () => {
   const activePrompts = [];
   const trashedPromptIds = new Set(["prompt-deleted"]);
-  const plan = createPromptImportPlan(activePrompts, {
-    type: PROMPT_BACKUP_TYPE,
-    version: PROMPT_BACKUP_VERSION,
-    exportedAt: "2026-09-20T00:00:00.000Z",
-    prompts: [
-      {
-        id: "prompt-deleted",
-        title: "已删除",
-        category: "AI效能",
-        tags: [],
-        content: "内容",
-        useCase: "测试。",
-        createdAt: "2026-09-01T00:00:00.000Z",
-        updatedAt: "2026-09-01T00:00:00.000Z",
-      },
-    ],
-  });
-
-  assert.equal(
-    plan.mergedPrompts.filter(
-      (prompt) => !trashedPromptIds.has(prompt.id),
-    ).length,
-    0,
+  const plan = createPromptImportPlan(
+    activePrompts,
+    {
+      type: PROMPT_BACKUP_TYPE,
+      version: PROMPT_BACKUP_VERSION,
+      exportedAt: "2026-09-20T00:00:00.000Z",
+      prompts: [
+        {
+          id: "prompt-deleted",
+          title: "已删除",
+          category: "AI效能",
+          tags: [],
+          content: "内容",
+          useCase: "测试。",
+          createdAt: "2026-09-01T00:00:00.000Z",
+          updatedAt: "2026-09-01T00:00:00.000Z",
+        },
+      ],
+    },
+    trashedPromptIds,
   );
+
+  assert.equal(plan.addCount, 0);
+  assert.equal(plan.skipCount, 1);
+  assert.equal(plan.items[0].action, "skip");
+  assert.equal(plan.mergedPrompts.length, 0);
 });
 
 test("备份导出只包含提示词内容字段", () => {

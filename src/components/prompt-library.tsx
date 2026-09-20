@@ -251,12 +251,14 @@ export function PromptLibrary({
 
         setTrashPrompts(trashData.prompts);
         setRecoveryRecords(trashData.records);
+        return true;
       } catch (error) {
         setTrashError(
           error instanceof Error
             ? error.message
             : `${serviceName}垃圾箱读取失败。`,
         );
+        return false;
       } finally {
         if (showLoading) {
           setIsTrashLoading(false);
@@ -296,6 +298,10 @@ export function PromptLibrary({
       buildPromptSearchText(prompt).includes(normalizedQuery),
     );
   }, [prompts, searchQuery]);
+  const trashedPromptIds = useMemo(
+    () => new Set(trashPrompts.map((prompt) => prompt.id)),
+    [trashPrompts],
+  );
 
   const selectedPrompt = prompts.find(
     (prompt) => prompt.id === selectedPromptId,
@@ -393,6 +399,17 @@ export function PromptLibrary({
   function handleOpenTrash() {
     setIsTrashOpen(true);
     void loadTrash();
+  }
+
+  async function handleOpenBackupManager() {
+    const trashLoaded = await loadTrash(false);
+
+    if (!trashLoaded) {
+      notify("无法读取垃圾箱状态，请稍后重试。");
+      return;
+    }
+
+    setIsBackupManagerOpen(true);
   }
 
   async function handleRestorePrompt(promptId: string) {
@@ -704,7 +721,7 @@ export function PromptLibrary({
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 disabled={isLoading || Boolean(loadError)}
-                onClick={() => setIsBackupManagerOpen(true)}
+                onClick={() => void handleOpenBackupManager()}
                 type="button"
               >
                 <DatabaseBackup aria-hidden="true" className="size-4" />
@@ -889,6 +906,7 @@ export function PromptLibrary({
           onNotify={notify}
           promptCount={prompts.length}
           prompts={prompts}
+          trashedPromptIds={trashedPromptIds}
         />
       )}
 

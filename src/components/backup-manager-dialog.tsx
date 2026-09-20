@@ -25,6 +25,7 @@ type BackupManagerDialogProps = {
   lastBackupAt: string | null;
   promptCount: number;
   prompts: Parameters<typeof createPromptImportPlan>[0];
+  trashedPromptIds: ReadonlySet<string>;
   onClose: () => void;
   onExport: () => string;
   onImport: (plan: PromptImportPlan) => Promise<void>;
@@ -72,6 +73,7 @@ export function BackupManagerDialog({
   lastBackupAt,
   promptCount,
   prompts,
+  trashedPromptIds,
   onClose,
   onExport,
   onImport,
@@ -104,7 +106,11 @@ export function BackupManagerDialog({
     try {
       const content = await file.text();
       const backup = parsePromptBackup(content);
-      const nextPlan = createPromptImportPlan(prompts, backup);
+      const nextPlan = createPromptImportPlan(
+        prompts,
+        backup,
+        trashedPromptIds,
+      );
 
       setImportPlan(nextPlan);
       setImportError(null);
