@@ -39,18 +39,18 @@
 
 ### 第 1 步：执行云端迁移
 
-- [ ] 打开 Supabase 项目 → SQL Editor，粘贴 `supabase/migrations/202609200001_add_prompt_merge_trash.sql` 全文并运行
-- [ ] 验证字段已生效：`prompts` 表应多出 `deleted_at`、`deleted_reason`、`merged_into_prompt_id`、`merge_version_id` 四个字段
-- [ ] 验证表和索引已创建：`select indexname from pg_indexes where tablename = 'prompt_versions';` 应返回 `prompt_versions_user_prompt_idx` 和 `prompt_versions_user_expires_idx`
-- [ ] 验证 RLS 已开启：`select relrowsecurity from pg_class where relname = 'prompt_versions';` 应为 `true`
-- [ ] 验证四个函数已创建：`select proname from pg_proc where proname in ('commit_prompt_merge','restore_prompt_merge','empty_prompt_trash','purge_expired_prompt_versions');` 应返回 4 行
-- [ ] 打开 Database → Advisors 运行检查，确认没有 error 级别的问题
+- [x] 打开 Supabase 项目 → SQL Editor，粘贴 `supabase/migrations/202609200001_add_prompt_merge_trash.sql` 全文并运行
+- [x] 验证字段已生效：`prompts` 表应多出 `deleted_at`、`deleted_reason`、`merged_into_prompt_id`、`merge_version_id` 四个字段
+- [x] 验证表和索引已创建：`select indexname from pg_indexes where tablename = 'prompt_versions';` 应返回 `prompt_versions_user_prompt_idx` 和 `prompt_versions_user_expires_idx`
+- [x] 验证 RLS 已开启：`select relrowsecurity from pg_class where relname = 'prompt_versions';` 应为 `true`
+- [x] 验证四个函数已创建：`select proname from pg_proc where proname in ('commit_prompt_merge','restore_prompt_merge','empty_prompt_trash','purge_expired_prompt_versions');` 应返回 4 行
+- [x] 打开 Database → Advisors 运行检查，确认没有 error 级别的问题
 
 ### 第 2 步：合并并部署
 
-- [ ] 确认第 1 步全部通过后，按下面的顺序合并到 `main`。`docs/engineering-seed-pack` 里是新的项目规则，需要和 v0.8.0 一起并入
-- [ ] 等待 Vercel 构建完成。构建命令是 `npm run check`，代码检查、类型检查、测试和构建四项都通过才会部署
-- [ ] 确认生产环境使用 `NEXT_PUBLIC_DATA_MODE=supabase`，且 Service Role Key 只在服务端配置
+- [x] 确认第 1 步全部通过后，按下面的顺序合并到 `main`。`docs/engineering-seed-pack` 里是新的项目规则，需要和 v0.8.0 一起并入
+- [x] 等待 Vercel 构建完成。构建命令是 `npm run check`，代码检查、类型检查、测试和构建四项都通过才会部署
+- [x] 确认生产环境使用 `NEXT_PUBLIC_DATA_MODE=supabase`，且 Service Role Key 只在服务端配置
 
 ```powershell
 git checkout main
@@ -74,8 +74,8 @@ git push
 
 ### 第 4 步：清理任务验证
 
-- [ ] 手动触发一次清理：`curl -H "Authorization: Bearer $CRON_SECRET" https://<生产域名>/api/health/db`
-- [ ] 确认返回正常，且过期的垃圾箱和恢复快照被删除
+- [x] 手动触发一次清理：`curl -H "Authorization: Bearer $CRON_SECRET" https://<生产域名>/api/health/db`
+- [x] 确认返回正常，且过期的垃圾箱和恢复快照被删除
 - [ ] 确认 Vercel Cron 已注册，每天 03:00 自动执行一次
 
 ### 第 5 步：生产验证与回滚演练
@@ -84,6 +84,34 @@ git push
 - [ ] 在 Vercel Deployments 找到上一个 Ready 版本执行 Promote，确认回滚后服务可用
 - [ ] 回滚后重新部署最新版本，确认最终状态正确
 
+## 本次发布记录（2026-09-20）
+
+执行方式：通过 Supabase MCP 和 Vercel 接口由 Codex 直接完成，没有手工打开控制台。
+
+### 数据库
+
+- 迁移已核实生效：`prompts` 的四个生命周期字段、`prompt_versions` 表、两个索引和四条 RLS 策略均存在，四个 RPC 都是 `SECURITY INVOKER`。
+- 迁移历史表为空：之前的迁移是手工在 SQL Editor 里执行的，没有留下历史记录。后续要做 GitHub 自动部署之前，需要先做一次历史对账。
+- 顾问检查：安全项没有 error；性能项发现四条 `auth_rls_initplan` 告警——`prompt_versions` 的策略写成 `auth.uid()`，与 `prompts` 的 `(select auth.uid())` 写法不一致。
+- 修复：迁移文件统一改成 `(select auth.uid())` 并重新应用到线上，复查后告警消失，只剩三条「索引尚未被使用」（功能上线前属正常）。
+- 仍待处理的安全建议：Auth 的「已泄露密码保护」当前是关闭状态，建议在控制台打开。
+
+### 部署
+
+- `main` 已合并 v0.8.0 与新的项目规则，提交 `95c6fce`。
+- Vercel 部署 `dpl_EqytBiVTCVbgRuWnHg3HxP5UtCHM` 构建成功并切到生产域名，构建耗时约 44 秒。
+
+### 生产验证
+
+- `GET /` 返回 200；`GET /login` 返回 200，页面标题「AI 编程提示词卡片」。
+- `GET /api/health/db`（带 `CRON_SECRET`）返回 200 和 `{"ok":true,"mode":"supabase"}`，说明生产运行在云端模式，且清理用的 RPC 能正常执行。
+
+### 未完成
+
+- 云端合并、垃圾箱和恢复的人工验收：需要登录真实账号操作。
+- 跨账号隔离验证：需要第二个账号。
+- 本地模式完整流程验收。
+- 生产回滚演练：需要在 Vercel 上 Promote 上一个 Ready 版本再切回，要挑一个明确的时间窗口。
 ## 完成标准
 
 本地和代码检查已经通过。只有远程 Supabase 迁移、顾问验证和生产验证完成后，
