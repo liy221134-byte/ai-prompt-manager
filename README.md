@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 7 周：生产加固，完善 Supabase 登录与服务端路由保护。
+第 8 周：AI 合并与垃圾箱，准备发布 `v0.8.0`。
 
 当前版本支持：
 
@@ -13,6 +13,13 @@
 - 自动建议标题、分类、标签、正文和适用场景
 - AI 结果进入编辑器，用户确认后才保存
 - AI API Key 仅保存在服务端环境变量
+- 选择 2 至 5 条提示词进行 AI 合并
+- 第一条选中项默认为目标，保存前可调整，并支持可选合并要求
+- AI 生成可编辑草稿和合并说明，用户确认后才保存
+- 合并前目标内容保存为恢复快照
+- 来源提示词进入垃圾箱，支持恢复、永久删除和清空
+- 垃圾箱和恢复快照默认保留 30 天
+- 本地启动和云端每日自动清理过期数据
 - 新增、编辑和删除提示词
 - Markdown 编辑与预览
 - 自动识别 `{{变量}}`
@@ -32,14 +39,21 @@
 - 服务端和 API 双重校验登录状态
 - Vercel 配置错误时安全关闭，不降级到本机 SQLite
 - Vercel 构建强制执行完整工程检查
+- JSON 备份只导出内容字段，导入不会恢复垃圾箱中的提示词
 
-当前版本包含个人邮箱密码登录、Supabase 云数据库和跨设备同步，不包含团队协作。
+当前版本包含个人邮箱密码登录、Supabase 云数据库、跨设备同步、AI 合并和垃圾箱，
+不包含团队协作和完整版本历史。
+
+本版本代码与本地自动化检查已完成，远程 Supabase 数据库迁移、顾问验证和生产验证
+仍为待发布门禁。
 
 ## 本地数据说明
 
-提示词当前保存在本机 `.data/prompts.sqlite` 数据库中。同一台电脑上的不同浏览器访问同一个本地服务时，会看到同一份数据。
+提示词默认保存在本机 `.data/prompts.sqlite` 数据库中。同一台电脑上的不同浏览器访问同一个本地服务时，会看到同一份数据。
 
-数据库文件不会提交到 Git。当前数据服务只在本机运行，不代表已经支持云端或跨设备同步。浏览器 `localStorage` 只作为旧数据迁移来源和页面缓存。
+云端模式使用 Supabase 保存提示词，并通过 RLS 隔离账号数据。本地与云端不自动同步。
+
+数据库文件不会提交到 Git。浏览器 `localStorage` 只作为旧数据迁移来源和页面缓存。
 
 ## 产品目标
 
@@ -77,6 +91,10 @@
 - [第 5 周验收清单](docs/acceptance/week-05.md)
 - [AI 供应商决策](docs/decisions/0006-ai-provider-abstraction.md)
 - [第 6 周验收清单](docs/acceptance/week-06.md)
+- [第 7 周验收清单](docs/acceptance/week-07.md)
+- [第 8 周验收清单](docs/acceptance/week-08.md)
+- [v0.8.0 AI 合并与垃圾箱设计](docs/superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
+- [v0.8.0 AI 合并与垃圾箱实施计划](docs/superpowers/plans/2026-09-20-ai-prompt-merge.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)

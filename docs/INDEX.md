@@ -24,6 +24,11 @@
 - [2.0 需求草案](v2-requirements-draft.md)
 - [2.0 需求池](v2-backlog.md)
 
+### 设计
+
+- [v0.8.0 AI 合并与垃圾箱设计](superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
+- [v0.8.0 AI 合并与垃圾箱实施计划](superpowers/plans/2026-09-20-ai-prompt-merge.md)
+
 ### 决策
 
 - [技术选型](decisions/0001-tech-stack.md)
@@ -55,6 +60,7 @@
 - [第 5 周验收](acceptance/week-05.md)
 - [第 6 周验收](acceptance/week-06.md)
 - [第 7 周验收](acceptance/week-07.md)
+- [第 8 周验收](acceptance/week-08.md)
 
 ### 云端部署
 
