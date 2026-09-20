@@ -4,9 +4,13 @@ import test from "node:test";
 import {
   buildAiExtractionMessages,
   buildAiMergeMessages,
+  buildAiOptimizeMessages,
+  diffPromptVariables,
   normalizeExtractedPrompt,
   normalizeMergedPrompt,
+  normalizeOptimizedPrompt,
   validateAiMergeRequest,
+  validateAiOptimizeRequest,
 } from "../src/lib/prompt-ai.ts";
 
 function sourcePrompt(overrides = {}) {
@@ -319,4 +323,136 @@ test("合并规范化会限制字段长度和数量", () => {
   assert.equal(draft.useCase.length, 240);
   assert.equal(draft.mergeSummary.length, 6);
   assert.ok(draft.mergeSummary.every((item) => item.length <= 240));
+});
+
+function optimizeResult(overrides = {}) {
+  return {
+    title: "行业分析助手",
+    category: "产品设计",
+    tags: ["行业分析"],
+    content: "## 任务\n请分析 {{行业}} 的情况。",
+    useCase: "用于快速了解一个行业。",
+    optimizationSummary: ["补全了「任务」小节标题"],
+    ...overrides,
+  };
+}
+
+test("优化结果默认必须保持变量集合不变", () => {
+  const original = "请分析 {{行业}} 的 {{指标}}";
+
+  assert.throws(
+    () =>
+      normalizeOptimizedPrompt(JSON.stringify(optimizeResult()), {
+        originalContent: original,
+        allowVariableChanges: false,
+      }),
+    /变量/,
+  );
+});
+
+test("允许调整变量时可以删除牵强变量并列出变化", () => {
+  const original = "请分析 {{行业}} 的 {{指标}}";
+
+  const draft = normalizeOptimizedPrompt(JSON.stringify(optimizeResult()), {
+    originalContent: original,
+    allowVariableChanges: true,
+  });
+
+  assert.equal(draft.content, "## 任务\n请分析 {{行业}} 的情况。");
+  assert.deepEqual(draft.variableChanges, [
+    { type: "removed", name: "指标" },
+  ]);
+});
+
+test("优化结果缺少优化说明时判为无效", () => {
+  assert.throws(
+    () =>
+      normalizeOptimizedPrompt(
+        JSON.stringify(optimizeResult({ optimizationSummary: [] })),
+        { originalContent: "请分析 {{行业}}", allowVariableChanges: false },
+      ),
+    /优化说明/,
+  );
+});
+
+test("变量差异报告写法统一、新增和删除三类", () => {
+  assert.deepEqual(
+    diffPromptVariables("请处理 {{甲}} 和 {{乙}}", "请处理 {{乙}} 和 {{丙}}"),
+    [
+      { type: "added", name: "丙" },
+      { type: "removed", name: "甲" },
+    ],
+  );
+  assert.deepEqual(diffPromptVariables("没有变量", "同样没有变量"), []);
+  assert.deepEqual(
+    diffPromptVariables("请分析[行业]的规模", "请分析 {{行业}} 的规模"),
+    [{ type: "normalized", name: "行业" }],
+  );
+});
+
+test("非标准占位符统一成变量时不需要放行", () => {
+  const draft = normalizeOptimizedPrompt(
+    JSON.stringify(
+      optimizeResult({
+        content: "## 任务\n请分析 {{行业}} 的市场规模。",
+      }),
+    ),
+    { originalContent: "请分析[行业]的市场规模", allowVariableChanges: false },
+  );
+
+  assert.deepEqual(draft.variableChanges, [
+    { type: "normalized", name: "行业" },
+  ]);
+});
+
+test("优化请求校验会拒绝缺少正文和超长优化要求", () => {
+  const base = {
+    prompt: sourcePrompt({ content: "请分析 {{行业}}" }),
+    instruction: "统一成 Markdown 小节",
+    allowVariableChanges: false,
+  };
+
+  assert.equal(validateAiOptimizeRequest(base).ok, true);
+
+  const missingContent = validateAiOptimizeRequest({
+    ...base,
+    prompt: sourcePrompt({ content: "   " }),
+  });
+
+  assert.equal(missingContent.ok, false);
+  assert.match(missingContent.error, /正文/);
+
+  const longInstruction = validateAiOptimizeRequest({
+    ...base,
+    instruction: "要".repeat(2001),
+  });
+
+  assert.equal(longInstruction.ok, false);
+  assert.match(longInstruction.error, /优化要求/);
+
+  const wrongFlag = validateAiOptimizeRequest({
+    ...base,
+    allowVariableChanges: "yes",
+  });
+
+  assert.equal(wrongFlag.ok, false);
+});
+
+test("优化提示词包含白名单、黑名单和变量规则", () => {
+  const keepVariables = buildAiOptimizeMessages({
+    prompt: sourcePrompt({ content: "请分析 {{行业}}" }),
+    allowVariableChanges: false,
+  });
+  const changeVariables = buildAiOptimizeMessages({
+    prompt: sourcePrompt({ content: "请分析 {{行业}}" }),
+    allowVariableChanges: true,
+  });
+
+  const systemPrompt = keepVariables[0].content;
+
+  assert.match(systemPrompt, /不得新增/);
+  assert.match(systemPrompt, /不得删除/);
+  assert.match(systemPrompt, /optimizationSummary/);
+  assert.match(systemPrompt, /不能新增、删除或改名变量/);
+  assert.match(changeVariables[0].content, /允许调整变量/);
 });
