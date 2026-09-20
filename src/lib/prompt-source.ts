@@ -302,21 +302,7 @@ export function createSupabasePromptDataSource(
       return fetchLibrary();
     },
     async emptyTrash() {
-      const user = await getCurrentUser(client);
-      const { error: versionError } = await client
-        .from("prompt_versions")
-        .delete()
-        .eq("user_id", user.id);
-
-      if (versionError) {
-        throw new Error("清空云端恢复记录失败。");
-      }
-
-      const { error } = await client
-        .from("prompts")
-        .delete()
-        .eq("user_id", user.id)
-        .not("deleted_at", "is", null);
+      const { error } = await client.rpc("empty_prompt_trash");
 
       if (error) {
         throw new Error("清空云端垃圾箱失败。");
@@ -334,7 +320,7 @@ export function createSupabasePromptDataSource(
         p_content: input.prompt.content,
         p_use_case: input.prompt.useCase,
         p_source_prompt_ids: input.sourcePromptIds,
-        p_version_id: input.version.versionId,
+        p_version_id: input.versionId,
       });
 
       if (error) {
@@ -394,15 +380,16 @@ export function createSupabasePromptDataSource(
       const trashedPromptIds = new Set(
         trashLibrary.prompts.map((prompt) => prompt.id),
       );
-      const importablePrompts = importedPrompts.filter(
-        (prompt) => !trashedPromptIds.has(prompt.id),
+      const plan = createPromptImportPlan(
+        currentLibrary.prompts,
+        {
+          type: PROMPT_BACKUP_TYPE,
+          version: PROMPT_BACKUP_VERSION,
+          exportedAt: new Date().toISOString(),
+          prompts: importedPrompts,
+        },
+        trashedPromptIds,
       );
-      const plan = createPromptImportPlan(currentLibrary.prompts, {
-        type: PROMPT_BACKUP_TYPE,
-        version: PROMPT_BACKUP_VERSION,
-        exportedAt: new Date().toISOString(),
-        prompts: importablePrompts,
-      });
 
       if (plan.addCount + plan.updateCount > 0) {
         const rows = plan.mergedPrompts.map((prompt) =>
@@ -423,10 +410,7 @@ export function createSupabasePromptDataSource(
         ...nextLibrary,
         addCount: plan.addCount,
         updateCount: plan.updateCount,
-        skipCount:
-          plan.skipCount +
-          importedPrompts.length -
-          importablePrompts.length,
+        skipCount: plan.skipCount,
       };
     },
   };

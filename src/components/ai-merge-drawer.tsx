@@ -24,7 +24,7 @@ import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import type { PromptMergeDraft } from "@/lib/prompt-ai";
 import type { PromptLibraryResponse } from "@/lib/prompt-api";
 import {
-  createMergeVersion,
+  createMergeVersionId,
   getMergeErrorMessage,
   normalizeMergeDraft,
 } from "@/lib/prompt-merge-draft";
@@ -220,12 +220,6 @@ export function AiMergeDrawer({
     const now = new Date().toISOString();
     const sourcePromptIds = prompts.map((prompt) => prompt.id);
     const normalizedDraft = normalizeMergeDraft(draft);
-    const version = createMergeVersion({
-      target,
-      sourcePromptIds,
-      createdAt: now,
-    });
-
     try {
       const library = await dataSource.commitAiMerge({
         prompt: {
@@ -234,7 +228,7 @@ export function AiMergeDrawer({
           updatedAt: now,
         },
         sourcePromptIds,
-        version,
+        versionId: createMergeVersionId(),
       });
 
       onSaved(library);

@@ -21,7 +21,7 @@ export type PromptRecoveryResponse = {
 export type CommitAiMergeInput = {
   prompt: PromptCardData;
   sourcePromptIds: string[];
-  version: PromptVersionData;
+  versionId: string;
 };
 
 export class PromptApiError extends Error {

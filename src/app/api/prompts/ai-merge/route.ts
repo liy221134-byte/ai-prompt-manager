@@ -1,4 +1,3 @@
-import type { PromptVersionData } from "../../../../data/prompts.ts";
 import { isPromptCard } from "../../../../lib/prompt-storage.ts";
 import { rejectLocalApiInCloudMode } from "../../../../lib/server/local-data-api.ts";
 import { getPromptDatabase } from "../../../../lib/server/prompt-database.ts";
@@ -10,41 +9,9 @@ function createErrorResponse(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
-function isValidDateString(value: unknown) {
-  return (
-    typeof value === "string" && !Number.isNaN(new Date(value).getTime())
-  );
-}
-
 function isStringArray(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
-}
-
-function isPromptVersionData(value: unknown): value is PromptVersionData {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const version = value as Partial<PromptVersionData>;
-
-  return (
-    typeof version.versionId === "string" &&
-    version.versionId.length > 0 &&
-    typeof version.promptId === "string" &&
-    typeof version.title === "string" &&
-    typeof version.category === "string" &&
-    Array.isArray(version.tags) &&
-    version.tags.every((tag) => typeof tag === "string") &&
-    typeof version.content === "string" &&
-    typeof version.useCase === "string" &&
-    isValidDateString(version.createdAt) &&
-    version.versionReason === "merge_before" &&
-    isStringArray(version.sourcePromptIds) &&
-    (version.restoredAt === null ||
-      typeof version.restoredAt === "string") &&
-    isValidDateString(version.expiresAt)
   );
 }
 
@@ -53,7 +20,7 @@ function getCommitErrorStatus(message: string) {
     message.includes("合并来源数量") ||
     message.includes("合并来源存在重复") ||
     message.includes("目标提示词必须包含") ||
-    message.includes("恢复快照与目标")
+    message.includes("恢复快照标识")
   ) {
     return 400;
   }
@@ -92,17 +59,18 @@ export async function POST(request: Request) {
   const {
     prompt,
     sourcePromptIds,
-    version,
+    versionId,
   } = input as {
     prompt?: unknown;
     sourcePromptIds?: unknown;
-    version?: unknown;
+    versionId?: unknown;
   };
 
   if (
     !isPromptCard(prompt) ||
     !isStringArray(sourcePromptIds) ||
-    !isPromptVersionData(version)
+    typeof versionId !== "string" ||
+    !versionId.trim()
   ) {
     return createErrorResponse("AI 合并请求数据不完整。", 400);
   }
@@ -111,10 +79,7 @@ export async function POST(request: Request) {
     sourcePromptIds.length < 2 ||
     sourcePromptIds.length > 5 ||
     new Set(sourcePromptIds).size !== sourcePromptIds.length ||
-    !sourcePromptIds.includes(prompt.id) ||
-    version.promptId !== prompt.id ||
-    JSON.stringify(version.sourcePromptIds) !==
-      JSON.stringify(sourcePromptIds)
+    !sourcePromptIds.includes(prompt.id)
   ) {
     return createErrorResponse("AI 合并请求的来源或目标不合法。", 400);
   }
@@ -124,7 +89,7 @@ export async function POST(request: Request) {
       getPromptDatabase().commitPromptMerge({
         prompt,
         sourcePromptIds,
-        version,
+        versionId,
       }),
     );
   } catch (error) {

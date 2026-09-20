@@ -571,15 +571,16 @@ export class PromptDatabase {
     const trashedPromptIds = new Set(
       this.listTrash().map((prompt) => prompt.id),
     );
-    const importablePrompts = importedPrompts.filter(
-      (prompt) => !trashedPromptIds.has(prompt.id),
+    const plan = createPromptImportPlan(
+      this.listPrompts(),
+      {
+        type: PROMPT_BACKUP_TYPE,
+        version: PROMPT_BACKUP_VERSION,
+        exportedAt: new Date().toISOString(),
+        prompts: importedPrompts,
+      },
+      trashedPromptIds,
     );
-    const plan = createPromptImportPlan(this.listPrompts(), {
-      type: PROMPT_BACKUP_TYPE,
-      version: PROMPT_BACKUP_VERSION,
-      exportedAt: new Date().toISOString(),
-      prompts: importablePrompts,
-    });
 
     if (plan.addCount + plan.updateCount > 0) {
       this.transaction(() => {
@@ -603,14 +604,14 @@ export class PromptDatabase {
       ...this.getLibrarySnapshot(),
       addCount: plan.addCount,
       updateCount: plan.updateCount,
-      skipCount: plan.skipCount + importedPrompts.length - importablePrompts.length,
+      skipCount: plan.skipCount,
     };
   }
 
   commitPromptMerge(input: {
     prompt: PromptCardData;
     sourcePromptIds: string[];
-    version: PromptVersionData;
+    versionId: string;
   }) {
     const targetId = input.prompt.id;
     const sourceIds = input.sourcePromptIds;
@@ -627,8 +628,8 @@ export class PromptDatabase {
       throw new Error("目标提示词必须包含在合并来源中。");
     }
 
-    if (input.version.promptId !== targetId) {
-      throw new Error("恢复快照与目标提示词不一致。");
+    if (!input.versionId.trim()) {
+      throw new Error("恢复快照标识无效。");
     }
 
     const now = new Date().toISOString();
@@ -637,11 +638,29 @@ export class PromptDatabase {
     ).toISOString();
 
     return this.transaction(() => {
-      const target = this.database
-        .prepare("SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL")
-        .get(targetId);
+      const targetRow = this.database
+        .prepare(
+          `
+            SELECT
+              id,
+              title,
+              category,
+              tags_json,
+              content,
+              use_case,
+              created_at,
+              updated_at,
+              deleted_at,
+              deleted_reason,
+              merged_into_prompt_id,
+              merge_version_id
+            FROM prompts
+            WHERE id = ? AND deleted_at IS NULL
+          `,
+        )
+        .get(targetId) as PromptRow | undefined;
 
-      if (!target) {
+      if (!targetRow) {
         throw new Error("目标提示词不存在或已删除。");
       }
 
@@ -657,12 +676,22 @@ export class PromptDatabase {
         }
       }
 
-      const versionResult = this.insertPromptVersion({
-        ...input.version,
+      const target = rowToPrompt(targetRow);
+      const version: PromptVersionData = {
+        versionId: input.versionId.trim(),
+        promptId: target.id,
+        title: target.title,
+        category: target.category,
+        tags: [...target.tags],
+        content: target.content,
+        useCase: target.useCase,
         createdAt: now,
+        versionReason: "merge_before",
+        sourcePromptIds: [...sourceIds],
         expiresAt,
         restoredAt: null,
-      });
+      };
+      const versionResult = this.insertPromptVersion(version);
 
       if (Number(versionResult.changes) !== 1) {
         throw new Error("恢复快照写入失败。");
@@ -711,7 +740,7 @@ export class PromptDatabase {
           now,
           "merge",
           targetId,
-          input.version.versionId,
+          input.versionId.trim(),
           promptId,
         );
 

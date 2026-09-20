@@ -149,6 +149,7 @@ function promptsAreEqual(
 export function createPromptImportPlan(
   currentPrompts: PromptCardData[],
   backup: PromptBackup,
+  trashedPromptIds: ReadonlySet<string> = new Set(),
 ): PromptImportPlan {
   const currentById = new Map(
     currentPrompts.map((prompt) => [prompt.id, prompt]),
@@ -163,6 +164,17 @@ export function createPromptImportPlan(
   let skipCount = 0;
 
   for (const importedPrompt of backup.prompts) {
+    if (trashedPromptIds.has(importedPrompt.id)) {
+      skipCount += 1;
+      items.push({
+        id: importedPrompt.id,
+        title: importedPrompt.title,
+        action: "skip",
+        reason: "这条提示词当前在垃圾箱中，导入时已跳过。",
+      });
+      continue;
+    }
+
     const currentPrompt = currentById.get(importedPrompt.id);
 
     if (!currentPrompt) {

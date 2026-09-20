@@ -38,22 +38,8 @@ function prompt(overrides = {}) {
   };
 }
 
-function createVersion(overrides = {}) {
-  return {
-    versionId: "version-1",
-    promptId: "prompt-a",
-    title: "提示词 A",
-    category: "AI效能",
-    tags: ["测试"],
-    content: "请处理 {{内容}}",
-    useCase: "测试垃圾箱。",
-    createdAt: "2026-09-20T01:00:00.000Z",
-    versionReason: "merge_before",
-    sourcePromptIds: ["prompt-a", "prompt-b"],
-    restoredAt: null,
-    expiresAt: "2026-10-20T01:00:00.000Z",
-    ...overrides,
-  };
+function createVersionId(overrides = {}) {
+  return { versionId: "version-1", ...overrides }.versionId;
 }
 
 test("删除提示词后进入垃圾箱并可恢复", () => {
@@ -79,20 +65,6 @@ test("AI 合并会更新目标、归档来源并保存恢复快照", () => {
   try {
     context.database.createPrompt(prompt());
     context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
-    const version = {
-      versionId: "version-1",
-      promptId: "prompt-a",
-      title: "提示词 A",
-      category: "AI效能",
-      tags: ["测试"],
-      content: "请处理 {{内容}}",
-      useCase: "测试垃圾箱。",
-      createdAt: "2026-09-20T01:00:00.000Z",
-      versionReason: "merge_before",
-      sourcePromptIds: ["prompt-a", "prompt-b"],
-      restoredAt: null,
-      expiresAt: "2026-10-20T01:00:00.000Z",
-    };
 
     context.database.commitPromptMerge({
       prompt: prompt({
@@ -100,7 +72,7 @@ test("AI 合并会更新目标、归档来源并保存恢复快照", () => {
         updatedAt: "2026-09-20T01:00:00.000Z",
       }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version,
+      versionId: createVersionId(),
     });
 
     assert.equal(context.database.listPrompts().length, 4);
@@ -124,13 +96,42 @@ test("合并提交拒绝数量不足的来源集合", () => {
         context.database.commitPromptMerge({
           prompt: prompt({ title: "合并后的提示词" }),
           sourcePromptIds: ["prompt-a"],
-          version: createVersion(),
+          versionId: createVersionId(),
         }),
       /合并来源数量必须是 2 至 5 条/,
     );
     assert.equal(context.database.listMergeRecoveryRecords().length, 0);
     assert.equal(context.database.listTrash().length, 0);
     assert.equal(context.database.listPrompts().length, 5);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("合并提交拒绝空来源集合并在写入前回滚", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+
+    assert.throws(
+      () =>
+        context.database.commitPromptMerge({
+          prompt: prompt({ title: "合并后的提示词" }),
+          sourcePromptIds: [],
+          versionId: createVersionId(),
+        }),
+      /合并来源数量必须是 2 至 5 条/,
+    );
+    assert.equal(context.database.listMergeRecoveryRecords().length, 0);
+    assert.equal(context.database.listTrash().length, 0);
+    assert.ok(
+      context.database
+        .listPrompts()
+        .some((item) => item.id === "prompt-a" && item.title === "提示词 A"),
+    );
   } finally {
     context.database.close();
     context.cleanup();
@@ -149,12 +150,61 @@ test("合并提交拒绝重复来源", () => {
         context.database.commitPromptMerge({
           prompt: prompt({ title: "合并后的提示词" }),
           sourcePromptIds: ["prompt-a", "prompt-a"],
-          version: createVersion(),
+          versionId: createVersionId(),
         }),
       /合并来源存在重复提示词/,
     );
     assert.equal(context.database.listMergeRecoveryRecords().length, 0);
     assert.equal(context.database.listTrash().length, 0);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("恢复快照从锁定后的目标行生成，不信任客户端快照字段", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(
+      prompt({
+        title: "服务端真实标题",
+        tags: ["真实标签"],
+        content: "服务端真实正文",
+        useCase: "服务端真实场景。",
+      }),
+    );
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+
+    context.database.commitPromptMerge({
+      prompt: prompt({
+        title: "客户端合并标题",
+        tags: ["客户端标签"],
+        content: "客户端合并正文",
+        useCase: "客户端合并场景。",
+      }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      versionId: createVersionId(),
+    });
+
+    const record = context.database.listMergeRecoveryRecords()[0];
+
+    assert.equal(record.title, "服务端真实标题");
+    assert.deepEqual(record.tags, ["真实标签"]);
+    assert.equal(record.content, "服务端真实正文");
+    assert.equal(record.useCase, "服务端真实场景。");
+
+    context.database.restoreMergeRecord(record.versionId);
+    assert.ok(
+      context.database
+        .listPrompts()
+        .some(
+          (item) =>
+            item.id === "prompt-a" &&
+            item.title === "服务端真实标题" &&
+            item.content === "服务端真实正文",
+        ),
+    );
   } finally {
     context.database.close();
     context.cleanup();
@@ -173,7 +223,7 @@ test("合并提交要求目标包含在来源集合", () => {
         context.database.commitPromptMerge({
           prompt: prompt({ title: "合并后的提示词" }),
           sourcePromptIds: ["prompt-b", "prompt-c"],
-          version: createVersion(),
+          versionId: createVersionId(),
         }),
       /目标提示词必须包含在合并来源中/,
     );
@@ -196,10 +246,7 @@ test("合并提交在目标缺失时回滚", () => {
         context.database.commitPromptMerge({
           prompt: prompt({ id: "prompt-missing", title: "不存在的目标" }),
           sourcePromptIds: ["prompt-missing", "prompt-b"],
-          version: createVersion({
-            promptId: "prompt-missing",
-            sourcePromptIds: ["prompt-missing", "prompt-b"],
-          }),
+          versionId: createVersionId(),
         }),
       /目标提示词不存在或已删除/,
     );
@@ -227,7 +274,7 @@ test("合并提交在来源已删除时回滚", () => {
         context.database.commitPromptMerge({
           prompt: prompt({ title: "合并后的提示词" }),
           sourcePromptIds: ["prompt-a", "prompt-b"],
-          version: createVersion(),
+          versionId: createVersionId(),
         }),
       /合并来源不存在或已删除/,
     );
@@ -253,7 +300,7 @@ test("恢复合并记录会恢复目标和仍处于合并归档状态的来源",
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     const result = context.database.restoreMergeRecord("version-1");
@@ -284,7 +331,7 @@ test("合并会为归档来源记录本次合并版本", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     const source = context.database.listTrash()[0];
@@ -307,17 +354,13 @@ test("恢复旧合并记录不会复活被新一次合并归档的来源", () =>
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并结果 v1" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
     context.database.restorePrompt("prompt-b");
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并结果 v2" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion({
-        versionId: "version-2",
-        promptId: "prompt-a",
-        sourcePromptIds: ["prompt-a", "prompt-b"],
-      }),
+      versionId: createVersionId({ versionId: "version-2" }),
     });
 
     const result = context.database.restoreMergeRecord("version-1");
@@ -352,7 +395,7 @@ test("恢复合并记录拒绝已恢复快照", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     assert.ok(context.database.restoreMergeRecord("version-1"));
@@ -373,7 +416,7 @@ test("恢复合并记录拒绝过期快照", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     const rawDatabase = new DatabaseSync(context.databasePath);
@@ -413,10 +456,7 @@ test("合并提交忽略调用方时间戳并使用服务端当前时间", () =>
         updatedAt: "2000-01-01T00:00:00.000Z",
       }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion({
-        createdAt: "2000-01-01T00:00:00.000Z",
-        expiresAt: "2000-01-02T00:00:00.000Z",
-      }),
+      versionId: createVersionId(),
     });
 
     const after = Date.now();
@@ -449,7 +489,7 @@ test("目标进入垃圾箱后恢复合并记录返回空且不消费快照", ()
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
     context.database.deletePrompt("prompt-a");
 
@@ -472,7 +512,7 @@ test("目标被永久删除后恢复合并记录返回空且不消费快照", ()
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
     context.database.deletePrompt("prompt-a");
     context.database.permanentlyDeletePrompt("prompt-a");
@@ -495,7 +535,7 @@ test("恢复合并记录不会复活状态已改变的来源", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
     context.database.restorePrompt("prompt-b");
     context.database.deletePrompt("prompt-b");
@@ -528,7 +568,7 @@ test("emptyTrash 清空垃圾箱和恢复记录", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     assert.equal(context.database.emptyTrash(), 1);
@@ -554,7 +594,7 @@ test("永久删除恢复记录不会删除提示词", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     assert.equal(
@@ -596,7 +636,7 @@ test("purgeExpiredTrash 清理过期垃圾箱和恢复快照", () => {
     context.database.commitPromptMerge({
       prompt: prompt({ title: "合并后的提示词" }),
       sourcePromptIds: ["prompt-a", "prompt-b"],
-      version: createVersion(),
+      versionId: createVersionId(),
     });
 
     const rawDatabase = new DatabaseSync(context.databasePath);
