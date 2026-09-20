@@ -34,6 +34,7 @@
 
 **Files:**
 - Modify: `src/data/prompts.ts`
+- Modify: `src/components/prompt-library.tsx`
 - Create: `src/lib/prompt-lifecycle.ts`
 - Test: `tests/prompt-lifecycle.test.mjs`
 
@@ -106,7 +107,7 @@ export type PromptLifecycleFields = {
   mergedIntoPromptId: string | null;
 };
 
-export type PromptCardData = {
+export type PromptContentData = {
   id: string;
   title: string;
   category: string;
@@ -115,16 +116,15 @@ export type PromptCardData = {
   useCase: string;
   createdAt: string;
   updatedAt: string;
-} & PromptLifecycleFields;
+};
+
+export type PromptCardData = PromptContentData & PromptLifecycleFields;
 
 export type PromptDraft = Omit<
-  PromptCardData,
+  PromptContentData,
   | "id"
   | "createdAt"
   | "updatedAt"
-  | "deletedAt"
-  | "deletedReason"
-  | "mergedIntoPromptId"
 >;
 
 export type PromptVersionData = {
@@ -144,6 +144,14 @@ export type PromptVersionData = {
 ```
 
 为 3 条示例数据增加：
+
+```typescript
+deletedAt: null,
+deletedReason: null,
+mergedIntoPromptId: null,
+```
+
+In `PromptLibrary.handleSave()`, when creating a new prompt, add:
 
 ```typescript
 deletedAt: null,
@@ -516,6 +524,51 @@ emptyTrash() {
 ```
 
 Add a purge function that deletes expired tombstones and snapshots.
+
+Replace the current `mergePrompts()` implementation so it never executes
+`DELETE FROM prompts` and never resurrects a trashed prompt:
+
+```typescript
+mergePrompts(importedPrompts: PromptCardData[]): PromptMergeResult {
+  const trashedPromptIds = new Set(
+    this.listTrash().map((prompt) => prompt.id),
+  );
+  const importablePrompts = importedPrompts.filter(
+    (prompt) => !trashedPromptIds.has(prompt.id),
+  );
+  const plan = createPromptImportPlan(this.listPrompts(), {
+    type: PROMPT_BACKUP_TYPE,
+    version: PROMPT_BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    prompts: importablePrompts,
+  });
+
+  if (plan.addCount + plan.updateCount > 0) {
+    this.transaction(() => {
+      for (const prompt of plan.mergedPrompts) {
+        const existing = this.database
+          .prepare("SELECT id FROM prompts WHERE id = ?")
+          .get(prompt.id);
+
+        if (existing) {
+          this.updatePromptRow(prompt);
+        } else {
+          this.insertPrompt(prompt);
+        }
+      }
+
+      this.bumpVersion();
+    });
+  }
+
+  return {
+    ...this.getLibrarySnapshot(),
+    addCount: plan.addCount,
+    updateCount: plan.updateCount,
+    skipCount: plan.skipCount + importedPrompts.length - importablePrompts.length,
+  };
+}
+```
 
 - [ ] **Step 7: 实现原子合并提交**
 
@@ -1021,6 +1074,11 @@ Add:
 - `commit_prompt_merge` RPC
 - recovery list
 - restore RPC
+
+Update `mergePrompts()` so it first fetches trashed prompt IDs and removes
+those IDs from imported backup data before planning and upserting. This
+prevents a backup import from resurrecting a prompt that is still in the
+30-day trash period.
 
 - [ ] **Step 7: 运行数据源测试和类型检查**
 
@@ -1597,6 +1655,7 @@ git commit -m "feat: add prompt trash interface"
 - Modify: `src/app/api/health/db/route.ts`
 - Modify: `src/lib/server/prompt-database.ts`
 - Modify: `src/lib/prompt-backup.ts`
+- Modify: `src/lib/prompt-storage.ts`
 - Modify: `tests/prompt-backup.test.mjs`
 - Create: `tests/prompt-cleanup.test.mjs`
 
@@ -1715,6 +1774,56 @@ migration and before seed count is checked.
 Keep the backup schema at `version: 1` because exported prompt JSON shape
 only contains active prompt content fields. Import must strip lifecycle
 fields and skip IDs already present in trash.
+
+Add `promptToContentData()` in `prompt-backup.ts`:
+
+```typescript
+export function promptToContentData(
+  prompt: PromptCardData,
+): PromptContentData {
+  return {
+    id: prompt.id,
+    title: prompt.title,
+    category: prompt.category,
+    tags: [...prompt.tags],
+    content: prompt.content,
+    useCase: prompt.useCase,
+    createdAt: prompt.createdAt,
+    updatedAt: prompt.updatedAt,
+  };
+}
+```
+
+Change `createPromptBackup()` to serialize:
+
+```typescript
+type PromptBackupFile = Omit<PromptBackup, "prompts"> & {
+  prompts: PromptContentData[];
+};
+
+const backupFile = {
+  type: PROMPT_BACKUP_TYPE,
+  version: PROMPT_BACKUP_VERSION,
+  exportedAt,
+  prompts: prompts.map(promptToContentData),
+} satisfies PromptBackupFile;
+
+return JSON.stringify(backupFile, null, 2);
+```
+
+Change `parsePromptBackup()` to normalize every parsed item:
+
+```typescript
+const normalizedPrompts = backup.prompts.map((prompt) => ({
+  ...prompt,
+  deletedAt: null,
+  deletedReason: null,
+  mergedIntoPromptId: null,
+}));
+```
+
+Keep `PromptBackup.prompts` as `PromptCardData[]`, and return
+`normalizedPrompts` from `parsePromptBackup()`.
 
 - [ ] **Step 6: 运行完整测试**
 
