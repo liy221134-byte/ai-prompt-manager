@@ -545,6 +545,46 @@ test("emptyTrash 清空垃圾箱和恢复记录", () => {
   }
 });
 
+test("永久删除恢复记录不会删除提示词", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.createPrompt(prompt({ id: "prompt-b", title: "提示词 B" }));
+    context.database.commitPromptMerge({
+      prompt: prompt({ title: "合并后的提示词" }),
+      sourcePromptIds: ["prompt-a", "prompt-b"],
+      version: createVersion(),
+    });
+
+    assert.equal(
+      context.database.permanentlyDeleteMergeRecord("version-1"),
+      true,
+    );
+    assert.equal(context.database.listMergeRecoveryRecords().length, 0);
+    assert.equal(context.database.listTrash().length, 1);
+    assert.ok(
+      context.database
+        .listPrompts()
+        .some(
+          (item) =>
+            item.id === "prompt-a" && item.title === "合并后的提示词",
+        ),
+    );
+    assert.equal(
+      context.database.listPrompts().some((item) => item.id === "prompt-b"),
+      false,
+    );
+    assert.equal(
+      context.database.permanentlyDeleteMergeRecord("missing-version"),
+      false,
+    );
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
 test("purgeExpiredTrash 清理过期垃圾箱和恢复快照", () => {
   const context = createContext();
 

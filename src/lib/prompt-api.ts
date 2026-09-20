@@ -145,3 +145,12 @@ export function restoreMergeRecordOnServer(versionId: string) {
     },
   );
 }
+
+export function permanentlyDeleteMergeRecordOnServer(versionId: string) {
+  return requestJson<PromptLibraryResponse>(
+    `/api/prompts/recovery/${encodeURIComponent(versionId)}`,
+    {
+      method: "DELETE",
+    },
+  );
+}

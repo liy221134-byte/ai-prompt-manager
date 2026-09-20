@@ -13,6 +13,7 @@ import {
   fetchPromptLibrary,
   fetchTrashOnServer,
   mergePromptsOnServer,
+  permanentlyDeleteMergeRecordOnServer,
   permanentlyDeletePromptOnServer,
   restoreMergeRecordOnServer,
   restorePromptOnServer,
@@ -49,6 +50,9 @@ export type PromptDataSource = {
   restoreMergeRecord: (
     versionId: string,
   ) => Promise<PromptLibraryResponse>;
+  permanentlyDeleteMergeRecord: (
+    versionId: string,
+  ) => Promise<PromptLibraryResponse>;
 };
 
 export const localPromptDataSource: PromptDataSource = {
@@ -64,6 +68,7 @@ export const localPromptDataSource: PromptDataSource = {
   commitAiMerge: commitAiMergeOnServer,
   fetchMergeRecoveryRecords: fetchMergeRecoveryRecordsOnServer,
   restoreMergeRecord: restoreMergeRecordOnServer,
+  permanentlyDeleteMergeRecord: permanentlyDeleteMergeRecordOnServer,
 };
 
 type SupabasePromptRow = {
@@ -362,6 +367,20 @@ export function createSupabasePromptDataSource(
 
       if (error) {
         throw new Error("恢复云端合并结果失败。");
+      }
+
+      return fetchLibrary();
+    },
+    async permanentlyDeleteMergeRecord(versionId) {
+      const user = await getCurrentUser(client);
+      const { error } = await client
+        .from("prompt_versions")
+        .delete()
+        .eq("version_id", versionId)
+        .eq("user_id", user.id);
+
+      if (error) {
+        throw new Error("彻底删除云端恢复记录失败。");
       }
 
       return fetchLibrary();

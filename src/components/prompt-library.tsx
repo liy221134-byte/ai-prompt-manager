@@ -427,6 +427,11 @@ export function PromptLibrary({
     await loadTrash(false);
   }
 
+  async function handlePermanentlyDeleteMergeRecord(versionId: string) {
+    await dataSource.permanentlyDeleteMergeRecord(versionId);
+    await loadTrash(false);
+  }
+
   function handleEnterMergeSelection() {
     setMergeSelection(createEmptySelection());
     setIsMergeSelectionMode(true);
@@ -894,6 +899,9 @@ export function PromptLibrary({
           onClose={() => setIsTrashOpen(false)}
           onEmptyTrash={handleEmptyTrash}
           onNotify={notify}
+          onPermanentlyDeleteMergeRecord={
+            handlePermanentlyDeleteMergeRecord
+          }
           onPermanentlyDeletePrompt={handlePermanentlyDeletePrompt}
           onRestoreMergeRecord={handleRestoreMergeRecord}
           onRestorePrompt={handleRestorePrompt}

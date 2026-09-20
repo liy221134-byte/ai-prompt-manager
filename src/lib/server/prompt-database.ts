@@ -893,6 +893,20 @@ export class PromptDatabase {
     });
   }
 
+  permanentlyDeleteMergeRecord(versionId: string) {
+    return this.transaction(() => {
+      const deleteResult = this.database
+        .prepare("DELETE FROM prompt_versions WHERE version_id = ?")
+        .run(versionId);
+
+      if (Number(deleteResult.changes) > 0) {
+        this.bumpVersion();
+      }
+
+      return Number(deleteResult.changes) > 0;
+    });
+  }
+
   close() {
     this.database.close();
   }

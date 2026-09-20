@@ -19,6 +19,8 @@ import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { getRemainingTrashDays } from "@/lib/prompt-lifecycle";
 import {
   getDeletedReasonLabel,
+  getMergeRestoreConfirmation,
+  getMergeSourceCount,
   getTrashSummary,
 } from "@/lib/prompt-trash-presentation";
 
@@ -33,6 +35,7 @@ type PromptTrashDialogProps = {
   onPermanentlyDeletePrompt: (promptId: string) => Promise<void>;
   onEmptyTrash: () => Promise<void>;
   onRestoreMergeRecord: (versionId: string) => Promise<void>;
+  onPermanentlyDeleteMergeRecord: (versionId: string) => Promise<void>;
   onNotify: (message: string) => void;
 };
 
@@ -46,6 +49,10 @@ type PendingConfirm =
     }
   | {
       kind: "restore-merge";
+      record: PromptVersionData;
+    }
+  | {
+      kind: "permanent-delete-merge";
       record: PromptVersionData;
     };
 
@@ -70,11 +77,163 @@ function formatDateTime(value: string | null) {
 }
 
 function getRemainingDaysLabel(prompt: PromptCardData) {
-  if (!prompt.deletedAt) {
+  if (
+    !prompt.deletedAt ||
+    Number.isNaN(new Date(prompt.deletedAt).getTime())
+  ) {
     return "剩余天数未知";
   }
 
   return `剩余 ${getRemainingTrashDays(prompt.deletedAt)} 天`;
+}
+
+function describeConfirm(
+  confirm: PendingConfirm,
+  prompts: PromptCardData[],
+  records: PromptVersionData[],
+) {
+  if (confirm.kind === "permanent-delete") {
+    return {
+      title: "确认彻底删除这条提示词？",
+      description: `“${confirm.prompt.title}”将被永久删除，删除后无法恢复。`,
+      confirmLabel: "彻底删除",
+      isDestructive: true,
+    };
+  }
+
+  if (confirm.kind === "empty-trash") {
+    return {
+      title: "确认清空垃圾箱？",
+      description: `将永久删除 ${prompts.length} 条提示词和 ${records.length} 条合并恢复记录，删除后无法恢复。`,
+      confirmLabel: "清空垃圾箱",
+      isDestructive: true,
+    };
+  }
+
+  if (confirm.kind === "permanent-delete-merge") {
+    return {
+      title: "确认彻底删除这条恢复记录？",
+      description: `“${confirm.record.title}”的合并恢复快照将被永久删除，删除后无法恢复，但不会影响现有提示词。`,
+      confirmLabel: "彻底删除",
+      isDestructive: true,
+    };
+  }
+
+  return {
+    title: "确认恢复合并前版本？",
+    description: getMergeRestoreConfirmation(confirm.record),
+    confirmLabel: "恢复合并前版本",
+    isDestructive: false,
+  };
+}
+
+type TrashConfirmDialogProps = {
+  confirm: PendingConfirm;
+  prompts: PromptCardData[];
+  records: PromptVersionData[];
+  isBusy: boolean;
+  actionError: string | null;
+  onCancel: () => void;
+  onConfirm: () => Promise<void>;
+};
+
+function TrashConfirmDialog({
+  confirm,
+  prompts,
+  records,
+  isBusy,
+  actionError,
+  onCancel,
+  onConfirm,
+}: TrashConfirmDialogProps) {
+  const content = describeConfirm(confirm, prompts, records);
+
+  useModalBehavior(onCancel, isBusy);
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center px-5">
+      <button
+        aria-label="取消确认"
+        className="absolute inset-0 cursor-default bg-slate-950/45 backdrop-blur-[2px]"
+        onClick={onCancel}
+        type="button"
+      />
+
+      <section
+        aria-describedby="trash-confirm-description"
+        aria-labelledby="trash-confirm-title"
+        aria-modal="true"
+        className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-2xl"
+        role="alertdialog"
+      >
+        <button
+          aria-label="取消确认"
+          className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          onClick={onCancel}
+          type="button"
+        >
+          <X aria-hidden="true" className="size-5" />
+        </button>
+
+        <span className="flex size-11 items-center justify-center rounded-lg bg-red-100 text-red-700">
+          <AlertTriangle aria-hidden="true" className="size-5" />
+        </span>
+
+        <h2
+          className="mt-5 text-lg font-semibold text-slate-950"
+          id="trash-confirm-title"
+        >
+          {content.title}
+        </h2>
+        <p
+          className="mt-2 text-sm leading-6 text-slate-600"
+          id="trash-confirm-description"
+        >
+          {content.description}
+        </p>
+
+        {actionError && (
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {actionError}
+          </p>
+        )}
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            autoFocus
+            className="h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isBusy}
+            onClick={onCancel}
+            type="button"
+          >
+            取消
+          </button>
+          <button
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-slate-300 ${
+              content.isDestructive
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+            disabled={isBusy}
+            onClick={() => void onConfirm()}
+            type="button"
+          >
+            {isBusy ? (
+              <LoaderCircle
+                aria-hidden="true"
+                className="size-4 animate-spin"
+              />
+            ) : content.isDestructive ? (
+              <Trash2 aria-hidden="true" className="size-4" />
+            ) : (
+              <RotateCcw aria-hidden="true" className="size-4" />
+            )}
+            {isBusy ? "正在处理" : content.confirmLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export function PromptTrashDialog({
@@ -88,6 +247,7 @@ export function PromptTrashDialog({
   onPermanentlyDeletePrompt,
   onEmptyTrash,
   onRestoreMergeRecord,
+  onPermanentlyDeleteMergeRecord,
   onNotify,
 }: PromptTrashDialogProps) {
   const [pendingConfirm, setPendingConfirm] =
@@ -97,7 +257,7 @@ export function PromptTrashDialog({
   const isBusy = busyAction !== null;
   const canEmptyTrash = prompts.length > 0 || records.length > 0;
 
-  useModalBehavior(onClose, isBusy);
+  useModalBehavior(onClose, isBusy || Boolean(pendingConfirm));
 
   async function executeAction(
     actionKey: string,
@@ -160,6 +320,19 @@ export function PromptTrashDialog({
       return;
     }
 
+    if (pendingConfirm.kind === "permanent-delete-merge") {
+      const succeeded = await executeAction(
+        `permanent-delete-merge:${pendingConfirm.record.versionId}`,
+        () => onPermanentlyDeleteMergeRecord(pendingConfirm.record.versionId),
+        "恢复记录已彻底删除",
+      );
+
+      if (succeeded) {
+        setPendingConfirm(null);
+      }
+      return;
+    }
+
     const succeeded = await executeAction(
       `restore-merge:${pendingConfirm.record.versionId}`,
       () => onRestoreMergeRecord(pendingConfirm.record.versionId),
@@ -172,85 +345,6 @@ export function PromptTrashDialog({
   }
 
   const summary = getTrashSummary({ prompts, records });
-
-  function renderConfirm() {
-    if (!pendingConfirm) {
-      return null;
-    }
-
-    const isDestructive = pendingConfirm.kind !== "restore-merge";
-    const title =
-      pendingConfirm.kind === "permanent-delete"
-        ? "确认彻底删除这条提示词？"
-        : pendingConfirm.kind === "empty-trash"
-          ? "确认清空垃圾箱？"
-          : "确认恢复合并前版本？";
-    const description =
-      pendingConfirm.kind === "permanent-delete"
-        ? `“${pendingConfirm.prompt.title}”将被永久删除，删除后无法恢复。`
-        : pendingConfirm.kind === "empty-trash"
-          ? `将永久删除 ${prompts.length} 条提示词和 ${records.length} 条合并恢复记录，删除后无法恢复。`
-          : `“${pendingConfirm.record.title}”将恢复为合并前内容，并恢复 ${pendingConfirm.record.sourcePromptIds.length} 条来源提示词，当前合并结果会被替换。`;
-    const confirmLabel =
-      pendingConfirm.kind === "permanent-delete"
-        ? "彻底删除"
-        : pendingConfirm.kind === "empty-trash"
-          ? "清空垃圾箱"
-          : "恢复合并前版本";
-
-    return (
-      <div className="mx-auto max-w-lg rounded-lg border border-red-200 bg-red-50 p-6">
-        <span className="flex size-11 items-center justify-center rounded-lg bg-red-100 text-red-700">
-          <AlertTriangle aria-hidden="true" className="size-5" />
-        </span>
-        <h3 className="mt-5 text-lg font-semibold text-slate-950">
-          {title}
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          {description}
-        </p>
-
-        {actionError && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm text-red-700">
-            {actionError}
-          </p>
-        )}
-
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            className="h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isBusy}
-            onClick={() => setPendingConfirm(null)}
-            type="button"
-          >
-            取消
-          </button>
-          <button
-            className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-slate-300 ${
-              isDestructive
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-            disabled={isBusy}
-            onClick={() => void handleConfirm()}
-            type="button"
-          >
-            {isBusy ? (
-              <LoaderCircle
-                aria-hidden="true"
-                className="size-4 animate-spin"
-              />
-            ) : isDestructive ? (
-              <Trash2 aria-hidden="true" className="size-4" />
-            ) : (
-              <RotateCcw aria-hidden="true" className="size-4" />
-            )}
-            {isBusy ? "正在处理" : confirmLabel}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   function renderContent() {
     if (isLoading) {
@@ -292,10 +386,6 @@ export function PromptTrashDialog({
           </button>
         </div>
       );
-    }
-
-    if (pendingConfirm) {
-      return renderConfirm();
     }
 
     return (
@@ -444,30 +534,46 @@ export function PromptTrashDialog({
                         合并时间：{formatDateTime(record.createdAt)}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        来源提示词：{record.sourcePromptIds.length} 条
+                        来源提示词：{getMergeSourceCount(record)} 条
                       </p>
                     </div>
-                    <button
-                      className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={isBusy}
-                      onClick={() =>
-                        setPendingConfirm({
-                          kind: "restore-merge",
-                          record,
-                        })
-                      }
-                      type="button"
-                    >
-                      {busyAction === `restore-merge:${record.versionId}` ? (
-                        <LoaderCircle
-                          aria-hidden="true"
-                          className="size-3.5 animate-spin"
-                        />
-                      ) : (
-                        <RotateCcw aria-hidden="true" className="size-3.5" />
-                      )}
-                      恢复合并前版本
-                    </button>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isBusy}
+                        onClick={() =>
+                          setPendingConfirm({
+                            kind: "restore-merge",
+                            record,
+                          })
+                        }
+                        type="button"
+                      >
+                        {busyAction === `restore-merge:${record.versionId}` ? (
+                          <LoaderCircle
+                            aria-hidden="true"
+                            className="size-3.5 animate-spin"
+                          />
+                        ) : (
+                          <RotateCcw aria-hidden="true" className="size-3.5" />
+                        )}
+                        恢复
+                      </button>
+                      <button
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isBusy}
+                        onClick={() =>
+                          setPendingConfirm({
+                            kind: "permanent-delete-merge",
+                            record,
+                          })
+                        }
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" className="size-3.5" />
+                        彻底删除
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -531,6 +637,18 @@ export function PromptTrashDialog({
           {renderContent()}
         </div>
       </aside>
+
+      {pendingConfirm && (
+        <TrashConfirmDialog
+          actionError={actionError}
+          confirm={pendingConfirm}
+          isBusy={isBusy}
+          onCancel={() => setPendingConfirm(null)}
+          onConfirm={handleConfirm}
+          prompts={prompts}
+          records={records}
+        />
+      )}
     </div>
   );
 }
