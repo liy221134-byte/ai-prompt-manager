@@ -35,8 +35,8 @@
 - [x] 使用测试提示词完成一次备份恢复演练
 - [x] 使用上一个 Ready 部署完成一次回滚演练
 - [x] 回滚后登录、提示词读取、编辑和 AI 采集正常
-- [x] Preview 环境变量范围：**标准不成立，已决定接受风险**（见下方记录）
-- [x] 应用实际读取的密钥（`SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`）仅存在于 Production；Preview 中的敏感变量来自 Supabase 集成且应用读不到，风险已接受
+- [x] Preview 环境变量范围：只包含公开 Supabase 参数（2026-09-21 修复并复核，见下方记录）
+- [x] `SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 仅在 Production 使用（2026-09-21 修复并复核，见下方记录）
 - [x] Vercel 日志和 `/api/health/db` 可以用于定位基础运行问题
 
 ## Supabase 配置确认
@@ -86,48 +86,42 @@
 - 导入冲突时保留更新时间较新的版本：改过的提示词不会被旧备份覆盖，导入显示「跳过」。
 - 备份里已在垃圾箱的提示词不会复活，导入显示「跳过」。
 
-仍然待办：Preview 环境变量范围、Service Role Key 作用域、Vercel 日志、云端模式访问本机接口返回 404、账号隔离、缺少配置时的安全关闭、Preview 密码重置 Redirect URL、回滚演练。这些需要登录 Vercel 控制台或使用真实账号。
+## 环境变量范围：定位与修复（2026-09-21）
 
-## 环境变量范围检查发现（2026-09-21）
+用 Vercel 接口读到了被页面截断的完整变量名。**根因是命名错，后果是作用域错**，两者同时成立，
+而不是二选一。
 
-在 Vercel 的 Environment Variables 页面按 Preview 过滤后，看到多条名字里带
-`SUPABASE_SERVICE_ROLE_` 的变量，作用域都标注为 **Production and Preview**。
+安装 Supabase 集成时「环境变量前缀」被填成了 `SUPABASE_SERVICE_ROLE_KEY_`，集成于是同步出
+16 条带错误前缀的变量，默认作用域 Production + Preview：`..._SUPABASE_URL`、
+`..._SUPABASE_ANON_KEY`、`..._SUPABASE_PUBLISHABLE_KEY`、`..._SUPABASE_SECRET_KEY`、
+`..._SUPABASE_SERVICE_ROLE_KEY`、`..._SUPABASE_JWT_SECRET`、`..._POSTGRES_URL`、
+`..._POSTGRES_PRISMA_URL`、`..._POSTGRES_URL_NON_POOLING`、`..._POSTGRES_USER`、
+`..._POSTGRES_HOST`、`..._POSTGRES_PASSWORD`、`..._POSTGRES_DATABASE`，以及三条
+`NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY_*` 版本。
 
-这和本清单的两条门禁直接冲突：
+- 命名错：13 条标准变量被套上错误前缀，应用读不到（代码只读精确名称）。
+- 作用域错：这批变量含能绕过行级安全的生产密钥，修复前确实存在于 Preview，门禁不成立。
+- 另有一条与集成无关的独立作用域错：`CRON_SECRET` 被勾成了 Production + Preview。
 
-- Preview 环境只包含公开 Supabase 参数。
-- `SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 仅在 Production 使用。
+处理结果：
 
-页面把变量名中间截断了，需要看到完整名称才能判断属于哪种情况：
+| 动作 | 复核证据 |
+| --- | --- |
+| 16 条前缀变量作用域收窄为 Production | 重新读取变量清单，16 条 target 均为 `production` |
+| `CRON_SECRET` 作用域改为 Production | 重新读取变量清单，target 为 `production` |
+| Preview 作用域内容 | 只剩 `NEXT_PUBLIC_DATA_MODE`、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`AI_API_BASE_URL`、`AI_API_KEY`、`AI_MODEL` |
+| 生产回归 | `/` 307，`/login` 200，`/api/health/db` 带错误密钥返回 401（说明改作用域时密钥值没有被清空） |
 
-1. **命名问题**：创建变量时把密钥内容填进了「前缀」字段，导致变量名本身不对，应用读不到
-   这些变量。
-2. **作用域问题**：生产密钥确实被投放到 Preview 环境。
+遗留：那 16 条变量的名字仍然是错的，应用读不到，属于环境变量列表里的噪音。彻底清理的方式是
+删除带前缀的 Supabase 集成，不阻塞验收。
 
-第 2 种是安全问题：Preview 部署会拿到能绕过行级安全的生产密钥，任何拿到 Preview 网址的人
-都可能读写全部账号的数据。
+### 应用实际读取的变量（已核实）
 
-两种情况都要处理，处理完再重新勾选这两条门禁。
+`NEXT_PUBLIC_DATA_MODE`、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、
+`SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`、`AI_API_BASE_URL`、`AI_API_KEY`、`AI_MODEL`。
 
-### 环境变量范围：接受风险的记录（2026-09-21）
-
-Vercel 里装了**两个** Supabase 集成，其中一个带前缀，创建了一批名字异常的环境变量
-（例如 `SUPABASE_SERVICE_ROLE_KEY_POSTGRES_PASSWORD`），作用域是 Production + Preview。
-集成托管的变量在环境变量页面不可编辑，只能调整集成本身。
-
-已核实的事实：
-
-- 应用实际读取的变量是**手动维护**的，且只在 Production：`NEXT_PUBLIC_DATA_MODE`、
-  `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`、
-  `SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`、`AI_*`。
-- 集成投放的那批变量名字不匹配，应用读不到；预览构建也只有项目所有者本人能触发。
-
-结论：**接受该风险**，不再要求「Preview 只包含公开参数」。
-
-重新评估的触发条件：引入协作者、把预览环境对外开放、或者任何人能触发预览构建时，
-风险会从「自己可控」变成「外部可触发」，必须回到这里重新处理。
-
-可选清理（不阻塞验收）：删掉重复的那个 Supabase 集成，让环境变量列表恢复干净。
+公开参数允许出现在 Preview；`SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 只允许 Production。
+线上当前用的是 Anon Key 而不是 Publishable Key，代码两者都支持。
 
 ### 缺少配置时安全关闭（2026-09-21 实测）
 

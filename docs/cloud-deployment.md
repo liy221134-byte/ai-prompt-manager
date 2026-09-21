@@ -92,8 +92,8 @@ CRON_SECRET=自行生成的一串随机字符串
 
 规则：
 
-- `NEXT_PUBLIC_SUPABASE_URL` 和 Publishable Key 可以用于浏览器。
-- 旧项目没有 Publishable Key 时，可以改用 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。
+- `NEXT_PUBLIC_SUPABASE_URL` 和公开 Key 可以用于浏览器。
+- Publishable Key 和 Anon Key 二选一，必须配置至少一个；旧项目没有 Publishable Key 时用 Anon Key。
 - Service Role Key 只能放在服务端环境变量中。
 - 不把 `.env.local` 提交到 Git。
 - 不把任何 Key 发送到聊天中。
@@ -149,12 +149,15 @@ CRON_SECRET=...
    Production 和 Preview：
    NEXT_PUBLIC_DATA_MODE=supabase
    NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...（或用 NEXT_PUBLIC_SUPABASE_ANON_KEY）
 
    仅 Production：
    SUPABASE_SERVICE_ROLE_KEY=...
    CRON_SECRET=...
    ```
+
+   只有公开参数才允许勾选 Preview。能绕过行级安全的密钥一旦进入 Preview，等于把生产数据库
+   交给每一个预览地址。
 
 7. 部署应用。
 8. 将 Vercel 正式地址加入 Supabase Auth 的 Redirect URL。
@@ -189,3 +192,18 @@ CRON_SECRET=...
 - Supabase URL 或公开 Key 缺失时，应用返回明确的中文配置错误。
 - 不允许线上环境自动降级为本机 SQLite。
 - 修改环境变量后必须重新部署，运行时不会读取本地 `.env.local`。
+
+## 常见陷阱：Vercel 的 Supabase 集成
+
+如果通过 Vercel 的 Supabase 集成安装，安装表单里的「环境变量前缀」必须留空。
+
+前缀一旦填了内容，集成会同步出一整套带前缀的变量。例如前缀填 `SUPABASE_SERVICE_ROLE_KEY_`
+时，会出现 `SUPABASE_SERVICE_ROLE_KEY_POSTGRES_PASSWORD`、
+`SUPABASE_SERVICE_ROLE_KEY_SUPABASE_URL` 这类名字。这些变量有三个问题：
+
+- 应用读不到，因为代码只读 `SUPABASE_SERVICE_ROLE_KEY`、`NEXT_PUBLIC_SUPABASE_URL` 这类精确名称。
+- 默认投放到 Production 和 Preview，会把能绕过行级安全的密钥带进预览环境。
+- 在环境变量页面不可编辑，只能调整集成配置本身。
+
+本项目上出现过这种情况，作用域已经收窄到 Production。彻底清理的方式是删除该集成，
+删除后应用依赖的变量都不受影响。
