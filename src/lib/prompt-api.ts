@@ -177,12 +177,11 @@ export function fetchOptimizeVersionOnServer(promptId: string) {
   );
 }
 
-export function restoreAiOptimizeOnServer(promptId: string, versionId: string) {
+export function restoreAiOptimizeOnServer(promptId: string) {
   return requestJson<PromptLibraryResponse>(
     `/api/prompts/ai-optimize/${encodeURIComponent(promptId)}`,
     {
       method: "POST",
-      body: JSON.stringify({ versionId }),
     },
   );
 }

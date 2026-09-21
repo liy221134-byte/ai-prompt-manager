@@ -34,7 +34,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 }
 
-export async function POST(request: Request, context: RouteContext) {
+export async function POST(_request: Request, context: RouteContext) {
   const cloudModeError = rejectLocalApiInCloudMode();
 
   if (cloudModeError) {
@@ -42,25 +42,10 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  let body: unknown;
 
   try {
-    body = await request.json();
-  } catch {
-    return createErrorResponse("请求内容不是有效的 JSON。", 400);
-  }
-
-  const versionId = (body as { versionId?: unknown } | null)?.versionId;
-
-  if (typeof versionId !== "string" || !versionId.trim()) {
-    return createErrorResponse("回退请求缺少版本标识。", 400);
-  }
-
-  try {
-    const restoredLibrary = getPromptDatabase().restorePromptOptimize(
-      id,
-      versionId,
-    );
+    // 回退前快照的编号由服务端生成，客户端只提供提示词标识。
+    const restoredLibrary = getPromptDatabase().restorePromptOptimize(id);
 
     if (!restoredLibrary) {
       return createErrorResponse("没有可以回退的优化记录。", 404);

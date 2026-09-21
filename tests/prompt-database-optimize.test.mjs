@@ -134,6 +134,36 @@ test("回到优化前会恢复内容，并留下回退前快照", () => {
   }
 });
 
+test("回到优化前会自己生成新的快照编号", () => {
+  const context = createContext();
+
+  try {
+    context.database.createPrompt(prompt());
+    context.database.commitPromptOptimize({
+      prompt: prompt({ content: "## 任务\n优化后的正文" }),
+      versionId: "version-optimize",
+    });
+
+    // 界面只提供提示词标识；回退前快照的编号必须由服务端新生成，
+    // 复用被消费的那条编号会撞主键，让整个回退失败。
+    const snapshot = context.database.restorePromptOptimize("prompt-a");
+
+    assert.ok(snapshot);
+
+    const versions = readVersions(context.databasePath, "prompt-a");
+
+    assert.deepEqual(
+      versions.map((row) => row.version_reason),
+      ["optimize_before", "restore_before"],
+    );
+    assert.notEqual(versions[1].version_id, versions[0].version_id);
+    assert.ok(String(versions[1].version_id).startsWith("version-"));
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
 test("没有优化记录时回退返回空", () => {
   const context = createContext();
 

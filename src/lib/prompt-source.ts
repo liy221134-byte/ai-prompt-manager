@@ -29,6 +29,7 @@ import {
   type PromptOptimizeVersionResponse,
   type PromptRecoveryResponse,
 } from "./prompt-api.ts";
+import { createOptimizeVersionId } from "./prompt-optimize-draft.ts";
 import {
   createPromptImportPlan,
   PROMPT_BACKUP_TYPE,
@@ -65,10 +66,7 @@ export type PromptDataSource = {
   fetchOptimizeVersion: (
     promptId: string,
   ) => Promise<PromptOptimizeVersionResponse>;
-  restoreAiOptimize: (
-    promptId: string,
-    versionId: string,
-  ) => Promise<PromptLibraryResponse>;
+  restoreAiOptimize: (promptId: string) => Promise<PromptLibraryResponse>;
 };
 
 export const localPromptDataSource: PromptDataSource = {
@@ -433,11 +431,12 @@ export function createSupabasePromptDataSource(
         version: rows.length > 0 ? rowToVersion(rows[0]) : null,
       };
     },
-    async restoreAiOptimize(promptId, versionId) {
+    async restoreAiOptimize(promptId) {
       await getCurrentUser(client);
+      // 回退前快照的编号在这里生成，不能复用被消费的那条编号。
       const { error } = await client.rpc("restore_prompt_optimize", {
         p_prompt_id: promptId,
-        p_version_id: versionId,
+        p_version_id: createOptimizeVersionId(),
       });
 
       if (error) {

@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 
 import {
@@ -59,6 +60,11 @@ export type PromptMergeResult = PromptLibrarySnapshot & {
   updateCount: number;
   skipCount: number;
 };
+
+// 本地模式的快照编号在这里生成，格式与客户端保持一致。
+function createPromptVersionId() {
+  return `version-${randomUUID()}`;
+}
 
 function createDefaultDatabasePath() {
   return (
@@ -880,10 +886,9 @@ export class PromptDatabase {
   }
 
   // 回到优化前：回退本身也会覆盖内容，所以先把当前内容存成 restore_before 快照。
-  restorePromptOptimize(promptId: string, versionId: string) {
-    if (!versionId.trim()) {
-      throw new Error("恢复快照标识无效。");
-    }
+  // 快照编号在这里生成，不接受调用方传入：复用被消费的那条编号会撞主键，让回退整笔失败。
+  restorePromptOptimize(promptId: string) {
+    const versionId = createPromptVersionId();
 
     const now = new Date().toISOString();
     const expiresAt = new Date(
@@ -951,7 +956,7 @@ export class PromptDatabase {
       const target = rowToPrompt(targetRow);
       const version = rowToVersion(versionRow);
       const restoreVersion: PromptVersionData = {
-        versionId: versionId.trim(),
+        versionId,
         promptId: target.id,
         title: target.title,
         category: target.category,

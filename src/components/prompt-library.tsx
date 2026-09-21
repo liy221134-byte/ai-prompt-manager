@@ -580,15 +580,9 @@ export function PromptLibrary({
     notify("优化结果已保存，可以回到优化前");
   }
 
-  async function handleRestoreOptimize(
-    prompt: PromptCardData,
-    versionId: string,
-  ) {
+  async function handleRestoreOptimize(prompt: PromptCardData) {
     try {
-      const library = await dataSource.restoreAiOptimize(
-        prompt.id,
-        versionId,
-      );
+      const library = await dataSource.restoreAiOptimize(prompt.id);
 
       setPrompts(library.prompts);
       cachePrompts(library.prompts);

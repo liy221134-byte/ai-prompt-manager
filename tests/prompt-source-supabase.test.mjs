@@ -314,6 +314,23 @@ test("云端恢复记录查询只取合并快照，排除优化快照", async ()
   );
 });
 
+test("云端回到优化前会带上新生成的快照编号", async () => {
+  const fake = createFakeSupabase({
+    promptRows: [toPromptRow(createPrompt())],
+  });
+  const dataSource = createSupabasePromptDataSource(fake.client);
+
+  await dataSource.restoreAiOptimize("prompt-a");
+
+  assert.equal(fake.rpcCalls.length, 1);
+  const [call] = fake.rpcCalls;
+
+  assert.equal(call.name, "restore_prompt_optimize");
+  assert.equal(call.params.p_prompt_id, "prompt-a");
+  assert.equal(typeof call.params.p_version_id, "string");
+  assert.ok(call.params.p_version_id.startsWith("version-"));
+});
+
 test("云端清空垃圾箱只调用一个原子 RPC", async () => {
   const fake = createFakeSupabase({
     promptRows: [toPromptRow(createPrompt())],
