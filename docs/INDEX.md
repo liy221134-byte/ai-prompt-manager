@@ -62,7 +62,7 @@
 ### 工程学习
 
 - [工程能力学习计划](learning/engineering-readiness.md)
-- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)
+- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：17 条工程方法、规则、模板和案例，`0.2.1` 已确认，可作为文档包导入的样本
 
 ### 验收与测试
 
