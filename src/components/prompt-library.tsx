@@ -929,7 +929,7 @@ export function PromptLibrary({
 
       {selectedPrompt && (
         <PromptDetailDrawer
-          key={selectedPrompt.id}
+          key={`detail-${selectedPrompt.id}`}
           onClose={() => {
             if (!editorState && !deletePromptId && !optimizePromptId) {
               setSelectedPromptId(null);
@@ -950,6 +950,7 @@ export function PromptLibrary({
       {optimizePrompt && (
         <PromptOptimizeDrawer
           dataSource={dataSource}
+          key={`optimize-${optimizePrompt.id}`}
           onClose={() => setOptimizePromptId(null)}
           onNotify={notify}
           onSaved={handleOptimizeSaved}
@@ -984,10 +985,11 @@ export function PromptLibrary({
       {editorState && (
         <PromptEditorDrawer
           key={
-            editingPrompt?.id ??
-            (editorState.mode === "create" && editorState.initialDraft
-              ? "ai-draft"
-              : "new-prompt")
+            editingPrompt
+              ? `editor-${editingPrompt.id}`
+              : editorState.mode === "create" && editorState.initialDraft
+                ? "editor-ai-draft"
+                : "editor-new-prompt"
           }
           initialDraft={
             editorState.mode === "create" ? editorState.initialDraft : undefined
