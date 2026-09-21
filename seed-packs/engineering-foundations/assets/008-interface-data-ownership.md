@@ -2,6 +2,19 @@
 id: RULE-BOUNDARY-001
 title: 接口契约与数据所有权规则
 asset_type: rule
+rule_type: must
+purpose: data
+layer: data
+tech_context:
+  - generic
+priority: p0
+override_allowed: false
+compile_target:
+  - agents
+verification: gate
+evidence:
+  - supabase/migrations 的 RLS 策略（每个账号只能读写自己的数据）
+  - tests/prompt-source-supabase.test.mjs、tests/prompt-source-contract.test.mjs（数据源契约测试）
 scope: project
 project_scale:
   - medium
@@ -18,8 +31,8 @@ source_references:
 related_assets:
   - MTH-MODULE-001
   - MTH-ARCH-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 接口契约与数据所有权规则

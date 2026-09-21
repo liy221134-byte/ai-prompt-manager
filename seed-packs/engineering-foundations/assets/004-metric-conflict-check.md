@@ -2,6 +2,18 @@
 id: MTH-REQ-002
 title: 定量指标与冲突检查
 asset_type: method
+purpose: analysis
+layer: project
+tech_context:
+  - generic
+priority: p1
+override_allowed: true
+compile_target:
+  - agents
+  - template
+verification: manual
+evidence:
+  - docs/operations/availability-targets.md（把备份节奏和恢复目标写成同一口径，避免两个数字打架）
 scope: project
 project_scale:
   - medium
@@ -18,8 +30,8 @@ source_references:
 related_assets:
   - MTH-REQ-001
   - TPL-ACCEPT-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 定量指标与冲突检查

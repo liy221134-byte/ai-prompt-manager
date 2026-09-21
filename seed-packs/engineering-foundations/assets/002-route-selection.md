@@ -2,6 +2,17 @@
 id: MTH-ROUTE-001
 title: 根据不确定性选择实施路线
 asset_type: method
+purpose: development
+layer: project
+tech_context:
+  - generic
+priority: p1
+override_allowed: true
+compile_target:
+  - agents
+verification: manual
+evidence:
+  - docs/roadmap.md（8 周计划按"本地闭环 → 云端 → 生产加固"分阶段推进，未一次并行）
 scope: global
 project_scale:
   - personal
@@ -19,8 +30,8 @@ source_references:
 related_assets:
   - MTH-PROJECT-001
   - MTH-DELIVERY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 根据不确定性选择实施路线

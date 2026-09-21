@@ -2,6 +2,17 @@
 id: TPL-ACCEPT-001
 title: 验收证据链
 asset_type: template
+purpose: testing
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - template
+verification: manual
+evidence:
+  - docs/acceptance/（week-01 至 week-09 与 v1.0.0 清单按"版本与结论、已通过项、发布门禁、发布记录"组织并逐项签署）
 scope: project
 project_scale:
   - medium
@@ -19,8 +30,8 @@ source_references:
 related_assets:
   - MTH-REQ-002
   - MTH-QUALITY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 验收证据链

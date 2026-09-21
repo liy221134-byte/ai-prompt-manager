@@ -2,6 +2,19 @@
 id: MTH-ARCH-001
 title: 架构与工程基线
 asset_type: method
+purpose: development
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - agents
+  - readme
+verification: manual
+evidence:
+  - docs/decisions/0001 至 0007（技术栈、存储、备份格式、数据库、云端架构、AI 供应商、生产配置）
+  - docs/project-map.md（架构链路、环境与可用性目标）
 scope: project
 project_scale:
   - medium
@@ -18,8 +31,10 @@ source_references:
 related_assets:
   - MTH-MODULE-001
   - RULE-BOUNDARY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+  - MTH-TECH-001
+  - TPL-TECH-001
+version: 0.2.1
+last_reviewed: 2026-09-21
 ---
 
 # 架构与工程基线
@@ -70,3 +85,5 @@ last_reviewed: 2026-09-20
 
 - `MTH-MODULE-001`：拆分并治理模块边界。
 - `RULE-BOUNDARY-001`：限制跨模块数据和接口访问。
+- `MTH-TECH-001`（引用）：技术选型是架构基线的输出之一。
+- `TPL-TECH-001`（引用）：环境、安全和运维项按技术档案固化。

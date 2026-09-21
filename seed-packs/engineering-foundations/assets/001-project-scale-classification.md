@@ -2,6 +2,18 @@
 id: MTH-PROJECT-001
 title: 项目规模与复杂度分级
 asset_type: method
+purpose: analysis
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - agents
+  - readme
+verification: manual
+evidence:
+  - docs/project-map.md（提交 e6abaca、0afc500、cdea0ad 把分级结果落地为项目地图）
 scope: global
 project_scale:
   - personal
@@ -18,8 +30,8 @@ source_references:
 related_assets:
   - MTH-ROUTE-001
   - MTH-QUALITY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 项目规模与复杂度分级

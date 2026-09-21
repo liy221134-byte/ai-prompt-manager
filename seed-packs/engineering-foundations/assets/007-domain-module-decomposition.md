@@ -2,6 +2,16 @@
 id: MTH-MODULE-001
 title: 按业务能力拆分模块
 asset_type: method
+purpose: development
+layer: module
+tech_context:
+  - generic
+priority: p2
+override_allowed: true
+compile_target:
+  - agents
+verification: manual
+evidence: []
 scope: project
 project_scale:
   - medium
@@ -11,15 +21,15 @@ lifecycle_phase:
   - analysis
   - design
 status: candidate
-confidence: provisional
+confidence: hypothesis
 source_references:
   - docs/v2-requirements-draft.md
   - docs/learning/engineering-readiness.md
 related_assets:
   - MTH-ARCH-001
   - RULE-BOUNDARY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 按业务能力拆分模块
@@ -71,6 +81,9 @@ last_reviewed: 2026-09-20
 - 数据所有权矩阵。
 - 接口和事件目录。
 - 模块验收与发布记录。
+
+可信度说明：本资产包目前没有可指向的证据（本项目是单体规模，没有实际使用模块拆分），
+按可信度规则保持"假设"，等有真实项目使用后再升级。
 
 ## 相关资产
 

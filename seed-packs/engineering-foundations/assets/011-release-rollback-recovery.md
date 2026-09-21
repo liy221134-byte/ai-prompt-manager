@@ -2,6 +2,19 @@
 id: PLAYBOOK-RELEASE-001
 title: 发布、回滚与恢复
 asset_type: playbook
+purpose: release
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - agents
+  - readme
+verification: gate
+evidence:
+  - docs/acceptance/week-08.md 第 5 步（在生产用 Vercel Promote 完成一次真实回滚，再切回最新版本）
+  - docs/operations/release-rollback.md
 scope: project
 project_scale:
   - medium
@@ -18,8 +31,8 @@ source_references:
 related_assets:
   - MTH-QUALITY-001
   - PLAYBOOK-INCIDENT-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 发布、回滚与恢复
