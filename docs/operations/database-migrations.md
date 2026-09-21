@@ -14,10 +14,16 @@
 202609200002  document_prompt_lifecycle
 202609210001  add_prompt_optimize
 20260921054052 add_project_asset_foundation
+20260921120000 add_asset_prompt_storage
 ```
 
 `add_project_asset_foundation` 属于 2.0.0，必须先完成迁移验证，再合并依赖统一资产
 结构的应用代码。
+
+`add_asset_prompt_storage` 属于 2.1.0，只新增统一资产上的原子操作函数（进垃圾箱、
+合并提交、恢复合并、优化提交、回到优化前、清空垃圾箱），不改表结构，也不删除 2.0.0
+的旧函数，保证回滚到旧代码时仍然可用。它随 2.1.0 的分支一起合并到 `main`，
+应用后需要跑一次顾问检查。
 
 ## 三种执行方式
 
