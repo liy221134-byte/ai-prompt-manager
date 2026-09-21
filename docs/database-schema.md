@@ -87,6 +87,13 @@ prompt_versions_user_expires_idx (user_id, expires_at)
 2.0.0 新增统一资产模型。现有 `prompts` 和 `prompt_versions` 在迁移期保留为来源和
 回退快照，正式资产数据写入 `assets` 与 `asset_versions`。
 
+2.1.0 起提示词也完全写入 `assets` 与 `asset_versions`：内容、垃圾箱状态、合并和优化
+快照、恢复记录都在统一资产里。`prompts` 和 `prompt_versions` 变成**只读的迁移前快照**，
+新版本不再写入，只在首次打开旧库时把资产里还没有的提示词补一次。
+
+回滚要点：切回 2.1.0 之前的代码后，`prompts` 表里只有切换前的内容，所以回滚必须
+先用 2.1.0 导出提示词备份，再切回旧代码并导入该备份。
+
 ### `projects` 表
 
 | 字段 | PostgreSQL 类型 | 必填 | 说明 |

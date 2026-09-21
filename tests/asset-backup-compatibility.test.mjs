@@ -127,6 +127,71 @@ test("切换后提示词读写只发生在统一资产，旧表不再变化", ()
   }
 });
 
+test("切换后备份可以完整导出并恢复提示词库", () => {
+  const context = createContext();
+
+  try {
+    // 造一批内容，包含变量和标签，确认往返后字段不丢。
+    context.database.createPrompt(
+      createPrompt({
+        id: "prompt-round-trip-a",
+        title: "往返提示词 A",
+        tags: ["备份", "往返"],
+        content: "请处理 {{主题}} 并输出 {{格式}}",
+        useCase: "验证备份往返。",
+      }),
+    );
+    context.database.createPrompt(
+      createPrompt({ id: "prompt-round-trip-b", title: "往返提示词 B" }),
+    );
+
+    const exportedAt = "2026-09-21T15:00:00.000Z";
+    const backupContent = createPromptBackup(
+      context.database.listPrompts(),
+      exportedAt,
+    );
+    const parsedBackup = parsePromptBackup(backupContent);
+
+    // 导出内容来自统一资产：活跃提示词一条不少。
+    assert.equal(parsedBackup.prompts.length, 5);
+    assert.equal(parsedBackup.exportedAt, exportedAt);
+
+    // 把库清空，模拟换机器或重装后只剩一份备份文件。
+    for (const prompt of context.database.listPrompts()) {
+      context.database.deletePrompt(prompt.id);
+    }
+    context.database.emptyTrash();
+
+    assert.equal(context.database.listPrompts().length, 0);
+
+    // 导入备份后，标题、标签、正文和适用场景逐条对得上。
+    const result = context.database.mergePrompts(parsedBackup.prompts);
+
+    assert.equal(result.addCount, 5);
+
+    const restored = context.database.listPrompts();
+    const restoredA = restored.find(
+      (prompt) => prompt.id === "prompt-round-trip-a",
+    );
+
+    assert.equal(restored.length, 5);
+    assert.equal(restoredA.title, "往返提示词 A");
+    assert.deepEqual(restoredA.tags, ["备份", "往返"]);
+    assert.equal(restoredA.content, "请处理 {{主题}} 并输出 {{格式}}");
+    assert.equal(restoredA.useCase, "验证备份往返。");
+
+    // 导入进来的提示词同样落在默认项目里。
+    assert.ok(findAsset(context.database, "prompt-round-trip-a"));
+    assert.equal(
+      findAsset(context.database, "prompt-round-trip-a").projectId,
+      DEFAULT_PROJECT_ID,
+    );
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
 test("旧版提示词备份导入后会进入默认项目", () => {
   const context = createContext();
   const prompt = createPrompt({ id: "prompt-backup-import" });
