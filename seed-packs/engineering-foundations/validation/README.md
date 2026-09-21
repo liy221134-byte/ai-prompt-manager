@@ -34,9 +34,9 @@
 
 | 日期 | 资产包版本 | 画像 | 结果文件 | 状态 |
 | --- | --- | --- | --- | --- |
-| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 个人工具 | [01-personal-tool-result.md](01-personal-tool-result.md) | AI 起草，待人工确认 |
-| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 中型云端产品 | [02-cloud-product-result.md](02-cloud-product-result.md) | AI 起草，待人工确认 |
-| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 大型平台 | [03-large-platform-result.md](03-large-platform-result.md) | AI 起草，待人工确认 |
+| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 个人工具 | [01-personal-tool-result.md](01-personal-tool-result.md) | 已确认 |
+| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 中型云端产品 | [02-cloud-product-result.md](02-cloud-product-result.md) | 已确认 |
+| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 大型平台 | [03-large-platform-result.md](03-large-platform-result.md) | 已确认 |
 
 ### 本轮编译的共同发现
 
@@ -45,4 +45,4 @@
    权限门禁执行，这条例外已经写回 `MTH-QUALITY-001`。
 3. 三次编译都暴露出同一类缺口：资产包缺少协作边界、成本额度和跨团队追踪方向的资产；
    技术选型缺口已在 `0.2.1` 补齐，监管高敏的具体条款仍未覆盖。
-4. 编译结果需要人工确认后才能从"AI 起草"转为资产包结论。
+4. 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。
