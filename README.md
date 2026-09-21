@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-第 9 周：提示词 AI 优化，准备发布 `v0.9.0`。
+`v1.0.0` 发布收尾：产品功能已完成，等待 Preview 与 Production 人工验收。
 
 项目标签（按 `docs/project-map.md` 判定，复判时直接读这三行）：
 
@@ -12,7 +12,7 @@
 | --- | --- |
 | 规模 | 个人工具 |
 | 运行环境 | 全托管（Vercel + Supabase） |
-| 当前阶段 | 4 发布与运维（`v0.9.0` 已发布，`v0.8.0` 与 `v0.9.0` 的人工验收待签） |
+| 当前阶段 | 4 发布与运维（`v1.0.0` 整体验收待签） |
 
 当前版本支持：
 
@@ -36,6 +36,9 @@
 - 新增、编辑和删除提示词
 - Markdown 编辑与预览
 - 自动识别 `{{变量}}`
+- 变量清单随正文实时更新，可以逐条改名或降级为正文
+- 支持把正文选区设为变量，也可以在光标处手动插入变量
+- 保存前校验空名、重名、花括号、变量长度和数量上限
 - 填写变量、生成最终内容并一键复制
 - 浏览器 `localStorage` 仅用于旧数据迁移和页面缓存
 - 导出全部提示词为 JSON 备份
@@ -112,6 +115,8 @@
 - [v0.8.0 AI 合并与垃圾箱实施计划（已归档）](docs/archive/2026-09-20-ai-prompt-merge-plan.md)
 - [v0.9.0 提示词 AI 优化设计](docs/superpowers/specs/2026-09-20-ai-prompt-optimize-design.md)
 - [第 9 周验收清单](docs/acceptance/week-09.md)
+- [v0.9.1 变量管理设计](docs/superpowers/specs/2026-09-21-variable-management-design.md)
+- [v1.0.0 整体验收清单](docs/acceptance/v1.0.0.md)
 - [新项目 README 模板](templates/new-project/README.md)
 - [新项目 AI 规则模板](templates/new-project/AGENTS.md)
 - [新项目启动提示词](templates/new-project/START_PROMPT.md)

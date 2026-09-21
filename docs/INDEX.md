@@ -73,6 +73,7 @@
 - [第 7 周验收](acceptance/week-07.md)
 - [第 8 周验收](acceptance/week-08.md)
 - [第 9 周验收](acceptance/week-09.md)
+- [v1.0.0 整体验收](acceptance/v1.0.0.md)
 
 ### 云端部署
 
