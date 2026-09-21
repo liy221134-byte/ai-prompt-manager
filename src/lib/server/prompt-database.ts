@@ -14,6 +14,13 @@ import {
   PROMPT_BACKUP_VERSION,
 } from "../prompt-backup.ts";
 import { PROMPT_TRASH_RETENTION_DAYS } from "../prompt-lifecycle.ts";
+import {
+  ensureAssetSchema,
+  getDefaultProject as readDefaultProject,
+  listAssetVersions as readAssetVersions,
+  listAssets as readAssets,
+  syncLegacyPromptsToAssets,
+} from "./asset-database.ts";
 
 type PromptRow = {
   id: string;
@@ -160,6 +167,8 @@ export class PromptDatabase {
       ON prompts (deleted_at);
     `);
 
+    ensureAssetSchema(this.database);
+
     this.database
       .prepare(
         "INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)",
@@ -175,6 +184,14 @@ export class PromptDatabase {
     this.purgeExpiredTrash();
 
     this.seedInitialPrompts();
+
+    this.transaction(() => {
+      const migratedCount = syncLegacyPromptsToAssets(this.database);
+
+      if (migratedCount > 0) {
+        this.bumpVersion();
+      }
+    });
   }
 
   private hasColumn(tableName: string, columnName: string) {
@@ -1191,6 +1208,18 @@ export class PromptDatabase {
 
       return Number(deleteResult.changes) > 0;
     });
+  }
+
+  getDefaultProject() {
+    return readDefaultProject(this.database);
+  }
+
+  listAssets(projectId?: string) {
+    return readAssets(this.database, projectId);
+  }
+
+  listAssetVersions(assetId?: string) {
+    return readAssetVersions(this.database, assetId);
   }
 
   close() {

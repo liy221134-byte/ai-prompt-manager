@@ -30,7 +30,7 @@ test("提示词可以转换成统一资产并原样转回", () => {
   assert.equal(asset.assetType, "prompt");
   assert.equal(asset.id, samplePrompt.id);
   assert.equal(asset.projectId, "default-project");
-  assert.equal(asset.currentVersionId, "version-prompt-product-review-1");
+  assert.equal(asset.currentVersionId, "current-prompt-product-review");
   assert.deepEqual(assetToPrompt(asset), samplePrompt);
 });
 

@@ -356,7 +356,7 @@ export function isAssetVersionData(
 }
 
 export function createInitialAssetVersionId(assetId: string) {
-  return `version-${assetId}-1`;
+  return `current-${assetId}`;
 }
 
 // 迁移时保留原提示词标识和生命周期字段，确保旧恢复关系不断裂。
