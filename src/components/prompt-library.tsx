@@ -27,6 +27,7 @@ import {
 
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { AiCaptureDrawer } from "@/components/ai-capture-drawer";
+import { AssetCard } from "@/components/asset-card";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { MigrationDialog } from "@/components/migration-dialog";
@@ -36,10 +37,37 @@ import { PromptEditorDrawer } from "@/components/prompt-editor-drawer";
 import { PromptOptimizeDrawer } from "@/components/prompt-optimize-drawer";
 import { PromptTrashDialog } from "@/components/prompt-trash-dialog";
 import {
+  ProjectFormDialog,
+  type ProjectFormValues,
+} from "@/components/project-form-dialog";
+import { ProjectSwitcher } from "@/components/project-switcher";
+import type { AssetData } from "@/data/assets";
+import {
+  DEFAULT_PROJECT_ID,
+  archiveProject,
+  createProjectData,
+  createProjectId,
+  isDefaultProject,
+  projectStageLabels,
+  projectStatusLabels,
+  reactivateProject,
+  resolveActiveProject,
+  updateProjectDetails,
+  type ProjectData,
+} from "@/data/projects";
+import {
   type PromptCardData,
   type PromptDraft,
   type PromptVersionData,
 } from "@/data/prompts";
+import {
+  assetTypeFilterLabels,
+  assetTypeFilterOptions,
+  buildAssetSearchText,
+  filterProjectAssets,
+  matchesAssetTypeFilter,
+  type AssetTypeFilter,
+} from "@/lib/asset-list";
 import {
   loadLastBackupAt,
   loadStoredPromptLibrary,
@@ -48,6 +76,11 @@ import {
 } from "@/lib/prompt-storage";
 import { downloadPromptBackup } from "@/lib/backup-download";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
+import {
+  loadActiveProjectId,
+  saveActiveProjectId,
+} from "@/lib/project-storage";
+import { ensureDefaultProject } from "@/lib/project-workspace";
 import {
   createPromptImportPlan,
   PROMPT_BACKUP_TYPE,
@@ -80,6 +113,15 @@ type EditorState =
       promptId: string;
     };
 
+type ProjectDialogState =
+  | { mode: "create" }
+  | { mode: "edit"; projectId: string };
+
+// 资产列表把提示词和统一资产合并成一个可按类型筛选的列表。
+type ProjectListEntry =
+  | { kind: "prompt"; prompt: PromptCardData }
+  | { kind: "asset"; asset: AssetData };
+
 type PromptLibraryProps = {
   dataMode: "local" | "supabase";
   onSignOut?: () => Promise<void>;
@@ -92,6 +134,12 @@ function createPromptId() {
   }
 
   return `prompt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function readEntryUpdatedAt(entry: ProjectListEntry) {
+  return entry.kind === "prompt"
+    ? entry.prompt.updatedAt
+    : entry.asset.updatedAt;
 }
 
 function reconcileMergeSelection(
@@ -129,6 +177,13 @@ export function PromptLibrary({
   const serviceName =
     dataMode === "supabase" ? "云端数据服务" : "本机数据服务";
   const [prompts, setPrompts] = useState<PromptCardData[]>([]);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [assets, setAssets] = useState<AssetData[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [assetTypeFilter, setAssetTypeFilter] =
+    useState<AssetTypeFilter>("prompt");
+  const [projectDialog, setProjectDialog] =
+    useState<ProjectDialogState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [migrationPrompts, setMigrationPrompts] = useState<
@@ -189,9 +244,37 @@ export function PromptLibrary({
     setLoadError(null);
 
     try {
-      const library = await dataSource.fetchLibrary();
+      const [library, projectList, assetList] = await Promise.all([
+        dataSource.fetchLibrary(),
+        ensureDefaultProject(dataSource),
+        dataSource.fetchAssets(),
+      ]);
       let storedPrompts: PromptCardData[] | null = null;
       let nextMigrationPrompts: PromptCardData[] | null = null;
+      let storedProjectId: string | null = null;
+
+      try {
+        storedProjectId = loadActiveProjectId();
+      } catch {
+        storedProjectId = null;
+      }
+
+      const nextActiveProject = resolveActiveProject(
+        projectList,
+        storedProjectId,
+      );
+
+      setProjects(projectList);
+      setAssets(assetList);
+      setActiveProjectId(nextActiveProject?.id ?? null);
+
+      if (nextActiveProject) {
+        try {
+          saveActiveProjectId(nextActiveProject.id);
+        } catch {
+          notify("项目选择没有保存到本机");
+        }
+      }
 
       try {
         storedPrompts = loadStoredPromptLibrary();
@@ -326,26 +409,91 @@ export function PromptLibrary({
     };
   }, [dataSource, selectedPromptId]);
 
-  const filteredPrompts = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-
-    if (!normalizedQuery) {
-      return prompts;
+  const activeProject = useMemo(
+    () => projects.find((project) => project.id === activeProjectId) ?? null,
+    [activeProjectId, projects],
+  );
+  const isDefaultProjectSelected = activeProject
+    ? isDefaultProject(activeProject)
+    : false;
+  // 2.0.0 过渡规则：提示词仍由现有提示词数据源提供，并且都属于默认项目。
+  // 统一资产表当前承载规则、文档等新类型，写入路径切换后这里会统一。
+  const projectPrompts = useMemo(
+    () => (isDefaultProjectSelected ? prompts : []),
+    [isDefaultProjectSelected, prompts],
+  );
+  const projectAssetEntries = useMemo(() => {
+    if (!activeProjectId) {
+      return [];
     }
 
-    return prompts.filter((prompt) =>
-      buildPromptSearchText(prompt).includes(normalizedQuery),
+    const visibleAssets = filterProjectAssets(assets, {
+      projectId: activeProjectId,
+    });
+
+    return isDefaultProjectSelected
+      ? visibleAssets.filter((asset) => asset.assetType !== "prompt")
+      : visibleAssets;
+  }, [activeProjectId, assets, isDefaultProjectSelected]);
+  const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(
+    () => ({
+      all: projectPrompts.length + projectAssetEntries.length,
+      prompt: projectPrompts.length,
+      rule: projectAssetEntries.filter((asset) => asset.assetType === "rule")
+        .length,
+      document: projectAssetEntries.filter(
+        (asset) => asset.assetType === "document",
+      ).length,
+    }),
+    [projectAssetEntries, projectPrompts],
+  );
+  const listEntries = useMemo<ProjectListEntry[]>(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+    const entries: ProjectListEntry[] = [];
+
+    if (assetTypeFilter === "all" || assetTypeFilter === "prompt") {
+      for (const prompt of projectPrompts) {
+        if (
+          normalizedQuery &&
+          !buildPromptSearchText(prompt).includes(normalizedQuery)
+        ) {
+          continue;
+        }
+
+        entries.push({ kind: "prompt", prompt });
+      }
+    }
+
+    for (const asset of projectAssetEntries) {
+      if (!matchesAssetTypeFilter(asset, assetTypeFilter)) {
+        continue;
+      }
+
+      if (
+        normalizedQuery &&
+        !buildAssetSearchText(asset).includes(normalizedQuery)
+      ) {
+        continue;
+      }
+
+      entries.push({ kind: "asset", asset });
+    }
+
+    return entries.sort(
+      (left, right) =>
+        new Date(readEntryUpdatedAt(right)).getTime() -
+        new Date(readEntryUpdatedAt(left)).getTime(),
     );
-  }, [prompts, searchQuery]);
+  }, [assetTypeFilter, projectAssetEntries, projectPrompts, searchQuery]);
   const trashedPromptIds = useMemo(
     () => new Set(trashPrompts.map((prompt) => prompt.id)),
     [trashPrompts],
   );
 
-  const selectedPrompt = prompts.find(
+  const selectedPrompt = projectPrompts.find(
     (prompt) => prompt.id === selectedPromptId,
   );
-  const optimizePrompt = prompts.find(
+  const optimizePrompt = projectPrompts.find(
     (prompt) => prompt.id === optimizePromptId,
   );
   const optimizeVersion =
@@ -353,11 +501,11 @@ export function PromptLibrary({
       ? optimizeVersionState.version
       : null;
   const effectiveMergeSelection = useMemo(
-    () => reconcileMergeSelection(mergeSelection, prompts),
-    [mergeSelection, prompts],
+    () => reconcileMergeSelection(mergeSelection, projectPrompts),
+    [mergeSelection, projectPrompts],
   );
   const mergeTargetPrompt = effectiveMergeSelection.targetPromptId
-    ? prompts.find(
+    ? projectPrompts.find(
         (prompt) => prompt.id === effectiveMergeSelection.targetPromptId,
       )
     : undefined;
@@ -371,18 +519,23 @@ export function PromptLibrary({
     () =>
       effectiveMergeSelection.selectedPromptIds
         .map((promptId) =>
-          prompts.find((prompt) => prompt.id === promptId),
+          projectPrompts.find((prompt) => prompt.id === promptId),
         )
         .filter((prompt): prompt is PromptCardData => Boolean(prompt)),
-    [effectiveMergeSelection.selectedPromptIds, prompts],
+    [effectiveMergeSelection.selectedPromptIds, projectPrompts],
   );
-  const promptToDelete = prompts.find(
+  const promptToDelete = projectPrompts.find(
     (prompt) => prompt.id === deletePromptId,
   );
   const editingPrompt =
     editorState?.mode === "edit"
-      ? prompts.find((prompt) => prompt.id === editorState.promptId)
+      ? projectPrompts.find((prompt) => prompt.id === editorState.promptId)
       : undefined;
+  const editingProject =
+    projectDialog?.mode === "edit"
+      ? (projects.find((project) => project.id === projectDialog.projectId) ??
+        null)
+      : null;
 
   async function handleSave(draft: PromptDraft) {
     const now = new Date().toISOString();
@@ -442,6 +595,98 @@ export function PromptLibrary({
     notify("提示词已移入垃圾箱");
   }
 
+  function handleSelectProject(projectId: string) {
+    setActiveProjectId(projectId);
+    setSelectedPromptId(null);
+    setOptimizePromptId(null);
+    setOptimizeVersionState(null);
+    setIsMergeSelectionMode(false);
+    setMergeSelection(createEmptySelection());
+
+    try {
+      saveActiveProjectId(projectId);
+    } catch {
+      notify("项目选择没有保存到本机");
+    }
+  }
+
+  // 备份导入、本机数据合并和垃圾箱恢复都会写回默认项目，完成后切过去让结果可见。
+  function focusDefaultProject() {
+    if (!isDefaultProjectSelected) {
+      handleSelectProject(DEFAULT_PROJECT_ID);
+    }
+  }
+
+  async function handleCreateProject(values: ProjectFormValues) {
+    const project = createProjectData({
+      id: createProjectId(),
+      name: values.name,
+      description: values.description,
+      stage: values.stage,
+    });
+    const nextProjects = await dataSource.createProject(project);
+
+    setProjects(nextProjects);
+    setActiveProjectId(project.id);
+    setProjectDialog(null);
+
+    try {
+      saveActiveProjectId(project.id);
+    } catch {
+      notify("项目选择没有保存到本机");
+    }
+
+    notify("项目已创建，还没有资产");
+  }
+
+  async function handleUpdateProject(values: ProjectFormValues) {
+    if (!editingProject) {
+      throw new Error("没有找到要设置的项目。");
+    }
+
+    const nextProjects = await dataSource.updateProject(
+      updateProjectDetails(editingProject, values),
+    );
+
+    setProjects(nextProjects);
+    setProjectDialog(null);
+    notify("项目已更新");
+  }
+
+  async function handleArchiveProject() {
+    if (!editingProject) {
+      throw new Error("没有找到要归档的项目。");
+    }
+
+    const nextProjects = await dataSource.updateProject(
+      archiveProject(editingProject),
+    );
+
+    setProjects(nextProjects);
+    setProjectDialog(null);
+    notify("项目已归档，资产仍然保留");
+  }
+
+  async function handleReactivateProject() {
+    if (!editingProject) {
+      throw new Error("没有找到要激活的项目。");
+    }
+
+    const nextProjects = await dataSource.updateProject(
+      reactivateProject(editingProject),
+    );
+
+    setProjects(nextProjects);
+    setProjectDialog(null);
+    notify("项目已重新激活");
+  }
+
+  function handleChangeAssetTypeFilter(filter: AssetTypeFilter) {
+    setAssetTypeFilter(filter);
+    setIsMergeSelectionMode(false);
+    setMergeSelection(createEmptySelection());
+  }
+
   function handleOpenTrash() {
     setIsTrashOpen(true);
     void loadTrash();
@@ -464,6 +709,7 @@ export function PromptLibrary({
     setPrompts(library.prompts);
     cachePrompts(library.prompts);
     await loadTrash(false);
+    focusDefaultProject();
   }
 
   async function handlePermanentlyDeletePrompt(promptId: string) {
@@ -488,6 +734,7 @@ export function PromptLibrary({
     setPrompts(library.prompts);
     cachePrompts(library.prompts);
     await loadTrash(false);
+    focusDefaultProject();
   }
 
   async function handlePermanentlyDeleteMergeRecord(versionId: string) {
@@ -615,6 +862,7 @@ export function PromptLibrary({
     setPrompts(result.prompts);
     cachePrompts(result.prompts);
     setIsBackupManagerOpen(false);
+    focusDefaultProject();
 
     const resultText = [
       result.addCount > 0 ? `新增 ${result.addCount} 条` : "",
@@ -641,6 +889,7 @@ export function PromptLibrary({
     setPrompts(result.prompts);
     cachePrompts(result.prompts);
     setMigrationPrompts(null);
+    focusDefaultProject();
 
     const resultText = [
       result.addCount > 0 ? `新增 ${result.addCount} 条` : "",
@@ -653,7 +902,58 @@ export function PromptLibrary({
     notify(resultText ? `本机数据已合并：${resultText}` : "本机数据已经同步");
   }
 
+  function createEmptyState() {
+    if (hasSearchQuery) {
+      return {
+        title: "没有找到匹配的资产",
+        description: "换一个关键词，或清空搜索条件。",
+        actionLabel: "清空搜索",
+        action: "clear-search" as const,
+      };
+    }
+
+    if (assetTypeFilter === "rule") {
+      return {
+        title: "还没有规则",
+        description: "当前项目里没有规则资产。",
+        actionLabel: null,
+        action: null,
+      };
+    }
+
+    if (assetTypeFilter === "document") {
+      return {
+        title: "还没有文档",
+        description: "当前项目里没有文档资产。",
+        actionLabel: null,
+        action: null,
+      };
+    }
+
+    if (!isDefaultProjectSelected) {
+      return {
+        title: "这个项目还没有资产",
+        description:
+          "新建项目从空状态开始，不会复制默认项目的提示词。",
+        actionLabel: "回到默认项目",
+        action: "default-project" as const,
+      };
+    }
+
+    return {
+      title: "还没有提示词",
+      description: "创建第一条可复用提示词。",
+      actionLabel: "新增提示词",
+      action: "create-prompt" as const,
+    };
+  }
+
   const hasSearchQuery = Boolean(searchQuery.trim());
+  const emptyState = createEmptyState();
+  const searchPlaceholder =
+    assetTypeFilter === "all"
+      ? "搜索标题、分类、标签或正文"
+      : `搜索${assetTypeFilterLabels[assetTypeFilter]}`;
 
   return (
     <main className="min-h-screen">
@@ -665,7 +965,7 @@ export function PromptLibrary({
             </span>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                提示词资产库
+                项目资产库
               </p>
               <p className="text-xs text-slate-500">
                 {dataMode === "supabase" ? "云端共享数据" : "本机共享数据"}
@@ -687,7 +987,9 @@ export function PromptLibrary({
                 />
               )}
               <span>
-                {isLoading ? "正在连接" : `${prompts.length} 条提示词`}
+                {isLoading
+                  ? "正在连接"
+                  : `${assetTypeCounts.all} 项资产`}
               </span>
             </div>
 
@@ -708,22 +1010,76 @@ export function PromptLibrary({
         </div>
       </header>
 
-      <section className="mx-auto w-full max-w-[1280px] px-5 py-12 sm:px-8 sm:py-16">
+      <section className="mx-auto w-full max-w-[1280px] px-5 pt-8 sm:px-8">
+        <ProjectSwitcher
+          activeProjectId={activeProjectId}
+          disabled={isLoading || Boolean(loadError)}
+          onCreateProject={() => setProjectDialog({ mode: "create" })}
+          onOpenProjectSettings={() => {
+            if (activeProjectId) {
+              setProjectDialog({
+                mode: "edit",
+                projectId: activeProjectId,
+              });
+            }
+          }}
+          onSelectProject={handleSelectProject}
+          projects={projects}
+        />
+      </section>
+
+      <section className="mx-auto w-full max-w-[1280px] px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-12">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold text-blue-700">
-            个人 AI 提示词资产库
+            {isDefaultProjectSelected ? "个人 AI 资产库" : "项目工作区"}
           </p>
           <h1 className="mt-3 text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
-            AI 编程提示词卡片
+            {activeProject ? activeProject.name : "项目资产库"}
           </h1>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">
-            积累每一个好用的提示词
+            {activeProject?.description || "积累每一个好用的提示词"}
           </p>
+          {activeProject && (
+            <p className="mt-3 text-sm text-slate-500">
+              {projectStageLabels[activeProject.stage]}
+              {activeProject.status === "archived" &&
+                ` · ${projectStatusLabels.archived}`}
+              {" · "}
+              {assetTypeCounts.all} 项资产
+            </p>
+          )}
         </div>
 
-        <div className="mt-9 flex flex-col gap-3 lg:flex-row">
+        <div className="mt-9 flex flex-wrap items-center gap-2">
+          {assetTypeFilterOptions.map((option) => (
+            <button
+              aria-pressed={assetTypeFilter === option}
+              className={`inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                assetTypeFilter === option
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-[#dbe7f5] bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
+              }`}
+              key={option}
+              onClick={() => handleChangeAssetTypeFilter(option)}
+              type="button"
+            >
+              {assetTypeFilterLabels[option]}
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  assetTypeFilter === option
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {assetTypeCounts[option]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-3 flex flex-col gap-3 lg:flex-row">
           <label className="relative min-w-0 flex-1">
-            <span className="sr-only">搜索提示词</span>
+            <span className="sr-only">搜索资产</span>
             <Search
               aria-hidden="true"
               className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
@@ -732,7 +1088,7 @@ export function PromptLibrary({
               className="h-11 w-full rounded-lg border border-[#dbe7f5] bg-white pl-10 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               disabled={isLoading || Boolean(loadError)}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="搜索标题、分类、标签或正文"
+              placeholder={searchPlaceholder}
               value={searchQuery}
             />
             {hasSearchQuery && (
@@ -780,24 +1136,28 @@ export function PromptLibrary({
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading || Boolean(loadError)}
-                onClick={handleEnterMergeSelection}
-                type="button"
-              >
-                <GitMerge aria-hidden="true" className="size-4" />
-                AI 合并
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading || Boolean(loadError)}
-                onClick={() => setIsAiCaptureOpen(true)}
-                type="button"
-              >
-                <WandSparkles aria-hidden="true" className="size-4" />
-                智能采集
-              </button>
+              {isDefaultProjectSelected && (
+                <>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isLoading || Boolean(loadError)}
+                    onClick={handleEnterMergeSelection}
+                    type="button"
+                  >
+                    <GitMerge aria-hidden="true" className="size-4" />
+                    AI 合并
+                  </button>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isLoading || Boolean(loadError)}
+                    onClick={() => setIsAiCaptureOpen(true)}
+                    type="button"
+                  >
+                    <WandSparkles aria-hidden="true" className="size-4" />
+                    智能采集
+                  </button>
+                </>
+              )}
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 disabled={isLoading || Boolean(loadError)}
@@ -816,22 +1176,24 @@ export function PromptLibrary({
                 <DatabaseBackup aria-hidden="true" className="size-4" />
                 数据管理
               </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                disabled={isLoading || Boolean(loadError)}
-                onClick={() => setEditorState({ mode: "create" })}
-                type="button"
-              >
-                <Plus aria-hidden="true" className="size-4" />
-                新增提示词
-              </button>
+              {isDefaultProjectSelected && (
+                <button
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  disabled={isLoading || Boolean(loadError)}
+                  onClick={() => setEditorState({ mode: "create" })}
+                  type="button"
+                >
+                  <Plus aria-hidden="true" className="size-4" />
+                  新增提示词
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {isLoading ? (
           <div
-            aria-label="正在加载提示词"
+            aria-label="正在加载资产"
             className="mt-8 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3"
           >
             {[0, 1, 2].map((item) => (
@@ -861,27 +1223,36 @@ export function PromptLibrary({
               重新连接
             </button>
           </div>
-        ) : filteredPrompts.length > 0 ? (
+        ) : listEntries.length > 0 ? (
           <div className="mt-8 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPrompts.map((prompt, index) => (
-              <PromptCard
-                canSelect={
-                  selectedMergePromptIds.has(prompt.id) ||
-                  mergeSelectionCount < MAX_MERGE_PROMPTS
-                }
-                index={index}
-                isMergeTarget={
-                  effectiveMergeSelection.targetPromptId === prompt.id
-                }
-                key={prompt.id}
-                onOpen={(selected) => setSelectedPromptId(selected.id)}
-                onSetMergeTarget={handleSetMergeTarget}
-                onToggleSelection={handleToggleMergeSelection}
-                prompt={prompt}
-                selected={selectedMergePromptIds.has(prompt.id)}
-                selectionMode={isMergeSelectionMode}
-              />
-            ))}
+            {listEntries.map((entry, index) =>
+              entry.kind === "prompt" ? (
+                <PromptCard
+                  canSelect={
+                    selectedMergePromptIds.has(entry.prompt.id) ||
+                    mergeSelectionCount < MAX_MERGE_PROMPTS
+                  }
+                  index={index}
+                  isMergeTarget={
+                    effectiveMergeSelection.targetPromptId ===
+                    entry.prompt.id
+                  }
+                  key={`prompt-${entry.prompt.id}`}
+                  onOpen={(selected) => setSelectedPromptId(selected.id)}
+                  onSetMergeTarget={handleSetMergeTarget}
+                  onToggleSelection={handleToggleMergeSelection}
+                  prompt={entry.prompt}
+                  selected={selectedMergePromptIds.has(entry.prompt.id)}
+                  selectionMode={isMergeSelectionMode}
+                />
+              ) : (
+                <AssetCard
+                  asset={entry.asset}
+                  index={index}
+                  key={`asset-${entry.asset.id}`}
+                />
+              ),
+            )}
           </div>
         ) : (
           <div className="mt-8 flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-blue-200 bg-white/70 px-6 text-center">
@@ -893,36 +1264,33 @@ export function PromptLibrary({
               )}
             </span>
             <h2 className="mt-4 text-lg font-semibold text-slate-900">
-              {hasSearchQuery ? "没有找到匹配的提示词" : "还没有提示词"}
+              {emptyState.title}
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              {hasSearchQuery
-                ? "换一个关键词，或清空搜索条件。"
-                : "创建第一条可复用提示词。"}
+              {emptyState.description}
             </p>
-            <button
-              className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-              onClick={() => {
-                if (hasSearchQuery) {
-                  setSearchQuery("");
-                } else {
-                  setEditorState({ mode: "create" });
-                }
-              }}
-              type="button"
-            >
-              {hasSearchQuery ? (
-                <>
+            {emptyState.action && (
+              <button
+                className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                onClick={() => {
+                  if (emptyState.action === "clear-search") {
+                    setSearchQuery("");
+                  } else if (emptyState.action === "default-project") {
+                    handleSelectProject(DEFAULT_PROJECT_ID);
+                  } else {
+                    setEditorState({ mode: "create" });
+                  }
+                }}
+                type="button"
+              >
+                {hasSearchQuery ? (
                   <X aria-hidden="true" className="size-4" />
-                  清空搜索
-                </>
-              ) : (
-                <>
+                ) : (
                   <Plus aria-hidden="true" className="size-4" />
-                  新增提示词
-                </>
-              )}
-            </button>
+                )}
+                {emptyState.actionLabel}
+              </button>
+            )}
           </div>
         )}
       </section>
@@ -1038,6 +1406,34 @@ export function PromptLibrary({
           onCancel={() => setDeletePromptId(null)}
           onConfirm={handleDelete}
           prompt={promptToDelete}
+        />
+      )}
+
+      {projectDialog && (
+        <ProjectFormDialog
+          key={
+            projectDialog.mode === "edit"
+              ? `project-${projectDialog.projectId}`
+              : "project-create"
+          }
+          mode={projectDialog.mode}
+          onArchive={
+            projectDialog.mode === "edit"
+              ? handleArchiveProject
+              : undefined
+          }
+          onClose={() => setProjectDialog(null)}
+          onReactivate={
+            projectDialog.mode === "edit"
+              ? handleReactivateProject
+              : undefined
+          }
+          onSubmit={
+            projectDialog.mode === "edit"
+              ? handleUpdateProject
+              : handleCreateProject
+          }
+          project={editingProject}
         />
       )}
 
