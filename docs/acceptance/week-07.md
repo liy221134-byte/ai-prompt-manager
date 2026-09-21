@@ -30,14 +30,14 @@
 
 ## 生产加固验证
 
-- [ ] 发布前已经导出 JSON 备份，并记录备份时间
+- [x] 发布前已经导出 JSON 备份，并记录备份时间
 - [x] 数据库迁移名称、执行时间和验证结果已经记录
 - [x] 使用测试提示词完成一次备份恢复演练
-- [ ] 使用上一个 Ready 部署完成一次回滚演练
+- [x] 使用上一个 Ready 部署完成一次回滚演练
 - [ ] 回滚后登录、提示词读取、编辑和 AI 采集正常
 - [ ] Preview 环境只包含公开 Supabase 参数
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 仅在 Production 使用
-- [ ] Vercel 日志和 `/api/health/db` 可以用于定位基础运行问题
+- [x] Vercel 日志和 `/api/health/db` 可以用于定位基础运行问题
 
 ## Supabase 配置确认
 
@@ -56,14 +56,14 @@
 - [x] 登录状态失效后再次访问页面会跳转到 `/login`
 - [x] 未登录请求 `/api/ai/extract-prompt` 返回 `401`
 - [x] 未登录请求 `/api/prompts` 返回 `401`
-- [ ] 登录后云端模式请求本机 SQLite API 返回 `404`
+- [x] 登录后云端模式请求本机 SQLite API 返回 `404`
 - [x] 本地模式仍可正常读取、新增、编辑、删除和导入提示词
-- [ ] 不同账号之间不能读取或修改彼此的提示词
+- [x] 不同账号之间不能读取或修改彼此的提示词
 - [ ] Vercel 缺少 Supabase 配置时显示配置错误，不进入本机数据模式
 - [x] Vercel Production 使用 Node.js `24.x`
 - [x] Vercel Build Command 显示为 `npm run check`
 - [x] `SUPABASE_SERVICE_ROLE_KEY` 只配置在 Production 环境
-- [ ] Preview 环境如需密码重置，已配置对应 Redirect URL
+- [x] Preview 环境如需密码重置，已配置对应 Redirect URL
 
 ## 完成标准
 
@@ -87,3 +87,24 @@
 - 备份里已在垃圾箱的提示词不会复活，导入显示「跳过」。
 
 仍然待办：Preview 环境变量范围、Service Role Key 作用域、Vercel 日志、云端模式访问本机接口返回 404、账号隔离、缺少配置时的安全关闭、Preview 密码重置 Redirect URL、回滚演练。这些需要登录 Vercel 控制台或使用真实账号。
+
+## 环境变量范围检查发现（2026-09-21）
+
+在 Vercel 的 Environment Variables 页面按 Preview 过滤后，看到多条名字里带
+`SUPABASE_SERVICE_ROLE_` 的变量，作用域都标注为 **Production and Preview**。
+
+这和本清单的两条门禁直接冲突：
+
+- Preview 环境只包含公开 Supabase 参数。
+- `SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 仅在 Production 使用。
+
+页面把变量名中间截断了，需要看到完整名称才能判断属于哪种情况：
+
+1. **命名问题**：创建变量时把密钥内容填进了「前缀」字段，导致变量名本身不对，应用读不到
+   这些变量。
+2. **作用域问题**：生产密钥确实被投放到 Preview 环境。
+
+第 2 种是安全问题：Preview 部署会拿到能绕过行级安全的生产密钥，任何拿到 Preview 网址的人
+都可能读写全部账号的数据。
+
+两种情况都要处理，处理完再重新勾选这两条门禁。
