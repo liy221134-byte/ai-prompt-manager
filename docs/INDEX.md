@@ -33,6 +33,7 @@
 
 ### 设计
 
+- [2.0.0 项目与统一资产底座设计](superpowers/specs/2026-09-21-v2.0.0-asset-foundation-design.md)
 - [v0.8.0 AI 合并与垃圾箱设计](superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
 - [v0.8.0 AI 合并与垃圾箱实施计划（已归档）](archive/2026-09-20-ai-prompt-merge-plan.md)
 - [v0.9.0 提示词 AI 优化设计](superpowers/specs/2026-09-20-ai-prompt-optimize-design.md)
