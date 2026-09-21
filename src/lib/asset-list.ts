@@ -1,4 +1,10 @@
-import type { AssetData, AssetType } from "../data/assets.ts";
+import type {
+  AssetData,
+  AssetStatus,
+  AssetType,
+  RuleScope,
+  RuleType,
+} from "../data/assets.ts";
 
 export const assetTypeLabels: Record<AssetType, string> = {
   prompt: "提示词",
@@ -25,6 +31,48 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   document: "文档",
 };
 
+export const assetStatusLabels: Record<AssetStatus, string> = {
+  draft: "草稿",
+  pending: "待确认",
+  active: "活跃",
+  archived: "已归档",
+  deprecated: "已废弃",
+};
+
+// 状态筛选把活跃放在第一位，因为它是列表默认口径。
+export const assetStatusFilterOptions: AssetStatus[] = [
+  "active",
+  "draft",
+  "pending",
+  "deprecated",
+  "archived",
+];
+
+export const ruleTypeLabels: Record<RuleType, string> = {
+  must: "必须",
+  forbidden: "禁止",
+  recommended: "建议",
+  process: "流程",
+  acceptance: "验收",
+  technology: "技术约束",
+};
+
+export const ruleScopeLabels: Record<RuleScope, string> = {
+  global: "全局",
+  project: "项目",
+  task: "任务临时",
+};
+
+export const documentTypeOptions = [
+  "PRD",
+  "ADR",
+  "验收记录",
+  "数据库说明",
+  "发布手册",
+  "参考资料",
+  "其他",
+] as const;
+
 // 列表默认只显示活跃资产，草稿、归档和垃圾箱内容不进入列表。
 export function isActiveAsset(asset: AssetData) {
   return (
@@ -34,16 +82,24 @@ export function isActiveAsset(asset: AssetData) {
   );
 }
 
+export function isTrashedAsset(asset: AssetData) {
+  return asset.deletedAt !== null;
+}
+
 export function filterProjectAssets(
   assets: AssetData[],
-  options: { projectId: string; assetType?: AssetType },
+  options: { projectId: string; assetType?: AssetType; status?: AssetStatus },
 ) {
   return assets.filter((asset) => {
-    if (asset.projectId !== options.projectId || !isActiveAsset(asset)) {
+    if (asset.projectId !== options.projectId || isTrashedAsset(asset)) {
       return false;
     }
 
-    return options.assetType ? asset.assetType === options.assetType : true;
+    if (options.assetType && asset.assetType !== options.assetType) {
+      return false;
+    }
+
+    return asset.status === (options.status ?? "active");
   });
 }
 
@@ -52,6 +108,29 @@ export function matchesAssetTypeFilter(
   filter: AssetTypeFilter,
 ) {
   return filter === "all" || asset.assetType === filter;
+}
+
+export function matchesAssetStatusFilter(
+  asset: AssetData,
+  status: AssetStatus,
+) {
+  return asset.status === status;
+}
+
+// 没有填写说明时用正文首行代替，保证列表卡片始终有可读的简介。
+export function describeAssetSummary(asset: AssetData) {
+  const summary = asset.summary.trim();
+
+  if (summary) {
+    return summary;
+  }
+
+  const firstLine = asset.content
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+
+  return firstLine ?? "";
 }
 
 function readAssetTags(asset: AssetData) {

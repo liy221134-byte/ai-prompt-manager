@@ -28,6 +28,8 @@ import {
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { AiCaptureDrawer } from "@/components/ai-capture-drawer";
 import { AssetCard } from "@/components/asset-card";
+import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
+import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { MigrationDialog } from "@/components/migration-dialog";
@@ -41,7 +43,11 @@ import {
   type ProjectFormValues,
 } from "@/components/project-form-dialog";
 import { ProjectSwitcher } from "@/components/project-switcher";
-import type { AssetData } from "@/data/assets";
+import type {
+  AssetData,
+  AssetStatus,
+  AssetVersionData,
+} from "@/data/assets";
 import {
   DEFAULT_PROJECT_ID,
   archiveProject,
@@ -61,6 +67,8 @@ import {
   type PromptVersionData,
 } from "@/data/prompts";
 import {
+  assetStatusFilterOptions,
+  assetStatusLabels,
   assetTypeFilterLabels,
   assetTypeFilterOptions,
   buildAssetSearchText,
@@ -68,6 +76,20 @@ import {
   matchesAssetTypeFilter,
   type AssetTypeFilter,
 } from "@/lib/asset-list";
+import {
+  assetToDraft,
+  buildCreateAssetInput,
+  buildUpdateAssetInput,
+  createAssetId,
+  isEditableAssetData,
+  type AssetDraft,
+  type EditableAssetData,
+  type EditableAssetType,
+} from "@/lib/asset-draft";
+import {
+  buildRestoreAssetInput,
+  createAssetVersionId,
+} from "@/lib/asset-versions";
 import {
   loadLastBackupAt,
   loadStoredPromptLibrary,
@@ -116,6 +138,10 @@ type EditorState =
 type ProjectDialogState =
   | { mode: "create" }
   | { mode: "edit"; projectId: string };
+
+type AssetEditorState =
+  | { mode: "create"; assetType: EditableAssetType }
+  | { mode: "edit"; assetId: string };
 
 // 资产列表把提示词和统一资产合并成一个可按类型筛选的列表。
 type ProjectListEntry =
@@ -182,6 +208,11 @@ export function PromptLibrary({
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [assetTypeFilter, setAssetTypeFilter] =
     useState<AssetTypeFilter>("prompt");
+  const [assetStatusFilter, setAssetStatusFilter] =
+    useState<AssetStatus>("active");
+  const [assetDetailId, setAssetDetailId] = useState<string | null>(null);
+  const [assetEditorState, setAssetEditorState] =
+    useState<AssetEditorState | null>(null);
   const [projectDialog, setProjectDialog] =
     useState<ProjectDialogState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -419,8 +450,11 @@ export function PromptLibrary({
   // 2.0.0 过渡规则：提示词仍由现有提示词数据源提供，并且都属于默认项目。
   // 统一资产表当前承载规则、文档等新类型，写入路径切换后这里会统一。
   const projectPrompts = useMemo(
-    () => (isDefaultProjectSelected ? prompts : []),
-    [isDefaultProjectSelected, prompts],
+    () =>
+      isDefaultProjectSelected && assetStatusFilter === "active"
+        ? prompts
+        : [],
+    [assetStatusFilter, isDefaultProjectSelected, prompts],
   );
   const projectAssetEntries = useMemo(() => {
     if (!activeProjectId) {
@@ -429,12 +463,13 @@ export function PromptLibrary({
 
     const visibleAssets = filterProjectAssets(assets, {
       projectId: activeProjectId,
+      status: assetStatusFilter,
     });
 
     return isDefaultProjectSelected
       ? visibleAssets.filter((asset) => asset.assetType !== "prompt")
       : visibleAssets;
-  }, [activeProjectId, assets, isDefaultProjectSelected]);
+  }, [activeProjectId, assets, assetStatusFilter, isDefaultProjectSelected]);
   const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(
     () => ({
       all: projectPrompts.length + projectAssetEntries.length,
@@ -536,6 +571,22 @@ export function PromptLibrary({
       ? (projects.find((project) => project.id === projectDialog.projectId) ??
         null)
       : null;
+  const detailAsset = useMemo(() => {
+    const match = assets.find((asset) => asset.id === assetDetailId);
+
+    return match && isEditableAssetData(match) ? match : null;
+  }, [assetDetailId, assets]);
+  const editingAsset = useMemo(() => {
+    if (assetEditorState?.mode !== "edit") {
+      return null;
+    }
+
+    const match = assets.find(
+      (asset) => asset.id === assetEditorState.assetId,
+    );
+
+    return match && isEditableAssetData(match) ? match : null;
+  }, [assetEditorState, assets]);
 
   async function handleSave(draft: PromptDraft) {
     const now = new Date().toISOString();
@@ -685,6 +736,94 @@ export function PromptLibrary({
     setAssetTypeFilter(filter);
     setIsMergeSelectionMode(false);
     setMergeSelection(createEmptySelection());
+  }
+
+  // 资产接口返回的是单个项目的列表，保存后重新拉全量，保证其他项目的数据不丢。
+  async function reloadAssets() {
+    setAssets(await dataSource.fetchAssets());
+  }
+
+  function readAssetTypeLabel(assetType: EditableAssetType) {
+    return assetType === "rule" ? "规则" : "文档";
+  }
+
+  async function handleAssetSave(draft: AssetDraft) {
+    const now = new Date().toISOString();
+    const typeLabel = readAssetTypeLabel(draft.assetType);
+
+    if (assetEditorState?.mode === "edit") {
+      if (!editingAsset) {
+        throw new Error(`没有找到要编辑的${typeLabel}。`);
+      }
+
+      await dataSource.updateAsset(
+        buildUpdateAssetInput(editingAsset, draft, {
+          versionId: createAssetVersionId(),
+          now,
+        }),
+      );
+      await reloadAssets();
+      // 状态可能被改到当前筛选之外，跟着切过去，保存结果才看得见。
+      setAssetStatusFilter(draft.status);
+      setAssetEditorState(null);
+      notify(`${typeLabel}已更新`);
+      return;
+    }
+
+    if (!activeProjectId) {
+      throw new Error("请先选择项目。");
+    }
+
+    const assetId = createAssetId(draft.assetType);
+
+    await dataSource.createAsset(
+      buildCreateAssetInput({
+        id: assetId,
+        projectId: activeProjectId,
+        draft,
+        now,
+      }),
+    );
+    await reloadAssets();
+    setAssetStatusFilter(draft.status);
+    setAssetEditorState(null);
+    setAssetDetailId(assetId);
+    notify(`${typeLabel}已保存`);
+  }
+
+  async function handleAssetStatusChange(
+    asset: EditableAssetData,
+    status: AssetStatus,
+  ) {
+    const typeLabel = readAssetTypeLabel(asset.assetType);
+
+    await dataSource.updateAsset(
+      buildUpdateAssetInput(
+        asset,
+        { ...assetToDraft(asset), status },
+        { versionId: createAssetVersionId(), now: new Date().toISOString() },
+      ),
+    );
+    await reloadAssets();
+    setAssetDetailId(null);
+    notify(
+      status === "archived"
+        ? `${typeLabel}已归档，历史版本保留`
+        : `${typeLabel}已重新激活`,
+    );
+  }
+
+  async function handleAssetRestore(
+    asset: EditableAssetData,
+    version: AssetVersionData,
+  ) {
+    await dataSource.updateAsset(
+      buildRestoreAssetInput(asset, version, {
+        versionId: createAssetVersionId(),
+        now: new Date().toISOString(),
+      }),
+    );
+    await reloadAssets();
   }
 
   function handleOpenTrash() {
@@ -912,21 +1051,23 @@ export function PromptLibrary({
       };
     }
 
-    if (assetTypeFilter === "rule") {
+    if (assetStatusFilter !== "active") {
       return {
-        title: "还没有规则",
-        description: "当前项目里没有规则资产。",
-        actionLabel: null,
-        action: null,
+        title: `没有${assetStatusLabels[assetStatusFilter]}资产`,
+        description: "换一个状态，或回到默认的活跃资产。",
+        actionLabel: "回到活跃资产",
+        action: "reset-status" as const,
       };
     }
 
-    if (assetTypeFilter === "document") {
+    if (assetTypeFilter === "rule" || assetTypeFilter === "document") {
+      const typeLabel = assetTypeFilter === "rule" ? "规则" : "文档";
+
       return {
-        title: "还没有文档",
-        description: "当前项目里没有文档资产。",
-        actionLabel: null,
-        action: null,
+        title: `还没有${typeLabel}`,
+        description: `当前项目里没有${typeLabel}资产。`,
+        actionLabel: `新增${typeLabel}`,
+        action: "create-asset" as const,
       };
     }
 
@@ -954,6 +1095,8 @@ export function PromptLibrary({
     assetTypeFilter === "all"
       ? "搜索标题、分类、标签或正文"
       : `搜索${assetTypeFilterLabels[assetTypeFilter]}`;
+  const isPromptTabVisible =
+    assetTypeFilter === "prompt" || assetTypeFilter === "all";
 
   return (
     <main className="min-h-screen">
@@ -1071,10 +1214,28 @@ export function PromptLibrary({
                     : "bg-slate-100 text-slate-600"
                 }`}
               >
-                {assetTypeCounts[option]}
+              {assetTypeCounts[option]}
               </span>
             </button>
           ))}
+
+          <label className="ml-auto flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
+            <span className="text-xs font-semibold text-slate-500">状态</span>
+            <select
+              aria-label="按状态筛选资产"
+              className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
+              onChange={(event) =>
+                setAssetStatusFilter(event.target.value as AssetStatus)
+              }
+              value={assetStatusFilter}
+            >
+              {assetStatusFilterOptions.map((status) => (
+                <option key={status} value={status}>
+                  {assetStatusLabels[status]}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="mt-3 flex flex-col gap-3 lg:flex-row">
@@ -1136,7 +1297,7 @@ export function PromptLibrary({
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-              {isDefaultProjectSelected && (
+              {isDefaultProjectSelected && isPromptTabVisible && (
                 <>
                   <button
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1158,6 +1319,40 @@ export function PromptLibrary({
                   </button>
                 </>
               )}
+              {(assetTypeFilter === "rule" ||
+                assetTypeFilter === "all") && (
+                <button
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isLoading || Boolean(loadError)}
+                  onClick={() =>
+                    setAssetEditorState({
+                      mode: "create",
+                      assetType: "rule",
+                    })
+                  }
+                  type="button"
+                >
+                  <Plus aria-hidden="true" className="size-4" />
+                  新增规则
+                </button>
+              )}
+              {(assetTypeFilter === "document" ||
+                assetTypeFilter === "all") && (
+                <button
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-5 text-sm font-semibold text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isLoading || Boolean(loadError)}
+                  onClick={() =>
+                    setAssetEditorState({
+                      mode: "create",
+                      assetType: "document",
+                    })
+                  }
+                  type="button"
+                >
+                  <Plus aria-hidden="true" className="size-4" />
+                  新增文档
+                </button>
+              )}
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 disabled={isLoading || Boolean(loadError)}
@@ -1176,7 +1371,7 @@ export function PromptLibrary({
                 <DatabaseBackup aria-hidden="true" className="size-4" />
                 数据管理
               </button>
-              {isDefaultProjectSelected && (
+              {isDefaultProjectSelected && isPromptTabVisible && (
                 <button
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                   disabled={isLoading || Boolean(loadError)}
@@ -1250,6 +1445,7 @@ export function PromptLibrary({
                   asset={entry.asset}
                   index={index}
                   key={`asset-${entry.asset.id}`}
+                  onOpen={(asset) => setAssetDetailId(asset.id)}
                 />
               ),
             )}
@@ -1275,6 +1471,16 @@ export function PromptLibrary({
                 onClick={() => {
                   if (emptyState.action === "clear-search") {
                     setSearchQuery("");
+                  } else if (emptyState.action === "reset-status") {
+                    setAssetStatusFilter("active");
+                  } else if (emptyState.action === "create-asset") {
+                    setAssetEditorState({
+                      mode: "create",
+                      assetType:
+                        assetTypeFilter === "document"
+                          ? "document"
+                          : "rule",
+                    });
                   } else if (emptyState.action === "default-project") {
                     handleSelectProject(DEFAULT_PROJECT_ID);
                   } else {
@@ -1406,6 +1612,40 @@ export function PromptLibrary({
           onCancel={() => setDeletePromptId(null)}
           onConfirm={handleDelete}
           prompt={promptToDelete}
+        />
+      )}
+
+      {detailAsset && (
+        <AssetDetailDrawer
+          asset={detailAsset}
+          dataSource={dataSource}
+          key={`asset-detail-${detailAsset.id}`}
+          onClose={() => setAssetDetailId(null)}
+          onEdit={(asset) => {
+            setAssetDetailId(null);
+            setAssetEditorState({ mode: "edit", assetId: asset.id });
+          }}
+          onNotify={notify}
+          onRestore={handleAssetRestore}
+          onUpdateStatus={handleAssetStatusChange}
+        />
+      )}
+
+      {assetEditorState && (
+        <AssetEditorDrawer
+          asset={editingAsset}
+          assetType={
+            assetEditorState.mode === "create"
+              ? assetEditorState.assetType
+              : (editingAsset?.assetType ?? "rule")
+          }
+          key={
+            assetEditorState.mode === "edit"
+              ? `asset-editor-${assetEditorState.assetId}`
+              : `asset-editor-new-${assetEditorState.assetType}`
+          }
+          onClose={() => setAssetEditorState(null)}
+          onSave={handleAssetSave}
         />
       )}
 

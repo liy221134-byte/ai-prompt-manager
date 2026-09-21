@@ -46,6 +46,7 @@ export type RuleScope = (typeof ruleScopes)[number];
 export const assetVersionReasons = [
   "initial",
   "save",
+  "restore",
   "merge_before",
   "optimize_before",
   "restore_before",
