@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Braces,
   Eye,
   FilePenLine,
   LoaderCircle,
@@ -8,7 +9,7 @@ import {
   Save,
   X,
 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import {
@@ -17,7 +18,14 @@ import {
   type PromptDraft,
 } from "@/data/prompts";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
-import { normalizeTags } from "@/lib/prompt-utils";
+import {
+  demotePromptVariable,
+  insertPromptVariable,
+  renamePromptVariable,
+  setSelectionAsVariable,
+  validatePromptVariables,
+} from "@/lib/prompt-variables";
+import { extractVariables, normalizeTags } from "@/lib/prompt-utils";
 
 type PromptEditorDrawerProps = {
   mode: "create" | "edit";
@@ -28,7 +36,10 @@ type PromptEditorDrawerProps = {
 };
 
 type FormErrors = Partial<
-  Record<"title" | "category" | "content" | "useCase", string>
+  Record<
+    "title" | "category" | "content" | "useCase" | "variables",
+    string
+  >
 >;
 
 const inputClassName =
@@ -48,10 +59,20 @@ export function PromptEditorDrawer({
   const [content, setContent] = useState(initialValue?.content ?? "");
   const [tags, setTags] = useState<string[]>(initialValue?.tags ?? []);
   const [tagDraft, setTagDraft] = useState("");
+  const [variableDraft, setVariableDraft] = useState("");
+  const [editingVariable, setEditingVariable] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [variableError, setVariableError] = useState<string | null>(null);
+  const [selectionRange, setSelectionRange] = useState({
+    start: 0,
+    end: 0,
+  });
   const [contentMode, setContentMode] = useState<"edit" | "preview">("edit");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const contentTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const variables = useMemo(() => extractVariables(content), [content]);
 
   useModalBehavior(onClose);
 
@@ -77,6 +98,100 @@ export function PromptEditorDrawer({
     );
   }
 
+  function updateContentFromVariable(nextContent: string, cursorIndex: number) {
+    setContent(nextContent);
+    setVariableError(null);
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      content: undefined,
+      variables: undefined,
+    }));
+
+    window.requestAnimationFrame(() => {
+      contentTextAreaRef.current?.focus();
+      contentTextAreaRef.current?.setSelectionRange(cursorIndex, cursorIndex);
+      setSelectionRange({ start: cursorIndex, end: cursorIndex });
+    });
+  }
+
+  function startRenamingVariable(variable: string) {
+    setEditingVariable(variable);
+    setRenameDraft(variable);
+    setVariableError(null);
+  }
+
+  function confirmRenameVariable() {
+    if (!editingVariable) {
+      return;
+    }
+
+    try {
+      const nextContent = renamePromptVariable(
+        content,
+        editingVariable,
+        renameDraft,
+      );
+
+      updateContentFromVariable(nextContent, 0);
+      setEditingVariable(null);
+      setRenameDraft("");
+    } catch (error) {
+      setVariableError(
+        error instanceof Error ? error.message : "变量改名失败。",
+      );
+    }
+  }
+
+  function handleDemoteVariable(variable: string) {
+    try {
+      updateContentFromVariable(
+        demotePromptVariable(content, variable),
+        0,
+      );
+    } catch (error) {
+      setVariableError(
+        error instanceof Error ? error.message : "变量降级失败。",
+      );
+    }
+  }
+
+  function handleSetSelectionAsVariable() {
+    try {
+      const result = setSelectionAsVariable(
+        content,
+        selectionRange.start,
+        selectionRange.end,
+      );
+
+      updateContentFromVariable(result.content, result.selectionStart);
+    } catch (error) {
+      setVariableError(
+        error instanceof Error ? error.message : "设为变量失败。",
+      );
+    }
+  }
+
+  function handleInsertVariable() {
+    try {
+      const result = insertPromptVariable(
+        content,
+        selectionRange.end,
+        variableDraft,
+      );
+
+      updateContentFromVariable(result.content, result.selectionStart);
+      setVariableDraft("");
+
+      if (result.isExisting) {
+        setVariableError("该变量已存在，将新增一处使用。");
+      }
+    } catch (error) {
+      setVariableError(
+        error instanceof Error ? error.message : "插入变量失败。",
+      );
+    }
+  }
+
   function validateForm() {
     const nextErrors: FormErrors = {};
 
@@ -96,6 +211,12 @@ export function PromptEditorDrawer({
 
     if (!content.trim()) {
       nextErrors.content = "请填写提示词正文";
+    }
+
+    const variableValidationError = validatePromptVariables(content);
+
+    if (variableValidationError) {
+      nextErrors.variables = variableValidationError;
     }
 
     setErrors(nextErrors);
@@ -147,13 +268,21 @@ export function PromptEditorDrawer({
         <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
           <div>
             <p className="text-xs font-semibold text-blue-700">
-              {mode === "create" ? "新增提示词" : "编辑提示词"}
+              {mode === "create"
+                ? initialDraft
+                  ? "AI 识别结果"
+                  : "新增提示词"
+                : "编辑提示词"}
             </p>
             <h2
               className="mt-1 text-lg font-semibold text-slate-950"
               id="prompt-editor-title"
             >
-              {mode === "create" ? "创建一条可复用的提示词" : prompt?.title}
+              {mode === "create"
+                ? initialDraft
+                  ? "确认变量和内容后保存"
+                  : "创建一条可复用的提示词"
+                : prompt?.title}
             </h2>
           </div>
 
@@ -325,10 +454,142 @@ export function PromptEditorDrawer({
                     type="button"
                   >
                     <Eye aria-hidden="true" className="size-3.5" />
-                    预览
+                  预览
                   </button>
                 </div>
               </div>
+
+              <section className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Braces
+                      aria-hidden="true"
+                      className="size-4 text-blue-700"
+                    />
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      变量管理
+                    </h3>
+                    <span className="text-xs text-slate-500">
+                      {variables.length} 个变量
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      className="h-8 rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50"
+                      onClick={handleSetSelectionAsVariable}
+                      type="button"
+                    >
+                      选区设为变量
+                    </button>
+                    <div className="flex h-8 items-center overflow-hidden rounded-lg border border-blue-200 bg-white">
+                      <input
+                        aria-label="新变量名"
+                        className="h-full w-28 bg-transparent px-2 text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                        onChange={(event) =>
+                          setVariableDraft(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleInsertVariable();
+                          }
+                        }}
+                        placeholder="变量名"
+                        value={variableDraft}
+                      />
+                      <button
+                        className="h-full border-l border-blue-200 px-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+                        onClick={handleInsertVariable}
+                        type="button"
+                      >
+                        插入
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {(variableError || errors.variables) && (
+                  <p className="mt-3 rounded-lg bg-white px-3 py-2 text-xs text-red-700">
+                    {variableError ?? errors.variables}
+                  </p>
+                )}
+
+                {variables.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {variables.map((variable) => (
+                      <div
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-100 bg-white px-3 py-2"
+                        key={variable}
+                      >
+                        {editingVariable === variable ? (
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <input
+                              autoFocus
+                              className="h-8 min-w-0 flex-1 rounded-md border border-blue-300 px-2 font-mono text-xs text-slate-900 outline-none focus:border-blue-500"
+                              onChange={(event) =>
+                                setRenameDraft(event.target.value)
+                              }
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.preventDefault();
+                                  confirmRenameVariable();
+                                }
+
+                                if (event.key === "Escape") {
+                                  setEditingVariable(null);
+                                  setRenameDraft("");
+                                }
+                              }}
+                              value={renameDraft}
+                            />
+                            <button
+                              className="h-8 rounded-md bg-blue-600 px-2.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                              onClick={confirmRenameVariable}
+                              type="button"
+                            >
+                              确认
+                            </button>
+                            <button
+                              className="h-8 rounded-md px-2 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                              onClick={() => {
+                                setEditingVariable(null);
+                                setRenameDraft("");
+                              }}
+                              type="button"
+                            >
+                              取消
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="min-w-0 truncate font-mono text-xs font-semibold text-blue-800">
+                              {`{{${variable}}}`}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                className="rounded-md px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+                                onClick={() => startRenamingVariable(variable)}
+                                type="button"
+                              >
+                                改名
+                              </button>
+                              <button
+                                className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                                onClick={() =>
+                                  handleDemoteVariable(variable)
+                                }
+                                type="button"
+                              >
+                                降级为正文
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
               {contentMode === "edit" ? (
                 <textarea
@@ -336,12 +597,25 @@ export function PromptEditorDrawer({
                   className="mt-3 min-h-[340px] w-full resize-y rounded-lg border border-slate-300 bg-slate-50 px-4 py-4 font-mono text-sm leading-7 text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
                   onChange={(event) => {
                     setContent(event.target.value);
+                    setSelectionRange({
+                      start: event.currentTarget.selectionStart,
+                      end: event.currentTarget.selectionEnd,
+                    });
                     setErrors((currentErrors) => ({
                       ...currentErrors,
                       content: undefined,
+                      variables: undefined,
                     }));
+                    setVariableError(null);
                   }}
+                  onSelect={(event) =>
+                    setSelectionRange({
+                      start: event.currentTarget.selectionStart,
+                      end: event.currentTarget.selectionEnd,
+                    })
+                  }
                   placeholder="# 角色&#10;你是一名..."
+                  ref={contentTextAreaRef}
                   value={content}
                 />
               ) : (

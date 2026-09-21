@@ -167,6 +167,15 @@ export function PromptDetailDrawer({
 
           <div className="flex items-center gap-1">
             <button
+              aria-label="整理变量"
+              className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-700"
+              onClick={() => onEdit(prompt)}
+              title="整理变量"
+              type="button"
+            >
+              <Braces aria-hidden="true" className="size-5" />
+            </button>
+            <button
               aria-label="AI 优化提示词"
               className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-700"
               onClick={() => onOptimize(prompt)}
