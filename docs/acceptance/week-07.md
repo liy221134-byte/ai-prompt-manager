@@ -34,7 +34,7 @@
 - [x] 数据库迁移名称、执行时间和验证结果已经记录
 - [x] 使用测试提示词完成一次备份恢复演练
 - [x] 使用上一个 Ready 部署完成一次回滚演练
-- [ ] 回滚后登录、提示词读取、编辑和 AI 采集正常
+- [x] 回滚后登录、提示词读取、编辑和 AI 采集正常
 - [ ] Preview 环境只包含公开 Supabase 参数
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 仅在 Production 使用
 - [x] Vercel 日志和 `/api/health/db` 可以用于定位基础运行问题
