@@ -627,7 +627,9 @@ function syncPromptToAsset(database: DatabaseSync, prompt: PromptCardData) {
   );
 }
 
-export function syncLegacyPromptsToAssets(database: DatabaseSync) {
+// 2.1.0 切换后旧提示词表只读：只把旧表里资产还没有的提示词补一次，
+// 既不更新已有资产，也不删除资产，避免误删切换之后新写入的数据。
+export function backfillAssetsFromLegacyPrompts(database: DatabaseSync) {
   const project = createDefaultProject();
   const projectResult = insertProject(database, project);
   const rows = database
@@ -651,29 +653,20 @@ export function syncLegacyPromptsToAssets(database: DatabaseSync) {
       `,
     )
     .all() as LegacyPromptRow[];
-  const promptIds = new Set(rows.map((row) => row.id));
   let changedCount = Number(projectResult.changes);
 
   for (const row of rows) {
-    if (syncPromptToAsset(database, rowToPrompt(row))) {
-      changedCount += 1;
-    }
-  }
+    const existing = database
+      .prepare("SELECT id FROM assets WHERE id = ?")
+      .get(row.id);
 
-  const staleAssets = database
-    .prepare("SELECT id FROM assets WHERE asset_type = 'prompt'")
-    .all() as Array<{ id: string }>;
-
-  for (const asset of staleAssets) {
-    if (promptIds.has(asset.id)) {
+    if (existing) {
       continue;
     }
 
-    database
-      .prepare("DELETE FROM asset_versions WHERE asset_id = ?")
-      .run(asset.id);
-    database.prepare("DELETE FROM assets WHERE id = ?").run(asset.id);
-    changedCount += 1;
+    if (syncPromptToAsset(database, rowToPrompt(row))) {
+      changedCount += 1;
+    }
   }
 
   return changedCount;
