@@ -31,7 +31,9 @@ source_references:
 related_assets:
   - MTH-MODULE-001
   - RULE-BOUNDARY-001
-version: 0.2.0
+  - MTH-TECH-001
+  - TPL-TECH-001
+version: 0.2.1
 last_reviewed: 2026-09-21
 ---
 
@@ -83,3 +85,5 @@ last_reviewed: 2026-09-21
 
 - `MTH-MODULE-001`：拆分并治理模块边界。
 - `RULE-BOUNDARY-001`：限制跨模块数据和接口访问。
+- `MTH-TECH-001`（引用）：技术选型是架构基线的输出之一。
+- `TPL-TECH-001`（引用）：环境、安全和运维项按技术档案固化。

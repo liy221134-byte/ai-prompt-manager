@@ -151,7 +151,7 @@ function readManifest() {
   return { version, assetCount };
 }
 
-test("每条资产都包含 schema 0.2.0 要求的字段和取值", () => {
+test("每条资产都包含 schema 要求的字段和取值", () => {
   for (const asset of assets) {
     for (const field of requiredFields) {
       assert.ok(
@@ -192,10 +192,29 @@ test("每条资产都包含 schema 0.2.0 要求的字段和取值", () => {
   }
 });
 
-test("资产版本与清单声明保持一致", () => {
+function compareVersions(left, right) {
+  const leftParts = left.split(".").map(Number);
+  const rightParts = right.split(".").map(Number);
+
+  for (let index = 0; index < 3; index += 1) {
+    const difference = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
+
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+
+  return 0;
+}
+
+test("资产包版本与资产版本保持一致口径", () => {
   const manifest = readManifest();
 
-  assert.ok(manifest.version, "清单里没有解析到版本号");
+  assert.match(
+    String(manifest.version),
+    /^\d+\.\d+\.\d+$/,
+    "清单里的资产包版本不是语义版本",
+  );
   assert.equal(
     manifest.assetCount,
     assets.length,
@@ -203,10 +222,14 @@ test("资产版本与清单声明保持一致", () => {
   );
 
   for (const asset of assets) {
-    assert.equal(
-      asset.fields.version,
-      manifest.version,
-      `${asset.name} 的版本与清单不一致`,
+    assert.match(
+      String(asset.fields.version),
+      /^\d+\.\d+\.\d+$/,
+      `${asset.name} 的 version 不是语义版本`,
+    );
+    assert.ok(
+      compareVersions(asset.fields.version, manifest.version) <= 0,
+      `${asset.name} 的版本高于资产包版本`,
     );
   }
 });
