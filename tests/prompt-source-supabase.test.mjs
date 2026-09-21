@@ -21,21 +21,34 @@ function createPrompt(overrides = {}) {
   };
 }
 
-function toPromptRow(prompt) {
+// 2.1.0 起提示词存在统一资产表里，测试数据也按资产行给。
+function toAssetRow(prompt) {
   return {
-    id: prompt.id,
     user_id: "user-1",
+    id: prompt.id,
+    project_id: "default-project",
+    asset_type: "prompt",
     title: prompt.title,
-    category: prompt.category,
-    tags: prompt.tags,
+    summary: prompt.useCase,
     content: prompt.content,
-    use_case: prompt.useCase,
-    created_at: prompt.createdAt,
-    updated_at: prompt.updatedAt,
+    metadata_json: {
+      category: prompt.category,
+      tags: prompt.tags,
+      useCase: prompt.useCase,
+      mergedIntoAssetId: prompt.mergedIntoPromptId ?? null,
+      mergeVersionId: prompt.mergeVersionId ?? null,
+    },
+    source_type: "manual",
+    source_asset_id: null,
+    import_batch_id: null,
+    original_filename: null,
+    current_version_id: `current-${prompt.id}`,
+    status: "active",
+    archived_at: null,
     deleted_at: prompt.deletedAt,
     deleted_reason: prompt.deletedReason,
-    merged_into_prompt_id: prompt.mergedIntoPromptId,
-    merge_version_id: prompt.mergeVersionId,
+    created_at: prompt.createdAt,
+    updated_at: prompt.updatedAt,
   };
 }
 
@@ -43,17 +56,25 @@ function createVersionRow(overrides = {}) {
   return {
     user_id: "user-1",
     version_id: "version-1",
-    prompt_id: "prompt-a",
+    asset_id: "prompt-a",
+    asset_type: "prompt",
+    version_number: 2,
     title: "合并前标题",
-    category: "AI效能",
-    tags: ["恢复"],
+    summary: "恢复测试。",
     content: "合并前正文",
-    use_case: "恢复测试。",
-    created_at: "2026-09-20T01:00:00.000Z",
+    metadata_json: {
+      category: "AI效能",
+      tags: ["恢复"],
+      useCase: "恢复测试。",
+      mergedIntoAssetId: null,
+      mergeVersionId: null,
+    },
+    change_reason: "合并前快照",
     version_reason: "merge_before",
-    source_prompt_ids: ["prompt-a", "prompt-b"],
+    source_asset_ids: ["prompt-a", "prompt-b"],
     restored_at: null,
     expires_at: "2026-10-20T01:00:00.000Z",
+    created_at: "2026-09-20T01:00:00.000Z",
     ...overrides,
   };
 }
@@ -145,7 +166,7 @@ function createQueryBuilder(tableName, rows, callbacks) {
 }
 
 function createFakeSupabase({
-  promptRows = [],
+  assetRows = [],
   versionRows = [],
   authUser = { id: "user-1" },
   authError = null,
@@ -173,11 +194,11 @@ function createFakeSupabase({
       },
     },
     from(tableName) {
-      if (tableName === "prompt_versions") {
+      if (tableName === "asset_versions") {
         return createQueryBuilder(tableName, versionRows, callbacks);
       }
 
-      return createQueryBuilder(tableName, promptRows, callbacks);
+      return createQueryBuilder(tableName, assetRows, callbacks);
     },
     async rpc(name, params) {
       rpcCalls.push({ name, params });
@@ -188,9 +209,9 @@ function createFakeSupabase({
   return { client, callbacks, rpcCalls };
 }
 
-test("云端合并 RPC 只传递目标草稿、来源和版本标识", async () => {
+test("云端合并 RPC 只传目标内容和来源资产", async () => {
   const fake = createFakeSupabase({
-    promptRows: [toPromptRow(createPrompt())],
+    assetRows: [toAssetRow(createPrompt())],
   });
   const dataSource = createSupabasePromptDataSource(fake.client);
 
@@ -201,16 +222,21 @@ test("云端合并 RPC 只传递目标草稿、来源和版本标识", async () 
   });
 
   assert.equal(fake.rpcCalls.length, 1);
-  assert.equal(fake.rpcCalls[0].name, "commit_prompt_merge");
+  assert.equal(fake.rpcCalls[0].name, "commit_asset_merge");
   assert.deepEqual(fake.rpcCalls[0].params, {
-    p_prompt_id: "prompt-a",
+    p_asset_id: "prompt-a",
     p_title: "合并后的标题",
-    p_category: "AI效能",
-    p_tags: ["测试"],
+    p_summary: "测试合并。",
     p_content: "请处理 {{内容}}",
-    p_use_case: "测试合并。",
-    p_source_prompt_ids: ["prompt-a", "prompt-b"],
-    p_version_id: "version-1",
+    p_metadata: {
+      category: "AI效能",
+      tags: ["测试"],
+      useCase: "测试合并。",
+      mergedIntoAssetId: null,
+      mergeVersionId: null,
+    },
+    p_source_asset_ids: ["prompt-a", "prompt-b"],
+    p_asset_updated_at: "2026-09-20T00:00:00.000Z",
   });
 });
 
@@ -226,9 +252,9 @@ test("云端备份合并会跳过当前在垃圾箱中的提示词", async () =>
     title: "新增提示词",
   });
   const fake = createFakeSupabase({
-    promptRows: [
-      toPromptRow(createPrompt()),
-      toPromptRow(trashedPrompt),
+    assetRows: [
+      toAssetRow(createPrompt()),
+      toAssetRow(trashedPrompt),
     ],
   });
   const dataSource = createSupabasePromptDataSource(fake.client);
@@ -241,14 +267,13 @@ test("云端备份合并会跳过当前在垃圾箱中的提示词", async () =>
     newPrompt,
   ]);
 
-  const upsert = fake.callbacks.mutations.find(
-    (mutation) => mutation.kind === "upsert",
-  );
-  const upsertIds = upsert.payload.map((row) => row.id);
+  const savedIds = fake.rpcCalls
+    .filter((call) => call.name === "save_asset")
+    .map((call) => call.params.p_asset_id);
 
   assert.equal(result.skipCount, 1);
-  assert.ok(!upsertIds.includes("prompt-trash"));
-  assert.ok(upsertIds.includes("prompt-new"));
+  assert.ok(!savedIds.includes("prompt-trash"));
+  assert.ok(savedIds.includes("prompt-new"));
 });
 
 test("云端恢复记录查询会过滤已恢复记录并映射快照字段", async () => {
@@ -277,7 +302,7 @@ test("云端恢复记录查询会过滤已恢复记录并映射快照字段", as
   assert.ok(
     fake.callbacks.filters.some(
       (filter) =>
-        filter.tableName === "prompt_versions" &&
+        filter.tableName === "asset_versions" &&
         filter.kind === "is" &&
         filter.column === "restored_at" &&
         filter.value === null,
@@ -285,7 +310,7 @@ test("云端恢复记录查询会过滤已恢复记录并映射快照字段", as
   );
 });
 
-// v0.9 的 AI 优化快照同样存在 prompt_versions 里，云端查询必须按原因过滤。
+// 合并和优化快照都存在统一资产版本表里，云端查询必须按原因过滤。
 test("云端恢复记录查询只取合并快照，排除优化快照", async () => {
   const fake = createFakeSupabase({
     versionRows: [
@@ -293,7 +318,7 @@ test("云端恢复记录查询只取合并快照，排除优化快照", async ()
       createVersionRow({
         version_id: "version-optimize",
         version_reason: "optimize_before",
-        source_prompt_ids: [],
+        source_asset_ids: [],
       }),
     ],
   });
@@ -306,7 +331,7 @@ test("云端恢复记录查询只取合并快照，排除优化快照", async ()
   assert.ok(
     fake.callbacks.filters.some(
       (filter) =>
-        filter.tableName === "prompt_versions" &&
+        filter.tableName === "asset_versions" &&
         filter.kind === "eq" &&
         filter.column === "version_reason" &&
         filter.value === "merge_before",
@@ -314,9 +339,9 @@ test("云端恢复记录查询只取合并快照，排除优化快照", async ()
   );
 });
 
-test("云端回到优化前会带上新生成的快照编号", async () => {
+test("云端回到优化前只传资产标识，快照编号由服务端生成", async () => {
   const fake = createFakeSupabase({
-    promptRows: [toPromptRow(createPrompt())],
+    assetRows: [toAssetRow(createPrompt())],
   });
   const dataSource = createSupabasePromptDataSource(fake.client);
 
@@ -325,22 +350,20 @@ test("云端回到优化前会带上新生成的快照编号", async () => {
   assert.equal(fake.rpcCalls.length, 1);
   const [call] = fake.rpcCalls;
 
-  assert.equal(call.name, "restore_prompt_optimize");
-  assert.equal(call.params.p_prompt_id, "prompt-a");
-  assert.equal(typeof call.params.p_version_id, "string");
-  assert.ok(call.params.p_version_id.startsWith("version-"));
+  assert.equal(call.name, "restore_asset_optimize");
+  assert.deepEqual(call.params, { p_asset_id: "prompt-a" });
 });
 
 test("云端清空垃圾箱只调用一个原子 RPC", async () => {
   const fake = createFakeSupabase({
-    promptRows: [toPromptRow(createPrompt())],
+    assetRows: [toAssetRow(createPrompt())],
   });
   const dataSource = createSupabasePromptDataSource(fake.client);
 
   await dataSource.emptyTrash();
 
   assert.deepEqual(fake.rpcCalls, [
-    { name: "empty_prompt_trash", params: undefined },
+    { name: "empty_asset_trash", params: undefined },
   ]);
   assert.equal(
     fake.callbacks.mutations.filter((mutation) => mutation.kind === "delete")
@@ -351,7 +374,7 @@ test("云端清空垃圾箱只调用一个原子 RPC", async () => {
 
 test("云端数据源会把 RPC 和查询失败转换成中文错误", async () => {
   const rpcFailure = createFakeSupabase({
-    promptRows: [toPromptRow(createPrompt())],
+    assetRows: [toAssetRow(createPrompt())],
     rpcResult: { data: null, error: { message: "rpc failed" } },
   });
   const rpcDataSource = createSupabasePromptDataSource(rpcFailure.client);
@@ -379,7 +402,7 @@ test("云端数据源会把 RPC 和查询失败转换成中文错误", async () 
   );
 
   const emptyFailure = createFakeSupabase({
-    promptRows: [toPromptRow(createPrompt())],
+    assetRows: [toAssetRow(createPrompt())],
     rpcResult: { data: null, error: { message: "empty failed" } },
   });
   const emptyDataSource = createSupabasePromptDataSource(
