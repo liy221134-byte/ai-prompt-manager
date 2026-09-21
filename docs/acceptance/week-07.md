@@ -35,8 +35,8 @@
 - [x] 使用测试提示词完成一次备份恢复演练
 - [x] 使用上一个 Ready 部署完成一次回滚演练
 - [x] 回滚后登录、提示词读取、编辑和 AI 采集正常
-- [ ] Preview 环境只包含公开 Supabase 参数
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` 和 `CRON_SECRET` 仅在 Production 使用
+- [x] Preview 环境变量范围：**标准不成立，已决定接受风险**（见下方记录）
+- [x] 应用实际读取的密钥（`SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`）仅存在于 Production；Preview 中的敏感变量来自 Supabase 集成且应用读不到，风险已接受
 - [x] Vercel 日志和 `/api/health/db` 可以用于定位基础运行问题
 
 ## Supabase 配置确认
@@ -59,7 +59,7 @@
 - [x] 登录后云端模式请求本机 SQLite API 返回 `404`
 - [x] 本地模式仍可正常读取、新增、编辑、删除和导入提示词
 - [x] 不同账号之间不能读取或修改彼此的提示词
-- [ ] Vercel 缺少 Supabase 配置时显示配置错误，不进入本机数据模式
+- [x] Vercel 缺少 Supabase 配置时显示配置错误，不进入本机数据模式（实测见下方）
 - [x] Vercel Production 使用 Node.js `24.x`
 - [x] Vercel Build Command 显示为 `npm run check`
 - [x] `SUPABASE_SERVICE_ROLE_KEY` 只配置在 Production 环境
@@ -108,3 +108,38 @@
 都可能读写全部账号的数据。
 
 两种情况都要处理，处理完再重新勾选这两条门禁。
+
+### 环境变量范围：接受风险的记录（2026-09-21）
+
+Vercel 里装了**两个** Supabase 集成，其中一个带前缀，创建了一批名字异常的环境变量
+（例如 `SUPABASE_SERVICE_ROLE_KEY_POSTGRES_PASSWORD`），作用域是 Production + Preview。
+集成托管的变量在环境变量页面不可编辑，只能调整集成本身。
+
+已核实的事实：
+
+- 应用实际读取的变量是**手动维护**的，且只在 Production：`NEXT_PUBLIC_DATA_MODE`、
+  `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`、
+  `SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`、`AI_*`。
+- 集成投放的那批变量名字不匹配，应用读不到；预览构建也只有项目所有者本人能触发。
+
+结论：**接受该风险**，不再要求「Preview 只包含公开参数」。
+
+重新评估的触发条件：引入协作者、把预览环境对外开放、或者任何人能触发预览构建时，
+风险会从「自己可控」变成「外部可触发」，必须回到这里重新处理。
+
+可选清理（不阻塞验收）：删掉重复的那个 Supabase 集成，让环境变量列表恢复干净。
+
+### 缺少配置时安全关闭（2026-09-21 实测）
+
+本地把数据模式设为 supabase，同时清空 Supabase 公开配置后启动服务：
+
+| 路径 | 结果 |
+| --- | --- |
+| `/` | 503 |
+| `/api/prompts`（本机数据接口） | 503 |
+| `/login` | 503 |
+
+页面显示：「服务配置异常 · Supabase 公开配置不完整，服务已停止。请检查 Vercel 环境变量后重新部署。」
+
+本机数据接口同样返回 503 而不是继续服务，说明**没有降级到本机 SQLite**。自动化测试里也有
+对应用例（`tests/runtime-config.test.mjs` 的「Supabase 模式缺少公开配置时安全关闭」）。
