@@ -524,6 +524,16 @@ export function PromptLibrary({
     () => new Set(trashPrompts.map((prompt) => prompt.id)),
     [trashPrompts],
   );
+  // 备份目前只覆盖提示词，这里算出还有多少规则和文档不会进备份文件。
+  const otherAssetCount = useMemo(
+    () =>
+      assets.filter(
+        (asset) =>
+          (asset.assetType === "rule" || asset.assetType === "document") &&
+          asset.deletedAt === null,
+      ).length,
+    [assets],
+  );
 
   const selectedPrompt = projectPrompts.find(
     (prompt) => prompt.id === selectedPromptId,
@@ -966,15 +976,9 @@ export function PromptLibrary({
     notify("优化结果已保存，可以回到优化前");
   }
 
-  async function handleRestoreOptimize(
-    prompt: PromptCardData,
-    versionId: string,
-  ) {
+  async function handleRestoreOptimize(prompt: PromptCardData) {
     try {
-      const library = await dataSource.restoreAiOptimize(
-        prompt.id,
-        versionId,
-      );
+      const library = await dataSource.restoreAiOptimize(prompt.id);
 
       setPrompts(library.prompts);
       cachePrompts(library.prompts);
@@ -1582,6 +1586,7 @@ export function PromptLibrary({
           onExport={handleExport}
           onImport={handleImport}
           onNotify={notify}
+          otherAssetCount={otherAssetCount}
           promptCount={prompts.length}
           prompts={prompts}
           trashedPromptIds={trashedPromptIds}

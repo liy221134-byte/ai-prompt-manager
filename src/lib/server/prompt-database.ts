@@ -135,7 +135,14 @@ export class PromptDatabase {
   constructor(databasePath = createDefaultDatabasePath()) {
     mkdirSync(dirname(databasePath), { recursive: true });
     this.database = new DatabaseSync(databasePath);
-    this.initialize();
+
+    try {
+      this.initialize();
+    } catch (error) {
+      // 初始化失败时关掉连接，否则文件句柄会一直占着数据库，也不利于恢复。
+      this.database.close();
+      throw error;
+    }
   }
 
   private initialize() {

@@ -25,10 +25,7 @@ type PromptDetailDrawerProps = {
   onEdit: (prompt: PromptCardData) => void;
   onDelete: (prompt: PromptCardData) => void;
   onOptimize: (prompt: PromptCardData) => void;
-  onRestoreOptimize: (
-    prompt: PromptCardData,
-    versionId: string,
-  ) => Promise<void>;
+  onRestoreOptimize: (prompt: PromptCardData) => Promise<void>;
   optimizeVersion: PromptVersionData | null;
   onNotify: (message: string) => void;
 };
@@ -132,7 +129,7 @@ export function PromptDetailDrawer({
     setIsRestoring(true);
 
     try {
-      await onRestoreOptimize(prompt, optimizeVersion.versionId);
+      await onRestoreOptimize(prompt);
       setIsConfirmingRestore(false);
     } finally {
       setIsRestoring(false);

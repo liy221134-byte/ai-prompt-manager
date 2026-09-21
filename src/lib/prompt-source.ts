@@ -52,6 +52,7 @@ import {
   PROMPT_BACKUP_TYPE,
   PROMPT_BACKUP_VERSION,
 } from "./prompt-backup.ts";
+import { createOptimizeVersionId } from "./prompt-optimize-draft.ts";
 
 export type PromptDataSource = {
   fetchProjects: () => Promise<ProjectData[]>;
@@ -90,10 +91,8 @@ export type PromptDataSource = {
   fetchOptimizeVersion: (
     promptId: string,
   ) => Promise<PromptOptimizeVersionResponse>;
-  restoreAiOptimize: (
-    promptId: string,
-    versionId: string,
-  ) => Promise<PromptLibraryResponse>;
+  // 回退会新写一条「回退前快照」，快照标识由数据源内部生成，避免调用方复用旧标识。
+  restoreAiOptimize: (promptId: string) => Promise<PromptLibraryResponse>;
 };
 
 export const localPromptDataSource: PromptDataSource = {
@@ -133,7 +132,9 @@ export const localPromptDataSource: PromptDataSource = {
   permanentlyDeleteMergeRecord: permanentlyDeleteMergeRecordOnServer,
   commitAiOptimize: commitAiOptimizeOnServer,
   fetchOptimizeVersion: fetchOptimizeVersionOnServer,
-  restoreAiOptimize: restoreAiOptimizeOnServer,
+  async restoreAiOptimize(promptId) {
+    return restoreAiOptimizeOnServer(promptId, createOptimizeVersionId());
+  },
 };
 
 type SupabasePromptRow = {
@@ -779,11 +780,11 @@ export function createSupabasePromptDataSource(
         version: rows.length > 0 ? rowToVersion(rows[0]) : null,
       };
     },
-    async restoreAiOptimize(promptId, versionId) {
+    async restoreAiOptimize(promptId) {
       await getCurrentUser(client);
       const { error } = await client.rpc("restore_prompt_optimize", {
         p_prompt_id: promptId,
-        p_version_id: versionId,
+        p_version_id: createOptimizeVersionId(),
       });
 
       if (error) {
