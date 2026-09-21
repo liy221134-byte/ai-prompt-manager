@@ -2,6 +2,12 @@ import type {
   PromptCardData,
   PromptVersionData,
 } from "../data/prompts.ts";
+import type {
+  AssetData,
+  AssetVersionData,
+  AssetVersionReason,
+} from "../data/assets.ts";
+import type { ProjectData } from "../data/projects.ts";
 
 export type PromptLibraryResponse = {
   version: number;
@@ -16,6 +22,28 @@ export type PromptMergeResponse = PromptLibraryResponse & {
 
 export type PromptRecoveryResponse = {
   records: PromptVersionData[];
+};
+
+export type ProjectListResponse = {
+  projects: ProjectData[];
+};
+
+export type AssetListResponse = {
+  assets: AssetData[];
+};
+
+export type AssetVersionListResponse = {
+  versions: AssetVersionData[];
+};
+
+export type AssetSaveInput = {
+  asset: AssetData;
+  versionId: string;
+  changeReason: string;
+  versionReason?: AssetVersionReason;
+  sourceAssetIds?: string[];
+  restoredAt?: string | null;
+  expiresAt?: string | null;
 };
 
 export type CommitAiMergeInput = {
@@ -184,5 +212,57 @@ export function restoreAiOptimizeOnServer(promptId: string, versionId: string) {
       method: "POST",
       body: JSON.stringify({ versionId }),
     },
+  );
+}
+
+export function fetchProjectsOnServer() {
+  return requestJson<ProjectListResponse>("/api/projects");
+}
+
+export function createProjectOnServer(project: ProjectData) {
+  return requestJson<ProjectListResponse>("/api/projects", {
+    method: "POST",
+    body: JSON.stringify({ project }),
+  });
+}
+
+export function updateProjectOnServer(project: ProjectData) {
+  return requestJson<ProjectListResponse>(
+    `/api/projects/${encodeURIComponent(project.id)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ project }),
+    },
+  );
+}
+
+export function fetchAssetsOnServer(projectId?: string) {
+  const query = projectId
+    ? `?projectId=${encodeURIComponent(projectId)}`
+    : "";
+
+  return requestJson<AssetListResponse>(`/api/assets${query}`);
+}
+
+export function createAssetOnServer(input: AssetSaveInput) {
+  return requestJson<AssetListResponse>("/api/assets", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAssetOnServer(input: AssetSaveInput) {
+  return requestJson<AssetListResponse>(
+    `/api/assets/${encodeURIComponent(input.asset.id)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function fetchAssetVersionsOnServer(assetId: string) {
+  return requestJson<AssetVersionListResponse>(
+    `/api/assets/${encodeURIComponent(assetId)}/versions`,
   );
 }

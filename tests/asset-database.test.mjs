@@ -188,3 +188,112 @@ test("垃圾箱状态会同步到统一资产生命周期字段", () => {
     context.cleanup();
   }
 });
+
+test("本地数据库可以创建和更新项目", () => {
+  const context = createContext();
+  const project = {
+    id: "project-1",
+    name: "提示词资产工具",
+    description: "项目管理测试",
+    status: "active",
+    stage: "development",
+    createdAt: "2026-09-21T10:00:00.000Z",
+    updatedAt: "2026-09-21T10:00:00.000Z",
+    archivedAt: null,
+  };
+
+  try {
+    assert.equal(context.database.createProject(project), true);
+    assert.equal(context.database.createProject(project), false);
+    assert.equal(
+      context.database.updateProject({
+        ...project,
+        name: "更新后的项目",
+        updatedAt: "2026-09-21T11:00:00.000Z",
+      }),
+      true,
+    );
+    assert.ok(
+      context.database
+        .listProjects()
+        .some((item) => item.name === "更新后的项目"),
+    );
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("本地数据库可以创建规则资产并保存不可变版本", () => {
+  const context = createContext();
+  const asset = {
+    id: "rule-1",
+    projectId: "default-project",
+    assetType: "rule",
+    title: "删除数据前必须确认",
+    summary: "保护用户数据。",
+    content: "未经确认不得删除用户数据。",
+    metadata: {
+      ruleType: "must",
+      scope: "global",
+    },
+    source: {
+      sourceType: "manual",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: "rule-version-1",
+    status: "active",
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: "2026-09-21T10:00:00.000Z",
+    updatedAt: "2026-09-21T10:00:00.000Z",
+  };
+
+  try {
+    assert.equal(
+      context.database.createAsset({
+        asset,
+        versionId: "rule-version-1",
+        changeReason: "创建规则",
+      }),
+      true,
+    );
+    assert.equal(
+      context.database.createAsset({
+        asset,
+        versionId: "rule-version-1",
+        changeReason: "创建规则",
+      }),
+      false,
+    );
+    assert.equal(context.database.listAssetVersions("rule-1").length, 1);
+
+    const updatedAsset = {
+      ...asset,
+      content: "删除任何用户数据前必须得到明确确认。",
+      currentVersionId: "rule-version-2",
+      updatedAt: "2026-09-21T11:00:00.000Z",
+    };
+
+    assert.equal(
+      context.database.updateAsset({
+        asset: updatedAsset,
+        versionId: "rule-version-2",
+        changeReason: "补充确认范围",
+      }),
+      true,
+    );
+
+    const versions = context.database.listAssetVersions("rule-1");
+
+    assert.equal(versions.length, 2);
+    assert.equal(versions[1].versionNumber, 2);
+    assert.equal(context.database.getAsset("rule-1").content, updatedAsset.content);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});

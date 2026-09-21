@@ -290,6 +290,37 @@ function insertProject(database: DatabaseSync, project: ProjectData) {
     );
 }
 
+export function saveProject(
+  database: DatabaseSync,
+  project: ProjectData,
+) {
+  return database
+    .prepare(
+      `
+        INSERT INTO projects (
+          id, name, description, status, stage, created_at, updated_at, archived_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          description = excluded.description,
+          status = excluded.status,
+          stage = excluded.stage,
+          updated_at = excluded.updated_at,
+          archived_at = excluded.archived_at
+      `,
+    )
+    .run(
+      project.id,
+      project.name,
+      project.description,
+      project.status,
+      project.stage,
+      project.createdAt,
+      project.updatedAt,
+      project.archivedAt,
+    );
+}
+
 function upsertAsset(database: DatabaseSync, asset: AssetData) {
   return database
     .prepare(
@@ -354,6 +385,10 @@ function upsertAsset(database: DatabaseSync, asset: AssetData) {
     );
 }
 
+export function saveAsset(database: DatabaseSync, asset: AssetData) {
+  return upsertAsset(database, asset);
+}
+
 function insertAssetVersion(
   database: DatabaseSync,
   version: AssetVersionData,
@@ -395,6 +430,13 @@ function insertAssetVersion(
       version.expiresAt,
       version.createdAt,
     );
+}
+
+export function saveAssetVersion(
+  database: DatabaseSync,
+  version: AssetVersionData,
+) {
+  return insertAssetVersion(database, version);
 }
 
 function getMaxAssetVersionNumber(
@@ -650,6 +692,14 @@ export function listProjects(database: DatabaseSync) {
     .all() as ProjectRow[];
 
   return rows.map(rowToProject);
+}
+
+export function getAssetById(database: DatabaseSync, assetId: string) {
+  const row = database
+    .prepare("SELECT * FROM assets WHERE id = ?")
+    .get(assetId) as AssetRow | undefined;
+
+  return row ? rowToAsset(row) : null;
 }
 
 export function getDefaultProject(database: DatabaseSync) {

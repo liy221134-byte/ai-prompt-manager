@@ -59,3 +59,21 @@ test("现有提示词版本会迁移为资产版本并保留恢复字段", () =>
   assert.match(migration, /restored_at/);
   assert.match(migration, /expires_at/);
 });
+
+test("资产保存函数使用 SECURITY INVOKER 且只授予 authenticated", () => {
+  const saveAssetFunction = migration.match(
+    /create or replace function public\.save_asset\([\s\S]*?end;\s*\$\$;/,
+  )?.[0];
+
+  assert.ok(saveAssetFunction);
+  assert.match(saveAssetFunction, /security invoker/);
+  assert.match(saveAssetFunction, /v_user_id uuid := auth\.uid\(\)/);
+  assert.match(
+    migration,
+    /revoke execute on function public\.save_asset\([\s\S]*?from public/,
+  );
+  assert.match(
+    migration,
+    /grant execute on function public\.save_asset\([\s\S]*?to authenticated/,
+  );
+});

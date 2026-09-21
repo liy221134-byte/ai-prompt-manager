@@ -4,6 +4,13 @@ import test from "node:test";
 import { localPromptDataSource } from "../src/lib/prompt-source.ts";
 
 const REQUIRED_METHODS = [
+  "fetchProjects",
+  "createProject",
+  "updateProject",
+  "fetchAssets",
+  "createAsset",
+  "updateAsset",
+  "fetchAssetVersions",
   "fetchLibrary",
   "createPrompt",
   "updatePrompt",

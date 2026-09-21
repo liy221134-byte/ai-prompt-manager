@@ -177,6 +177,171 @@ grant select, insert, update, delete on public.projects to authenticated;
 grant select, insert, update, delete on public.assets to authenticated;
 grant select, insert, update, delete on public.asset_versions to authenticated;
 
+create or replace function public.save_asset(
+  p_asset_id text,
+  p_project_id text,
+  p_asset_type text,
+  p_title text,
+  p_summary text,
+  p_content text,
+  p_metadata jsonb,
+  p_source_type text,
+  p_source_asset_id text,
+  p_import_batch_id text,
+  p_original_filename text,
+  p_status text,
+  p_archived_at timestamptz,
+  p_deleted_at timestamptz,
+  p_deleted_reason text,
+  p_version_id text,
+  p_change_reason text,
+  p_version_reason text,
+  p_source_asset_ids text[],
+  p_restored_at timestamptz,
+  p_expires_at timestamptz,
+  p_asset_created_at timestamptz,
+  p_asset_updated_at timestamptz
+)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_version_number integer;
+begin
+  if v_user_id is null then
+    raise exception '未登录。';
+  end if;
+
+  if p_asset_id is null or btrim(p_asset_id) = ''
+    or p_version_id is null or btrim(p_version_id) = ''
+  then
+    raise exception '资产标识和版本标识不能为空。';
+  end if;
+
+  if not exists (
+    select 1
+    from public.projects
+    where user_id = v_user_id and id = p_project_id
+  ) then
+    raise exception '项目不存在。';
+  end if;
+
+  select coalesce(max(version_number), 0) + 1
+  into v_version_number
+  from public.asset_versions
+  where user_id = v_user_id and asset_id = p_asset_id;
+
+  insert into public.assets (
+    user_id,
+    id,
+    project_id,
+    asset_type,
+    title,
+    summary,
+    content,
+    metadata_json,
+    source_type,
+    source_asset_id,
+    import_batch_id,
+    original_filename,
+    current_version_id,
+    status,
+    archived_at,
+    deleted_at,
+    deleted_reason,
+    created_at,
+    updated_at
+  ) values (
+    v_user_id,
+    p_asset_id,
+    p_project_id,
+    p_asset_type,
+    p_title,
+    p_summary,
+    p_content,
+    coalesce(p_metadata, '{}'::jsonb),
+    p_source_type,
+    p_source_asset_id,
+    p_import_batch_id,
+    p_original_filename,
+    p_version_id,
+    p_status,
+    p_archived_at,
+    p_deleted_at,
+    p_deleted_reason,
+    p_asset_created_at,
+    p_asset_updated_at
+  )
+  on conflict (user_id, id) do update
+  set
+    project_id = excluded.project_id,
+    asset_type = excluded.asset_type,
+    title = excluded.title,
+    summary = excluded.summary,
+    content = excluded.content,
+    metadata_json = excluded.metadata_json,
+    source_type = excluded.source_type,
+    source_asset_id = excluded.source_asset_id,
+    import_batch_id = excluded.import_batch_id,
+    original_filename = excluded.original_filename,
+    current_version_id = excluded.current_version_id,
+    status = excluded.status,
+    archived_at = excluded.archived_at,
+    deleted_at = excluded.deleted_at,
+    deleted_reason = excluded.deleted_reason,
+    updated_at = excluded.updated_at;
+
+  insert into public.asset_versions (
+    user_id,
+    version_id,
+    asset_id,
+    asset_type,
+    version_number,
+    title,
+    summary,
+    content,
+    metadata_json,
+    change_reason,
+    version_reason,
+    source_asset_ids,
+    restored_at,
+    expires_at,
+    created_at
+  ) values (
+    v_user_id,
+    p_version_id,
+    p_asset_id,
+    p_asset_type,
+    v_version_number,
+    p_title,
+    p_summary,
+    p_content,
+    coalesce(p_metadata, '{}'::jsonb),
+    p_change_reason,
+    p_version_reason,
+    coalesce(p_source_asset_ids, '{}'),
+    p_restored_at,
+    p_expires_at,
+    p_asset_updated_at
+  );
+end;
+$$;
+
+revoke execute on function public.save_asset(
+  text, text, text, text, text, text, jsonb, text, text, text, text,
+  text, timestamptz, timestamptz, text, text, text, text, text[],
+  timestamptz, timestamptz, timestamptz, timestamptz
+) from public;
+
+grant execute on function public.save_asset(
+  text, text, text, text, text, text, jsonb, text, text, text, text,
+  text, timestamptz, timestamptz, text, text, text, text, text[],
+  timestamptz, timestamptz, timestamptz, timestamptz
+) to authenticated;
+
 insert into public.projects (
   user_id,
   id,
