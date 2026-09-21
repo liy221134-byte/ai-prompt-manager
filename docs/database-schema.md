@@ -196,6 +196,20 @@ RLS 账号隔离。
 | `commit_prompt_optimize(...)` | 原子保存一次 AI 优化：从锁定后的当前行生成 `optimize_before` 快照，再更新提示词 |
 | `restore_prompt_optimize(prompt_id, version_id)` | 回到这条提示词最近一次未被消费的优化前快照，并先把当前内容存成 `restore_before` 快照 |
 | `empty_prompt_trash()` | 在单一事务中删除当前用户的全部恢复快照和垃圾箱提示词 |
+
+2.1.0 新增一组统一资产上的原子操作函数，提示词改用它们：
+
+| 函数 | 用途 |
+| --- | --- |
+| `next_asset_version_number(user_id, asset_id)` | 取下一个资产版本号，供下面几个函数共用 |
+| `set_asset_trash_state(asset_id, deleted, reason)` | 进垃圾箱或出垃圾箱，同时清掉合并关系字段 |
+| `commit_asset_merge(...)` | 合并提交：写合并前快照、写合并结果版本、把来源标成合并归档 |
+| `restore_asset_merge(version_id)` | 恢复合并记录：目标回到合并前，来源回到活跃列表，快照标记已消费 |
+| `commit_asset_optimize(...)` | 优化提交：写优化前快照和优化结果版本 |
+| `restore_asset_optimize(asset_id)` | 回到优化前：写回退前快照、恢复内容、消费优化快照 |
+| `empty_asset_trash()` | 清空垃圾箱：删回收站资产和快照版本，保留存活资产的内容版本 |
+
+旧的 prompt 版函数继续保留，回滚到 2.0.0 代码时仍然可用。
 | `purge_expired_prompt_versions()` | 删除过期恢复快照和已删除超过 30 天的垃圾箱记录，仅授予 `service_role` 执行 |
 
 合并提交时客户端只提供 `versionId`。目标旧内容的标题、分类、标签、正文和适用场景
