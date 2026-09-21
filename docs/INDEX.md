@@ -78,6 +78,7 @@
 - [第 9 周验收](acceptance/week-09.md)
 - [v1.0.0 整体验收](acceptance/v1.0.0.md)
 - [v2.0.0 整体验收](acceptance/v2.0.0.md)
+- [v2.1.0 整体验收](acceptance/v2.1.0.md)
 
 ### 云端部署
 
