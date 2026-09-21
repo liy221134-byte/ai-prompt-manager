@@ -51,6 +51,7 @@
 
 - [数据库结构](database-schema.md)
 - [数据库迁移](operations/database-migrations.md)
+- [可用性与恢复目标](operations/availability-targets.md)
 - [发布与回滚](operations/release-rollback.md)
 - [备份与恢复](operations/backup.md)
 - [常见问题](faq.md)
