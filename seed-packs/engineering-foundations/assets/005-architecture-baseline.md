@@ -2,6 +2,19 @@
 id: MTH-ARCH-001
 title: 架构与工程基线
 asset_type: method
+purpose: development
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - agents
+  - readme
+verification: manual
+evidence:
+  - docs/decisions/0001 至 0007（技术栈、存储、备份格式、数据库、云端架构、AI 供应商、生产配置）
+  - docs/project-map.md（架构链路、环境与可用性目标）
 scope: project
 project_scale:
   - medium
@@ -18,8 +31,8 @@ source_references:
 related_assets:
   - MTH-MODULE-001
   - RULE-BOUNDARY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 架构与工程基线

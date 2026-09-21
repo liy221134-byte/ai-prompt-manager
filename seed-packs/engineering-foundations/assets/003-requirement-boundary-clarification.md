@@ -2,6 +2,19 @@
 id: MTH-REQ-001
 title: 需求边界与外部依赖澄清
 asset_type: playbook
+purpose: development
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - agents
+  - start_prompt
+verification: manual
+evidence:
+  - AGENTS.md 的三道门（需求门、设计门、交付门）要求每期先写清做什么和不做什么
+  - docs/roadmap.md 每周明确标注延后项，例如"单条提示词的独立 AI 标签优化继续延后"
 scope: project
 project_scale:
   - medium
@@ -17,8 +30,8 @@ source_references:
 related_assets:
   - MTH-REQ-002
   - MTH-ARCH-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 需求边界与外部依赖澄清

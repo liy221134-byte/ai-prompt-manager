@@ -2,6 +2,19 @@
 id: MTH-QUALITY-001
 title: 项目质量画像与必选门禁
 asset_type: method
+purpose: release
+layer: project
+tech_context:
+  - generic
+priority: p0
+override_allowed: true
+compile_target:
+  - agents
+  - template
+verification: gate
+evidence:
+  - docs/acceptance/week-08.md（把 npm run check 设为 Vercel 构建门禁，四项检查全过才允许部署）
+  - docs/acceptance/week-07.md 与 CASE-ENV-PREFIX-001（个人工具画像在本项目上不够用）
 scope: project
 project_scale:
   - personal
@@ -14,7 +27,7 @@ lifecycle_phase:
   - build
   - release
 status: candidate
-confidence: hypothesis
+confidence: provisional
 source_references:
   - docs/acceptance/week-07.md
   - docs/operations/release-rollback.md
@@ -23,8 +36,8 @@ related_assets:
   - MTH-PROJECT-001
   - TPL-ACCEPT-001
   - PLAYBOOK-RELEASE-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 项目质量画像与必选门禁
@@ -54,6 +67,13 @@ last_reviewed: 2026-09-20
 | 中型产品 | 工程检查、登录保护、备份、回滚、账号隔离 |
 | 大型平台 | 架构基线、接口契约、端到端骨架、性能、可观察性、发布门禁 |
 | 监管或高敏 | 等保、安全审计、密钥管理、可信环境、恢复演练和合规证据 |
+
+## 画像的例外
+
+门禁不只看团队人数，还要看暴露面。个人工具一旦公开上线、持有生产密钥或保存真实数据，
+就必须按中型产品执行发布和权限门禁。本项目就是这种情况：个人工具画像原本只要求
+"可运行、基本验收、数据导出"，实际上必须补上账号隔离、迁移验证、备份和发布门禁，
+否则会出现在预览环境暴露生产密钥这类问题（见 `CASE-ENV-PREFIX-001`）。
 
 ## 执行步骤
 

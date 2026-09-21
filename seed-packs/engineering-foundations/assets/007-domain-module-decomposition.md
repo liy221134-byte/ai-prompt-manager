@@ -2,6 +2,16 @@
 id: MTH-MODULE-001
 title: 按业务能力拆分模块
 asset_type: method
+purpose: development
+layer: module
+tech_context:
+  - generic
+priority: p2
+override_allowed: true
+compile_target:
+  - agents
+verification: manual
+evidence: []
 scope: project
 project_scale:
   - medium
@@ -18,8 +28,8 @@ source_references:
 related_assets:
   - MTH-ARCH-001
   - RULE-BOUNDARY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 按业务能力拆分模块

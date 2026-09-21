@@ -2,6 +2,17 @@
 id: PLAYBOOK-INCIDENT-001
 title: 生产故障演练
 asset_type: playbook
+purpose: release
+layer: project
+tech_context:
+  - generic
+priority: p2
+override_allowed: true
+compile_target:
+  - agents
+verification: manual
+evidence:
+  - docs/learning/engineering-readiness.md（演练一到七的计划；其中"配置错误时安全关闭"已由真实事故间接验证，其余尚未执行）
 scope: project
 project_scale:
   - medium
@@ -17,8 +28,8 @@ source_references:
 related_assets:
   - PLAYBOOK-RELEASE-001
   - MTH-QUALITY-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 生产故障演练

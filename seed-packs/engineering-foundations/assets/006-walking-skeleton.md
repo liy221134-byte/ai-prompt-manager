@@ -2,6 +2,17 @@
 id: MTH-DELIVERY-001
 title: 端到端最小链路
 asset_type: method
+purpose: development
+layer: project
+tech_context:
+  - generic
+priority: p1
+override_allowed: true
+compile_target:
+  - agents
+verification: manual
+evidence:
+  - docs/acceptance/（week-01 至 week-05：页面 → 本机接口 → 云端 Supabase 逐段打通后才加 AI 功能）
 scope: project
 project_scale:
   - medium
@@ -18,8 +29,8 @@ source_references:
 related_assets:
   - MTH-ARCH-001
   - MTH-MODULE-001
-version: 0.1.0
-last_reviewed: 2026-09-20
+version: 0.2.0
+last_reviewed: 2026-09-21
 ---
 
 # 端到端最小链路
