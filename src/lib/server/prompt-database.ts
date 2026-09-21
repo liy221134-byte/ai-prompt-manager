@@ -10,11 +10,29 @@ import {
   type PromptVersionReason,
 } from "../../data/prompts.ts";
 import {
+  type AssetData,
+  type AssetVersionReason,
+  createAssetVersion,
+} from "../../data/assets.ts";
+import type { ProjectData } from "../../data/projects.ts";
+import {
   createPromptImportPlan,
   PROMPT_BACKUP_TYPE,
   PROMPT_BACKUP_VERSION,
 } from "../prompt-backup.ts";
 import { PROMPT_TRASH_RETENTION_DAYS } from "../prompt-lifecycle.ts";
+import {
+  ensureAssetSchema,
+  getAssetById as readAssetById,
+  getDefaultProject as readDefaultProject,
+  listAssetVersions as readAssetVersions,
+  listAssets as readAssets,
+  listProjects as readProjects,
+  saveAsset as saveAssetRecord,
+  saveAssetVersion as saveAssetVersionRecord,
+  saveProject as saveProjectRecord,
+  syncLegacyPromptsToAssets,
+} from "./asset-database.ts";
 
 type PromptRow = {
   id: string;
@@ -66,6 +84,16 @@ function createPromptVersionId() {
   return `version-${randomUUID()}`;
 }
 
+export type AssetSaveInput = {
+  asset: AssetData;
+  versionId: string;
+  changeReason: string;
+  versionReason?: AssetVersionReason;
+  sourceAssetIds?: string[];
+  restoredAt?: string | null;
+  expiresAt?: string | null;
+};
+
 function createDefaultDatabasePath() {
   return (
     process.env.PROMPT_DB_PATH ??
@@ -113,7 +141,14 @@ export class PromptDatabase {
   constructor(databasePath = createDefaultDatabasePath()) {
     mkdirSync(dirname(databasePath), { recursive: true });
     this.database = new DatabaseSync(databasePath);
-    this.initialize();
+
+    try {
+      this.initialize();
+    } catch (error) {
+      // 初始化失败时关掉连接，否则文件句柄会一直占着数据库，也不利于恢复。
+      this.database.close();
+      throw error;
+    }
   }
 
   private initialize() {
@@ -166,6 +201,8 @@ export class PromptDatabase {
       ON prompts (deleted_at);
     `);
 
+    ensureAssetSchema(this.database);
+
     this.database
       .prepare(
         "INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)",
@@ -181,6 +218,14 @@ export class PromptDatabase {
     this.purgeExpiredTrash();
 
     this.seedInitialPrompts();
+
+    this.transaction(() => {
+      const migratedCount = syncLegacyPromptsToAssets(this.database);
+
+      if (migratedCount > 0) {
+        this.bumpVersion();
+      }
+    });
   }
 
   private hasColumn(tableName: string, columnName: string) {
@@ -1196,6 +1241,121 @@ export class PromptDatabase {
 
       return Number(deleteResult.changes) > 0;
     });
+  }
+
+  createProject(project: ProjectData) {
+    const exists = this.listProjects().some(
+      (item) => item.id === project.id,
+    );
+
+    if (exists) {
+      return false;
+    }
+
+    this.transaction(() => {
+      saveProjectRecord(this.database, project);
+      this.bumpVersion();
+    });
+
+    return true;
+  }
+
+  updateProject(project: ProjectData) {
+    const exists = this.listProjects().some(
+      (item) => item.id === project.id,
+    );
+
+    if (!exists) {
+      return false;
+    }
+
+    this.transaction(() => {
+      saveProjectRecord(this.database, project);
+      this.bumpVersion();
+    });
+
+    return true;
+  }
+
+  createAsset(input: AssetSaveInput) {
+    if (input.asset.currentVersionId !== input.versionId) {
+      throw new Error("资产当前版本与保存版本不一致。");
+    }
+
+    if (readAssetById(this.database, input.asset.id)) {
+      return false;
+    }
+
+    this.transaction(() => {
+      const version = createAssetVersion(input.asset, {
+        versionId: input.versionId,
+        versionNumber: 1,
+        changeReason: input.changeReason,
+        versionReason: input.versionReason ?? "initial",
+        sourceAssetIds: input.sourceAssetIds,
+        restoredAt: input.restoredAt,
+        expiresAt: input.expiresAt,
+        createdAt: input.asset.createdAt,
+      });
+
+      saveAssetRecord(this.database, input.asset);
+      saveAssetVersionRecord(this.database, version);
+      this.bumpVersion();
+    });
+
+    return true;
+  }
+
+  updateAsset(input: AssetSaveInput) {
+    if (input.asset.currentVersionId !== input.versionId) {
+      throw new Error("资产当前版本与保存版本不一致。");
+    }
+
+    if (!readAssetById(this.database, input.asset.id)) {
+      return false;
+    }
+
+    this.transaction(() => {
+      const versions = readAssetVersions(this.database, input.asset.id);
+      const versionNumber =
+        Math.max(0, ...versions.map((version) => version.versionNumber)) + 1;
+      const version = createAssetVersion(input.asset, {
+        versionId: input.versionId,
+        versionNumber,
+        changeReason: input.changeReason,
+        versionReason: input.versionReason ?? "save",
+        sourceAssetIds: input.sourceAssetIds,
+        restoredAt: input.restoredAt,
+        expiresAt: input.expiresAt,
+        createdAt: input.asset.updatedAt,
+      });
+
+      saveAssetRecord(this.database, input.asset);
+      saveAssetVersionRecord(this.database, version);
+      this.bumpVersion();
+    });
+
+    return true;
+  }
+
+  getAsset(assetId: string) {
+    return readAssetById(this.database, assetId);
+  }
+
+  listProjects() {
+    return readProjects(this.database);
+  }
+
+  getDefaultProject() {
+    return readDefaultProject(this.database);
+  }
+
+  listAssets(projectId?: string) {
+    return readAssets(this.database, projectId);
+  }
+
+  listAssetVersions(assetId?: string) {
+    return readAssetVersions(this.database, assetId);
   }
 
   close() {

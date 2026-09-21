@@ -23,6 +23,7 @@ import {
 
 type BackupManagerDialogProps = {
   lastBackupAt: string | null;
+  otherAssetCount: number;
   promptCount: number;
   prompts: Parameters<typeof createPromptImportPlan>[0];
   trashedPromptIds: ReadonlySet<string>;
@@ -71,6 +72,7 @@ const actionStyles = {
 
 export function BackupManagerDialog({
   lastBackupAt,
+  otherAssetCount,
   promptCount,
   prompts,
   trashedPromptIds,
@@ -199,61 +201,70 @@ export function BackupManagerDialog({
 
         <div className="overflow-y-auto px-5 py-6 sm:px-6">
           {!importPlan && !importError && (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <section className="rounded-lg border border-slate-200 p-5">
-                <span className="flex size-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                  <Download aria-hidden="true" className="size-5" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-slate-950">
-                  导出备份
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  将全部提示词保存为可恢复的 JSON 文件。
-                </p>
-                <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                  <Clock3 aria-hidden="true" className="size-3.5" />
-                  上次备份：{formatDateTime(lastBackupAt)}
-                </div>
-                <button
-                  className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                  onClick={handleExport}
-                  type="button"
-                >
-                  <Download aria-hidden="true" className="size-4" />
-                  导出备份文件
-                </button>
-              </section>
+            <>
+              <p className="rounded-lg bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+                这一版备份只包含提示词，规则和文档不在备份范围内。
+                {otherAssetCount > 0
+                  ? `当前有 ${otherAssetCount} 条规则或文档不会随备份导出和恢复，请另行保留。`
+                  : ""}
+              </p>
 
-              <section className="rounded-lg border border-slate-200 p-5">
-                <span className="flex size-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
-                  <Upload aria-hidden="true" className="size-5" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-slate-950">
-                  导入备份
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  导入前会先检查文件并展示合并结果。
-                </p>
-                <p className="mt-4 text-xs text-slate-500">
-                  当前提示词不会被删除。
-                </p>
-                <input
-                  accept=".json,application/json"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  type="file"
-                />
-                <button
-                  className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                  onClick={() => fileInputRef.current?.click()}
-                  type="button"
-                >
-                  <Upload aria-hidden="true" className="size-4" />
-                  选择备份文件
-                </button>
-              </section>
-            </div>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <section className="rounded-lg border border-slate-200 p-5">
+                  <span className="flex size-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                    <Download aria-hidden="true" className="size-5" />
+                  </span>
+                  <h3 className="mt-4 text-base font-semibold text-slate-950">
+                    导出备份
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    将全部提示词保存为可恢复的 JSON 文件，不含规则和文档。
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+                    <Clock3 aria-hidden="true" className="size-3.5" />
+                    上次备份：{formatDateTime(lastBackupAt)}
+                  </div>
+                  <button
+                    className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                    onClick={handleExport}
+                    type="button"
+                  >
+                    <Download aria-hidden="true" className="size-4" />
+                    导出备份文件
+                  </button>
+                </section>
+
+                <section className="rounded-lg border border-slate-200 p-5">
+                  <span className="flex size-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
+                    <Upload aria-hidden="true" className="size-5" />
+                  </span>
+                  <h3 className="mt-4 text-base font-semibold text-slate-950">
+                    导入备份
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    导入的提示词会进入默认项目，导入前会先检查文件并展示合并结果。
+                  </p>
+                  <p className="mt-4 text-xs text-slate-500">
+                    当前提示词不会被删除。
+                  </p>
+                  <input
+                    accept=".json,application/json"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                    type="file"
+                  />
+                  <button
+                    className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                  >
+                    <Upload aria-hidden="true" className="size-4" />
+                    选择备份文件
+                  </button>
+                </section>
+              </div>
+            </>
           )}
 
           {importError && (

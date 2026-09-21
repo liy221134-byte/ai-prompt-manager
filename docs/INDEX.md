@@ -27,11 +27,13 @@
 
 - [产品范围](product-brief.md)
 - [8 周路线图](roadmap.md)
+- [2.0 资产管理底座计划](v2-plan.md)
 - [2.0 需求草案](v2-requirements-draft.md)
 - [2.0 需求池](v2-backlog.md)
 
 ### 设计
 
+- [2.0.0 项目与统一资产底座设计](superpowers/specs/2026-09-21-v2.0.0-asset-foundation-design.md)
 - [v0.8.0 AI 合并与垃圾箱设计](superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
 - [v0.8.0 AI 合并与垃圾箱实施计划（已归档）](archive/2026-09-20-ai-prompt-merge-plan.md)
 - [v0.9.0 提示词 AI 优化设计](superpowers/specs/2026-09-20-ai-prompt-optimize-design.md)
@@ -74,6 +76,7 @@
 - [第 8 周验收](acceptance/week-08.md)
 - [第 9 周验收](acceptance/week-09.md)
 - [v1.0.0 整体验收](acceptance/v1.0.0.md)
+- [v2.0.0 整体验收](acceptance/v2.0.0.md)
 
 ### 云端部署
 

@@ -5,7 +5,19 @@ import type {
   PromptVersionData,
   PromptVersionReason,
 } from "../data/prompts.ts";
+import type {
+  AssetData,
+  AssetVersionData,
+} from "../data/assets.ts";
 import {
+  isAssetData,
+  isAssetVersionData,
+} from "../data/assets.ts";
+import type { ProjectData } from "../data/projects.ts";
+import { isProjectData } from "../data/projects.ts";
+import {
+  createAssetOnServer,
+  createProjectOnServer,
   commitAiOptimizeOnServer,
   commitAiMergeOnServer,
   createPromptOnServer,
@@ -13,7 +25,10 @@ import {
   emptyTrashOnServer,
   fetchMergeRecoveryRecordsOnServer,
   fetchOptimizeVersionOnServer,
+  fetchAssetsOnServer,
+  fetchAssetVersionsOnServer,
   fetchPromptLibrary,
+  fetchProjectsOnServer,
   fetchTrashOnServer,
   mergePromptsOnServer,
   permanentlyDeleteMergeRecordOnServer,
@@ -22,6 +37,9 @@ import {
   restoreMergeRecordOnServer,
   restorePromptOnServer,
   updatePromptOnServer,
+  updateAssetOnServer,
+  updateProjectOnServer,
+  type AssetSaveInput,
   type CommitAiMergeInput,
   type CommitAiOptimizeInput,
   type PromptLibraryResponse,
@@ -37,6 +55,13 @@ import {
 } from "./prompt-backup.ts";
 
 export type PromptDataSource = {
+  fetchProjects: () => Promise<ProjectData[]>;
+  createProject: (project: ProjectData) => Promise<ProjectData[]>;
+  updateProject: (project: ProjectData) => Promise<ProjectData[]>;
+  fetchAssets: (projectId?: string) => Promise<AssetData[]>;
+  createAsset: (input: AssetSaveInput) => Promise<AssetData[]>;
+  updateAsset: (input: AssetSaveInput) => Promise<AssetData[]>;
+  fetchAssetVersions: (assetId: string) => Promise<AssetVersionData[]>;
   fetchLibrary: () => Promise<PromptLibraryResponse>;
   createPrompt: (prompt: PromptCardData) => Promise<PromptLibraryResponse>;
   updatePrompt: (prompt: PromptCardData) => Promise<PromptLibraryResponse>;
@@ -66,10 +91,32 @@ export type PromptDataSource = {
   fetchOptimizeVersion: (
     promptId: string,
   ) => Promise<PromptOptimizeVersionResponse>;
+  // 回退会新写一条「回退前快照」，快照标识由服务端生成，调用方只提供提示词标识。
   restoreAiOptimize: (promptId: string) => Promise<PromptLibraryResponse>;
 };
 
 export const localPromptDataSource: PromptDataSource = {
+  async fetchProjects() {
+    return (await fetchProjectsOnServer()).projects;
+  },
+  async createProject(project) {
+    return (await createProjectOnServer(project)).projects;
+  },
+  async updateProject(project) {
+    return (await updateProjectOnServer(project)).projects;
+  },
+  async fetchAssets(projectId) {
+    return (await fetchAssetsOnServer(projectId)).assets;
+  },
+  async createAsset(input) {
+    return (await createAssetOnServer(input)).assets;
+  },
+  async updateAsset(input) {
+    return (await updateAssetOnServer(input)).assets;
+  },
+  async fetchAssetVersions(assetId) {
+    return (await fetchAssetVersionsOnServer(assetId)).versions;
+  },
   fetchLibrary: fetchPromptLibrary,
   createPrompt: createPromptOnServer,
   updatePrompt: updatePromptOnServer,
@@ -120,6 +167,58 @@ type SupabasePromptVersionRow = {
   expires_at: string;
 };
 
+type SupabaseProjectRow = {
+  user_id: string;
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  stage: string;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+};
+
+type SupabaseAssetRow = {
+  user_id: string;
+  id: string;
+  project_id: string;
+  asset_type: string;
+  title: string;
+  summary: string;
+  content: string;
+  metadata_json: unknown;
+  source_type: string;
+  source_asset_id: string | null;
+  import_batch_id: string | null;
+  original_filename: string | null;
+  current_version_id: string;
+  status: string;
+  archived_at: string | null;
+  deleted_at: string | null;
+  deleted_reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type SupabaseAssetVersionRow = {
+  user_id: string;
+  version_id: string;
+  asset_id: string;
+  asset_type: string;
+  version_number: number;
+  title: string;
+  summary: string;
+  content: string;
+  metadata_json: unknown;
+  change_reason: string;
+  version_reason: string;
+  source_asset_ids: string[] | null;
+  restored_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+};
+
 function rowToPrompt(row: SupabasePromptRow): PromptCardData {
   return {
     id: row.id,
@@ -153,6 +252,97 @@ function rowToVersion(
     sourcePromptIds: row.source_prompt_ids,
     restoredAt: row.restored_at,
     expiresAt: row.expires_at,
+  };
+}
+
+function rowToProject(row: SupabaseProjectRow): ProjectData {
+  const value = {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    status: row.status,
+    stage: row.stage,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    archivedAt: row.archived_at,
+  };
+
+  if (!isProjectData(value)) {
+    throw new Error("云端项目数据无法识别。");
+  }
+
+  return value;
+}
+
+function rowToAsset(row: SupabaseAssetRow): AssetData {
+  const value = {
+    id: row.id,
+    projectId: row.project_id,
+    assetType: row.asset_type,
+    title: row.title,
+    summary: row.summary,
+    content: row.content,
+    metadata: row.metadata_json,
+    source: {
+      sourceType: row.source_type,
+      sourceAssetId: row.source_asset_id,
+      importBatchId: row.import_batch_id,
+      originalFilename: row.original_filename,
+    },
+    currentVersionId: row.current_version_id,
+    status: row.status,
+    archivedAt: row.archived_at,
+    deletedAt: row.deleted_at,
+    deletedReason: row.deleted_reason,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  if (!isAssetData(value)) {
+    throw new Error("云端资产数据无法识别。");
+  }
+
+  return value;
+}
+
+function rowToAssetVersion(
+  row: SupabaseAssetVersionRow,
+): AssetVersionData {
+  const value = {
+    versionId: row.version_id,
+    assetId: row.asset_id,
+    assetType: row.asset_type,
+    versionNumber: row.version_number,
+    title: row.title,
+    summary: row.summary,
+    content: row.content,
+    metadata: row.metadata_json,
+    changeReason: row.change_reason,
+    versionReason: row.version_reason,
+    sourceAssetIds: row.source_asset_ids ?? [],
+    restoredAt: row.restored_at,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  };
+
+  if (!isAssetVersionData(value)) {
+    throw new Error("云端资产版本数据无法识别。");
+  }
+
+  return value;
+}
+
+function projectToRow(project: ProjectData, userId: string) {
+  return {
+    user_id: userId,
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    status: project.status,
+    stage: project.stage,
+    created_at: project.createdAt,
+    updated_at: project.updatedAt,
+    archived_at: project.archivedAt,
   };
 }
 
@@ -197,6 +387,43 @@ export function createSupabasePromptDataSource(
 ): PromptDataSource {
   const promptSelect =
     "id, user_id, title, category, tags, content, use_case, created_at, updated_at, deleted_at, deleted_reason, merged_into_prompt_id, merge_version_id";
+  const projectSelect =
+    "user_id, id, name, description, status, stage, created_at, updated_at, archived_at";
+  const assetSelect =
+    "user_id, id, project_id, asset_type, title, summary, content, metadata_json, source_type, source_asset_id, import_batch_id, original_filename, current_version_id, status, archived_at, deleted_at, deleted_reason, created_at, updated_at";
+  const assetVersionSelect =
+    "user_id, version_id, asset_id, asset_type, version_number, title, summary, content, metadata_json, change_reason, version_reason, source_asset_ids, restored_at, expires_at, created_at";
+
+  async function fetchProjects() {
+    const { data, error } = await client
+      .from("projects")
+      .select(projectSelect)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      throw new Error("读取云端项目失败。");
+    }
+
+    return (data as SupabaseProjectRow[]).map(rowToProject);
+  }
+
+  async function fetchAssets(projectId?: string) {
+    let query = client.from("assets").select(assetSelect);
+
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+
+    const { data, error } = await query.order("updated_at", {
+      ascending: false,
+    });
+
+    if (error) {
+      throw new Error("读取云端资产失败。");
+    }
+
+    return (data as SupabaseAssetRow[]).map(rowToAsset);
+  }
 
   async function fetchLibrary() {
     const { data, error } = await client
@@ -231,6 +458,126 @@ export function createSupabasePromptDataSource(
   }
 
   return {
+    fetchProjects,
+    async createProject(project) {
+      const user = await getCurrentUser(client);
+      const { error } = await client
+        .from("projects")
+        .insert(projectToRow(project, user.id));
+
+      if (error) {
+        throw new Error(
+          error.code === "23505"
+            ? "这个项目已经存在。"
+            : "创建云端项目失败。",
+        );
+      }
+
+      return fetchProjects();
+    },
+    async updateProject(project) {
+      const user = await getCurrentUser(client);
+      const { error } = await client
+        .from("projects")
+        .update({
+          name: project.name,
+          description: project.description,
+          status: project.status,
+          stage: project.stage,
+          updated_at: project.updatedAt,
+          archived_at: project.archivedAt,
+        })
+        .eq("id", project.id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        throw new Error("更新云端项目失败。");
+      }
+
+      return fetchProjects();
+    },
+    fetchAssets,
+    async createAsset(input) {
+      await getCurrentUser(client);
+      const { error } = await client.rpc("save_asset", {
+        p_asset_id: input.asset.id,
+        p_project_id: input.asset.projectId,
+        p_asset_type: input.asset.assetType,
+        p_title: input.asset.title,
+        p_summary: input.asset.summary,
+        p_content: input.asset.content,
+        p_metadata: input.asset.metadata,
+        p_source_type: input.asset.source.sourceType,
+        p_source_asset_id: input.asset.source.sourceAssetId,
+        p_import_batch_id: input.asset.source.importBatchId,
+        p_original_filename: input.asset.source.originalFilename,
+        p_status: input.asset.status,
+        p_archived_at: input.asset.archivedAt,
+        p_deleted_at: input.asset.deletedAt,
+        p_deleted_reason: input.asset.deletedReason,
+        p_version_id: input.versionId,
+        p_change_reason: input.changeReason,
+        p_version_reason: input.versionReason ?? "initial",
+        p_source_asset_ids: input.sourceAssetIds ?? [],
+        p_restored_at: input.restoredAt ?? null,
+        p_expires_at: input.expiresAt ?? null,
+        p_asset_created_at: input.asset.createdAt,
+        p_asset_updated_at: input.asset.updatedAt,
+      });
+
+      if (error) {
+        throw new Error("创建云端资产失败。");
+      }
+
+      return fetchAssets(input.asset.projectId);
+    },
+    async updateAsset(input) {
+      await getCurrentUser(client);
+      const { error } = await client.rpc("save_asset", {
+        p_asset_id: input.asset.id,
+        p_project_id: input.asset.projectId,
+        p_asset_type: input.asset.assetType,
+        p_title: input.asset.title,
+        p_summary: input.asset.summary,
+        p_content: input.asset.content,
+        p_metadata: input.asset.metadata,
+        p_source_type: input.asset.source.sourceType,
+        p_source_asset_id: input.asset.source.sourceAssetId,
+        p_import_batch_id: input.asset.source.importBatchId,
+        p_original_filename: input.asset.source.originalFilename,
+        p_status: input.asset.status,
+        p_archived_at: input.asset.archivedAt,
+        p_deleted_at: input.asset.deletedAt,
+        p_deleted_reason: input.asset.deletedReason,
+        p_version_id: input.versionId,
+        p_change_reason: input.changeReason,
+        p_version_reason: input.versionReason ?? "save",
+        p_source_asset_ids: input.sourceAssetIds ?? [],
+        p_restored_at: input.restoredAt ?? null,
+        p_expires_at: input.expiresAt ?? null,
+        p_asset_created_at: input.asset.createdAt,
+        p_asset_updated_at: input.asset.updatedAt,
+      });
+
+      if (error) {
+        throw new Error("更新云端资产失败。");
+      }
+
+      return fetchAssets(input.asset.projectId);
+    },
+    async fetchAssetVersions(assetId) {
+      const { data, error } = await client
+        .from("asset_versions")
+        .select(assetVersionSelect)
+        .eq("asset_id", assetId)
+        .order("version_number", { ascending: true });
+
+      if (error) {
+        throw new Error("读取云端资产版本失败。");
+      }
+
+      return (data as SupabaseAssetVersionRow[]).map(rowToAssetVersion);
+    },
     fetchLibrary,
     async createPrompt(prompt) {
       const user = await getCurrentUser(client);
