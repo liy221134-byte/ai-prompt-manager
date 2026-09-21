@@ -2,18 +2,33 @@
 
 import { useEffect } from "react";
 
+import { createBodyScrollLock } from "@/lib/body-scroll-lock";
+
+type BodyScrollLock = ReturnType<typeof createBodyScrollLock>;
+
+// 整个页面共用一把滚动锁。只能在使用时创建，因为服务端渲染阶段没有 document。
+let sharedScrollLock: BodyScrollLock | null = null;
+
+function getSharedScrollLock() {
+  if (!sharedScrollLock) {
+    sharedScrollLock = createBodyScrollLock(document.body);
+  }
+
+  return sharedScrollLock;
+}
+
 export function useModalBehavior(
   onClose: () => void,
   disabled = false,
 ) {
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
+    const scrollLock = getSharedScrollLock();
 
-    document.body.style.overflow = "hidden";
+    scrollLock.lock();
 
     if (disabled) {
       return () => {
-        document.body.style.overflow = previousOverflow;
+        scrollLock.unlock();
       };
     }
 
@@ -26,7 +41,7 @@ export function useModalBehavior(
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      scrollLock.unlock();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [disabled, onClose]);
