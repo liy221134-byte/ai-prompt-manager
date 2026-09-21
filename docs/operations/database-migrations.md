@@ -2,16 +2,22 @@
 
 ## 当前状态
 
-- 迁移文件保存在 `supabase/migrations/`，文件名格式为 `YYYYMMDD` 加四位当天序号，例如 `202609200002_描述.sql`。
+- 迁移文件保存在 `supabase/migrations/`，优先使用 `supabase migration new` 生成的
+  时间戳文件名，例如 `20260921054052_add_project_asset_foundation.sql`。
 - `supabase/config.toml` 已加入仓库，`project_id` 指向远程项目，供命令行和 GitHub
   集成使用。
-- 远程迁移历史表已与仓库对齐，两条记录分别是：
+- 当前仓库的迁移顺序如下：
 
 ```text
 202609180001  create_prompts
 202609200001  add_prompt_merge_trash
 202609200002  document_prompt_lifecycle
+202609210001  add_prompt_optimize
+20260921054052 add_project_asset_foundation
 ```
+
+`add_project_asset_foundation` 属于 2.0.0，必须先完成迁移验证，再合并依赖统一资产
+结构的应用代码。
 
 ## 三种执行方式
 
@@ -23,7 +29,7 @@
 
 ## 新增一条迁移的步骤
 
-1. 在 `supabase/migrations/` 新建文件。本项目沿用 `YYYYMMDD` 加四位当天序号，例如 `202609200002_描述.sql`。
+1. 使用 `supabase migration new <描述>` 新建迁移文件，不要手工编造时间戳。
 2. 使用可重复执行的写法：`create table if not exists`、`add column if not exists`、
    `create or replace function`、`drop policy if exists` 之后再 `create policy`。
 3. 由 Codex 通过 MCP 应用到远程，并执行一次顾问检查确认没有 error。

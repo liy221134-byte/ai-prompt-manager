@@ -82,6 +82,75 @@ prompt_versions_user_prompt_idx (user_id, prompt_id, created_at desc)
 prompt_versions_user_expires_idx (user_id, expires_at)
 ```
 
+## 2.0 项目与统一资产
+
+2.0.0 新增统一资产模型。现有 `prompts` 和 `prompt_versions` 在迁移期保留为来源和
+回退快照，正式资产数据写入 `assets` 与 `asset_versions`。
+
+### `projects` 表
+
+| 字段 | PostgreSQL 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `user_id` | `uuid` | 是 | 所属用户 |
+| `id` | `text` | 是 | 项目稳定标识 |
+| `name` | `text` | 是 | 项目名称 |
+| `description` | `text` | 是 | 项目说明 |
+| `status` | `text` | 是 | `active` 或 `archived` |
+| `stage` | `text` | 是 | 原型、开发、发布或维护阶段 |
+| `created_at` | `timestamptz` | 是 | 创建时间 |
+| `updated_at` | `timestamptz` | 是 | 更新时间 |
+| `archived_at` | `timestamptz` | 否 | 归档时间 |
+
+主键：`(user_id, id)`。
+
+### `assets` 表
+
+| 字段 | PostgreSQL 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `user_id` | `uuid` | 是 | 所属用户 |
+| `id` | `text` | 是 | 资产稳定标识 |
+| `project_id` | `text` | 是 | 所属项目 |
+| `asset_type` | `text` | 是 | prompt、rule、document 等类型 |
+| `title` | `text` | 是 | 标题 |
+| `summary` | `text` | 是 | 摘要 |
+| `content` | `text` | 是 | 当前内容 |
+| `metadata_json` | `jsonb` | 是 | 类型专属元数据 |
+| `source_type` | `text` | 是 | 手工、导入、AI 或系统迁移 |
+| `source_asset_id` | `text` | 否 | 来源资产标识 |
+| `import_batch_id` | `text` | 否 | 导入批次标识 |
+| `original_filename` | `text` | 否 | 原始文件名 |
+| `current_version_id` | `text` | 是 | 当前版本标识 |
+| `status` | `text` | 是 | 资产生命周期状态 |
+| `archived_at` | `timestamptz` | 否 | 归档时间 |
+| `deleted_at` | `timestamptz` | 否 | 垃圾箱时间 |
+| `deleted_reason` | `text` | 否 | 手动删除或合并归档 |
+| `created_at` | `timestamptz` | 是 | 创建时间 |
+| `updated_at` | `timestamptz` | 是 | 更新时间 |
+
+主键：`(user_id, id)`。
+
+### `asset_versions` 表
+
+| 字段 | PostgreSQL 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `user_id` | `uuid` | 是 | 所属用户 |
+| `version_id` | `text` | 是 | 版本稳定标识 |
+| `asset_id` | `text` | 是 | 所属资产 |
+| `asset_type` | `text` | 是 | 资产类型 |
+| `version_number` | `integer` | 是 | 从 1 开始的递增版本号 |
+| `title` | `text` | 是 | 当次版本标题 |
+| `summary` | `text` | 是 | 当次版本摘要 |
+| `content` | `text` | 是 | 当次版本内容 |
+| `metadata_json` | `jsonb` | 是 | 当次版本元数据 |
+| `change_reason` | `text` | 是 | 变更原因 |
+| `version_reason` | `text` | 是 | 初始、保存、迁移或恢复原因 |
+| `source_asset_ids` | `text[]` | 是 | 合并等操作的来源资产 |
+| `restored_at` | `timestamptz` | 否 | 快照消费时间 |
+| `expires_at` | `timestamptz` | 否 | 快照过期时间 |
+| `created_at` | `timestamptz` | 是 | 版本创建时间 |
+
+主键：`(user_id, version_id)`。
+
 ## `health_checks` 表
 
 | 字段 | 类型 | 说明 |
@@ -104,6 +173,9 @@ prompt_versions_user_expires_idx (user_id, expires_at)
 
 `prompt_versions` 表采用同样的账号隔离规则，只允许已登录用户访问自己的
 恢复快照，并同样提供 SELECT、INSERT、UPDATE、DELETE 四类策略。
+
+`projects`、`assets` 和 `asset_versions` 同样只向 `authenticated` 开放，
+使用 `(select auth.uid()) = user_id` 隔离账号。`anon` 不获得读写权限。
 
 ## RPC 函数
 
@@ -148,13 +220,10 @@ PostgreSQL 都遵循这一规则。
 
 Markdown 便于编辑、复制、版本比较和 AI 处理，也不需要存储 HTML 带来的脚本风险。
 
-## 未来 2.0 可能增加的表
+## 后续 2.0 可能增加的结构
 
-- `projects`：项目工作区。
-- `documents`：PRD、ADR、验收、数据库说明等文档。
-- `document_versions`：文档历史版本。
-- `prompt_collections`：提示词集合或提示词包。
-- `prompt_pack_items`：提示词与集合关系。
-- `document_prompt_links`：文档与提示词的关联。
-
-这些表只有在 2.0 需求正式进入开发后创建。
+- 资产关系表。
+- 技术档案与 ADR 关联。
+- 模板和模板版本。
+- 文档包导入批次。
+- 完整备份格式和恢复记录。
