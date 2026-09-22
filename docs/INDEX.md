@@ -35,7 +35,7 @@
 
 ### 设计
 
-- [2.0.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.0.1-import-and-metadata-design.md)
+- [2.1.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.1.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
 - [2.0.0 项目与统一资产底座设计](superpowers/specs/2026-09-21-v2.0.0-asset-foundation-design.md)
 - [v0.8.0 AI 合并与垃圾箱设计](superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
