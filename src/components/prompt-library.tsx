@@ -569,6 +569,29 @@ export function PromptLibrary({
       activeProjectId ? listRelationTargets(assets, activeProjectId) : [],
     [activeProjectId, assets],
   );
+  // 提示词详情要显示关系目标，这里把目标标题和「还能不能用」一起备好
+  const promptRelationTargets = useMemo(
+    () => [
+      ...prompts.map((item) => ({
+        id: item.id,
+        title: item.title,
+        unavailable: false,
+      })),
+      ...trashPrompts.map((item) => ({
+        id: item.id,
+        title: item.title,
+        unavailable: true,
+      })),
+      ...assets
+        .filter((item) => item.assetType !== "prompt")
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          unavailable: Boolean(item.deletedAt) || item.status === "archived",
+        })),
+    ],
+    [assets, prompts, trashPrompts],
+  );
   const listEntries = useMemo<ProjectListEntry[]>(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
     const entries: ProjectListEntry[] = [];
@@ -1693,6 +1716,7 @@ export function PromptLibrary({
       {selectedPrompt && (
         <PromptDetailDrawer
           key={`detail-${selectedPrompt.id}`}
+          relationTargets={promptRelationTargets}
           onClose={() => {
             if (!editorState && !deletePromptId && !optimizePromptId) {
               setSelectedPromptId(null);

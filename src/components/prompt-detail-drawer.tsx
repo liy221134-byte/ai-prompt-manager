@@ -16,11 +16,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import type { PromptCardData, PromptVersionData } from "@/data/prompts";
+import { assetRelationLabels } from "@/lib/asset-list";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { applyVariables, extractVariables } from "@/lib/prompt-utils";
 
 type PromptDetailDrawerProps = {
   prompt: PromptCardData;
+  // 关系目标的标题与可用状态，用来把关系显示成人能看懂的一行
+  relationTargets?: Array<{
+    id: string;
+    title: string;
+    unavailable: boolean;
+  }>;
   onClose: () => void;
   onEdit: (prompt: PromptCardData) => void;
   onDelete: (prompt: PromptCardData) => void;
@@ -64,6 +71,7 @@ function formatDateTime(value: string) {
 
 export function PromptDetailDrawer({
   prompt,
+  relationTargets = [],
   onClose,
   onEdit,
   onDelete,
@@ -294,6 +302,30 @@ export function PromptDetailDrawer({
               {prompt.useCase}
             </p>
           </section>
+
+          {(prompt.relations ?? []).length > 0 && (
+            <section className="mt-7 border-t border-slate-200 pt-7">
+              <h3 className="text-sm font-semibold text-slate-900">资产关系</h3>
+              <ul className="mt-3 flex flex-col gap-1 text-sm leading-7 text-slate-600">
+                {(prompt.relations ?? []).map((relation) => {
+                  const target = relationTargets.find(
+                    (item) => item.id === relation.targetAssetId,
+                  );
+
+                  return (
+                    <li
+                      key={`${relation.targetAssetId}-${relation.relationType}`}
+                    >
+                      {assetRelationLabels[relation.relationType]}：
+                      {target ? target.title : relation.targetAssetId}
+                      {target?.unavailable ? "（目标已归档）" : ""}
+                      {relation.note ? ` —— ${relation.note}` : ""}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
           {variables.length > 0 && (
             <section className="mt-8 border-t border-slate-200 pt-7">
