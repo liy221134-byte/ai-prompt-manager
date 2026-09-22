@@ -1,7 +1,7 @@
 import {
   getRuntimeConfigurationError,
   isSupabaseDataMode,
-} from "./runtime-config";
+} from "./runtime-config.ts";
 
 export function rejectLocalApiInCloudMode() {
   const configurationError = getRuntimeConfigurationError();

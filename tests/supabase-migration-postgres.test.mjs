@@ -14,9 +14,17 @@ const migrationFiles = readdirSync(MIGRATIONS_DIR)
   .filter((name) => name.endsWith(".sql"))
   .sort();
 
-// 2.0.0 之前的老结构，和 2.0.0/2.1.0 两个新迁移分开应用，中间插入老数据
-const LEGACY_MIGRATION_COUNT = 4;
-const ASSET_MIGRATIONS = migrationFiles.slice(LEGACY_MIGRATION_COUNT);
+// 2.0.0 之前的老结构单独先应用，中间插入老数据，再应用其余的资产相关迁移。
+// 显式列出老迁移，后面新增迁移会自动归到「插完老数据之后再跑」的一组。
+const LEGACY_MIGRATION_FILES = [
+  "202609180001_create_prompts.sql",
+  "202609200001_add_prompt_merge_trash.sql",
+  "202609200002_document_prompt_lifecycle.sql",
+  "202609210001_add_prompt_optimize.sql",
+];
+const ASSET_MIGRATIONS = migrationFiles.filter(
+  (name) => !LEGACY_MIGRATION_FILES.includes(name),
+);
 
 // Supabase 平台自带的角色、auth 模式和 auth.uid()，本地没有，需要补出来
 const PLATFORM_STUBS = `
@@ -41,6 +49,36 @@ const PLATFORM_STUBS = `
 
   grant usage on schema auth to anon, authenticated, service_role;
   grant execute on function auth.uid() to anon, authenticated, service_role;
+
+  -- Storage 是 Supabase 平台自带的模式，本地用同样的形状补出来，
+  -- 这样来源包桶和它的隔离策略也能在真实 Postgres 上跑一遍
+  create schema if not exists storage;
+
+  create table if not exists storage.buckets (
+    id text primary key,
+    name text not null,
+    public boolean not null default false,
+    file_size_limit bigint
+  );
+
+  create table if not exists storage.objects (
+    id uuid primary key default gen_random_uuid(),
+    bucket_id text not null references storage.buckets (id),
+    name text not null,
+    owner uuid
+  );
+  alter table storage.objects enable row level security;
+
+  -- 与 Supabase 一致：去掉最后一段文件名，只返回目录部分
+  create or replace function storage.foldername(name text) returns text[]
+  language plpgsql immutable
+  as $$
+  declare
+    parts text[];
+  begin
+    select string_to_array(name, '/') into parts;
+    return parts[1:array_length(parts, 1) - 1];
+  end $$;
 `;
 
 function readMigration(file) {
@@ -110,7 +148,7 @@ before(async () => {
   try {
     await db.exec(PLATFORM_STUBS);
 
-    for (const file of migrationFiles.slice(0, LEGACY_MIGRATION_COUNT)) {
+    for (const file of LEGACY_MIGRATION_FILES) {
       await db.exec(readMigration(file));
       appliedOrder.push(file);
     }
@@ -129,7 +167,7 @@ before(async () => {
 test("整条迁移链能在真实 Postgres 上按顺序执行完", () => {
   assert.equal(applyError, null, `迁移执行失败：${applyError?.message}`);
   assert.deepEqual(appliedOrder, migrationFiles);
-  assert.equal(ASSET_MIGRATIONS.length, 2);
+  assert.ok(ASSET_MIGRATIONS.length >= 2);
 });
 
 test("老提示词回填成默认项目的资产，内容和垃圾箱状态逐条一致", async () => {
@@ -242,6 +280,42 @@ test("行级安全按账号隔离资产", async () => {
 
   assert.equal(othersVisible, 0);
   assert.equal(ownVisible, 1);
+});
+
+test("来源包桶是私有桶，并且按用户目录隔离", async () => {
+  // 上一个用例把角色切成了登录用户，这里要看平台表，先切回管理员身份
+  await db.exec(`reset role`);
+
+  const bucket = await db.query(
+    `select id, public, file_size_limit from storage.buckets where id = 'source-packages'`,
+  );
+
+  assert.equal(bucket.rows.length, 1);
+  assert.equal(bucket.rows[0].public, false);
+  assert.equal(Number(bucket.rows[0].file_size_limit), 20 * 1024 * 1024);
+
+  const policies = await db.query(
+    `select policyname, cmd from pg_policies
+     where schemaname = 'storage' and tablename = 'objects'
+     order by policyname`,
+  );
+
+  assert.deepEqual(
+    policies.rows.map((row) => row.cmd).sort(),
+    ["DELETE", "INSERT", "SELECT", "UPDATE"],
+  );
+
+  for (const row of policies.rows) {
+    const definition = await db.query(
+      `select coalesce(qual, '') || ' ' || coalesce(with_check, '') as body
+       from pg_policies where schemaname = 'storage' and policyname = $1`,
+      [row.policyname],
+    );
+
+    assert.match(definition.rows[0].body, /source-packages/);
+    assert.match(definition.rows[0].body, /foldername/);
+    assert.match(definition.rows[0].body, /auth\.uid\(\)/);
+  }
 });
 
 test("未登录调用资产函数会被拒绝", async () => {

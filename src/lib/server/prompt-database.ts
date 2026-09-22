@@ -1196,3 +1196,8 @@ export function getPromptDatabase() {
 
   return globalDatabase.promptDatabase;
 }
+
+// 本机数据目录：数据库文件和来源包原文都放在这里，保证两者同生共死
+export function resolveDataRootDir() {
+  return dirname(createDefaultDatabasePath());
+}
