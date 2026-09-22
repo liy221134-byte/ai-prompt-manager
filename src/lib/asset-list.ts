@@ -6,6 +6,7 @@ import type {
   RuleScope,
   RuleType,
 } from "../data/assets.ts";
+import { readAssetRelations } from "../data/assets.ts";
 
 export const assetTypeLabels: Record<AssetType, string> = {
   prompt: "提示词",
@@ -98,7 +99,14 @@ export function isTrashedAsset(asset: AssetData) {
 
 export function filterProjectAssets(
   assets: AssetData[],
-  options: { projectId: string; assetType?: AssetType; status?: AssetStatus },
+  options: {
+    projectId: string;
+    assetType?: AssetType;
+    status?: AssetStatus;
+    // 组合筛选：标签和关系目标
+    tag?: string;
+    relationTargetId?: string;
+  },
 ) {
   return assets.filter((asset) => {
     if (asset.projectId !== options.projectId || isTrashedAsset(asset)) {
@@ -106,6 +114,19 @@ export function filterProjectAssets(
     }
 
     if (options.assetType && asset.assetType !== options.assetType) {
+      return false;
+    }
+
+    if (options.tag && !readAssetTags(asset).includes(options.tag)) {
+      return false;
+    }
+
+    if (
+      options.relationTargetId &&
+      !readAssetRelations(asset.metadata).some(
+        (relation) => relation.targetAssetId === options.relationTargetId,
+      )
+    ) {
       return false;
     }
 
@@ -143,12 +164,28 @@ export function describeAssetSummary(asset: AssetData) {
   return firstLine ?? "";
 }
 
-function readAssetTags(asset: AssetData) {
-  const metadata = asset.metadata as { tags?: unknown };
+// 各类型的「标签」来源不同：提示词用标签，规则用技术上下文，技术档案用技术栈名称
+export function readAssetTags(asset: AssetData) {
+  if (asset.assetType === "prompt") {
+    return [...asset.metadata.tags];
+  }
 
-  return Array.isArray(metadata.tags)
-    ? metadata.tags.filter((tag): tag is string => typeof tag === "string")
-    : [];
+  if (asset.assetType === "rule") {
+    return [...(asset.metadata.techContext ?? [])];
+  }
+
+  if (asset.assetType === "tech_profile") {
+    return asset.metadata.stack
+      .map((entry) => entry.name.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+// 搜索范围：标题、说明、正文、类型、标签、技术栈名称和关系说明
+function readRelationNotes(asset: AssetData) {
+  return readAssetRelations(asset.metadata).map((relation) => relation.note);
 }
 
 export function buildAssetSearchText(asset: AssetData) {
@@ -158,7 +195,45 @@ export function buildAssetSearchText(asset: AssetData) {
     asset.content,
     assetTypeLabels[asset.assetType],
     ...readAssetTags(asset),
+    ...readRelationNotes(asset),
   ]
     .join(" ")
     .toLocaleLowerCase();
+}
+
+// 当前项目里出现过的标签，供筛选下拉使用
+export function listProjectTags(assets: AssetData[], projectId: string) {
+  const tags = new Set<string>();
+
+  for (const asset of assets) {
+    if (asset.projectId !== projectId || isTrashedAsset(asset)) {
+      continue;
+    }
+
+    for (const tag of readAssetTags(asset)) {
+      tags.add(tag);
+    }
+  }
+
+  return [...tags].sort((left, right) => left.localeCompare(right, "zh"));
+}
+
+// 当前项目里被指向过的关系目标，供筛选下拉使用
+export function listRelationTargets(assets: AssetData[], projectId: string) {
+  const ids = new Set<string>();
+
+  for (const asset of assets) {
+    if (asset.projectId !== projectId) {
+      continue;
+    }
+
+    for (const relation of readAssetRelations(asset.metadata)) {
+      ids.add(relation.targetAssetId);
+    }
+  }
+
+  return assets.filter(
+    (asset) =>
+      ids.has(asset.id) && asset.projectId === projectId && !asset.deletedAt,
+  );
 }

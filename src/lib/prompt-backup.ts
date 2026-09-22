@@ -4,8 +4,135 @@ import type {
 } from "../data/prompts.ts";
 import { isPromptCard } from "./prompt-storage.ts";
 
+import type { AssetData } from "../data/assets.ts";
+import { isAssetData } from "../data/assets.ts";
+import type { ProjectData } from "../data/projects.ts";
+
 export const PROMPT_BACKUP_TYPE = "ai-prompt-manager-backup";
 export const PROMPT_BACKUP_VERSION = 1;
+
+// 2.1.2 起备份升级到 v2：项目、提示词、规则、文档、技术档案和关系一起备份。
+// 来源包的二进制原文不进备份，换库后需要另行保留原始文件。
+export const ASSET_BACKUP_VERSION = 2;
+
+export const ASSET_BACKUP_NOTE =
+  "备份包含项目、提示词、规则、文档、技术档案和资产之间的关"
+  + "系；来源包的原始文件不在备份里，需要另行保留。";
+
+export type AssetBackup = {
+  type: typeof PROMPT_BACKUP_TYPE;
+  version: typeof ASSET_BACKUP_VERSION;
+  exportedAt: string;
+  note: string;
+  projects: ProjectData[];
+  assets: AssetData[];
+};
+
+export function createAssetBackup(input: {
+  projects: ProjectData[];
+  assets: AssetData[];
+  exportedAt?: string;
+}): AssetBackup {
+  return {
+    type: PROMPT_BACKUP_TYPE,
+    version: ASSET_BACKUP_VERSION,
+    exportedAt: input.exportedAt ?? new Date().toISOString(),
+    note: ASSET_BACKUP_NOTE,
+    // 只备份没进垃圾箱的资产，垃圾箱里的内容按既有约定不进备份
+    projects: input.projects.map((project) => ({ ...project })),
+    assets: input.assets
+      .filter((asset) => !asset.deletedAt)
+      .map((asset) => ({ ...asset })),
+  };
+}
+
+export type AssetBackupParseResult =
+  | { kind: "prompt"; backup: PromptBackup }
+  | { kind: "asset"; backup: AssetBackup };
+
+// 统一入口：v1（只有提示词）和 v2（项目 + 资产）都能读
+export function parseBackup(content: string): AssetBackupParseResult {
+  const parsed: unknown = (() => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      throw new Error("备份文件不是有效的 JSON。");
+    }
+  })();
+
+  const version =
+    parsed && typeof parsed === "object"
+      ? (parsed as { version?: unknown }).version
+      : undefined;
+
+  if (version === ASSET_BACKUP_VERSION) {
+    return { kind: "asset", backup: parseAssetBackup(parsed) };
+  }
+
+  return { kind: "prompt", backup: parsePromptBackup(content) };
+}
+
+function parseAssetBackup(value: unknown): AssetBackup {
+  if (!value || typeof value !== "object") {
+    throw new Error("备份文件结构不正确。");
+  }
+
+  const candidate = value as Partial<AssetBackup>;
+
+  if (candidate.type !== PROMPT_BACKUP_TYPE) {
+    throw new Error("这不是本工具导出的备份文件。");
+  }
+
+  if (
+    typeof candidate.exportedAt !== "string" ||
+    !isValidDate(candidate.exportedAt)
+  ) {
+    throw new Error("备份文件缺少导出时间。");
+  }
+
+  if (!Array.isArray(candidate.projects) || !Array.isArray(candidate.assets)) {
+    throw new Error("备份文件缺少项目或资产列表。");
+  }
+
+  for (const asset of candidate.assets) {
+    if (!isAssetData(asset)) {
+      throw new Error("备份文件里有资产数据不完整，无法导入。");
+    }
+  }
+
+  for (const project of candidate.projects) {
+    if (
+      !project ||
+      typeof project.id !== "string" ||
+      !project.id.trim() ||
+      typeof project.name !== "string" ||
+      !project.name.trim()
+    ) {
+      throw new Error("备份文件里有项目数据不完整，无法导入。");
+    }
+  }
+
+  return candidate as AssetBackup;
+}
+
+// 导入到已有库时，同名项目按名称合并到已有项目，不新建重复项目
+export function planProjectMerge(
+  existing: ProjectData[],
+  incoming: ProjectData[],
+) {
+  const mapping = new Map<string, string>();
+
+  for (const project of incoming) {
+    const matched = existing.find(
+      (item) => item.name.trim() === project.name.trim(),
+    );
+
+    mapping.set(project.id, matched ? matched.id : project.id);
+  }
+
+  return mapping;
+}
+
 
 export type PromptBackup = {
   type: typeof PROMPT_BACKUP_TYPE;

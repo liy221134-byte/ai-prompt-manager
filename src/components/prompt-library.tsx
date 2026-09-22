@@ -79,6 +79,8 @@ import {
   assetTypeFilterOptions,
   buildAssetSearchText,
   filterProjectAssets,
+  listProjectTags,
+  listRelationTargets,
   matchesAssetTypeFilter,
   type AssetTypeFilter,
 } from "@/lib/asset-list";
@@ -216,6 +218,9 @@ export function PromptLibrary({
     useState<AssetTypeFilter>("prompt");
   const [assetStatusFilter, setAssetStatusFilter] =
     useState<AssetStatus>("active");
+  // 组合筛选：标签和关系目标（空字符串表示不筛）
+  const [assetTagFilter, setAssetTagFilter] = useState("");
+  const [assetRelationFilter, setAssetRelationFilter] = useState("");
   const [assetDetailId, setAssetDetailId] = useState<string | null>(null);
   const [assetEditorState, setAssetEditorState] =
     useState<AssetEditorState | null>(null);
@@ -472,12 +477,23 @@ export function PromptLibrary({
     const visibleAssets = filterProjectAssets(assets, {
       projectId: activeProjectId,
       status: assetStatusFilter,
+      ...(assetTagFilter ? { tag: assetTagFilter } : {}),
+      ...(assetRelationFilter
+        ? { relationTargetId: assetRelationFilter }
+        : {}),
     });
 
     return isDefaultProjectSelected
       ? visibleAssets.filter((asset) => asset.assetType !== "prompt")
       : visibleAssets;
-  }, [activeProjectId, assets, assetStatusFilter, isDefaultProjectSelected]);
+  }, [
+    activeProjectId,
+    assetRelationFilter,
+    assetStatusFilter,
+    assetTagFilter,
+    assets,
+    isDefaultProjectSelected,
+  ]);
   const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(
     () => ({
       all: projectPrompts.length + projectAssetEntries.length,
@@ -524,6 +540,16 @@ export function PromptLibrary({
         )
         .map((item) => ({ id: item.id, title: item.title })),
     [activeProjectId, assetEditorState, assets],
+  );
+  // 组合筛选用到的选项：标签和「被指向过的目标」
+  const tagFilterOptions = useMemo(
+    () => (activeProjectId ? listProjectTags(assets, activeProjectId) : []),
+    [activeProjectId, assets],
+  );
+  const relationFilterOptions = useMemo(
+    () =>
+      activeProjectId ? listRelationTargets(assets, activeProjectId) : [],
+    [activeProjectId, assets],
   );
   const listEntries = useMemo<ProjectListEntry[]>(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -1295,6 +1321,46 @@ export function PromptLibrary({
               ))}
             </select>
           </label>
+
+          {tagFilterOptions.length > 0 && (
+            <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
+              <span className="text-xs font-semibold text-slate-500">标签</span>
+              <select
+                aria-label="按标签筛选资产"
+                className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
+                onChange={(event) => setAssetTagFilter(event.target.value)}
+                value={assetTagFilter}
+              >
+                <option value="">全部标签</option>
+                {tagFilterOptions.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {relationFilterOptions.length > 0 && (
+            <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
+              <span className="text-xs font-semibold text-slate-500">
+                关系目标
+              </span>
+              <select
+                aria-label="按关系目标筛选资产"
+                className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
+                onChange={(event) => setAssetRelationFilter(event.target.value)}
+                value={assetRelationFilter}
+              >
+                <option value="">全部目标</option>
+                {relationFilterOptions.map((asset) => (
+                  <option key={asset.id} value={asset.id}>
+                    {asset.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
 
         <div className="mt-3 flex flex-col gap-3 lg:flex-row">
