@@ -38,6 +38,8 @@
    `create or replace function`、`drop policy if exists` 之后再 `create policy`。
 3. 先在真实 Postgres 上把整条迁移链跑一遍：确认能执行、能重复执行、回填结果对得上，
    并真的调用一次新增的函数。只检查迁移文件文本会漏掉类型和字段名这类错误。
+   这一步已经固化成 `tests/supabase-migration-postgres.test.mjs`（用 `@electric-sql/pglite`
+   起一个真实 Postgres，随 `npm test` 一起跑），改完迁移直接跑测试即可。
 4. 应用到远程（用 `db push --db-url`），确认迁移历史表里出现对应版本。
 5. 跑 `db lint --db-url` 和安全项检查（行级安全、函数权限、`search_path`、外键索引），
    确认没有新增问题。
