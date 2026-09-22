@@ -30,6 +30,21 @@ export const assetSourceTypes = [
 ] as const;
 export type AssetSourceType = (typeof assetSourceTypes)[number];
 
+// 资产之间的显式关系：先做这四类，弱关系以后按需要再加
+export const assetRelationTypes = [
+  "reference",
+  "depends_on",
+  "replaces",
+  "implements",
+] as const;
+export type AssetRelationType = (typeof assetRelationTypes)[number];
+
+export type AssetRelation = {
+  targetAssetId: string;
+  relationType: AssetRelationType;
+  note: string;
+};
+
 export const ruleTypes = [
   "must",
   "forbidden",
@@ -107,6 +122,7 @@ export type PromptAssetMetadata = {
   useCase: string;
   mergedIntoAssetId: string | null;
   mergeVersionId: string | null;
+  relations?: AssetRelation[];
 };
 
 export type RuleAssetMetadata = {
@@ -121,6 +137,7 @@ export type RuleAssetMetadata = {
   overrideScope?: RuleOverrideScope;
   evidence?: string;
   verification?: string;
+  relations?: AssetRelation[];
 };
 
 export type DocumentAssetMetadata = {
@@ -133,6 +150,23 @@ export type DocumentAssetMetadata = {
   updateTrigger?: string;
   freshness?: string;
   lastVerifiedAt?: string;
+  relations?: AssetRelation[];
+};
+
+// 技术档案：一个项目一份，记录技术栈清单和选型说明。
+// 偏离默认选型的条目必须挂一条 ADR。
+export type TechStackEntry = {
+  name: string;
+  version: string;
+  purpose: string;
+  isDeviation: boolean;
+  adrAssetId: string | null;
+};
+
+export type TechProfileAssetMetadata = {
+  stack: TechStackEntry[];
+  notes: string;
+  relations?: AssetRelation[];
 };
 
 export type ReservedAssetMetadata = Record<string, unknown>;
@@ -246,6 +280,47 @@ function isOptionalStringList(value: unknown) {
   );
 }
 
+function isAssetRelation(value: unknown): value is AssetRelation {
+  return (
+    isRecord(value) &&
+    typeof value.targetAssetId === "string" &&
+    Boolean(value.targetAssetId.trim()) &&
+    assetRelationTypes.includes(value.relationType as AssetRelationType) &&
+    typeof value.note === "string"
+  );
+}
+
+function isOptionalRelations(value: unknown) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((item) => isAssetRelation(item)))
+  );
+}
+
+function isTechStackEntry(value: unknown): value is TechStackEntry {
+  return (
+    isRecord(value) &&
+    typeof value.name === "string" &&
+    Boolean(value.name.trim()) &&
+    typeof value.version === "string" &&
+    typeof value.purpose === "string" &&
+    typeof value.isDeviation === "boolean" &&
+    isNullableString(value.adrAssetId)
+  );
+}
+
+function isTechProfileAssetMetadata(
+  value: unknown,
+): value is TechProfileAssetMetadata {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.stack) &&
+    value.stack.every((entry) => isTechStackEntry(entry)) &&
+    typeof value.notes === "string" &&
+    isOptionalRelations(value.relations)
+  );
+}
+
 function isAssetSourceData(value: unknown): value is AssetSourceData {
   if (!isRecord(value)) {
     return false;
@@ -298,7 +373,8 @@ function isPromptAssetMetadata(
     value.tags.every((tag) => typeof tag === "string") &&
     typeof value.useCase === "string" &&
     isNullableString(value.mergedIntoAssetId) &&
-    isNullableString(value.mergeVersionId)
+    isNullableString(value.mergeVersionId) &&
+    isOptionalRelations(value.relations)
   );
 }
 
@@ -318,7 +394,8 @@ function isRuleAssetMetadata(value: unknown): value is RuleAssetMetadata {
     isOptionalEnum(value.overrideScope, ruleOverrideScopes) &&
     isOptionalString(value.evidence) &&
     isOptionalString(value.verification) &&
-    isOptionalStringList(value.techContext)
+    isOptionalStringList(value.techContext) &&
+    isOptionalRelations(value.relations)
   );
 }
 
@@ -336,7 +413,8 @@ function isDocumentAssetMetadata(
     isOptionalString(value.sourceLocation) &&
     isOptionalString(value.updateTrigger) &&
     isOptionalString(value.freshness) &&
-    isOptionalString(value.lastVerifiedAt)
+    isOptionalString(value.lastVerifiedAt) &&
+    isOptionalRelations(value.relations)
   );
 }
 
@@ -380,6 +458,10 @@ export function isAssetData(value: unknown): value is AssetData {
 
   if (value.assetType === "document") {
     return isDocumentAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "tech_profile") {
+    return isTechProfileAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -435,6 +517,10 @@ export function isAssetVersionData(
 
   if (value.assetType === "document") {
     return isDocumentAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "tech_profile") {
+    return isTechProfileAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -608,5 +694,33 @@ export function normalizeDocumentMetadata(value: unknown): DocumentMetadataForm 
     updateTrigger: readString(source.updateTrigger),
     freshness: readString(source.freshness),
     lastVerifiedAt: readString(source.lastVerifiedAt),
+  };
+}
+
+export function normalizeAssetRelations(value: unknown): AssetRelation[] {
+  return Array.isArray(value)
+    ? value.filter((item) => isAssetRelation(item)).map((item) => ({ ...item }))
+    : [];
+}
+
+export type TechProfileMetadataForm = {
+  stack: TechStackEntry[];
+  notes: string;
+  relations: AssetRelation[];
+};
+
+export function normalizeTechProfileMetadata(
+  value: unknown,
+): TechProfileMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    stack: Array.isArray(source.stack)
+      ? source.stack
+          .filter((entry) => isTechStackEntry(entry))
+          .map((entry) => ({ ...entry }))
+      : [],
+    notes: readString(source.notes),
+    relations: normalizeAssetRelations(source.relations),
   };
 }
