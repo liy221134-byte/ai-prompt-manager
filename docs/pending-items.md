@@ -37,6 +37,8 @@
   `supabase db push --db-url`。
 - 引入开发依赖 `@electric-sql/pglite`，让每次改动迁移都能在真实 Postgres 上跑一遍
   （只用于测试，不进生产运行时代码）。
+- 新项目模板（`templates/new-project/`）不在开发过程中反复改：等本项目做完再一起复盘梳理。
+  规则的进出只在主 `AGENTS.md` 维护；模板漂移检查（测试）暂不加，随那次复盘一起评估。
 
 ## 正在进行，不属于待确认
 
