@@ -23,6 +23,7 @@
 - [开发规则说明（给人看的版本）](development-rules.md)
 - [生产级项目指南地图](project-map.md)
 - [工程地图：文件职责与请求链路](engineering-map.md)
+- [待确认与待办事项](pending-items.md)
 
 ### 产品
 
