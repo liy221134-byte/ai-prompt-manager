@@ -553,6 +553,9 @@ export function promptToAsset(
       useCase: prompt.useCase,
       mergedIntoAssetId: prompt.mergedIntoPromptId,
       mergeVersionId: prompt.mergeVersionId,
+      ...(prompt.relations && prompt.relations.length > 0
+        ? { relations: prompt.relations }
+        : {}),
     },
     source: {
       sourceType: "system",
@@ -584,6 +587,9 @@ export function assetToPrompt(asset: PromptAssetData): PromptCardData {
     deletedReason: asset.deletedReason,
     mergedIntoPromptId: asset.metadata.mergedIntoAssetId,
     mergeVersionId: asset.metadata.mergeVersionId,
+    ...(asset.metadata.relations && asset.metadata.relations.length > 0
+      ? { relations: asset.metadata.relations }
+      : {}),
   };
 }
 
@@ -713,6 +719,10 @@ export function readAssetRelations(metadata: unknown): AssetRelation[] {
   const source = isRecord(metadata) ? metadata : {};
 
   return normalizeAssetRelations(source.relations);
+}
+
+export function isAssetRelationList(value: unknown) {
+  return isOptionalRelations(value);
 }
 
 export type TechProfileMetadataForm = {

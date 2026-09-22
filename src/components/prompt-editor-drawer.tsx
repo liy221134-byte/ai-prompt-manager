@@ -27,10 +27,19 @@ import {
 } from "@/lib/prompt-variables";
 import { extractVariables, normalizeTags } from "@/lib/prompt-utils";
 
+import {
+  assetRelationTypes,
+  type AssetRelation,
+  type AssetRelationType,
+} from "@/data/assets";
+import { assetRelationLabels } from "@/lib/asset-list";
+
 type PromptEditorDrawerProps = {
   mode: "create" | "edit";
   prompt?: PromptCardData;
   initialDraft?: PromptDraft;
+  // 可以建立关系的其他资产（同项目、未删除、不含自己）
+  relationTargetOptions?: Array<{ id: string; title: string }>;
   onClose: () => void;
   onSave: (draft: PromptDraft) => Promise<void>;
 };
@@ -49,6 +58,7 @@ export function PromptEditorDrawer({
   mode,
   prompt,
   initialDraft,
+  relationTargetOptions = [],
   onClose,
   onSave,
 }: PromptEditorDrawerProps) {
@@ -58,6 +68,16 @@ export function PromptEditorDrawer({
   const [useCase, setUseCase] = useState(initialValue?.useCase ?? "");
   const [content, setContent] = useState(initialValue?.content ?? "");
   const [tags, setTags] = useState<string[]>(initialValue?.tags ?? []);
+  const [relations, setRelations] = useState<
+    Array<{ key: string; targetAssetId: string; relationType: AssetRelationType; note: string }>
+  >(() =>
+    (initialValue?.relations ?? []).map((relation, index) => ({
+      key: `relation-${index + 1}`,
+      targetAssetId: relation.targetAssetId,
+      relationType: relation.relationType,
+      note: relation.note,
+    })),
+  );
   const [tagDraft, setTagDraft] = useState("");
   const [variableDraft, setVariableDraft] = useState("");
   const [editingVariable, setEditingVariable] = useState<string | null>(null);
@@ -73,6 +93,32 @@ export function PromptEditorDrawer({
   const [saveError, setSaveError] = useState<string | null>(null);
   const contentTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const variables = useMemo(() => extractVariables(content), [content]);
+
+  function addRelation() {
+    setRelations((current) => [
+      ...current,
+      {
+        key: `relation-${Date.now()}-${current.length}`,
+        targetAssetId: "",
+        relationType: "reference" as const,
+        note: "",
+      },
+    ]);
+  }
+
+  function updateRelation(key: string, patch: Record<string, unknown>) {
+    setRelations((current) =>
+      current.map((relation) =>
+        relation.key === key ? { ...relation, ...patch } : relation,
+      ),
+    );
+  }
+
+  function removeRelation(key: string) {
+    setRelations((current) =>
+      current.filter((relation) => relation.key !== key),
+    );
+  }
 
   useModalBehavior(onClose);
 
@@ -233,6 +279,15 @@ export function PromptEditorDrawer({
     setIsSaving(true);
     setSaveError(null);
 
+    // 没选目标的关系行直接丢掉，不写半截数据
+    const cleanedRelations: AssetRelation[] = relations
+      .filter((relation) => relation.targetAssetId)
+      .map((relation) => ({
+        targetAssetId: relation.targetAssetId,
+        relationType: relation.relationType,
+        note: relation.note.trim(),
+      }));
+
     try {
       await onSave({
         title: title.trim(),
@@ -240,6 +295,9 @@ export function PromptEditorDrawer({
         tags: normalizeTags(tags),
         content: content.trim(),
         useCase: useCase.trim(),
+        ...(cleanedRelations.length > 0
+          ? { relations: cleanedRelations }
+          : {}),
       });
     } catch (error) {
       setSaveError(
@@ -635,6 +693,82 @@ export function PromptEditorDrawer({
               )}
             </div>
           </div>
+
+          <section className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700">资产关系</h3>
+              <button
+                className="text-xs font-semibold text-blue-700 hover:underline disabled:text-slate-400"
+                disabled={relationTargetOptions.length === 0}
+                onClick={addRelation}
+                type="button"
+              >
+                新增关系
+              </button>
+            </div>
+
+            {relations.length === 0 ? (
+              <p className="mt-2 text-xs text-slate-500">
+                还没有关系。关系是单向的，这里填的是「这条提示词指向谁」。
+              </p>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-2">
+                {relations.map((relation) => (
+                  <li className="flex flex-wrap items-center gap-2" key={relation.key}>
+                    <select
+                      aria-label="关系目标"
+                      className="h-10 min-w-40 flex-1 rounded-lg border border-slate-300 px-2 text-sm"
+                      onChange={(event) =>
+                        updateRelation(relation.key, {
+                          targetAssetId: event.target.value,
+                        })
+                      }
+                      value={relation.targetAssetId}
+                    >
+                      <option value="">选择目标资产</option>
+                      {relationTargetOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.title}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="关系类型"
+                      className="h-10 rounded-lg border border-slate-300 px-2 text-sm"
+                      onChange={(event) =>
+                        updateRelation(relation.key, {
+                          relationType: event.target.value as AssetRelationType,
+                        })
+                      }
+                      value={relation.relationType}
+                    >
+                      {assetRelationTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {assetRelationLabels[type]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      aria-label="关系说明"
+                      className="h-10 min-w-40 flex-1 rounded-lg border border-slate-300 px-2 text-sm"
+                      onChange={(event) =>
+                        updateRelation(relation.key, { note: event.target.value })
+                      }
+                      placeholder="一句说明，可留空"
+                      value={relation.note}
+                    />
+                    <button
+                      className="text-xs font-semibold text-red-600 hover:underline"
+                      onClick={() => removeRelation(relation.key)}
+                      type="button"
+                    >
+                      删除
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           <footer className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
             {saveError && (

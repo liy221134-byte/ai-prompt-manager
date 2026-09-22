@@ -1,4 +1,5 @@
 import { promptCards, type PromptCardData } from "../data/prompts.ts";
+import { isAssetRelationList } from "../data/assets.ts";
 
 export const PROMPT_STORAGE_KEY = "ai-prompt-manager:prompts";
 export const PROMPT_STORAGE_VERSION = 1;
@@ -42,6 +43,7 @@ export function isPromptCard(value: unknown): value is PromptCardData {
     prompt.tags.every((tag) => typeof tag === "string") &&
     typeof prompt.content === "string" &&
     typeof prompt.useCase === "string" &&
+    isAssetRelationList(prompt.relations) &&
     isValidDateString(prompt.createdAt) &&
     isValidDateString(prompt.updatedAt)
   );

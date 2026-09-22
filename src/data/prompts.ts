@@ -1,3 +1,5 @@
+import type { AssetRelation } from "./assets.ts";
+
 export type PromptDeletedReason = "manual" | "merge";
 
 // 恢复快照的来源类型：合并前、优化前、回退前。
@@ -23,6 +25,8 @@ export type PromptContentData = {
   useCase: string;
   createdAt: string;
   updatedAt: string;
+  // 资产之间的关系，提示词也能引用或依赖别的资产
+  relations?: AssetRelation[];
 };
 
 export type PromptCardData = PromptContentData & PromptLifecycleFields;

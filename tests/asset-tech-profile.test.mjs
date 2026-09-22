@@ -5,6 +5,8 @@ import {
   isAssetData,
   normalizeAssetRelations,
   normalizeTechProfileMetadata,
+  assetToPrompt,
+  promptToAsset,
 } from "../src/data/assets.ts";
 import {
   findProjectTechProfile,
@@ -237,4 +239,34 @@ test("关系能写进草稿再存回元数据，没选目标的行会被丢掉",
       note: "引用提交规范",
     },
   ]);
+});
+
+test("提示词的关系能跟着资产映射来回走，空关系不写多余字段", () => {
+  const prompt = {
+    id: "prompt-a",
+    title: "提示词",
+    category: "测试",
+    tags: ["a"],
+    content: "正文",
+    useCase: "场景",
+    createdAt: "2026-09-22T10:00:00.000Z",
+    updatedAt: "2026-09-22T10:00:00.000Z",
+    deletedAt: null,
+    deletedReason: null,
+    mergedIntoPromptId: null,
+    mergeVersionId: null,
+    relations: [
+      { targetAssetId: "rule-a", relationType: "depends_on", note: "依赖" },
+    ],
+  };
+
+  const asset = promptToAsset(prompt, "default-project");
+
+  assert.deepEqual(asset.metadata.relations, prompt.relations);
+  assert.deepEqual(assetToPrompt(asset).relations, prompt.relations);
+
+  const withoutRelations = assetToPrompt(
+    promptToAsset({ ...prompt, relations: undefined }, "default-project"),
+  );
+  assert.equal(withoutRelations.relations, undefined);
 });

@@ -1655,6 +1655,7 @@ export function PromptLibrary({
           onClose={() => setEditorState(null)}
           onSave={handleSave}
           prompt={editingPrompt}
+          relationTargetOptions={relationTargetOptions}
         />
       )}
 
