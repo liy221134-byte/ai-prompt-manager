@@ -47,36 +47,6 @@ const PROMPT_SNAPSHOT_REASON_LABELS: Record<PromptVersionReason, string> = {
   restore_before: "回退前快照",
 };
 
-type PromptRow = {
-  id: string;
-  title: string;
-  category: string;
-  tags_json: string;
-  content: string;
-  use_case: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  deleted_reason: "manual" | "merge" | null;
-  merged_into_prompt_id: string | null;
-  merge_version_id: string | null;
-};
-
-type PromptVersionRow = {
-  version_id: string;
-  prompt_id: string;
-  title: string;
-  category: string;
-  tags_json: string;
-  content: string;
-  use_case: string;
-  created_at: string;
-  version_reason: PromptVersionReason;
-  source_prompt_ids_json: string;
-  restored_at: string | null;
-  expires_at: string;
-};
-
 type MetaRow = {
   value: string;
 };
@@ -112,40 +82,6 @@ function createDefaultDatabasePath() {
     process.env.PROMPT_DB_PATH ??
     join(process.cwd(), ".data", "prompts.sqlite")
   );
-}
-
-function rowToPrompt(row: PromptRow): PromptCardData {
-  return {
-    id: row.id,
-    title: row.title,
-    category: row.category,
-    tags: JSON.parse(row.tags_json) as string[],
-    content: row.content,
-    useCase: row.use_case,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    deletedAt: row.deleted_at,
-    deletedReason: row.deleted_reason,
-    mergedIntoPromptId: row.merged_into_prompt_id,
-    mergeVersionId: row.merge_version_id,
-  };
-}
-
-function rowToVersion(row: PromptVersionRow): PromptVersionData {
-  return {
-    versionId: row.version_id,
-    promptId: row.prompt_id,
-    title: row.title,
-    category: row.category,
-    tags: JSON.parse(row.tags_json) as string[],
-    content: row.content,
-    useCase: row.use_case,
-    createdAt: row.created_at,
-    versionReason: row.version_reason,
-    sourcePromptIds: JSON.parse(row.source_prompt_ids_json) as string[],
-    restoredAt: row.restored_at,
-    expiresAt: row.expires_at,
-  };
 }
 
 export class PromptDatabase {

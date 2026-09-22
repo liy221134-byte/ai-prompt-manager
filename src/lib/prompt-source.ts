@@ -139,38 +139,6 @@ export const localPromptDataSource: PromptDataSource = {
   restoreAiOptimize: restoreAiOptimizeOnServer,
 };
 
-type SupabasePromptRow = {
-  id: string;
-  user_id: string;
-  title: string;
-  category: string;
-  tags: string[] | null;
-  content: string;
-  use_case: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  deleted_reason: "manual" | "merge" | null;
-  merged_into_prompt_id: string | null;
-  merge_version_id: string | null;
-};
-
-type SupabasePromptVersionRow = {
-  user_id: string;
-  version_id: string;
-  prompt_id: string;
-  title: string;
-  category: string;
-  tags: string[] | null;
-  content: string;
-  use_case: string;
-  created_at: string;
-  version_reason: PromptVersionReason;
-  source_prompt_ids: string[];
-  restored_at: string | null;
-  expires_at: string;
-};
-
 type SupabaseProjectRow = {
   user_id: string;
   id: string;
@@ -222,42 +190,6 @@ type SupabaseAssetVersionRow = {
   expires_at: string | null;
   created_at: string;
 };
-
-function rowToPrompt(row: SupabasePromptRow): PromptCardData {
-  return {
-    id: row.id,
-    title: row.title,
-    category: row.category,
-    tags: row.tags ?? [],
-    content: row.content,
-    useCase: row.use_case,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    deletedAt: row.deleted_at,
-    deletedReason: row.deleted_reason,
-    mergedIntoPromptId: row.merged_into_prompt_id,
-    mergeVersionId: row.merge_version_id,
-  };
-}
-
-function rowToVersion(
-  row: SupabasePromptVersionRow,
-): PromptVersionData {
-  return {
-    versionId: row.version_id,
-    promptId: row.prompt_id,
-    title: row.title,
-    category: row.category,
-    tags: row.tags ?? [],
-    content: row.content,
-    useCase: row.use_case,
-    createdAt: row.created_at,
-    versionReason: row.version_reason,
-    sourcePromptIds: row.source_prompt_ids,
-    restoredAt: row.restored_at,
-    expiresAt: row.expires_at,
-  };
-}
 
 // 2.1.0 起提示词也写在统一资产里：这两个助手负责把资产版本翻译回提示词版本，
 // 以及把提示词组装成 save_asset 需要的参数。
@@ -424,20 +356,6 @@ function projectToRow(project: ProjectData, userId: string) {
   };
 }
 
-function promptToRow(prompt: PromptCardData, userId: string) {
-  return {
-    id: prompt.id,
-    user_id: userId,
-    title: prompt.title,
-    category: prompt.category,
-    tags: prompt.tags,
-    content: prompt.content,
-    use_case: prompt.useCase,
-    created_at: prompt.createdAt,
-    updated_at: prompt.updatedAt,
-  };
-}
-
 async function getCurrentUser(client: SupabaseClient) {
   const {
     data: { user },
@@ -463,8 +381,6 @@ function createLibraryResponse(prompts: PromptCardData[]) {
 export function createSupabasePromptDataSource(
   client: SupabaseClient,
 ): PromptDataSource {
-  const promptSelect =
-    "id, user_id, title, category, tags, content, use_case, created_at, updated_at, deleted_at, deleted_reason, merged_into_prompt_id, merge_version_id";
   const projectSelect =
     "user_id, id, name, description, status, stage, created_at, updated_at, archived_at";
   const assetSelect =
