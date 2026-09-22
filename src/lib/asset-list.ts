@@ -7,6 +7,7 @@ import type {
   RuleType,
 } from "../data/assets.ts";
 import { readAssetRelations } from "../data/assets.ts";
+import type { PromptCardData } from "../data/prompts.ts";
 
 export const assetTypeLabels: Record<AssetType, string> = {
   prompt: "提示词",
@@ -236,4 +237,26 @@ export function listRelationTargets(assets: AssetData[], projectId: string) {
     (asset) =>
       ids.has(asset.id) && asset.projectId === projectId && !asset.deletedAt,
   );
+}
+
+// 默认项目里的提示词走的是老列表（不走 filterProjectAssets），
+// 所以标签和关系目标这两个筛选要在这里再判一次。
+export function matchesPromptLibraryFilters(
+  prompt: PromptCardData,
+  options: { tag?: string; relationTargetId?: string },
+) {
+  if (options.tag && !prompt.tags.includes(options.tag)) {
+    return false;
+  }
+
+  if (
+    options.relationTargetId &&
+    !(prompt.relations ?? []).some(
+      (relation) => relation.targetAssetId === options.relationTargetId,
+    )
+  ) {
+    return false;
+  }
+
+  return true;
 }

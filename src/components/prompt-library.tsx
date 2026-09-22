@@ -81,6 +81,7 @@ import {
   filterProjectAssets,
   listProjectTags,
   listRelationTargets,
+  matchesPromptLibraryFilters,
   matchesAssetTypeFilter,
   type AssetTypeFilter,
 } from "@/lib/asset-list";
@@ -469,9 +470,22 @@ export function PromptLibrary({
   const projectPrompts = useMemo(
     () =>
       isDefaultProjectSelected && assetStatusFilter === "active"
-        ? prompts
+        ? prompts.filter((prompt) =>
+            matchesPromptLibraryFilters(prompt, {
+              ...(assetTagFilter ? { tag: assetTagFilter } : {}),
+              ...(assetRelationFilter
+                ? { relationTargetId: assetRelationFilter }
+                : {}),
+            }),
+          )
         : [],
-    [assetStatusFilter, isDefaultProjectSelected, prompts],
+    [
+      assetRelationFilter,
+      assetStatusFilter,
+      assetTagFilter,
+      isDefaultProjectSelected,
+      prompts,
+    ],
   );
   const projectAssetEntries = useMemo(() => {
     if (!activeProjectId) {
