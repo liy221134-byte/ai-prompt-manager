@@ -668,6 +668,18 @@ export function PromptLibrary({
     setIsMergeSelectionMode(false);
     setMergeSelection(createEmptySelection());
 
+    // 提示词只属于默认项目：切到别的项目时还停在「提示词」标签会看到空列表，
+    // 而规则和文档的计数又不是 0，容易误以为数据丢了，这里直接切回「全部」。
+    const nextProject = projects.find((project) => project.id === projectId);
+
+    if (
+      nextProject &&
+      !isDefaultProject(nextProject) &&
+      assetTypeFilter === "prompt"
+    ) {
+      setAssetTypeFilter("all");
+    }
+
     try {
       saveActiveProjectId(projectId);
     } catch {
