@@ -80,6 +80,7 @@ import {
   buildAssetSearchText,
   filterProjectAssets,
   listProjectTags,
+  listRelationTargetOptions,
   listRelationTargets,
   matchesPromptLibraryFilters,
   matchesAssetTypeFilter,
@@ -286,6 +287,23 @@ export function PromptLibrary({
       }
     },
     [notify],
+  );
+
+  // 资产接口返回的是单个项目的列表，重新拉全量，保证其他项目的数据不丢。
+  const reloadAssets = useCallback(async () => {
+    setAssets(await dataSource.fetchAssets());
+  }, [dataSource]);
+
+  // 提示词和统一资产是同一批数据的两种读法：提示词一变就跟着刷新资产快照，
+  // 否则关系目标、标签筛选和「被谁引用」会一直用旧标题和旧状态。
+  const applyPromptLibrary = useCallback(
+    (nextPrompts: PromptCardData[]) => {
+      setPrompts(nextPrompts);
+      cachePrompts(nextPrompts);
+      // 刷新失败不阻塞保存，下次加载会补齐。
+      void reloadAssets().catch(() => undefined);
+    },
+    [cachePrompts, reloadAssets],
   );
 
   const loadFromServer = useCallback(async () => {
@@ -544,21 +562,19 @@ export function PromptLibrary({
     [activeProjectId, assets],
   );
   // 关系目标：同项目、没进垃圾箱、不含正在编辑的这条
-  const relationTargetOptions = useMemo(
-    () =>
-      assets
-        .filter(
-          (item) =>
-            item.projectId === activeProjectId &&
-            !item.deletedAt &&
-            item.id !==
-              (assetEditorState?.mode === "edit"
-                ? assetEditorState.assetId
-                : ""),
-        )
-        .map((item) => ({ id: item.id, title: item.title })),
-    [activeProjectId, assetEditorState, assets],
-  );
+  const relationTargetOptions = useMemo(() => {
+    // 提示词和资产走两套编辑器，正在编辑的那条都要从候选里去掉，
+    // 否则会建出「指向自己」的关系。
+    const editingIds = [
+      assetEditorState?.mode === "edit" ? assetEditorState.assetId : null,
+      editorState?.mode === "edit" ? editorState.promptId : null,
+    ].filter((id): id is string => id !== null);
+
+    return listRelationTargetOptions(assets, {
+      projectId: activeProjectId ?? "",
+      excludeAssetIds: editingIds,
+    });
+  }, [activeProjectId, assetEditorState, editorState, assets]);
   // 组合筛选用到的选项：标签和「被指向过的目标」
   const tagFilterOptions = useMemo(
     () => (activeProjectId ? listProjectTags(assets, activeProjectId) : []),
@@ -569,29 +585,42 @@ export function PromptLibrary({
       activeProjectId ? listRelationTargets(assets, activeProjectId) : [],
     [activeProjectId, assets],
   );
-  // 提示词详情要显示关系目标，这里把目标标题和「还能不能用」一起备好
-  const promptRelationTargets = useMemo(
-    () => [
-      ...prompts.map((item) => ({
+  // 提示词详情要显示关系目标，这里把目标标题和「还能不能用」一起备好。
+  // 目标可能是别的提示词、垃圾箱里的提示词，或已归档的规则/文档/技术档案。
+  const promptRelationTargets = useMemo(() => {
+    const targets = new Map<
+      string,
+      { id: string; title: string; unavailable: boolean }
+    >();
+
+    // 资产快照覆盖全部类型和垃圾箱，先垫底
+    for (const item of assets) {
+      targets.set(item.id, {
+        id: item.id,
+        title: item.title,
+        unavailable: Boolean(item.deletedAt) || item.status === "archived",
+      });
+    }
+
+    // 提示词列表和垃圾箱比资产快照新，用它覆盖标题和状态
+    for (const item of prompts) {
+      targets.set(item.id, {
         id: item.id,
         title: item.title,
         unavailable: false,
-      })),
-      ...trashPrompts.map((item) => ({
+      });
+    }
+
+    for (const item of trashPrompts) {
+      targets.set(item.id, {
         id: item.id,
         title: item.title,
         unavailable: true,
-      })),
-      ...assets
-        .filter((item) => item.assetType !== "prompt")
-        .map((item) => ({
-          id: item.id,
-          title: item.title,
-          unavailable: Boolean(item.deletedAt) || item.status === "archived",
-        })),
-    ],
-    [assets, prompts, trashPrompts],
-  );
+      });
+    }
+
+    return [...targets.values()];
+  }, [assets, prompts, trashPrompts]);
   const listEntries = useMemo<ProjectListEntry[]>(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
     const entries: ProjectListEntry[] = [];
@@ -722,8 +751,7 @@ export function PromptLibrary({
         updatedAt: now,
       });
 
-      setPrompts(library.prompts);
-      cachePrompts(library.prompts);
+      applyPromptLibrary(library.prompts);
       setEditorState(null);
       notify("提示词已更新");
       return;
@@ -741,8 +769,7 @@ export function PromptLibrary({
     };
     const library = await dataSource.createPrompt(newPrompt);
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     setEditorState(null);
     setSelectedPromptId(newPrompt.id);
     notify("提示词已保存");
@@ -755,8 +782,7 @@ export function PromptLibrary({
 
     const library = await dataSource.deletePrompt(promptToDelete.id);
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     setDeletePromptId(null);
 
     if (selectedPromptId === promptToDelete.id) {
@@ -870,11 +896,6 @@ export function PromptLibrary({
     setMergeSelection(createEmptySelection());
   }
 
-  // 资产接口返回的是单个项目的列表，保存后重新拉全量，保证其他项目的数据不丢。
-  async function reloadAssets() {
-    setAssets(await dataSource.fetchAssets());
-  }
-
   function readAssetTypeLabel(assetType: EditableAssetType) {
     return assetType === "rule" ? "规则" : "文档";
   }
@@ -977,8 +998,7 @@ export function PromptLibrary({
   async function handleRestorePrompt(promptId: string) {
     const library = await dataSource.restorePrompt(promptId);
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     await loadTrash(false);
     focusDefaultProject();
   }
@@ -986,24 +1006,21 @@ export function PromptLibrary({
   async function handlePermanentlyDeletePrompt(promptId: string) {
     const library = await dataSource.permanentlyDeletePrompt(promptId);
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     await loadTrash(false);
   }
 
   async function handleEmptyTrash() {
     const library = await dataSource.emptyTrash();
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     await loadTrash(false);
   }
 
   async function handleRestoreMergeRecord(versionId: string) {
     const library = await dataSource.restoreMergeRecord(versionId);
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     await loadTrash(false);
     focusDefaultProject();
   }
@@ -1061,8 +1078,7 @@ export function PromptLibrary({
   function handleAiMergeSaved(library: PromptLibraryResponse) {
     const targetId = effectiveMergeSelection.targetPromptId;
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     setMergeSelection(createEmptySelection());
     setIsMergeSelectionMode(false);
     setIsAiMergeOpen(false);
@@ -1086,8 +1102,7 @@ export function PromptLibrary({
   function handleOptimizeSaved(library: PromptLibraryResponse) {
     const promptId = optimizePromptId;
 
-    setPrompts(library.prompts);
-    cachePrompts(library.prompts);
+    applyPromptLibrary(library.prompts);
     setOptimizePromptId(null);
 
     if (promptId) {
@@ -1102,8 +1117,7 @@ export function PromptLibrary({
     try {
       const library = await dataSource.restoreAiOptimize(prompt.id);
 
-      setPrompts(library.prompts);
-      cachePrompts(library.prompts);
+      applyPromptLibrary(library.prompts);
       setOptimizeVersionState(null);
       notify("已回到优化前");
     } catch (error) {
@@ -1146,8 +1160,7 @@ export function PromptLibrary({
       plan.backup.prompts,
     );
 
-    setPrompts(result.prompts);
-    cachePrompts(result.prompts);
+    applyPromptLibrary(result.prompts);
     setIsBackupManagerOpen(false);
     focusDefaultProject();
 
@@ -1173,8 +1186,7 @@ export function PromptLibrary({
 
     const result = await dataSource.mergePrompts(migrationPrompts);
 
-    setPrompts(result.prompts);
-    cachePrompts(result.prompts);
+    applyPromptLibrary(result.prompts);
     setMigrationPrompts(null);
     focusDefaultProject();
 

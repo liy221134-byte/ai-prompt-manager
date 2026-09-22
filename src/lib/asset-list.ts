@@ -239,6 +239,24 @@ export function listRelationTargets(assets: AssetData[], projectId: string) {
   );
 }
 
+// 关系目标候选：同项目、没进垃圾箱、去掉正在编辑的那条，
+// 否则编辑器里会建出「指向自己」的关系。
+export function listRelationTargetOptions(
+  assets: AssetData[],
+  options: { projectId: string; excludeAssetIds?: string[] },
+) {
+  const excludedIds = new Set(options.excludeAssetIds ?? []);
+
+  return assets
+    .filter(
+      (asset) =>
+        asset.projectId === options.projectId &&
+        !isTrashedAsset(asset) &&
+        !excludedIds.has(asset.id),
+    )
+    .map((asset) => ({ id: asset.id, title: asset.title }));
+}
+
 // 默认项目里的提示词走的是老列表（不走 filterProjectAssets），
 // 所以标签和关系目标这两个筛选要在这里再判一次。
 export function matchesPromptLibraryFilters(
