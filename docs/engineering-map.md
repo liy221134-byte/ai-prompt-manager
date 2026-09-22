@@ -38,6 +38,10 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `src/lib/prompt-source.ts`（24KB） | 数据源契约加本地、云端两套实现 | 改数据读写语义 |
 | `src/lib/prompt-api.ts` | 本地接口调用封装 | 新增本地接口时 |
 | `src/app/api/**` | 本地路由：资产、项目、提示词、AI、健康检查 | 新增接口时 |
+| `src/app/api/source-packages/route.ts` | 来源包原文的上传、取回与放弃（只暂存原文，不写资产） | 改上传流程时 |
+| `src/lib/source-package-upload.ts` | 上传校验：格式、大小、ZIP 文件头、文件名清洗 | 改允许的格式或上限时 |
+| `src/lib/source-package-cloud.ts` | 云端原文：私有桶上传、签名下载、按目录删除 | 改云端存储行为时 |
+| `src/lib/server/source-package-storage.ts` | 本地原文：落到 `source-packages/<上传编号>/` 并挡住越界路径 | 改本地存储位置时 |
 | `src/lib/server/prompt-database.ts`（35KB） | SQLite 门面：提示词、垃圾箱、优化与合并恢复、资产与项目读写 | 改本地数据行为 |
 | `src/lib/server/asset-database.ts`（19KB） | 项目与资产表结构、迁移、版本读取 | 改资产表结构 |
 | `src/data/*.ts` | 领域类型与校验（资产、项目、提示词） | 改字段或加类型时 |
@@ -48,14 +52,16 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 
 ## 数据流要点
 
-- 提示词：2.0.0 阶段仍写入 `prompts` 表，资产表在启动时同步补齐；把写入切到统一资产的设计
-  在 `docs/superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md`。
+- 提示词：2.1.0 起本地和云端都写在统一资产表（`assets` / `asset_versions`）里，旧提示词表
+  保留为只读快照，只在迁移和备份兼容时读取。
+- 来源包原文：`2.1.1` 起支持上传，原文落在数据目录的 `source-packages/`（本地）或 Supabase
+  Storage 的私有桶（云端），资产里只记相对路径；资产要等用户确认草稿后才创建。
 - 资产版本：每次正式保存写一条不可变版本，恢复历史版本会产生新版本，历史版本不可改写。
 - 备份：当前只含提示词内容字段，不含生命周期字段；导入时取更新时间较新的一方，跳过垃圾箱
   中的记录。
 - AI：只有用户点击后才请求，提示词全文不写日志，密钥不进浏览器代码。
 
-## 测试分布（30 个文件，200 项，约 11 秒）
+## 测试分布（37 个文件，247 项，约 15 秒）
 
 | 文件前缀 | 覆盖内容 |
 | --- | --- |
@@ -63,6 +69,8 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `prompt-source-*.test.mjs` | 数据源契约与云端假客户端 |
 | `asset-*.test.mjs`、`project-*.test.mjs` | 资产与项目领域逻辑、编辑器、备份兼容 |
 | `supabase-*.test.mjs` | 迁移文件安全属性与浏览器初始化 |
+| `supabase-migration-postgres.test.mjs` | 在真实 Postgres 上跑整条迁移链、回填、隔离和资产函数（较慢，约 13 秒） |
+| `source-package-*.test.mjs` | 来源包上传校验、本地原文存储、上传接口、云端私有桶封装 |
 | `seed-pack.test.mjs` | 种子资产包格式门禁 |
 
 命名规律：`<领域>-<对象>.test.mjs`，新测试按同一规律命名。
