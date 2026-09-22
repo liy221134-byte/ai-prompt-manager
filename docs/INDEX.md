@@ -53,6 +53,7 @@
 
 ### 数据与运维
 
+- [v2.1.0 交接与待办](operations/v2.1.0-handoff.md)
 - [数据库结构](database-schema.md)
 - [数据库迁移](operations/database-migrations.md)
 - [可用性与恢复目标](operations/availability-targets.md)
