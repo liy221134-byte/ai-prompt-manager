@@ -27,6 +27,7 @@ import {
   PROMPT_BACKUP_VERSION,
 } from "../prompt-backup.ts";
 import { PROMPT_TRASH_RETENTION_DAYS } from "../prompt-lifecycle.ts";
+import type { SourcePackageCreationPlan } from "../source-package-confirm.ts";
 import {
   backfillAssetsFromLegacyPrompts,
   ensureAssetSchema,
@@ -86,6 +87,8 @@ function createDefaultDatabasePath() {
 
 export class PromptDatabase {
   private database: DatabaseSync;
+  // 事务嵌套深度：内层直接复用外层事务，避免出现嵌套 BEGIN
+  private transactionDepth = 0;
 
   constructor(databasePath = createDefaultDatabasePath()) {
     mkdirSync(dirname(databasePath), { recursive: true });
@@ -242,13 +245,20 @@ export class PromptDatabase {
   }
 
   private transaction<T>(operation: () => T) {
+    if (this.transactionDepth > 0) {
+      return operation();
+    }
+
     this.database.exec("BEGIN IMMEDIATE");
+    this.transactionDepth += 1;
 
     try {
       const result = operation();
+      this.transactionDepth -= 1;
       this.database.exec("COMMIT");
       return result;
     } catch (error) {
+      this.transactionDepth -= 1;
       this.database.exec("ROLLBACK");
       throw error;
     }
@@ -1080,6 +1090,55 @@ export class PromptDatabase {
     });
 
     return true;
+  }
+
+  // 文档包导入确认：项目、来源包、资产和它们的第 1 版一次性写完。
+  // 中途失败会整体回滚，不会留下「项目建了一半、资产没进来」的状态。
+  createSourcePackageImport(plan: SourcePackageCreationPlan) {
+    const created = { project: false, sourcePackages: 0, assets: 0 };
+
+    this.transaction(() => {
+      if (plan.project) {
+        if (!this.createProject(plan.project)) {
+          throw new Error("这个项目已经存在。");
+        }
+
+        created.project = true;
+      }
+
+      for (const asset of plan.sourcePackages) {
+        if (
+          !this.createAsset({
+            asset,
+            versionId: asset.currentVersionId,
+            changeReason: "导入文档包",
+            versionReason: "initial",
+          })
+        ) {
+          throw new Error(`来源包「${asset.title}」已经存在。`);
+        }
+
+        created.sourcePackages += 1;
+      }
+
+      for (const entry of plan.assets) {
+        if (
+          !this.createAsset({
+            asset: entry.asset,
+            versionId: entry.version.versionId,
+            changeReason: entry.version.changeReason,
+            versionReason: "initial",
+            sourceAssetIds: entry.version.sourceAssetIds,
+          })
+        ) {
+          throw new Error(`资产「${entry.asset.title}」已经存在。`);
+        }
+
+        created.assets += 1;
+      }
+    });
+
+    return created;
   }
 
   updateProject(project: ProjectData) {
