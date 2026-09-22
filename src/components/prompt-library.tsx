@@ -9,6 +9,7 @@ import {
   ListChecks,
   LogOut,
   LoaderCircle,
+  PackageOpen,
   Plus,
   RefreshCcw,
   Search,
@@ -32,6 +33,7 @@ import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
+import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -226,6 +228,8 @@ export function PromptLibrary({
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [isAiCaptureOpen, setIsAiCaptureOpen] = useState(false);
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+  const [isSourcePackageImportOpen, setIsSourcePackageImportOpen] =
+    useState(false);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
   // 记录优化记录属于哪条提示词，避免切换详情时显示上一条的回退入口。
@@ -1323,6 +1327,15 @@ export function PromptLibrary({
                   </button>
                 </>
               )}
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError)}
+                onClick={() => setIsSourcePackageImportOpen(true)}
+                type="button"
+              >
+                <PackageOpen aria-hidden="true" className="size-4" />
+                导入文档包
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -1590,6 +1603,18 @@ export function PromptLibrary({
           promptCount={prompts.length}
           prompts={prompts}
           trashedPromptIds={trashedPromptIds}
+        />
+      )}
+
+      {isSourcePackageImportOpen && activeProjectId && (
+        <SourcePackageImportDialog
+          currentProjectId={activeProjectId}
+          onClose={() => setIsSourcePackageImportOpen(false)}
+          onImported={async () => {
+            await reloadAssets();
+            notify("导入完成，已创建项目和资产。");
+          }}
+          projects={projects}
         />
       )}
 

@@ -6,8 +6,20 @@ import { useState, type FormEvent } from "react";
 import {
   ruleScopes,
   ruleTypes,
+  ruleLevels,
+  ruleStages,
+  rulePriorities,
+  ruleLifecycles,
+  ruleOverrideScopes,
+  documentRoles,
   type AssetStatus,
+  type DocumentRole,
+  type RuleLevel,
+  type RuleLifecycle,
+  type RuleOverrideScope,
+  type RulePriority,
   type RuleScope,
+  type RuleStage,
   type RuleType,
 } from "@/data/assets";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
@@ -39,6 +51,103 @@ const inputClassName =
   "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
 const labelClassName = "text-sm font-semibold text-slate-700";
+
+const ruleLevelLabels: Record<RuleLevel, string> = {
+  global: "全局",
+  module: "模块",
+  task: "任务",
+  code: "代码",
+};
+
+const ruleStageLabels: Record<RuleStage, string> = {
+  plan: "计划",
+  implement: "实施",
+  verify: "验证",
+  release: "发布",
+};
+
+const rulePriorityLabels: Record<RulePriority, string> = {
+  must: "必须",
+  should: "应当",
+  may: "可选",
+};
+
+const ruleLifecycleLabels: Record<RuleLifecycle, string> = {
+  draft: "草稿",
+  active: "活跃",
+  deprecated: "已废弃",
+  archived: "已归档",
+};
+
+const ruleOverrideScopeLabels: Record<RuleOverrideScope, string> = {
+  none: "不允许覆盖",
+  project: "项目内可覆盖",
+  task: "任务内可覆盖",
+};
+
+const documentRoleLabels: Record<DocumentRole, string> = {
+  source: "来源",
+  working: "工作稿",
+  authoritative: "权威版",
+  compiled: "编译结果",
+};
+
+// 扩展元数据都是选填，这里统一用「未填写」的空值选项
+function OptionalSelect<T extends string>({
+  label,
+  value,
+  options,
+  labels,
+  onChange,
+}: {
+  label: string;
+  value: T | "";
+  options: readonly T[];
+  labels: Record<T, string>;
+  onChange: (value: T | "") => void;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className={labelClassName}>{label}</span>
+      <select
+        className={inputClassName}
+        onChange={(event) => onChange(event.target.value as T | "")}
+        value={value}
+      >
+        <option value="">未填写</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {labels[option]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className={labelClassName}>{label}</span>
+      <input
+        className={inputClassName}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+    </label>
+  );
+}
 
 export function AssetEditorDrawer({
   assetType,
@@ -242,6 +351,136 @@ export function AssetEditorDrawer({
                 </select>
               </label>
             </div>
+
+            <details className="mt-5 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                扩展元数据（都可以留空）
+              </summary>
+
+              {draft.assetType === "rule" ? (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <TextField
+                    label="用途"
+                    onChange={(value) => updateDraft({ purpose: value })}
+                    placeholder="这条规则用来解决什么问题"
+                    value={draft.purpose}
+                  />
+                  <TextField
+                    label="技术上下文"
+                    onChange={(value) => updateDraft({ techContext: value })}
+                    placeholder="多个用逗号分隔，例如：Next.js，SQLite"
+                    value={draft.techContext}
+                  />
+                  <OptionalSelect
+                    label="作用层级"
+                    labels={ruleLevelLabels}
+                    onChange={(value) => updateDraft({ level: value })}
+                    options={ruleLevels}
+                    value={draft.level}
+                  />
+                  <OptionalSelect
+                    label="执行阶段"
+                    labels={ruleStageLabels}
+                    onChange={(value) => updateDraft({ stage: value })}
+                    options={ruleStages}
+                    value={draft.stage}
+                  />
+                  <OptionalSelect
+                    label="优先级"
+                    labels={rulePriorityLabels}
+                    onChange={(value) => updateDraft({ priority: value })}
+                    options={rulePriorities}
+                    value={draft.priority}
+                  />
+                  <OptionalSelect
+                    label="生命周期"
+                    labels={ruleLifecycleLabels}
+                    onChange={(value) => updateDraft({ lifecycle: value })}
+                    options={ruleLifecycles}
+                    value={draft.lifecycle}
+                  />
+                  <OptionalSelect
+                    label="覆盖权限"
+                    labels={ruleOverrideScopeLabels}
+                    onChange={(value) => updateDraft({ overrideScope: value })}
+                    options={ruleOverrideScopes}
+                    value={draft.overrideScope}
+                  />
+                  <TextField
+                    label="来源证据"
+                    onChange={(value) => updateDraft({ evidence: value })}
+                    placeholder="这条规则是从哪里来的"
+                    value={draft.evidence}
+                  />
+                  <TextField
+                    label="验证方式"
+                    onChange={(value) => updateDraft({ verification: value })}
+                    placeholder="怎么确认这条规则被遵守了"
+                    value={draft.verification}
+                  />
+                </div>
+              ) : (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <OptionalSelect
+                    label="文档角色"
+                    labels={documentRoleLabels}
+                    onChange={(value) => updateDraft({ role: value })}
+                    options={documentRoles}
+                    value={draft.role}
+                  />
+                  <TextField
+                    label="所属模块"
+                    onChange={(value) => updateDraft({ module: value })}
+                    placeholder="这份文档属于哪个模块"
+                    value={draft.module}
+                  />
+                  <TextField
+                    label="生效版本"
+                    onChange={(value) => updateDraft({ effectiveVersion: value })}
+                    placeholder="例如：2.1.1"
+                    value={draft.effectiveVersion}
+                  />
+                  <TextField
+                    label="来源位置"
+                    onChange={(value) => updateDraft({ sourceLocation: value })}
+                    placeholder="例如：docs/product-brief.md"
+                    value={draft.sourceLocation}
+                  />
+                  <TextField
+                    label="更新触发条件"
+                    onChange={(value) => updateDraft({ updateTrigger: value })}
+                    placeholder="什么情况下需要更新这份文档"
+                    value={draft.updateTrigger}
+                  />
+                  <TextField
+                    label="新鲜度"
+                    onChange={(value) => updateDraft({ freshness: value })}
+                    placeholder="例如：30 天"
+                    value={draft.freshness}
+                  />
+                  <TextField
+                    label="最后验证时间"
+                    onChange={(value) => updateDraft({ lastVerifiedAt: value })}
+                    placeholder="例如：2026-09-22"
+                    value={draft.lastVerifiedAt}
+                  />
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>是否权威来源</span>
+                    <span className="flex h-11 items-center gap-2 text-sm text-slate-700">
+                      <input
+                        checked={draft.authority}
+                        className="size-4"
+                        onChange={(event) =>
+                          updateDraft({ authority: event.target.checked })
+                        }
+                        type="checkbox"
+                      />
+                      这份文档是权威依据
+                    </span>
+                  </label>
+                </div>
+              )}
+            </details>
 
             {draft.status !== "active" && (
               <p className="mt-3 rounded-lg bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">

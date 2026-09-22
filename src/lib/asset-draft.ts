@@ -2,10 +2,21 @@ import {
   type AssetData,
   type AssetStatus,
   type DocumentAssetData,
+  type DocumentAssetMetadata,
+  type DocumentRole,
+  type RuleAssetMetadata,
   type RuleAssetData,
+  type RuleLevel,
+  type RuleLifecycle,
+  type RuleOverrideScope,
+  type RulePriority,
   type RuleScope,
+  type RuleStage,
   type RuleType,
   createInitialAssetVersionId,
+  defaultDocumentType,
+  normalizeDocumentMetadata,
+  normalizeRuleMetadata,
 } from "../data/assets.ts";
 import type { AssetSaveInput } from "./prompt-api.ts";
 import { assetStatusLabels } from "./asset-list.ts";
@@ -32,6 +43,16 @@ export type RuleAssetDraft = {
   status: AssetStatus;
   ruleType: RuleType;
   scope: RuleScope;
+  // 扩展元数据都可以留空，界面不因为没填而拦截保存
+  purpose: string;
+  level: RuleLevel | "";
+  techContext: string;
+  stage: RuleStage | "";
+  priority: RulePriority | "";
+  lifecycle: RuleLifecycle | "";
+  overrideScope: RuleOverrideScope | "";
+  evidence: string;
+  verification: string;
 };
 
 export type DocumentAssetDraft = {
@@ -41,6 +62,14 @@ export type DocumentAssetDraft = {
   content: string;
   status: AssetStatus;
   documentType: string;
+  role: DocumentRole | "";
+  authority: boolean;
+  module: string;
+  effectiveVersion: string;
+  sourceLocation: string;
+  updateTrigger: string;
+  freshness: string;
+  lastVerifiedAt: string;
 };
 
 export type AssetDraft = RuleAssetDraft | DocumentAssetDraft;
@@ -70,6 +99,15 @@ export function createEmptyAssetDraft(
       status: "active",
       ruleType: "must",
       scope: "project",
+      purpose: "",
+      level: "",
+      techContext: "",
+      stage: "",
+      priority: "",
+      lifecycle: "",
+      overrideScope: "",
+      evidence: "",
+      verification: "",
     };
   }
 
@@ -80,21 +118,43 @@ export function createEmptyAssetDraft(
     content: "",
     status: "active",
     documentType: "PRD",
+    role: "",
+    authority: false,
+    module: "",
+    effectiveVersion: "",
+    sourceLocation: "",
+    updateTrigger: "",
+    freshness: "",
+    lastVerifiedAt: "",
   };
 }
 
 export function assetToDraft(asset: EditableAssetData): AssetDraft {
   if (asset.assetType === "rule") {
+    // 旧数据只有核心字段，这里统一补成空值，编辑器不用自己兜底
+    const metadata = normalizeRuleMetadata(asset.metadata);
+
     return {
       assetType: "rule",
       title: asset.title,
       summary: asset.summary,
       content: asset.content,
       status: asset.status,
-      ruleType: asset.metadata.ruleType,
-      scope: asset.metadata.scope,
+      ruleType: metadata.ruleType,
+      scope: metadata.scope,
+      purpose: metadata.purpose,
+      level: metadata.level,
+      techContext: metadata.techContext.join("，"),
+      stage: metadata.stage,
+      priority: metadata.priority,
+      lifecycle: metadata.lifecycle,
+      overrideScope: metadata.overrideScope,
+      evidence: metadata.evidence,
+      verification: metadata.verification,
     };
   }
+
+  const metadata = normalizeDocumentMetadata(asset.metadata);
 
   return {
     assetType: "document",
@@ -102,7 +162,15 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
     summary: asset.summary,
     content: asset.content,
     status: asset.status,
-    documentType: asset.metadata.documentType,
+    documentType: metadata.documentType,
+    role: metadata.role,
+    authority: metadata.authority,
+    module: metadata.module,
+    effectiveVersion: metadata.effectiveVersion,
+    sourceLocation: metadata.sourceLocation,
+    updateTrigger: metadata.updateTrigger,
+    freshness: metadata.freshness,
+    lastVerifiedAt: metadata.lastVerifiedAt,
   };
 }
 
@@ -158,17 +226,47 @@ function buildAsset(
   };
 
   if (draft.assetType === "rule") {
+    const ruleMetadata: RuleAssetMetadata = {
+      ruleType: draft.ruleType,
+      scope: draft.scope,
+      purpose: draft.purpose.trim(),
+      // 枚举留空时不写进元数据，避免出现空字符串这种非法取值
+      ...(draft.level ? { level: draft.level } : {}),
+      techContext: draft.techContext
+        .split(/[,，]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+      ...(draft.stage ? { stage: draft.stage } : {}),
+      ...(draft.priority ? { priority: draft.priority } : {}),
+      ...(draft.lifecycle ? { lifecycle: draft.lifecycle } : {}),
+      ...(draft.overrideScope ? { overrideScope: draft.overrideScope } : {}),
+      evidence: draft.evidence.trim(),
+      verification: draft.verification.trim(),
+    };
+
     return {
       ...common,
       assetType: "rule",
-      metadata: { ruleType: draft.ruleType, scope: draft.scope },
+      metadata: ruleMetadata,
     };
   }
+
+  const documentMetadata: DocumentAssetMetadata = {
+    documentType: draft.documentType.trim() || defaultDocumentType,
+    ...(draft.role ? { role: draft.role } : {}),
+    authority: draft.authority,
+    module: draft.module.trim(),
+    effectiveVersion: draft.effectiveVersion.trim(),
+    sourceLocation: draft.sourceLocation.trim(),
+    updateTrigger: draft.updateTrigger.trim(),
+    freshness: draft.freshness.trim(),
+    lastVerifiedAt: draft.lastVerifiedAt.trim(),
+  };
 
   return {
     ...common,
     assetType: "document",
-    metadata: { documentType: draft.documentType.trim() },
+    metadata: documentMetadata,
   };
 }
 

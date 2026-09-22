@@ -187,3 +187,79 @@ export function checkSourcePackageDraftLimit(draft: SourcePackageDraft) {
 
   return null;
 }
+
+// 按 Markdown 二级标题把正文切成若干段，供预览里的「拆分」使用
+function splitIntoSections(content: string) {
+  const sections: Array<{ title: string; content: string }> = [];
+  let current: { title: string; lines: string[] } | null = null;
+
+  for (const line of content.split(/\r?\n/)) {
+    const heading = line.match(/^##\s+(.+?)\s*$/);
+
+    if (heading) {
+      if (current) {
+        sections.push({
+          title: current.title,
+          content: current.lines.join("\n").trim(),
+        });
+      }
+
+      current = { title: heading[1].trim(), lines: [] };
+      continue;
+    }
+
+    if (current) {
+      current.lines.push(line);
+    }
+  }
+
+  if (current) {
+    sections.push({
+      title: current.title,
+      content: current.lines.join("\n").trim(),
+    });
+  }
+
+  return sections.filter((section) => section.content);
+}
+
+// 一条草稿拆成多条；拆不动时原样返回，并说明原因
+export function splitSourcePackageDraftItem(
+  draft: SourcePackageDraft,
+  itemId: string,
+): { draft: SourcePackageDraft; message?: string } {
+  const index = draft.items.findIndex((item) => item.id === itemId);
+
+  if (index < 0) {
+    return { draft, message: "找不到这条草稿。" };
+  }
+
+  const item = draft.items[index];
+  const sections = splitIntoSections(item.content);
+
+  if (sections.length < 2) {
+    return {
+      draft,
+      message: "这条内容里没有两个以上的 ## 小标题，加上小标题后再拆。",
+    };
+  }
+
+  const splitItems = sections.map((section, sectionIndex) => ({
+    ...item,
+    id: `${item.id}-${sectionIndex + 1}`,
+    title: section.title || `${item.title}（${sectionIndex + 1}）`,
+    content: section.content,
+  }));
+
+  return {
+    draft: {
+      ...draft,
+      items: [
+        ...draft.items.slice(0, index),
+        ...splitItems,
+        ...draft.items.slice(index + 1),
+      ],
+    },
+    message: `已拆成 ${splitItems.length} 条。`,
+  };
+}
