@@ -10,17 +10,24 @@ function useAiEnv() {
     base: process.env.AI_API_BASE_URL,
     key: process.env.AI_API_KEY,
     model: process.env.AI_MODEL,
+    dataMode: process.env.NEXT_PUBLIC_DATA_MODE,
+    vercel: process.env.VERCEL,
   };
 
   process.env.AI_API_BASE_URL = "https://ai.test/v1";
   process.env.AI_API_KEY = "test-key";
   process.env.AI_MODEL = "test-model";
+  // 云端模式下这个接口会先校验登录态，用例跑的是本地路径，显式声明本地模式
+  process.env.NEXT_PUBLIC_DATA_MODE = "local";
+  delete process.env.VERCEL;
 
   return () => {
     for (const [name, value] of [
       ["AI_API_BASE_URL", previous.base],
       ["AI_API_KEY", previous.key],
       ["AI_MODEL", previous.model],
+      ["NEXT_PUBLIC_DATA_MODE", previous.dataMode],
+      ["VERCEL", previous.vercel],
     ]) {
       if (value === undefined) {
         delete process.env[name];
@@ -121,6 +128,7 @@ test("AI 返回的不是 JSON 草稿时给出明确错误", async () => {
 });
 
 test("AI 服务没配置时返回 503", async () => {
+  const restoreEnv = useAiEnv();
   const original = process.env.AI_API_KEY;
   delete process.env.AI_API_KEY;
 
@@ -130,9 +138,7 @@ test("AI 服务没配置时返回 503", async () => {
     assert.equal(response.status, 503);
     assert.match((await response.json()).error, /AI 服务尚未配置/);
   } finally {
-    if (original !== undefined) {
-      process.env.AI_API_KEY = original;
-    }
+    restoreEnv();
   }
 });
 

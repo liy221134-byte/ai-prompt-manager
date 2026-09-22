@@ -176,9 +176,14 @@ test("新建规则会生成合法的资产和初始版本标识", () => {
   assert.equal(input.asset.currentVersionId, createInitialAssetVersionId("rule-alpha"));
   assert.equal(input.versionId, createInitialAssetVersionId("rule-alpha"));
   assert.equal(input.versionReason, "initial");
+  // 扩展元数据留空时只有字符串字段和数组会写出去，空枚举不写
   assert.deepEqual(input.asset.metadata, {
     ruleType: "forbidden",
     scope: "global",
+    purpose: "",
+    techContext: [],
+    evidence: "",
+    verification: "",
   });
   assert.equal(isAssetData(input.asset), true);
 });
@@ -197,7 +202,16 @@ test("新建文档会写入文档类型元数据", () => {
   });
 
   assert.equal(input.asset.assetType, "document");
-  assert.deepEqual(input.asset.metadata, { documentType: "数据库说明" });
+  assert.deepEqual(input.asset.metadata, {
+    documentType: "数据库说明",
+    authority: false,
+    module: "",
+    effectiveVersion: "",
+    sourceLocation: "",
+    updateTrigger: "",
+    freshness: "",
+    lastVerifiedAt: "",
+  });
   assert.equal(isAssetData(input.asset), true);
 });
 

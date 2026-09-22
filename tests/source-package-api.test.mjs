@@ -15,22 +15,36 @@ const ROUTE_URL = "http://localhost/api/source-packages";
 // 每个用例换一个临时数据目录，接口通过 PROMPT_DB_PATH 找到它
 function useTempDataRoot() {
   const dataRootDir = mkdtempSync(join(tmpdir(), "source-package-api-"));
-  const previous = process.env.PROMPT_DB_PATH;
+  const previous = {
+    promptDbPath: process.env.PROMPT_DB_PATH,
+    dataMode: process.env.NEXT_PUBLIC_DATA_MODE,
+    vercel: process.env.VERCEL,
+  };
 
   process.env.PROMPT_DB_PATH = join(dataRootDir, "prompts.sqlite");
+  // 这些接口只在本地模式放行；构建机上带着 VERCEL 和 supabase 模式跑时会被直接拒绝，
+  // 所以用例里显式声明本地模式，避免测试结果取决于运行环境。
+  process.env.NEXT_PUBLIC_DATA_MODE = "local";
+  delete process.env.VERCEL;
 
   return {
     dataRootDir,
     restore() {
-      if (previous === undefined) {
-        delete process.env.PROMPT_DB_PATH;
-      } else {
-        process.env.PROMPT_DB_PATH = previous;
-      }
+      setEnv("PROMPT_DB_PATH", previous.promptDbPath);
+      setEnv("NEXT_PUBLIC_DATA_MODE", previous.dataMode);
+      setEnv("VERCEL", previous.vercel);
 
       rmSync(dataRootDir, { recursive: true, force: true });
     },
   };
+}
+
+function setEnv(name, value) {
+  if (value === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = value;
+  }
 }
 
 function uploadRequest(filename, bytes, type = "application/octet-stream") {

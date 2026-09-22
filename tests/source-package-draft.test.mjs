@@ -6,6 +6,7 @@ import {
   applySourcePackageDraftEdits,
   checkSourcePackageDraftLimit,
   normalizeSourcePackageDraft,
+  splitSourcePackageDraftItem,
 } from "../src/lib/source-package-draft.ts";
 import {
   SOURCE_PACKAGE_TEXT_LIMITS,
@@ -178,4 +179,31 @@ test("确认创建前会检查数量和空草稿", () => {
   assert.match(checkSourcePackageDraftLimit(tooMany), /最多创建 200 条/);
 
   assert.equal(checkSourcePackageDraftLimit(createDraft()), null);
+});
+
+test("按二级标题把一条草稿拆成多条", () => {
+  const draft = createDraft();
+  draft.items[0] = {
+    ...draft.items[0],
+    content: "## 背景\n\n背景内容\n\n## 目标\n\n目标内容",
+  };
+
+  const { draft: split, message } = splitSourcePackageDraftItem(draft, "draft-1");
+
+  assert.equal(split.items.length, 3);
+  assert.equal(split.items[0].title, "背景");
+  assert.equal(split.items[0].content, "背景内容");
+  assert.equal(split.items[1].title, "目标");
+  // 原条目被替换掉，其余草稿位置不变
+  assert.equal(split.items[2].id, "draft-2");
+  assert.match(message, /已拆成 2 条/);
+});
+
+test("没有两个小标题时拆分不动，并说明原因", () => {
+  const draft = createDraft();
+
+  const { draft: unchanged, message } = splitSourcePackageDraftItem(draft, "draft-1");
+
+  assert.equal(unchanged, draft);
+  assert.match(message, /没有两个以上的 ## 小标题/);
 });

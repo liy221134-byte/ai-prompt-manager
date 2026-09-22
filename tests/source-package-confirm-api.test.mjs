@@ -11,9 +11,16 @@ const ROUTE_URL = "http://localhost/api/source-packages/confirm";
 
 function useTempDataRoot() {
   const dataRootDir = mkdtempSync(join(tmpdir(), "source-package-confirm-"));
-  const previous = process.env.PROMPT_DB_PATH;
+  const previous = {
+    promptDbPath: process.env.PROMPT_DB_PATH,
+    dataMode: process.env.NEXT_PUBLIC_DATA_MODE,
+    vercel: process.env.VERCEL,
+  };
 
   process.env.PROMPT_DB_PATH = join(dataRootDir, "prompts.sqlite");
+  // 确认接口同样只在本地模式放行，用例里显式声明本地模式，避免受构建机环境影响
+  process.env.NEXT_PUBLIC_DATA_MODE = "local";
+  delete process.env.VERCEL;
 
   // 先把单例绑定到当前临时目录，用例结束时关掉它，否则 Windows 删不掉临时文件
   const database = getPromptDatabase();
@@ -25,15 +32,21 @@ function useTempDataRoot() {
       database.close();
       delete globalThis.promptDatabase;
 
-      if (previous === undefined) {
-        delete process.env.PROMPT_DB_PATH;
-      } else {
-        process.env.PROMPT_DB_PATH = previous;
-      }
+      setEnv("PROMPT_DB_PATH", previous.promptDbPath);
+      setEnv("NEXT_PUBLIC_DATA_MODE", previous.dataMode);
+      setEnv("VERCEL", previous.vercel);
 
       rmSync(dataRootDir, { recursive: true, force: true });
     },
   };
+}
+
+function setEnv(name, value) {
+  if (value === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = value;
+  }
 }
 
 function confirmRequest(body) {
