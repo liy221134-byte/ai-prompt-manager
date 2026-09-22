@@ -17,9 +17,13 @@ import { ChangeEvent, useRef, useState } from "react";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import {
   createPromptImportPlan,
-  parsePromptBackup,
+  parseBackup,
+  planAssetImport,
+  type AssetImportPlan,
   type PromptImportPlan,
 } from "@/lib/prompt-backup";
+import type { AssetData } from "@/data/assets";
+import type { ProjectData } from "@/data/projects";
 
 type BackupManagerDialogProps = {
   lastBackupAt: string | null;
@@ -27,9 +31,13 @@ type BackupManagerDialogProps = {
   promptCount: number;
   prompts: Parameters<typeof createPromptImportPlan>[0];
   trashedPromptIds: ReadonlySet<string>;
+  existingAssets: AssetData[];
+  existingProjects: ProjectData[];
   onClose: () => void;
   onExport: () => string;
   onImport: (plan: PromptImportPlan) => Promise<void>;
+  // v2 备份走这条路：只新增不覆盖，直接落库
+  onImportAssets: (plan: AssetImportPlan) => Promise<void>;
   onNotify: (message: string) => void;
 };
 
@@ -79,6 +87,9 @@ export function BackupManagerDialog({
   onClose,
   onExport,
   onImport,
+  onImportAssets,
+  existingAssets,
+  existingProjects,
   onNotify,
 }: BackupManagerDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,10 +118,25 @@ export function BackupManagerDialog({
 
     try {
       const content = await file.text();
-      const backup = parsePromptBackup(content);
+      const parsed = parseBackup(content);
+
+      if (parsed.kind === "asset") {
+        // v2 备份：只新增不覆盖，算完计划直接落库，结果用提示条报条数
+        setImportPlan(null);
+        setImportError(null);
+        await onImportAssets(
+          planAssetImport({
+            existingAssets,
+            existingProjects,
+            backup: parsed.backup,
+          }),
+        );
+        return;
+      }
+
       const nextPlan = createPromptImportPlan(
         prompts,
-        backup,
+        parsed.backup,
         trashedPromptIds,
       );
 

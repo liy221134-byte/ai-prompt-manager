@@ -193,3 +193,20 @@ test("导入规划只新增不覆盖，同名项目合并、已有资产跳过",
     ["project-existing", "project-b"],
   );
 });
+
+test("同名项目 id 也相同时不会重复创建", () => {
+  const backup = createAssetBackup({
+    projects: [project],
+    assets: [documentAsset],
+  });
+
+  const plan = planAssetImport({
+    // 默认项目就是这种情形：id 和名称都与备份里一致
+    existingProjects: [project],
+    existingAssets: [],
+    backup,
+  });
+
+  assert.deepEqual(plan.projectsToCreate, []);
+  assert.equal(plan.assetsToCreate.length, 1);
+});

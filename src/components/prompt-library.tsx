@@ -104,7 +104,10 @@ import {
   saveLastBackupAt,
   savePromptLibrary,
 } from "@/lib/prompt-storage";
-import { downloadPromptBackup } from "@/lib/backup-download";
+import {
+  downloadAssetBackup,
+  downloadPromptBackup,
+} from "@/lib/backup-download";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
 import {
   loadActiveProjectId,
@@ -112,6 +115,7 @@ import {
 } from "@/lib/project-storage";
 import { ensureDefaultProject } from "@/lib/project-workspace";
 import {
+  type AssetImportPlan,
   createPromptImportPlan,
   PROMPT_BACKUP_TYPE,
   PROMPT_BACKUP_VERSION,
@@ -1071,11 +1075,33 @@ export function PromptLibrary({
   }
 
   function handleExport() {
-    const exportedAt = downloadPromptBackup(prompts);
+    // 2.1.2 起导出 v2：项目、提示词、规则、文档、技术档案和关系一起走
+    const exportedAt = downloadAssetBackup({ projects, assets });
 
     saveLastBackupAt(exportedAt);
     setLastBackupAt(exportedAt);
     return exportedAt;
+  }
+
+  async function handleImportAssets(plan: AssetImportPlan) {
+    for (const project of plan.projectsToCreate) {
+      await dataSource.createProject(project);
+    }
+
+    for (const asset of plan.assetsToCreate) {
+      await dataSource.createAsset({
+        asset,
+        versionId: asset.currentVersionId,
+        changeReason: "导入备份",
+        versionReason: "initial",
+      });
+    }
+
+    await loadFromServer();
+    setIsBackupManagerOpen(false);
+    notify(
+      `导入完成：新增项目 ${plan.projectsToCreate.length} 个、资产 ${plan.assetsToCreate.length} 条、跳过 ${plan.skippedAssetIds.length} 条`,
+    );
   }
 
   async function handleImport(plan: PromptImportPlan) {
@@ -1731,6 +1757,9 @@ export function PromptLibrary({
           onClose={() => setIsBackupManagerOpen(false)}
           onExport={handleExport}
           onImport={handleImport}
+          onImportAssets={handleImportAssets}
+          existingAssets={assets}
+          existingProjects={projects}
           onNotify={notify}
           otherAssetCount={otherAssetCount}
           promptCount={prompts.length}

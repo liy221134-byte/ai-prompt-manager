@@ -156,9 +156,18 @@ export function planAssetImport(input: {
   );
   const existingIds = new Set(input.existingAssets.map((asset) => asset.id));
 
-  const projectsToCreate = input.backup.projects.filter(
-    (project) => projectIdMap.get(project.id) === project.id,
-  );
+  // 判断「要不要新建」不能只看 id 映射：同名项目的 id 恰好相同时（默认项目就是这样），
+  // 映射结果等于自身，会被误判成需要新建。这里按 id 和名称各查一次。
+  const projectsToCreate = input.backup.projects.filter((project) => {
+    const sameId = input.existingProjects.some(
+      (item) => item.id === project.id,
+    );
+    const sameName = input.existingProjects.some(
+      (item) => item.name.trim() === project.name.trim(),
+    );
+
+    return !sameId && !sameName;
+  });
 
   const assetsToCreate: AssetData[] = [];
   const skippedAssetIds: string[] = [];
