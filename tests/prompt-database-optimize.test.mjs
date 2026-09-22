@@ -44,9 +44,9 @@ function readVersions(databasePath, promptId) {
     .prepare(
       `
         SELECT version_id, version_reason, content, restored_at
-        FROM prompt_versions
-        WHERE prompt_id = ?
-        ORDER BY created_at ASC, version_id ASC
+        FROM asset_versions
+        WHERE asset_id = ?
+        ORDER BY version_number ASC
       `,
     )
     .all(promptId);
@@ -101,10 +101,7 @@ test("回到优化前会恢复内容，并留下回退前快照", () => {
       versionId: "version-optimize",
     });
 
-    const snapshot = context.database.restorePromptOptimize(
-      "prompt-a",
-      "version-restore",
-    );
+    const snapshot = context.database.restorePromptOptimize("prompt-a");
 
     assert.ok(snapshot);
 
@@ -119,15 +116,25 @@ test("回到优化前会恢复内容，并留下回退前快照", () => {
     assert.equal(context.database.fetchLatestOptimizeVersion("prompt-a"), null);
 
     const versions = readVersions(context.databasePath, "prompt-a");
+    const optimizeSnapshot = versions.find(
+      (row) => row.version_reason === "optimize_before",
+    );
+    const restoreSnapshot = versions.find(
+      (row) => row.version_reason === "restore_before",
+    );
 
     assert.deepEqual(
       versions.map((row) => row.version_reason),
-      ["optimize_before", "restore_before"],
+      ["initial", "optimize_before", "save", "restore_before", "restore"],
     );
-    assert.notEqual(versions[0].restored_at, null);
-    assert.equal(versions[1].restored_at, null);
+    // 优化前快照已被消费，回退前快照还没有。
+    assert.notEqual(optimizeSnapshot.restored_at, null);
+    assert.equal(restoreSnapshot.restored_at, null);
     // 回退前快照保存的是回退发生之前的内容，也就是优化后的内容。
-    assert.equal(versions[1].content, "## 任务\n请分析 {{行业}} 的市场规模");
+    assert.equal(
+      restoreSnapshot.content,
+      "## 任务\n请分析 {{行业}} 的市场规模",
+    );
   } finally {
     context.database.close();
     context.cleanup();
@@ -151,13 +158,19 @@ test("回到优化前会自己生成新的快照编号", () => {
     assert.ok(snapshot);
 
     const versions = readVersions(context.databasePath, "prompt-a");
+    const restoreSnapshot = versions.find(
+      (row) => row.version_reason === "restore_before",
+    );
+    const optimizeSnapshot = versions.find(
+      (row) => row.version_reason === "optimize_before",
+    );
 
     assert.deepEqual(
       versions.map((row) => row.version_reason),
-      ["optimize_before", "restore_before"],
+      ["initial", "optimize_before", "save", "restore_before", "restore"],
     );
-    assert.notEqual(versions[1].version_id, versions[0].version_id);
-    assert.ok(String(versions[1].version_id).startsWith("version-"));
+    assert.notEqual(restoreSnapshot.version_id, optimizeSnapshot.version_id);
+    assert.ok(String(restoreSnapshot.version_id).startsWith("version-"));
   } finally {
     context.database.close();
     context.cleanup();
@@ -172,10 +185,16 @@ test("没有优化记录时回退返回空", () => {
 
     assert.equal(context.database.fetchLatestOptimizeVersion("prompt-a"), null);
     assert.equal(
-      context.database.restorePromptOptimize("prompt-a", "version-restore"),
+      context.database.restorePromptOptimize("prompt-a"),
       null,
     );
-    assert.equal(readVersions(context.databasePath, "prompt-a").length, 0);
+    // 没有优化记录时不写回退快照，只留下创建提示词时的内容版本。
+    assert.deepEqual(
+      readVersions(context.databasePath, "prompt-a").map(
+        (row) => row.version_reason,
+      ),
+      ["initial"],
+    );
   } finally {
     context.database.close();
     context.cleanup();

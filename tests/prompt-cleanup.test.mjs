@@ -47,7 +47,8 @@ test("过期垃圾箱会被清理", () => {
 
     const rawDatabase = new DatabaseSync(context.databasePath);
     rawDatabase
-      .prepare("UPDATE prompts SET deleted_at = ? WHERE id = ?")
+      // 2.1.0 起垃圾箱状态存在统一资产表。
+      .prepare("UPDATE assets SET deleted_at = ? WHERE id = ?")
       .run("2026-08-01T00:00:00.000Z", "prompt-expired");
     rawDatabase.close();
 
@@ -70,7 +71,7 @@ test("数据库初始化会清理已过期的垃圾箱", () => {
 
   const rawDatabase = new DatabaseSync(context.databasePath);
   rawDatabase
-    .prepare("UPDATE prompts SET deleted_at = ? WHERE id = ?")
+    .prepare("UPDATE assets SET deleted_at = ? WHERE id = ?")
     .run("2026-08-01T00:00:00.000Z", "prompt-expired");
   rawDatabase.close();
 

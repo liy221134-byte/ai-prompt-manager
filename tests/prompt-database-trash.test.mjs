@@ -102,42 +102,15 @@ test("合并恢复记录只包含合并快照，不包含优化快照", () => {
       versionId: "version-merge",
     });
 
-    // 直接写入一条优化快照，模拟 v0.9 的「AI 优化」结果。
-    const raw = new DatabaseSync(context.databasePath);
-    raw
-      .prepare(
-        `
-          INSERT INTO prompt_versions (
-            version_id,
-            prompt_id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            version_reason,
-            source_prompt_ids_json,
-            restored_at,
-            expires_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-      )
-      .run(
-        "version-optimize",
-        "prompt-c",
-        "优化前标题",
-        "AI效能",
-        JSON.stringify(["测试"]),
-        "优化前正文",
-        "优化前场景",
-        "2026-09-20T02:00:00.000Z",
-        "optimize_before",
-        JSON.stringify([]),
-        null,
-        "2099-01-01T00:00:00.000Z",
-      );
-    raw.close();
+    // 再写入一条优化快照：2.1.0 起合并和优化快照都存在统一资产版本表里。
+    context.database.commitPromptOptimize({
+      prompt: prompt({
+        id: "prompt-c",
+        title: "优化前标题",
+        content: "优化前正文",
+      }),
+      versionId: "version-optimize",
+    });
 
     const records = context.database.listMergeRecoveryRecords();
 
@@ -496,7 +469,7 @@ test("恢复合并记录拒绝过期快照", () => {
     const rawDatabase = new DatabaseSync(context.databasePath);
     rawDatabase
       .prepare(
-        "UPDATE prompt_versions SET expires_at = ? WHERE version_id = ?",
+        "UPDATE asset_versions SET expires_at = ? WHERE version_id = ?",
       )
       .run("2020-01-01T00:00:00.000Z", "version-1");
     rawDatabase.close();
@@ -592,7 +565,8 @@ test("目标被永久删除后恢复合并记录返回空且不消费快照", ()
     context.database.permanentlyDeletePrompt("prompt-a");
 
     assert.equal(context.database.restoreMergeRecord("version-1"), null);
-    assert.equal(context.database.listMergeRecoveryRecords().length, 1);
+    // 永久删除目标会把它的全部版本一起删掉，合并快照不会变成孤儿记录。
+    assert.equal(context.database.listMergeRecoveryRecords().length, 0);
     assert.equal(context.database.listTrash().length, 1);
   } finally {
     context.database.close();
@@ -715,10 +689,10 @@ test("purgeExpiredTrash 清理过期垃圾箱和恢复快照", () => {
 
     const rawDatabase = new DatabaseSync(context.databasePath);
     rawDatabase
-      .prepare("UPDATE prompts SET deleted_at = ? WHERE id = ?")
+      .prepare("UPDATE assets SET deleted_at = ? WHERE id = ?")
       .run("2026-08-01T00:00:00.000Z", "prompt-b");
     rawDatabase
-      .prepare("UPDATE prompt_versions SET expires_at = ? WHERE version_id = ?")
+      .prepare("UPDATE asset_versions SET expires_at = ? WHERE version_id = ?")
       .run("2026-08-31T00:00:00.000Z", "version-1");
     rawDatabase.close();
 

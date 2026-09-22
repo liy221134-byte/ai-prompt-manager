@@ -10,9 +10,15 @@ import {
   type PromptVersionReason,
 } from "../../data/prompts.ts";
 import {
+  assetToPrompt,
+  createAssetVersion,
+  createInitialAssetVersionId,
+  promptToAsset,
   type AssetData,
   type AssetVersionReason,
-  createAssetVersion,
+  type AssetVersionData,
+  type PromptAssetData,
+  type PromptAssetMetadata,
 } from "../../data/assets.ts";
 import type { ProjectData } from "../../data/projects.ts";
 import {
@@ -22,6 +28,7 @@ import {
 } from "../prompt-backup.ts";
 import { PROMPT_TRASH_RETENTION_DAYS } from "../prompt-lifecycle.ts";
 import {
+  backfillAssetsFromLegacyPrompts,
   ensureAssetSchema,
   getAssetById as readAssetById,
   getDefaultProject as readDefaultProject,
@@ -31,8 +38,14 @@ import {
   saveAsset as saveAssetRecord,
   saveAssetVersion as saveAssetVersionRecord,
   saveProject as saveProjectRecord,
-  syncLegacyPromptsToAssets,
 } from "./asset-database.ts";
+
+// 快照版本的中文说明，写进资产版本的变更原因里。
+const PROMPT_SNAPSHOT_REASON_LABELS: Record<PromptVersionReason, string> = {
+  merge_before: "合并前快照",
+  optimize_before: "优化前快照",
+  restore_before: "回退前快照",
+};
 
 type PromptRow = {
   id: string;
@@ -217,15 +230,15 @@ export class PromptDatabase {
     // 启动时先清理超过 30 天的垃圾箱和恢复快照，避免过期数据重新进入列表。
     this.purgeExpiredTrash();
 
-    this.seedInitialPrompts();
-
     this.transaction(() => {
-      const migratedCount = syncLegacyPromptsToAssets(this.database);
+      const migratedCount = backfillAssetsFromLegacyPrompts(this.database);
 
       if (migratedCount > 0) {
         this.bumpVersion();
       }
     });
+
+    this.seedInitialPrompts();
   }
 
   private hasColumn(tableName: string, columnName: string) {
@@ -268,13 +281,20 @@ export class PromptDatabase {
     }
 
     const countRow = this.database
-      .prepare("SELECT COUNT(*) AS count FROM prompts")
+      .prepare(
+        "SELECT COUNT(*) AS count FROM assets WHERE asset_type = 'prompt'",
+      )
       .get() as { count: number };
 
     this.transaction(() => {
       if (countRow.count === 0) {
         for (const prompt of promptCards) {
-          this.insertPrompt(prompt);
+          this.writePromptAsset(prompt, {
+            versionId: createInitialAssetVersionId(prompt.id),
+            changeReason: "创建示例提示词",
+            versionReason: "initial",
+            createdAt: prompt.createdAt,
+          });
         }
       }
 
@@ -298,96 +318,181 @@ export class PromptDatabase {
     }
   }
 
-  private insertPrompt(prompt: PromptCardData) {
+  // 统一资产是提示词的唯一写入源：内容写资产主行，每次写入留下一条不可变版本。
+  private listPromptAssets() {
+    return readAssets(this.database).filter(
+      (asset): asset is PromptAssetData => asset.assetType === "prompt",
+    );
+  }
+
+  private readPromptAsset(assetId: string) {
+    const asset = readAssetById(this.database, assetId);
+
+    return asset && asset.assetType === "prompt" ? asset : null;
+  }
+
+  private nextPromptVersionNumber(assetId: string) {
+    return (
+      readAssetVersions(this.database, assetId).reduce(
+        (latest, version) => Math.max(latest, version.versionNumber),
+        0,
+      ) + 1
+    );
+  }
+
+  private buildPromptAsset(
+    prompt: PromptCardData,
+    currentVersionId: string,
+    existing: PromptAssetData | null,
+  ): AssetData {
+    const projectId =
+      existing?.projectId ?? readDefaultProject(this.database).id;
+    // 调用方可能只提供内容字段，这里统一补齐生命周期字段，
+    // 避免把 undefined 写进资产主行或元数据。
+    const base = promptToAsset(
+      {
+        ...prompt,
+        tags: [...prompt.tags],
+        deletedAt: prompt.deletedAt ?? null,
+        deletedReason: prompt.deletedReason ?? null,
+        mergedIntoPromptId: prompt.mergedIntoPromptId ?? null,
+        mergeVersionId: prompt.mergeVersionId ?? null,
+      },
+      projectId,
+    );
+
+    return {
+      ...base,
+      source:
+        existing?.source ?? {
+          sourceType: "manual",
+          sourceAssetId: null,
+          importBatchId: null,
+          originalFilename: null,
+        },
+      createdAt: existing?.createdAt ?? prompt.createdAt,
+      currentVersionId,
+    };
+  }
+
+  private writePromptAsset(
+    prompt: PromptCardData,
+    options: {
+      versionId: string;
+      changeReason: string;
+      versionReason: AssetVersionReason;
+      createdAt: string;
+      sourceAssetIds?: string[];
+      expiresAt?: string | null;
+      restoredAt?: string | null;
+    },
+  ) {
+    const existing = this.readPromptAsset(prompt.id);
+    const asset = this.buildPromptAsset(prompt, options.versionId, existing);
+
+    saveAssetRecord(this.database, asset);
+    saveAssetVersionRecord(
+      this.database,
+      createAssetVersion(asset, {
+        versionId: options.versionId,
+        versionNumber: this.nextPromptVersionNumber(prompt.id),
+        changeReason: options.changeReason,
+        versionReason: options.versionReason,
+        sourceAssetIds: options.sourceAssetIds,
+        restoredAt: options.restoredAt ?? null,
+        expiresAt: options.expiresAt ?? null,
+        createdAt: options.createdAt,
+      }),
+    );
+
+    return asset;
+  }
+
+  // 只改资产主行，不产生新版本：删除、恢复和合并来源标记属于生命周期变化。
+  private writePromptRecord(prompt: PromptCardData) {
+    const existing = this.readPromptAsset(prompt.id);
+
+    if (!existing) {
+      throw new Error("提示词不存在。");
+    }
+
+    const asset = this.buildPromptAsset(
+      prompt,
+      existing.currentVersionId,
+      existing,
+    );
+
+    saveAssetRecord(this.database, asset);
+    return asset;
+  }
+
+  // 快照只追加版本行，不改内容，也不移动当前版本指针。
+  private writePromptSnapshot(
+    prompt: PromptCardData,
+    options: {
+      versionId: string;
+      versionReason: PromptVersionReason;
+      createdAt: string;
+      expiresAt: string;
+      sourcePromptIds?: string[];
+    },
+  ) {
+    const existing = this.readPromptAsset(prompt.id);
+    const asset = this.buildPromptAsset(
+      prompt,
+      existing?.currentVersionId ?? createInitialAssetVersionId(prompt.id),
+      existing,
+    );
+
+    saveAssetVersionRecord(
+      this.database,
+      createAssetVersion(asset, {
+        versionId: options.versionId,
+        versionNumber: this.nextPromptVersionNumber(prompt.id),
+        changeReason: PROMPT_SNAPSHOT_REASON_LABELS[options.versionReason],
+        versionReason: options.versionReason,
+        sourceAssetIds: options.sourcePromptIds ?? [],
+        restoredAt: null,
+        expiresAt: options.expiresAt,
+        createdAt: options.createdAt,
+      }),
+    );
+  }
+
+  private readPromptSnapshot(version: AssetVersionData): PromptVersionData {
+    const metadata = version.metadata as PromptAssetMetadata;
+
+    return {
+      versionId: version.versionId,
+      promptId: version.assetId,
+      title: version.title,
+      category: metadata.category,
+      tags: [...metadata.tags],
+      content: version.content,
+      useCase: metadata.useCase,
+      createdAt: version.createdAt,
+      versionReason: version.versionReason as PromptVersionReason,
+      sourcePromptIds: [...version.sourceAssetIds],
+      restoredAt: version.restoredAt,
+      expiresAt: version.expiresAt ?? "",
+    };
+  }
+
+  private listPromptSnapshots(
+    promptId: string,
+    reason: PromptVersionReason,
+  ) {
+    return readAssetVersions(this.database, promptId).filter(
+      (version) =>
+        version.versionReason === reason && version.restoredAt === null,
+    );
+  }
+
+  private deletePromptAsset(assetId: string) {
     this.database
-      .prepare(
-        `
-          INSERT INTO prompts (
-            id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-      )
-      .run(
-        prompt.id,
-        prompt.title,
-        prompt.category,
-        JSON.stringify(prompt.tags),
-        prompt.content,
-        prompt.useCase,
-        prompt.createdAt,
-        prompt.updatedAt,
-      );
-  }
-
-  private insertPromptVersion(version: PromptVersionData) {
-    return this.database
-      .prepare(
-        `
-          INSERT INTO prompt_versions (
-            version_id,
-            prompt_id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            version_reason,
-            source_prompt_ids_json,
-            restored_at,
-            expires_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-      )
-      .run(
-        version.versionId,
-        version.promptId,
-        version.title,
-        version.category,
-        JSON.stringify(version.tags),
-        version.content,
-        version.useCase,
-        version.createdAt,
-        version.versionReason,
-        JSON.stringify(version.sourcePromptIds),
-        version.restoredAt,
-        version.expiresAt,
-      );
-  }
-
-  private updatePromptRow(prompt: PromptCardData) {
-    return this.database
-      .prepare(
-        `
-          UPDATE prompts
-          SET
-            title = ?,
-            category = ?,
-            tags_json = ?,
-            content = ?,
-            use_case = ?,
-            created_at = ?,
-            updated_at = ?
-          WHERE id = ?
-        `,
-      )
-      .run(
-        prompt.title,
-        prompt.category,
-        JSON.stringify(prompt.tags),
-        prompt.content,
-        prompt.useCase,
-        prompt.createdAt,
-        prompt.updatedAt,
-        prompt.id,
-      );
+      .prepare("DELETE FROM asset_versions WHERE asset_id = ?")
+      .run(assetId);
+    this.database.prepare("DELETE FROM assets WHERE id = ?").run(assetId);
   }
 
   private bumpVersion() {
@@ -411,57 +516,20 @@ export class PromptDatabase {
   }
 
   listPrompts() {
-    const rows = this.database
-      .prepare(
-        `
-          SELECT
-            id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            updated_at,
-            deleted_at,
-            deleted_reason,
-            merged_into_prompt_id,
-            merge_version_id
-          FROM prompts
-          WHERE deleted_at IS NULL
-          ORDER BY updated_at DESC, id ASC
-        `,
-      )
-      .all() as PromptRow[];
-
-    return rows.map(rowToPrompt);
+    return this.listPromptAssets()
+      .filter((asset) => asset.deletedAt === null)
+      .map((asset) => assetToPrompt(asset));
   }
 
   listTrash() {
-    const rows = this.database
-      .prepare(
-        `
-          SELECT
-            id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            updated_at,
-            deleted_at,
-            deleted_reason,
-            merged_into_prompt_id,
-            merge_version_id
-          FROM prompts
-          WHERE deleted_at IS NOT NULL
-          ORDER BY deleted_at DESC, id ASC
-        `,
+    return this.listPromptAssets()
+      .filter((asset) => asset.deletedAt !== null)
+      .sort(
+        (left, right) =>
+          (right.deletedAt ?? "").localeCompare(left.deletedAt ?? "") ||
+          left.id.localeCompare(right.id),
       )
-      .all() as PromptRow[];
-
-    return rows.map(rowToPrompt);
+      .map((asset) => assetToPrompt(asset));
   }
 
   getLibrarySnapshot(): PromptLibrarySnapshot {
@@ -472,16 +540,17 @@ export class PromptDatabase {
   }
 
   createPrompt(prompt: PromptCardData) {
-    const existingPrompt = this.database
-      .prepare("SELECT id FROM prompts WHERE id = ?")
-      .get(prompt.id);
-
-    if (existingPrompt) {
+    if (this.readPromptAsset(prompt.id)) {
       return false;
     }
 
     this.transaction(() => {
-      this.insertPrompt(prompt);
+      this.writePromptAsset(prompt, {
+        versionId: createInitialAssetVersionId(prompt.id),
+        changeReason: "创建提示词",
+        versionReason: "initial",
+        createdAt: prompt.createdAt,
+      });
       this.bumpVersion();
     });
 
@@ -489,102 +558,118 @@ export class PromptDatabase {
   }
 
   updatePrompt(prompt: PromptCardData) {
-    const result = this.transaction(() => {
-      const updateResult = this.updatePromptRow(prompt);
+    if (!this.readPromptAsset(prompt.id)) {
+      return false;
+    }
 
-      if (updateResult.changes > 0) {
-        this.bumpVersion();
-      }
-
-      return updateResult;
+    this.transaction(() => {
+      this.writePromptAsset(prompt, {
+        versionId: createPromptVersionId(),
+        changeReason: "保存提示词",
+        versionReason: "save",
+        createdAt: prompt.updatedAt,
+      });
+      this.bumpVersion();
     });
 
-    return result.changes > 0;
+    return true;
   }
 
   deletePrompt(promptId: string) {
-    const deletedAt = new Date().toISOString();
-    const result = this.transaction(() => {
-      const updateResult = this.database
-        .prepare(
-          `
-            UPDATE prompts
-            SET
-              deleted_at = ?,
-              deleted_reason = ?,
-              merged_into_prompt_id = NULL,
-              merge_version_id = NULL
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .run(deletedAt, "manual", promptId);
+    const asset = this.readPromptAsset(promptId);
 
-      if (updateResult.changes > 0) {
-        this.bumpVersion();
-      }
+    if (!asset || asset.deletedAt !== null) {
+      return false;
+    }
 
-      return updateResult;
+    const prompt = assetToPrompt(asset);
+
+    this.transaction(() => {
+      this.writePromptRecord({
+        ...prompt,
+        deletedAt: new Date().toISOString(),
+        deletedReason: "manual",
+        mergedIntoPromptId: null,
+        mergeVersionId: null,
+      });
+      this.bumpVersion();
     });
 
-    return result.changes > 0;
+    return true;
   }
 
   restorePrompt(promptId: string) {
-    const result = this.transaction(() => {
-      const updateResult = this.database
-        .prepare(
-          `
-            UPDATE prompts
-            SET
-              deleted_at = NULL,
-              deleted_reason = NULL,
-              merged_into_prompt_id = NULL,
-              merge_version_id = NULL
-            WHERE id = ? AND deleted_at IS NOT NULL
-          `,
-        )
-        .run(promptId);
+    const asset = this.readPromptAsset(promptId);
 
-      if (updateResult.changes > 0) {
-        this.bumpVersion();
-      }
+    if (!asset || asset.deletedAt === null) {
+      return false;
+    }
 
-      return updateResult;
+    const prompt = assetToPrompt(asset);
+
+    this.transaction(() => {
+      this.writePromptRecord({
+        ...prompt,
+        deletedAt: null,
+        deletedReason: null,
+        mergedIntoPromptId: null,
+        mergeVersionId: null,
+      });
+      this.bumpVersion();
     });
 
-    return result.changes > 0;
+    return true;
   }
 
   permanentlyDeletePrompt(promptId: string) {
-    const result = this.transaction(() => {
-      const deleteResult = this.database
-        .prepare("DELETE FROM prompts WHERE id = ? AND deleted_at IS NOT NULL")
-        .run(promptId);
+    const asset = this.readPromptAsset(promptId);
 
-      if (deleteResult.changes > 0) {
-        this.bumpVersion();
-      }
+    if (!asset || asset.deletedAt === null) {
+      return false;
+    }
 
-      return deleteResult;
+    this.transaction(() => {
+      this.deletePromptAsset(promptId);
+      this.bumpVersion();
     });
 
-    return result.changes > 0;
+    return true;
   }
 
   emptyTrash() {
     return this.transaction(() => {
-      const deleteResult = this.database
-        .prepare("DELETE FROM prompts WHERE deleted_at IS NOT NULL")
-        .run();
-      const versionResult = this.database
-        .prepare("DELETE FROM prompt_versions")
+      const trashedAssets = this.listPromptAssets().filter(
+        (asset) => asset.deletedAt !== null,
+      );
+
+      for (const asset of trashedAssets) {
+        this.deletePromptAsset(asset.id);
+      }
+
+      // 恢复记录属于垃圾箱范畴，清空时一并清掉；
+      // 内容版本保留，避免存活提示词的当前版本指针指向不存在的记录。
+      const snapshotResult = this.database
+        .prepare(
+          `
+            DELETE FROM asset_versions
+            WHERE asset_id IN (
+              SELECT id FROM assets WHERE asset_type = 'prompt'
+            )
+              AND version_reason IN (
+                'merge_before', 'optimize_before', 'restore_before'
+              )
+          `,
+        )
         .run();
 
-      if (Number(deleteResult.changes) + Number(versionResult.changes) > 0) {
+      if (
+        trashedAssets.length + Number(snapshotResult.changes) >
+        0
+      ) {
         this.bumpVersion();
       }
 
-      return Number(deleteResult.changes);
+      return trashedAssets.length;
     });
   }
 
@@ -597,19 +682,26 @@ export class PromptDatabase {
 
     return this.transaction(() => {
       const versionResult = this.database
-        .prepare("DELETE FROM prompt_versions WHERE expires_at <= ?")
-        .run(nowIso);
-      const promptResult = this.database
         .prepare(
-          "DELETE FROM prompts WHERE deleted_at IS NOT NULL AND deleted_at <= ?",
+          "DELETE FROM asset_versions WHERE expires_at IS NOT NULL AND expires_at <= ?",
         )
-        .run(promptCutoff);
+        .run(nowIso);
+      const expiredAssets = this.listPromptAssets().filter(
+        (asset) => asset.deletedAt !== null && asset.deletedAt <= promptCutoff,
+      );
 
-      if (Number(versionResult.changes) + Number(promptResult.changes) > 0) {
+      for (const asset of expiredAssets) {
+        this.deletePromptAsset(asset.id);
+      }
+
+      const expiredCount =
+        Number(versionResult.changes) + expiredAssets.length;
+
+      if (expiredCount > 0) {
         this.bumpVersion();
       }
 
-      return Number(versionResult.changes) + Number(promptResult.changes);
+      return expiredCount;
     });
   }
 
@@ -637,14 +729,20 @@ export class PromptDatabase {
     if (plan.addCount + plan.updateCount > 0) {
       this.transaction(() => {
         for (const prompt of plan.mergedPrompts) {
-          const existing = this.database
-            .prepare("SELECT id FROM prompts WHERE id = ?")
-            .get(prompt.id);
-
-          if (existing) {
-            this.updatePromptRow(prompt);
+          if (this.readPromptAsset(prompt.id)) {
+            this.writePromptAsset(prompt, {
+              versionId: createPromptVersionId(),
+              changeReason: "备份导入更新",
+              versionReason: "save",
+              createdAt: prompt.updatedAt,
+            });
           } else {
-            this.insertPrompt(prompt);
+            this.writePromptAsset(prompt, {
+              versionId: createInitialAssetVersionId(prompt.id),
+              changeReason: "备份导入",
+              versionReason: "initial",
+              createdAt: prompt.createdAt,
+            });
           }
         }
 
@@ -690,115 +788,68 @@ export class PromptDatabase {
     ).toISOString();
 
     return this.transaction(() => {
-      const targetRow = this.database
-        .prepare(
-          `
-            SELECT
-              id,
-              title,
-              category,
-              tags_json,
-              content,
-              use_case,
-              created_at,
-              updated_at,
-              deleted_at,
-              deleted_reason,
-              merged_into_prompt_id,
-              merge_version_id
-            FROM prompts
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .get(targetId) as PromptRow | undefined;
+      const targetAsset = this.readPromptAsset(targetId);
 
-      if (!targetRow) {
+      if (!targetAsset || targetAsset.deletedAt !== null) {
         throw new Error("目标提示词不存在或已删除。");
       }
 
       for (const promptId of sourceIds) {
-        const source = this.database
-          .prepare(
-            "SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL",
-          )
-          .get(promptId);
+        const source = this.readPromptAsset(promptId);
 
-        if (!source) {
+        if (!source || source.deletedAt !== null) {
           throw new Error("合并来源不存在或已删除。");
         }
       }
 
-      const target = rowToPrompt(targetRow);
-      const version: PromptVersionData = {
+      const target = assetToPrompt(targetAsset);
+
+      // 合并前快照保留原内容，之后可以通过恢复记录回到合并前。
+      this.writePromptSnapshot(target, {
         versionId: input.versionId.trim(),
-        promptId: target.id,
-        title: target.title,
-        category: target.category,
-        tags: [...target.tags],
-        content: target.content,
-        useCase: target.useCase,
-        createdAt: now,
         versionReason: "merge_before",
         sourcePromptIds: [...sourceIds],
         expiresAt,
-        restoredAt: null,
-      };
-      const versionResult = this.insertPromptVersion(version);
+        createdAt: now,
+      });
 
-      if (Number(versionResult.changes) !== 1) {
-        throw new Error("恢复快照写入失败。");
-      }
-
-      const targetUpdate = this.database
-        .prepare(
-          `
-            UPDATE prompts
-            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .run(
-          input.prompt.title,
-          input.prompt.category,
-          JSON.stringify(input.prompt.tags),
-          input.prompt.content,
-          input.prompt.useCase,
-          now,
-          targetId,
-        );
-
-      if (Number(targetUpdate.changes) !== 1) {
-        throw new Error("目标提示词更新失败。");
-      }
+      // 合并结果写进目标资产，并留下一条内容版本。
+      this.writePromptAsset(
+        {
+          ...target,
+          title: input.prompt.title,
+          category: input.prompt.category,
+          tags: [...input.prompt.tags],
+          content: input.prompt.content,
+          useCase: input.prompt.useCase,
+          updatedAt: now,
+        },
+        {
+          versionId: createPromptVersionId(),
+          changeReason: "合并结果",
+          versionReason: "save",
+          createdAt: now,
+        },
+      );
 
       for (const promptId of sourceIds) {
         if (promptId === targetId) {
           continue;
         }
 
-        const sourceUpdate = this.database
-          .prepare(
-            `
-              UPDATE prompts
-              SET
-                deleted_at = ?,
-                deleted_reason = ?,
-                merged_into_prompt_id = ?,
-                merge_version_id = ?
-              WHERE id = ? AND deleted_at IS NULL
-            `,
-          );
-        const result = sourceUpdate.run(
-          now,
-          "merge",
-          targetId,
-          input.versionId.trim(),
-          promptId,
-        );
+        const sourceAsset = this.readPromptAsset(promptId);
 
-        if (Number(result.changes) !== 1) {
+        if (!sourceAsset) {
           throw new Error("合并来源归档失败。");
         }
+
+        this.writePromptRecord({
+          ...assetToPrompt(sourceAsset),
+          deletedAt: now,
+          deletedReason: "merge",
+          mergedIntoPromptId: targetId,
+          mergeVersionId: input.versionId.trim(),
+        });
       }
 
       this.bumpVersion();
@@ -824,74 +875,40 @@ export class PromptDatabase {
     ).toISOString();
 
     return this.transaction(() => {
-      const targetRow = this.database
-        .prepare(
-          `
-            SELECT
-              id,
-              title,
-              category,
-              tags_json,
-              content,
-              use_case,
-              created_at,
-              updated_at,
-              deleted_at,
-              deleted_reason,
-              merged_into_prompt_id,
-              merge_version_id
-            FROM prompts
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .get(promptId) as PromptRow | undefined;
+      const targetAsset = this.readPromptAsset(promptId);
 
-      if (!targetRow) {
+      if (!targetAsset || targetAsset.deletedAt !== null) {
         throw new Error("提示词不存在或已删除。");
       }
 
-      const target = rowToPrompt(targetRow);
-      const version: PromptVersionData = {
+      const target = assetToPrompt(targetAsset);
+
+      // 优化前快照保留原内容，供界面判断能否「回到优化前」。
+      this.writePromptSnapshot(target, {
         versionId: input.versionId.trim(),
-        promptId: target.id,
-        title: target.title,
-        category: target.category,
-        tags: [...target.tags],
-        content: target.content,
-        useCase: target.useCase,
-        createdAt: now,
         versionReason: "optimize_before",
-        sourcePromptIds: [],
         expiresAt,
-        restoredAt: null,
-      };
-      const versionResult = this.insertPromptVersion(version);
+        createdAt: now,
+      });
 
-      if (Number(versionResult.changes) !== 1) {
-        throw new Error("恢复快照写入失败。");
-      }
-
-      const targetUpdate = this.database
-        .prepare(
-          `
-            UPDATE prompts
-            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .run(
-          input.prompt.title,
-          input.prompt.category,
-          JSON.stringify(input.prompt.tags),
-          input.prompt.content,
-          input.prompt.useCase,
-          now,
-          promptId,
-        );
-
-      if (Number(targetUpdate.changes) !== 1) {
-        throw new Error("提示词更新失败。");
-      }
+      // 优化结果写进资产，并留下一条内容版本。
+      this.writePromptAsset(
+        {
+          ...target,
+          title: input.prompt.title,
+          category: input.prompt.category,
+          tags: [...input.prompt.tags],
+          content: input.prompt.content,
+          useCase: input.prompt.useCase,
+          updatedAt: now,
+        },
+        {
+          versionId: createPromptVersionId(),
+          changeReason: "优化结果",
+          versionReason: "save",
+          createdAt: now,
+        },
+      );
 
       this.bumpVersion();
       return this.getLibrarySnapshot();
@@ -900,34 +917,16 @@ export class PromptDatabase {
 
   // 读取这条提示词最近一次未被消费的优化前快照，供界面判断能否回退。
   fetchLatestOptimizeVersion(promptId: string) {
-    const row = this.database
-      .prepare(
-        `
-          SELECT
-            version_id,
-            prompt_id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            version_reason,
-            source_prompt_ids_json,
-            restored_at,
-            expires_at
-          FROM prompt_versions
-          WHERE prompt_id = ?
-            AND version_reason = 'optimize_before'
-            AND restored_at IS NULL
-            AND expires_at > ?
-          ORDER BY created_at DESC, version_id ASC
-          LIMIT 1
-        `,
-      )
-      .get(promptId, new Date().toISOString()) as PromptVersionRow | undefined;
+    const now = new Date().toISOString();
+    const snapshot = this.listPromptSnapshots(promptId, "optimize_before")
+      .filter((version) => (version.expiresAt ?? "") > now)
+      .sort(
+        (left, right) =>
+          right.createdAt.localeCompare(left.createdAt) ||
+          left.versionId.localeCompare(right.versionId),
+      )[0];
 
-    return row ? rowToVersion(row) : null;
+    return snapshot ? this.readPromptSnapshot(snapshot) : null;
   }
 
   // 回到优化前：回退本身也会覆盖内容，所以先把当前内容存成 restore_before 快照。
@@ -941,112 +940,63 @@ export class PromptDatabase {
     ).toISOString();
 
     return this.transaction(() => {
-      const targetRow = this.database
-        .prepare(
-          `
-            SELECT
-              id,
-              title,
-              category,
-              tags_json,
-              content,
-              use_case,
-              created_at,
-              updated_at,
-              deleted_at,
-              deleted_reason,
-              merged_into_prompt_id,
-              merge_version_id
-            FROM prompts
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .get(promptId) as PromptRow | undefined;
+      const targetAsset = this.readPromptAsset(promptId);
 
-      if (!targetRow) {
+      if (!targetAsset || targetAsset.deletedAt !== null) {
         throw new Error("提示词不存在或已删除。");
       }
 
-      const versionRow = this.database
-        .prepare(
-          `
-            SELECT
-              version_id,
-              prompt_id,
-              title,
-              category,
-              tags_json,
-              content,
-              use_case,
-              created_at,
-              version_reason,
-              source_prompt_ids_json,
-              restored_at,
-              expires_at
-            FROM prompt_versions
-            WHERE prompt_id = ?
-              AND version_reason = 'optimize_before'
-              AND restored_at IS NULL
-              AND expires_at > ?
-            ORDER BY created_at DESC, version_id ASC
-            LIMIT 1
-          `,
-        )
-        .get(promptId, now) as PromptVersionRow | undefined;
+      const snapshot = this.listPromptSnapshots(promptId, "optimize_before")
+        .filter((version) => (version.expiresAt ?? "") > now)
+        .sort(
+          (left, right) =>
+            right.createdAt.localeCompare(left.createdAt) ||
+            left.versionId.localeCompare(right.versionId),
+        )[0];
 
-      if (!versionRow) {
+      if (!snapshot) {
         return null;
       }
 
-      const target = rowToPrompt(targetRow);
-      const version = rowToVersion(versionRow);
-      const restoreVersion: PromptVersionData = {
+      const target = assetToPrompt(targetAsset);
+      const version = this.readPromptSnapshot(snapshot);
+
+      // 回退前快照保留当前内容，回退本身也可以再退回来。
+      this.writePromptSnapshot(target, {
         versionId,
-        promptId: target.id,
-        title: target.title,
-        category: target.category,
-        tags: [...target.tags],
-        content: target.content,
-        useCase: target.useCase,
-        createdAt: now,
         versionReason: "restore_before",
-        sourcePromptIds: [],
         expiresAt,
-        restoredAt: null,
-      };
-      const insertResult = this.insertPromptVersion(restoreVersion);
+        createdAt: now,
+      });
 
-      if (Number(insertResult.changes) !== 1) {
-        throw new Error("回退快照写入失败。");
-      }
+      // 恢复内容并留下一条内容版本。
+      this.writePromptAsset(
+        {
+          ...target,
+          title: version.title,
+          category: version.category,
+          tags: [...version.tags],
+          content: version.content,
+          useCase: version.useCase,
+          updatedAt: now,
+        },
+        {
+          versionId: createPromptVersionId(),
+          changeReason: "回到优化前",
+          versionReason: "restore",
+          createdAt: now,
+        },
+      );
 
-      const updateResult = this.database
+      const versionUpdate = this.database
         .prepare(
-          `
-            UPDATE prompts
-            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
-            WHERE id = ? AND deleted_at IS NULL
-          `,
+          "UPDATE asset_versions SET restored_at = ? WHERE version_id = ? AND restored_at IS NULL AND expires_at > ?",
         )
-        .run(
-          version.title,
-          version.category,
-          JSON.stringify(version.tags),
-          version.content,
-          version.useCase,
-          now,
-          promptId,
-        );
+        .run(now, version.versionId, now);
 
-      if (Number(updateResult.changes) !== 1) {
-        throw new Error("提示词恢复失败。");
+      if (Number(versionUpdate.changes) !== 1) {
+        throw new Error("恢复记录更新失败。");
       }
-
-      this.database
-        .prepare(
-          "UPDATE prompt_versions SET restored_at = ? WHERE version_id = ? AND restored_at IS NULL",
-        )
-        .run(now, version.versionId);
 
       this.bumpVersion();
       return this.getLibrarySnapshot();
@@ -1054,71 +1004,41 @@ export class PromptDatabase {
   }
 
   listMergeRecoveryRecords() {
-    const rows = this.database
-      .prepare(
-        `
-          SELECT
-            version_id,
-            prompt_id,
-            title,
-            category,
-            tags_json,
-            content,
-            use_case,
-            created_at,
-            version_reason,
-            source_prompt_ids_json,
-            restored_at,
-            expires_at
-          FROM prompt_versions
-          WHERE restored_at IS NULL AND version_reason = 'merge_before'
-          ORDER BY created_at DESC, version_id ASC
-        `,
+    return readAssetVersions(this.database)
+      .filter(
+        (version) =>
+          version.assetType === "prompt" &&
+          version.versionReason === "merge_before" &&
+          version.restoredAt === null,
       )
-      .all() as PromptVersionRow[];
-
-    return rows.map(rowToVersion);
+      .sort(
+        (left, right) =>
+          right.createdAt.localeCompare(left.createdAt) ||
+          left.versionId.localeCompare(right.versionId),
+      )
+      .map((version) => this.readPromptSnapshot(version));
   }
 
   restoreMergeRecord(versionId: string) {
     const now = new Date().toISOString();
 
     return this.transaction(() => {
-      const row = this.database
-        .prepare(
-          `
-            SELECT
-              version_id,
-              prompt_id,
-              title,
-              category,
-              tags_json,
-              content,
-              use_case,
-              created_at,
-              version_reason,
-              source_prompt_ids_json,
-              restored_at,
-              expires_at
-            FROM prompt_versions
-            WHERE version_id = ?
-              AND restored_at IS NULL
-              AND expires_at > ?
-              AND version_reason = 'merge_before'
-          `,
-        )
-        .get(versionId, now) as PromptVersionRow | undefined;
+      const snapshot = readAssetVersions(this.database).find(
+        (version) =>
+          version.versionId === versionId &&
+          version.versionReason === "merge_before" &&
+          version.restoredAt === null &&
+          (version.expiresAt ?? "") > now,
+      );
 
-      if (!row) {
+      if (!snapshot) {
         return null;
       }
 
-      const version = rowToVersion(row);
-      const target = this.database
-        .prepare("SELECT id FROM prompts WHERE id = ? AND deleted_at IS NULL")
-        .get(version.promptId);
+      const version = this.readPromptSnapshot(snapshot);
+      const targetAsset = this.readPromptAsset(version.promptId);
 
-      if (!target) {
+      if (!targetAsset || targetAsset.deletedAt !== null) {
         return null;
       }
 
@@ -1129,92 +1049,58 @@ export class PromptDatabase {
           continue;
         }
 
-        const source = this.database
-          .prepare(
-            `
-              SELECT
-                deleted_at,
-                deleted_reason,
-                merged_into_prompt_id,
-                merge_version_id
-              FROM prompts
-              WHERE id = ?
-            `,
-          )
-          .get(promptId) as
-            | {
-                deleted_at: string | null;
-                deleted_reason: "manual" | "merge" | null;
-                merged_into_prompt_id: string | null;
-                merge_version_id: string | null;
-              }
-            | undefined;
+        const sourceAsset = this.readPromptAsset(promptId);
+        const source = sourceAsset ? assetToPrompt(sourceAsset) : undefined;
 
         if (
           source &&
-          source.deleted_at !== null &&
-          source.deleted_reason === "merge" &&
-          source.merged_into_prompt_id === version.promptId &&
-          source.merge_version_id === version.versionId
+          source.deletedAt !== null &&
+          source.deletedReason === "merge" &&
+          source.mergedIntoPromptId === version.promptId &&
+          source.mergeVersionId === version.versionId
         ) {
           restorableSourceIds.add(promptId);
         }
       }
 
-      const targetUpdate = this.database
-        .prepare(
-          `
-            UPDATE prompts
-            SET title = ?, category = ?, tags_json = ?, content = ?, use_case = ?, updated_at = ?
-            WHERE id = ? AND deleted_at IS NULL
-          `,
-        )
-        .run(
-          version.title,
-          version.category,
-          JSON.stringify(version.tags),
-          version.content,
-          version.useCase,
-          now,
-          version.promptId,
-        );
-
-      if (Number(targetUpdate.changes) !== 1) {
-        throw new Error("目标提示词恢复失败。");
-      }
+      // 目标提示词恢复成合并前的内容，并留下一条内容版本。
+      this.writePromptAsset(
+        {
+          ...assetToPrompt(targetAsset),
+          title: version.title,
+          category: version.category,
+          tags: [...version.tags],
+          content: version.content,
+          useCase: version.useCase,
+          updatedAt: now,
+        },
+        {
+          versionId: createPromptVersionId(),
+          changeReason: "恢复合并前内容",
+          versionReason: "restore",
+          createdAt: now,
+        },
+      );
 
       for (const promptId of restorableSourceIds) {
-        const sourceUpdate = this.database
-          .prepare(
-            `
-              UPDATE prompts
-              SET
-                deleted_at = NULL,
-                deleted_reason = NULL,
-                merged_into_prompt_id = NULL,
-                merge_version_id = NULL
-              WHERE id = ? AND deleted_at IS NOT NULL
-                AND deleted_reason = 'merge'
-                AND merged_into_prompt_id = ?
-                AND merge_version_id = ?
-            `,
-          )
-          .run(promptId, version.promptId, version.versionId);
+        const sourceAsset = this.readPromptAsset(promptId);
 
-        if (Number(sourceUpdate.changes) !== 1) {
+        if (!sourceAsset) {
           throw new Error("合并来源恢复失败。");
         }
+
+        this.writePromptRecord({
+          ...assetToPrompt(sourceAsset),
+          deletedAt: null,
+          deletedReason: null,
+          mergedIntoPromptId: null,
+          mergeVersionId: null,
+        });
       }
 
       const versionUpdate = this.database
         .prepare(
-          `
-            UPDATE prompt_versions
-            SET restored_at = ?
-            WHERE version_id = ?
-              AND restored_at IS NULL
-              AND expires_at > ?
-          `,
+          "UPDATE asset_versions SET restored_at = ? WHERE version_id = ? AND restored_at IS NULL AND expires_at > ?",
         )
         .run(now, versionId, now);
 
@@ -1231,7 +1117,7 @@ export class PromptDatabase {
     return this.transaction(() => {
       const deleteResult = this.database
         .prepare(
-          "DELETE FROM prompt_versions WHERE version_id = ? AND version_reason = 'merge_before'",
+          "DELETE FROM asset_versions WHERE version_id = ? AND version_reason = 'merge_before'",
         )
         .run(versionId);
 

@@ -55,6 +55,143 @@ function findAsset(database, assetId) {
   return database.listAssets().find((asset) => asset.id === assetId);
 }
 
+function readLegacyPrompts(databasePath) {
+  const raw = new DatabaseSync(databasePath);
+  const rows = raw
+    .prepare("SELECT * FROM prompts ORDER BY id ASC")
+    .all();
+  raw.close();
+
+  return rows.map((row) => JSON.parse(JSON.stringify(row)));
+}
+
+test("切换后提示词读写只发生在统一资产，旧表不再变化", () => {
+  const context = createContext();
+  const legacyPromptId = "prompt-legacy-snapshot";
+  const switchedPromptId = "prompt-after-switch";
+
+  try {
+    // 旧表里放一条历史数据，代表迁移前快照。
+    const legacy = new DatabaseSync(context.databasePath);
+    legacy
+      .prepare(
+        `
+          INSERT INTO prompts (
+            id, title, category, tags_json, content, use_case,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        legacyPromptId,
+        "旧表快照提示词",
+        "AI效能",
+        JSON.stringify(["快照"]),
+        "旧表正文",
+        "验证切换后旧表只读。",
+        "2026-09-20T00:00:00.000Z",
+        "2026-09-20T00:00:00.000Z",
+      );
+    legacy.close();
+
+    const before = readLegacyPrompts(context.databasePath);
+
+    assert.equal(before.length, 1);
+    assert.equal(before[0].id, legacyPromptId);
+
+    // 走完整的新建、编辑、删除、恢复和清空垃圾箱流程。
+    context.database.createPrompt(createPrompt({ id: switchedPromptId }));
+    context.database.updatePrompt(
+      createPrompt({ id: switchedPromptId, title: "切换后改名" }),
+    );
+    context.database.deletePrompt(switchedPromptId);
+    context.database.restorePrompt(switchedPromptId);
+    context.database.deletePrompt(switchedPromptId);
+    context.database.permanentlyDeletePrompt(switchedPromptId);
+    context.database.emptyTrash();
+
+    // 旧提示词表一个字节都不该变。
+    assert.deepEqual(readLegacyPrompts(context.databasePath), before);
+
+    // 变化都落在统一资产上：新提示词已经删掉，示例提示词还在。
+    assert.equal(
+      context.database
+        .listPrompts()
+        .some((item) => item.id === switchedPromptId),
+      false,
+    );
+    assert.equal(context.database.listPrompts().length, 3);
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
+test("切换后备份可以完整导出并恢复提示词库", () => {
+  const context = createContext();
+
+  try {
+    // 造一批内容，包含变量和标签，确认往返后字段不丢。
+    context.database.createPrompt(
+      createPrompt({
+        id: "prompt-round-trip-a",
+        title: "往返提示词 A",
+        tags: ["备份", "往返"],
+        content: "请处理 {{主题}} 并输出 {{格式}}",
+        useCase: "验证备份往返。",
+      }),
+    );
+    context.database.createPrompt(
+      createPrompt({ id: "prompt-round-trip-b", title: "往返提示词 B" }),
+    );
+
+    const exportedAt = "2026-09-21T15:00:00.000Z";
+    const backupContent = createPromptBackup(
+      context.database.listPrompts(),
+      exportedAt,
+    );
+    const parsedBackup = parsePromptBackup(backupContent);
+
+    // 导出内容来自统一资产：活跃提示词一条不少。
+    assert.equal(parsedBackup.prompts.length, 5);
+    assert.equal(parsedBackup.exportedAt, exportedAt);
+
+    // 把库清空，模拟换机器或重装后只剩一份备份文件。
+    for (const prompt of context.database.listPrompts()) {
+      context.database.deletePrompt(prompt.id);
+    }
+    context.database.emptyTrash();
+
+    assert.equal(context.database.listPrompts().length, 0);
+
+    // 导入备份后，标题、标签、正文和适用场景逐条对得上。
+    const result = context.database.mergePrompts(parsedBackup.prompts);
+
+    assert.equal(result.addCount, 5);
+
+    const restored = context.database.listPrompts();
+    const restoredA = restored.find(
+      (prompt) => prompt.id === "prompt-round-trip-a",
+    );
+
+    assert.equal(restored.length, 5);
+    assert.equal(restoredA.title, "往返提示词 A");
+    assert.deepEqual(restoredA.tags, ["备份", "往返"]);
+    assert.equal(restoredA.content, "请处理 {{主题}} 并输出 {{格式}}");
+    assert.equal(restoredA.useCase, "验证备份往返。");
+
+    // 导入进来的提示词同样落在默认项目里。
+    assert.ok(findAsset(context.database, "prompt-round-trip-a"));
+    assert.equal(
+      findAsset(context.database, "prompt-round-trip-a").projectId,
+      DEFAULT_PROJECT_ID,
+    );
+  } finally {
+    context.database.close();
+    context.cleanup();
+  }
+});
+
 test("旧版提示词备份导入后会进入默认项目", () => {
   const context = createContext();
   const prompt = createPrompt({ id: "prompt-backup-import" });
@@ -104,12 +241,34 @@ test("统一资产迁移失败时旧提示词数据仍然完整可读", () => {
   const promptId = "prompt-migration-safety";
 
   try {
-    context.database.createPrompt(
-      createPrompt({ id: promptId, title: "迁移安全测试" }),
-    );
     context.database.close();
 
-    // 故意把统一资产表改成不兼容结构，让下一次启动的迁移直接失败。
+    // 模拟 2.1.0 之前的老库：数据只在旧提示词表里，统一资产还没有建起来。
+    const legacy = new DatabaseSync(context.databasePath);
+    legacy
+      .prepare(
+        `
+          INSERT INTO prompts (
+            id, title, category, tags_json, content, use_case,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        promptId,
+        "迁移安全测试",
+        "AI效能",
+        JSON.stringify(["测试"]),
+        "请处理 {{内容}}",
+        "验证迁移安全。",
+        "2026-09-21T08:00:00.000Z",
+        "2026-09-21T08:00:00.000Z",
+      );
+    legacy.exec("DELETE FROM asset_versions");
+    legacy.exec("DELETE FROM assets");
+    legacy.close();
+
+    // 故意把统一资产表改成不兼容结构，让下一次启动的引导迁移直接失败。
     const raw = new DatabaseSync(context.databasePath);
     raw.exec("DROP TABLE asset_versions");
     raw.exec("DROP TABLE assets");
@@ -131,8 +290,8 @@ test("统一资产迁移失败时旧提示词数据仍然完整可读", () => {
 
       assert.equal(row.title, "迁移安全测试");
       assert.equal(row.content, "请处理 {{内容}}");
-      // 3 条示例提示词 + 新增的 1 条，一条都不能少。
-      assert.equal(Number(count.count), 4);
+      // 旧表里这条待迁移的数据一条都不能少，迁移失败后仍然可以重试。
+      assert.equal(Number(count.count), 1);
     } finally {
       check.close();
     }

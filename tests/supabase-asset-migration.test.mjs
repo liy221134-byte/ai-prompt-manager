@@ -10,6 +10,15 @@ const migration = readFileSync(
   "utf8",
 );
 
+// 回填读的是云端老表，字段形状要和它的建表迁移对得上
+const mergeMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/202609200001_add_prompt_merge_trash.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
 test("资产迁移创建项目、资产和不可变版本表", () => {
   assert.match(migration, /create table if not exists public\.projects/);
   assert.match(migration, /create table if not exists public\.assets/);
@@ -55,9 +64,17 @@ test("现有提示词会迁移到默认项目并保留原标识", () => {
 test("现有提示词版本会迁移为资产版本并保留恢复字段", () => {
   assert.match(migration, /insert into public\.asset_versions/);
   assert.match(migration, /from public\.prompt_versions/);
-  assert.match(migration, /source_prompt_ids_json/);
+  // 云端 prompt_versions 的来源字段是 text[]，不是本地 SQLite 的 JSON 文本列
+  assert.match(mergeMigration, /source_prompt_ids text\[\] not null/);
+  assert.match(migration, /^\s*source_prompt_ids,$/m);
+  assert.doesNotMatch(migration, /source_prompt_ids_json/);
   assert.match(migration, /restored_at/);
   assert.match(migration, /expires_at/);
+});
+
+test("回填默认项目时给可空时间列写明类型", () => {
+  // select distinct 里的裸 null 会被推断成 text，写进 timestamptz 列会直接报错
+  assert.match(migration, /select distinct[\s\S]*?null::timestamptz/);
 });
 
 test("资产保存函数使用 SECURITY INVOKER 且只授予 authenticated", () => {

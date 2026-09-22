@@ -8,13 +8,18 @@ import type {
 import type {
   AssetData,
   AssetVersionData,
+  AssetVersionReason,
+  PromptAssetMetadata,
 } from "../data/assets.ts";
 import {
+  assetToPrompt,
+  createInitialAssetVersionId,
   isAssetData,
   isAssetVersionData,
+  promptToAsset,
 } from "../data/assets.ts";
 import type { ProjectData } from "../data/projects.ts";
-import { isProjectData } from "../data/projects.ts";
+import { DEFAULT_PROJECT_ID, isProjectData } from "../data/projects.ts";
 import {
   createAssetOnServer,
   createProjectOnServer,
@@ -47,7 +52,6 @@ import {
   type PromptOptimizeVersionResponse,
   type PromptRecoveryResponse,
 } from "./prompt-api.ts";
-import { createOptimizeVersionId } from "./prompt-optimize-draft.ts";
 import {
   createPromptImportPlan,
   PROMPT_BACKUP_TYPE,
@@ -255,6 +259,80 @@ function rowToVersion(
   };
 }
 
+// 2.1.0 起提示词也写在统一资产里：这两个助手负责把资产版本翻译回提示词版本，
+// 以及把提示词组装成 save_asset 需要的参数。
+function assetVersionToPromptVersion(
+  version: AssetVersionData,
+): PromptVersionData {
+  const metadata = version.metadata as PromptAssetMetadata;
+
+  return {
+    versionId: version.versionId,
+    promptId: version.assetId,
+    title: version.title,
+    category: metadata.category,
+    tags: [...metadata.tags],
+    content: version.content,
+    useCase: metadata.useCase,
+    createdAt: version.createdAt,
+    versionReason: version.versionReason as PromptVersionReason,
+    sourcePromptIds: [...version.sourceAssetIds],
+    restoredAt: version.restoredAt,
+    expiresAt: version.expiresAt ?? "",
+  };
+}
+
+function createCloudVersionId() {
+  return `version-${crypto.randomUUID()}`;
+}
+
+function promptSaveAssetParams(
+  prompt: PromptCardData,
+  options: {
+    versionId: string;
+    changeReason: string;
+    versionReason: AssetVersionReason;
+  },
+) {
+  const asset = promptToAsset(
+    {
+      ...prompt,
+      tags: [...prompt.tags],
+      deletedAt: prompt.deletedAt ?? null,
+      deletedReason: prompt.deletedReason ?? null,
+      mergedIntoPromptId: prompt.mergedIntoPromptId ?? null,
+      mergeVersionId: prompt.mergeVersionId ?? null,
+    },
+    DEFAULT_PROJECT_ID,
+  );
+
+  return {
+    p_asset_id: asset.id,
+    p_project_id: asset.projectId,
+    p_asset_type: asset.assetType,
+    p_title: asset.title,
+    p_summary: asset.summary,
+    p_content: asset.content,
+    p_metadata: asset.metadata,
+    p_source_type: "manual",
+    p_source_asset_id: null,
+    p_import_batch_id: null,
+    p_original_filename: null,
+    p_status: asset.status,
+    p_archived_at: asset.archivedAt,
+    p_deleted_at: asset.deletedAt,
+    p_deleted_reason: asset.deletedReason,
+    p_version_id: options.versionId,
+    p_change_reason: options.changeReason,
+    p_version_reason: options.versionReason,
+    p_source_asset_ids: [],
+    p_restored_at: null,
+    p_expires_at: null,
+    p_asset_created_at: asset.createdAt,
+    p_asset_updated_at: asset.updatedAt,
+  };
+}
+
 function rowToProject(row: SupabaseProjectRow): ProjectData {
   const value = {
     id: row.id,
@@ -425,10 +503,22 @@ export function createSupabasePromptDataSource(
     return (data as SupabaseAssetRow[]).map(rowToAsset);
   }
 
+  // 提示词现在存在统一资产里，读取时按类型过滤再翻译回提示词结构。
+  function assetRowToPrompt(row: SupabaseAssetRow): PromptCardData {
+    const asset = rowToAsset(row);
+
+    if (asset.assetType !== "prompt") {
+      throw new Error("云端提示词数据类型不匹配。");
+    }
+
+    return assetToPrompt(asset);
+  }
+
   async function fetchLibrary() {
     const { data, error } = await client
-      .from("prompts")
-      .select(promptSelect)
+      .from("assets")
+      .select(assetSelect)
+      .eq("asset_type", "prompt")
       .is("deleted_at", null)
       .order("updated_at", { ascending: false });
 
@@ -436,15 +526,14 @@ export function createSupabasePromptDataSource(
       throw new Error("读取云端提示词失败。");
     }
 
-    return createLibraryResponse(
-      (data as SupabasePromptRow[]).map(rowToPrompt),
-    );
+    return createLibraryResponse((data as SupabaseAssetRow[]).map(assetRowToPrompt));
   }
 
   async function fetchTrash() {
     const { data, error } = await client
-      .from("prompts")
-      .select(promptSelect)
+      .from("assets")
+      .select(assetSelect)
+      .eq("asset_type", "prompt")
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false });
 
@@ -452,9 +541,7 @@ export function createSupabasePromptDataSource(
       throw new Error("读取云端垃圾箱失败。");
     }
 
-    return createLibraryResponse(
-      (data as SupabasePromptRow[]).map(rowToPrompt),
-    );
+    return createLibraryResponse((data as SupabaseAssetRow[]).map(assetRowToPrompt));
   }
 
   return {
@@ -580,10 +667,15 @@ export function createSupabasePromptDataSource(
     },
     fetchLibrary,
     async createPrompt(prompt) {
-      const user = await getCurrentUser(client);
-      const { error } = await client
-        .from("prompts")
-        .insert(promptToRow(prompt, user.id));
+      await getCurrentUser(client);
+      const { error } = await client.rpc(
+        "save_asset",
+        promptSaveAssetParams(prompt, {
+          versionId: createInitialAssetVersionId(prompt.id),
+          changeReason: "创建提示词",
+          versionReason: "initial",
+        }),
+      );
 
       if (error) {
         throw new Error(
@@ -596,12 +688,15 @@ export function createSupabasePromptDataSource(
       return fetchLibrary();
     },
     async updatePrompt(prompt) {
-      const user = await getCurrentUser(client);
-      const { error } = await client
-        .from("prompts")
-        .update(promptToRow(prompt, user.id))
-        .eq("id", prompt.id)
-        .eq("user_id", user.id);
+      await getCurrentUser(client);
+      const { error } = await client.rpc(
+        "save_asset",
+        promptSaveAssetParams(prompt, {
+          versionId: createCloudVersionId(),
+          changeReason: "保存提示词",
+          versionReason: "save",
+        }),
+      );
 
       if (error) {
         throw new Error("更新云端提示词失败。");
@@ -610,18 +705,12 @@ export function createSupabasePromptDataSource(
       return fetchLibrary();
     },
     async deletePrompt(promptId) {
-      const user = await getCurrentUser(client);
-      const { error } = await client
-        .from("prompts")
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_reason: "manual",
-          merged_into_prompt_id: null,
-          merge_version_id: null,
-        })
-        .eq("id", promptId)
-        .eq("user_id", user.id)
-        .is("deleted_at", null);
+      await getCurrentUser(client);
+      const { error } = await client.rpc("set_asset_trash_state", {
+        p_asset_id: promptId,
+        p_deleted: true,
+        p_reason: "manual",
+      });
 
       if (error) {
         throw new Error("删除云端提示词失败。");
@@ -631,18 +720,11 @@ export function createSupabasePromptDataSource(
     },
     fetchTrash,
     async restorePrompt(promptId) {
-      const user = await getCurrentUser(client);
-      const { error } = await client
-        .from("prompts")
-        .update({
-          deleted_at: null,
-          deleted_reason: null,
-          merged_into_prompt_id: null,
-          merge_version_id: null,
-        })
-        .eq("id", promptId)
-        .eq("user_id", user.id)
-        .not("deleted_at", "is", null);
+      await getCurrentUser(client);
+      const { error } = await client.rpc("set_asset_trash_state", {
+        p_asset_id: promptId,
+        p_deleted: false,
+      });
 
       if (error) {
         throw new Error("恢复云端提示词失败。");
@@ -653,7 +735,7 @@ export function createSupabasePromptDataSource(
     async permanentlyDeletePrompt(promptId) {
       const user = await getCurrentUser(client);
       const { error } = await client
-        .from("prompts")
+        .from("assets")
         .delete()
         .eq("id", promptId)
         .eq("user_id", user.id)
@@ -666,7 +748,7 @@ export function createSupabasePromptDataSource(
       return fetchLibrary();
     },
     async emptyTrash() {
-      const { error } = await client.rpc("empty_prompt_trash");
+      const { error } = await client.rpc("empty_asset_trash");
 
       if (error) {
         throw new Error("清空云端垃圾箱失败。");
@@ -676,15 +758,20 @@ export function createSupabasePromptDataSource(
     },
     async commitAiMerge(input) {
       await getCurrentUser(client);
-      const { error } = await client.rpc("commit_prompt_merge", {
-        p_prompt_id: input.prompt.id,
+      const { error } = await client.rpc("commit_asset_merge", {
+        p_asset_id: input.prompt.id,
         p_title: input.prompt.title,
-        p_category: input.prompt.category,
-        p_tags: input.prompt.tags,
+        p_summary: input.prompt.useCase,
         p_content: input.prompt.content,
-        p_use_case: input.prompt.useCase,
-        p_source_prompt_ids: input.sourcePromptIds,
-        p_version_id: input.versionId,
+        p_metadata: {
+          category: input.prompt.category,
+          tags: input.prompt.tags,
+          useCase: input.prompt.useCase,
+          mergedIntoAssetId: input.prompt.mergedIntoPromptId ?? null,
+          mergeVersionId: input.prompt.mergeVersionId ?? null,
+        },
+        p_source_asset_ids: input.sourcePromptIds,
+        p_asset_updated_at: input.prompt.updatedAt,
       });
 
       if (error) {
@@ -695,10 +782,9 @@ export function createSupabasePromptDataSource(
     },
     async fetchMergeRecoveryRecords() {
       const { data, error } = await client
-        .from("prompt_versions")
-        .select(
-          "user_id, version_id, prompt_id, title, category, tags, content, use_case, created_at, version_reason, source_prompt_ids, restored_at, expires_at",
-        )
+        .from("asset_versions")
+        .select(assetVersionSelect)
+        .eq("asset_type", "prompt")
         .is("restored_at", null)
         .eq("version_reason", "merge_before")
         .order("created_at", { ascending: false });
@@ -708,11 +794,13 @@ export function createSupabasePromptDataSource(
       }
 
       return {
-        records: (data as SupabasePromptVersionRow[]).map(rowToVersion),
+        records: (data as SupabaseAssetVersionRow[])
+          .map(rowToAssetVersion)
+          .map(assetVersionToPromptVersion),
       };
     },
     async restoreMergeRecord(versionId) {
-      const { error } = await client.rpc("restore_prompt_merge", {
+      const { error } = await client.rpc("restore_asset_merge", {
         p_version_id: versionId,
       });
 
@@ -725,7 +813,7 @@ export function createSupabasePromptDataSource(
     async permanentlyDeleteMergeRecord(versionId) {
       const user = await getCurrentUser(client);
       const { error } = await client
-        .from("prompt_versions")
+        .from("asset_versions")
         .delete()
         .eq("version_id", versionId)
         .eq("user_id", user.id);
@@ -738,14 +826,19 @@ export function createSupabasePromptDataSource(
     },
     async commitAiOptimize(input) {
       await getCurrentUser(client);
-      const { error } = await client.rpc("commit_prompt_optimize", {
-        p_prompt_id: input.prompt.id,
+      const { error } = await client.rpc("commit_asset_optimize", {
+        p_asset_id: input.prompt.id,
         p_title: input.prompt.title,
-        p_category: input.prompt.category,
-        p_tags: input.prompt.tags,
+        p_summary: input.prompt.useCase,
         p_content: input.prompt.content,
-        p_use_case: input.prompt.useCase,
-        p_version_id: input.versionId,
+        p_metadata: {
+          category: input.prompt.category,
+          tags: input.prompt.tags,
+          useCase: input.prompt.useCase,
+          mergedIntoAssetId: input.prompt.mergedIntoPromptId ?? null,
+          mergeVersionId: input.prompt.mergeVersionId ?? null,
+        },
+        p_asset_updated_at: input.prompt.updatedAt,
       });
 
       if (error) {
@@ -757,11 +850,9 @@ export function createSupabasePromptDataSource(
     async fetchOptimizeVersion(promptId) {
       await getCurrentUser(client);
       const { data, error } = await client
-        .from("prompt_versions")
-        .select(
-          "user_id, version_id, prompt_id, title, category, tags, content, use_case, created_at, version_reason, source_prompt_ids, restored_at, expires_at",
-        )
-        .eq("prompt_id", promptId)
+        .from("asset_versions")
+        .select(assetVersionSelect)
+        .eq("asset_id", promptId)
         .eq("version_reason", "optimize_before")
         .is("restored_at", null)
         .gt("expires_at", new Date().toISOString())
@@ -772,18 +863,17 @@ export function createSupabasePromptDataSource(
         throw new Error("读取云端优化记录失败。");
       }
 
-      const rows = data as SupabasePromptVersionRow[];
+      const rows = (data as SupabaseAssetVersionRow[]).map(rowToAssetVersion);
 
       return {
-        version: rows.length > 0 ? rowToVersion(rows[0]) : null,
+        version: rows.length > 0 ? assetVersionToPromptVersion(rows[0]) : null,
       };
     },
     async restoreAiOptimize(promptId) {
       await getCurrentUser(client);
-      // 回退前快照的编号在这里生成，不能复用被消费的那条编号。
-      const { error } = await client.rpc("restore_prompt_optimize", {
-        p_prompt_id: promptId,
-        p_version_id: createOptimizeVersionId(),
+      // 回退前快照的编号由资产函数内部生成，客户端不再传。
+      const { error } = await client.rpc("restore_asset_optimize", {
+        p_asset_id: promptId,
       });
 
       if (error) {
@@ -793,7 +883,7 @@ export function createSupabasePromptDataSource(
       return fetchLibrary();
     },
     async mergePrompts(importedPrompts) {
-      const user = await getCurrentUser(client);
+      await getCurrentUser(client);
       const [currentLibrary, trashLibrary] = await Promise.all([
         fetchLibrary(),
         fetchTrash(),
@@ -813,15 +903,24 @@ export function createSupabasePromptDataSource(
       );
 
       if (plan.addCount + plan.updateCount > 0) {
-        const rows = plan.mergedPrompts.map((prompt) =>
-          promptToRow(prompt, user.id),
-        );
-        const { error } = await client
-          .from("prompts")
-          .upsert(rows, { onConflict: "user_id,id" });
+        for (const prompt of plan.mergedPrompts) {
+          const isExisting = currentLibrary.prompts.some(
+            (item) => item.id === prompt.id,
+          );
+          const { error } = await client.rpc(
+            "save_asset",
+            promptSaveAssetParams(prompt, {
+              versionId: isExisting
+                ? createCloudVersionId()
+                : createInitialAssetVersionId(prompt.id),
+              changeReason: isExisting ? "备份导入更新" : "备份导入",
+              versionReason: isExisting ? "save" : "initial",
+            }),
+          );
 
-        if (error) {
-          throw new Error("合并云端提示词失败。");
+          if (error) {
+            throw new Error("合并云端提示词失败。");
+          }
         }
       }
 

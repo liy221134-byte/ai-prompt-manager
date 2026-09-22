@@ -35,6 +35,7 @@
 
 ### 设计
 
+- [2.0.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.0.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
 - [2.0.0 项目与统一资产底座设计](superpowers/specs/2026-09-21-v2.0.0-asset-foundation-design.md)
 - [v0.8.0 AI 合并与垃圾箱设计](superpowers/specs/2026-09-20-ai-prompt-merge-design.md)
@@ -54,6 +55,7 @@
 
 ### 数据与运维
 
+- [v2.1.0 交接与待办](operations/v2.1.0-handoff.md)
 - [数据库结构](database-schema.md)
 - [数据库迁移](operations/database-migrations.md)
 - [可用性与恢复目标](operations/availability-targets.md)
@@ -80,6 +82,7 @@
 - [第 9 周验收](acceptance/week-09.md)
 - [v1.0.0 整体验收](acceptance/v1.0.0.md)
 - [v2.0.0 整体验收](acceptance/v2.0.0.md)
+- [v2.1.0 整体验收](acceptance/v2.1.0.md)
 
 ### 云端部署
 

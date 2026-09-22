@@ -362,7 +362,7 @@ select distinct
   'development',
   now(),
   now(),
-  null
+  null::timestamptz
 from public.prompts
 on conflict (user_id, id) do nothing;
 
@@ -508,9 +508,7 @@ select
   ),
   version_reason,
   version_reason,
-  array(
-    select jsonb_array_elements_text(source_prompt_ids_json::jsonb)
-  ),
+  source_prompt_ids,
   restored_at,
   expires_at,
   created_at
