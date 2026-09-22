@@ -8,6 +8,7 @@ import type {
   PromptAssetMetadata,
   RuleAssetMetadata,
 } from "../data/assets.ts";
+import { defaultDocumentType } from "../data/assets.ts";
 import type { ProjectData } from "../data/projects.ts";
 import type {
   SourcePackageDraft,
@@ -15,7 +16,6 @@ import type {
 } from "./source-package-draft.ts";
 
 export const SOURCE_PACKAGE_DEFAULT_CATEGORY = "导入";
-export const SOURCE_PACKAGE_DEFAULT_DOCUMENT_TYPE = "参考资料";
 
 export type SourcePackageUploadRef = {
   uploadId: string;
@@ -61,7 +61,7 @@ function createMetadata(
   }
 
   const metadata: DocumentAssetMetadata = {
-    documentType: SOURCE_PACKAGE_DEFAULT_DOCUMENT_TYPE,
+    documentType: defaultDocumentType,
   };
 
   return metadata;

@@ -43,6 +43,37 @@ export type RuleType = (typeof ruleTypes)[number];
 export const ruleScopes = ["global", "project", "task"] as const;
 export type RuleScope = (typeof ruleScopes)[number];
 
+// 规则的作用层级、执行阶段、优先级、生命周期和覆盖权限。
+// 这些都是扩展字段，允许留空；旧数据缺字段按空值处理，不做强制补齐。
+export const ruleLevels = ["global", "module", "task", "code"] as const;
+export type RuleLevel = (typeof ruleLevels)[number];
+
+export const ruleStages = ["plan", "implement", "verify", "release"] as const;
+export type RuleStage = (typeof ruleStages)[number];
+
+export const rulePriorities = ["must", "should", "may"] as const;
+export type RulePriority = (typeof rulePriorities)[number];
+
+export const ruleLifecycles = [
+  "draft",
+  "active",
+  "deprecated",
+  "archived",
+] as const;
+export type RuleLifecycle = (typeof ruleLifecycles)[number];
+
+export const ruleOverrideScopes = ["none", "project", "task"] as const;
+export type RuleOverrideScope = (typeof ruleOverrideScopes)[number];
+
+// 文档角色：区分来源、工作稿、权威版和编译结果
+export const documentRoles = [
+  "source",
+  "working",
+  "authoritative",
+  "compiled",
+] as const;
+export type DocumentRole = (typeof documentRoles)[number];
+
 export const assetVersionReasons = [
   "initial",
   "save",
@@ -81,10 +112,27 @@ export type PromptAssetMetadata = {
 export type RuleAssetMetadata = {
   ruleType: RuleType;
   scope: RuleScope;
+  purpose?: string;
+  level?: RuleLevel;
+  techContext?: string[];
+  stage?: RuleStage;
+  priority?: RulePriority;
+  lifecycle?: RuleLifecycle;
+  overrideScope?: RuleOverrideScope;
+  evidence?: string;
+  verification?: string;
 };
 
 export type DocumentAssetMetadata = {
   documentType: string;
+  role?: DocumentRole;
+  authority?: boolean;
+  module?: string;
+  effectiveVersion?: string;
+  sourceLocation?: string;
+  updateTrigger?: string;
+  freshness?: string;
+  lastVerifiedAt?: string;
 };
 
 export type ReservedAssetMetadata = Record<string, unknown>;
@@ -179,6 +227,25 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === "string";
 }
 
+// 扩展字段都允许缺省；缺省和空值一律按「没填」处理，不拦截保存
+function isOptionalString(value: unknown) {
+  return value === undefined || typeof value === "string";
+}
+
+function isOptionalEnum<T extends string>(value: unknown, allowed: readonly T[]) {
+  return (
+    value === undefined ||
+    (typeof value === "string" && allowed.includes(value as T))
+  );
+}
+
+function isOptionalStringList(value: unknown) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
+}
+
 function isAssetSourceData(value: unknown): value is AssetSourceData {
   if (!isRecord(value)) {
     return false;
@@ -242,7 +309,16 @@ function isRuleAssetMetadata(value: unknown): value is RuleAssetMetadata {
 
   return (
     ruleTypes.includes(value.ruleType as RuleType) &&
-    ruleScopes.includes(value.scope as RuleScope)
+    ruleScopes.includes(value.scope as RuleScope) &&
+    isOptionalString(value.purpose) &&
+    isOptionalEnum(value.level, ruleLevels) &&
+    isOptionalEnum(value.stage, ruleStages) &&
+    isOptionalEnum(value.priority, rulePriorities) &&
+    isOptionalEnum(value.lifecycle, ruleLifecycles) &&
+    isOptionalEnum(value.overrideScope, ruleOverrideScopes) &&
+    isOptionalString(value.evidence) &&
+    isOptionalString(value.verification) &&
+    isOptionalStringList(value.techContext)
   );
 }
 
@@ -252,7 +328,15 @@ function isDocumentAssetMetadata(
   return (
     isRecord(value) &&
     typeof value.documentType === "string" &&
-    Boolean(value.documentType.trim())
+    Boolean(value.documentType.trim()) &&
+    isOptionalEnum(value.role, documentRoles) &&
+    (value.authority === undefined || typeof value.authority === "boolean") &&
+    isOptionalString(value.module) &&
+    isOptionalString(value.effectiveVersion) &&
+    isOptionalString(value.sourceLocation) &&
+    isOptionalString(value.updateTrigger) &&
+    isOptionalString(value.freshness) &&
+    isOptionalString(value.lastVerifiedAt)
   );
 }
 
@@ -441,4 +525,88 @@ export function createAssetVersion(
     expiresAt: input.expiresAt ?? null,
     createdAt: input.createdAt,
   } as AssetVersionData;
+}
+
+// 文档类型的默认值：导入时先按参考资料归类，用户可以在编辑器里改
+export const defaultDocumentType = "参考资料";
+
+// 编辑器里用的完整形态：扩展字段缺省时补成空值，界面不需要自己兜底
+export type RuleMetadataForm = {
+  ruleType: RuleType;
+  scope: RuleScope;
+  purpose: string;
+  level: RuleLevel | "";
+  techContext: string[];
+  stage: RuleStage | "";
+  priority: RulePriority | "";
+  lifecycle: RuleLifecycle | "";
+  overrideScope: RuleOverrideScope | "";
+  evidence: string;
+  verification: string;
+};
+
+export type DocumentMetadataForm = {
+  documentType: string;
+  role: DocumentRole | "";
+  authority: boolean;
+  module: string;
+  effectiveVersion: string;
+  sourceLocation: string;
+  updateTrigger: string;
+  freshness: string;
+  lastVerifiedAt: string;
+};
+
+function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | "" {
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : "";
+}
+
+function readString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function readStringList(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+export function normalizeRuleMetadata(value: unknown): RuleMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    ruleType: ruleTypes.includes(source.ruleType as RuleType)
+      ? (source.ruleType as RuleType)
+      : "recommended",
+    scope: ruleScopes.includes(source.scope as RuleScope)
+      ? (source.scope as RuleScope)
+      : "project",
+    purpose: readString(source.purpose),
+    level: readEnum(source.level, ruleLevels),
+    techContext: readStringList(source.techContext),
+    stage: readEnum(source.stage, ruleStages),
+    priority: readEnum(source.priority, rulePriorities),
+    lifecycle: readEnum(source.lifecycle, ruleLifecycles),
+    overrideScope: readEnum(source.overrideScope, ruleOverrideScopes),
+    evidence: readString(source.evidence),
+    verification: readString(source.verification),
+  };
+}
+
+export function normalizeDocumentMetadata(value: unknown): DocumentMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    documentType: readString(source.documentType) || defaultDocumentType,
+    role: readEnum(source.role, documentRoles),
+    authority: source.authority === true,
+    module: readString(source.module),
+    effectiveVersion: readString(source.effectiveVersion),
+    sourceLocation: readString(source.sourceLocation),
+    updateTrigger: readString(source.updateTrigger),
+    freshness: readString(source.freshness),
+    lastVerifiedAt: readString(source.lastVerifiedAt),
+  };
 }
