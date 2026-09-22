@@ -211,6 +211,7 @@ export function BackupManagerDialog({
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 当前共有 {promptCount} 条提示词
+                {otherAssetCount > 0 ? `、${otherAssetCount} 条规则或文档` : ""}
               </p>
             </div>
           </div>
@@ -228,11 +229,9 @@ export function BackupManagerDialog({
         <div className="overflow-y-auto px-5 py-6 sm:px-6">
           {!importPlan && !importError && (
             <>
-              <p className="rounded-lg bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
-                这一版备份只包含提示词，规则和文档不在备份范围内。
-                {otherAssetCount > 0
-                  ? `当前有 ${otherAssetCount} 条规则或文档不会随备份导出和恢复，请另行保留。`
-                  : ""}
+              <p className="rounded-lg bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-900">
+                备份包含项目、提示词、规则、文档、技术档案和资产关系；
+                来源包上传的原文件不在备份里，需要另行保留。
               </p>
 
               <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -244,7 +243,8 @@ export function BackupManagerDialog({
                     导出备份
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    将全部提示词保存为可恢复的 JSON 文件，不含规则和文档。
+                    把项目、提示词、规则、文档、技术档案和资产关系保存成一个 JSON
+                    文件。
                   </p>
                   <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
                     <Clock3 aria-hidden="true" className="size-3.5" />
@@ -268,10 +268,10 @@ export function BackupManagerDialog({
                     导入备份
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    导入的提示词会进入默认项目，导入前会先检查文件并展示合并结果。
+                    导入只新增，不覆盖也不删除已有内容；同名项目会合并到已有项目。
                   </p>
                   <p className="mt-4 text-xs text-slate-500">
-                    当前提示词不会被删除。
+                    旧版提示词备份也能导入，会进入默认项目。
                   </p>
                   <input
                     accept=".json,application/json"
