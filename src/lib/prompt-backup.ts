@@ -133,6 +133,51 @@ export function planProjectMerge(
   return mapping;
 }
 
+export type AssetImportPlan = {
+  // 需要新建的项目（没有同名项目可合并的）
+  projectsToCreate: ProjectData[];
+  // 备份里的项目 id → 落库后的项目 id
+  projectIdMap: Map<string, string>;
+  // 需要新建的资产（本地已有同 id 的会跳过，不覆盖本地版本）
+  assetsToCreate: AssetData[];
+  skippedAssetIds: string[];
+};
+
+// 导入 v2 备份的规划：只新增、不覆盖。
+// 同名项目按名称合并；本地已有同 id 资产时跳过，避免把本地较新的版本盖掉。
+export function planAssetImport(input: {
+  existingProjects: ProjectData[];
+  existingAssets: AssetData[];
+  backup: AssetBackup;
+}): AssetImportPlan {
+  const projectIdMap = planProjectMerge(
+    input.existingProjects,
+    input.backup.projects,
+  );
+  const existingIds = new Set(input.existingAssets.map((asset) => asset.id));
+
+  const projectsToCreate = input.backup.projects.filter(
+    (project) => projectIdMap.get(project.id) === project.id,
+  );
+
+  const assetsToCreate: AssetData[] = [];
+  const skippedAssetIds: string[] = [];
+
+  for (const asset of input.backup.assets) {
+    if (existingIds.has(asset.id)) {
+      skippedAssetIds.push(asset.id);
+      continue;
+    }
+
+    assetsToCreate.push({
+      ...asset,
+      projectId: projectIdMap.get(asset.projectId) ?? asset.projectId,
+    });
+  }
+
+  return { projectsToCreate, projectIdMap, assetsToCreate, skippedAssetIds };
+}
+
 
 export type PromptBackup = {
   type: typeof PROMPT_BACKUP_TYPE;

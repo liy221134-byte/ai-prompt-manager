@@ -6,6 +6,7 @@ import {
   ASSET_BACKUP_VERSION,
   createAssetBackup,
   parseBackup,
+  planAssetImport,
   planProjectMerge,
 } from "../src/lib/prompt-backup.ts";
 
@@ -150,4 +151,45 @@ test("同名项目按名称合并到已有项目", () => {
 
   assert.equal(mapping.get("project-a"), "project-existing");
   assert.equal(mapping.get("project-b"), "project-b");
+});
+
+test("导入规划只新增不覆盖，同名项目合并、已有资产跳过", () => {
+  const backup = createAssetBackup({
+    projects: [project, { ...project, id: "project-b", name: "新项目" }],
+    assets: [
+      documentAsset,
+      { ...documentAsset, id: "document-new", projectId: "project-b" },
+    ],
+    exportedAt: "2026-09-22T12:00:00.000Z",
+  });
+
+  const plan = planAssetImport({
+    existingProjects: [{ ...project, id: "project-existing" }],
+    existingAssets: [documentAsset],
+    backup,
+  });
+
+  // 同名项目合并到已有项目，只新建另一个
+  assert.deepEqual(
+    plan.projectsToCreate.map((item) => item.id),
+    ["project-b"],
+  );
+  assert.equal(plan.projectIdMap.get("project-a"), "project-existing");
+
+  // 已有 id 的资产跳过，不覆盖
+  assert.deepEqual(plan.skippedAssetIds, ["document-a"]);
+  assert.deepEqual(
+    plan.assetsToCreate.map((asset) => asset.id),
+    ["document-new"],
+  );
+
+  // 被合并项目的资产会改挂到已有项目上
+  assert.deepEqual(
+    planAssetImport({
+      existingProjects: [{ ...project, id: "project-existing" }],
+      existingAssets: [],
+      backup,
+    }).assetsToCreate.map((asset) => asset.projectId),
+    ["project-existing", "project-b"],
+  );
 });
