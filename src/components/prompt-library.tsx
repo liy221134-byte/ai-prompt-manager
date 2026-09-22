@@ -509,6 +509,22 @@ export function PromptLibrary({
       activeProjectId ? findProjectTechProfile(assets, activeProjectId) : null,
     [activeProjectId, assets],
   );
+  // 关系目标：同项目、没进垃圾箱、不含正在编辑的这条
+  const relationTargetOptions = useMemo(
+    () =>
+      assets
+        .filter(
+          (item) =>
+            item.projectId === activeProjectId &&
+            !item.deletedAt &&
+            item.id !==
+              (assetEditorState?.mode === "edit"
+                ? assetEditorState.assetId
+                : ""),
+        )
+        .map((item) => ({ id: item.id, title: item.title })),
+    [activeProjectId, assetEditorState, assets],
+  );
   const listEntries = useMemo<ProjectListEntry[]>(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
     const entries: ProjectListEntry[] = [];
@@ -1698,6 +1714,7 @@ export function PromptLibrary({
       {detailAsset && (
         <AssetDetailDrawer
           asset={detailAsset}
+          allAssets={assets}
           dataSource={dataSource}
           key={`asset-detail-${detailAsset.id}`}
           onClose={() => setAssetDetailId(null)}
@@ -1725,6 +1742,7 @@ export function PromptLibrary({
               : `asset-editor-new-${assetEditorState.assetType}`
           }
           adrOptions={adrOptions}
+          relationTargetOptions={relationTargetOptions}
           onClose={() => setAssetEditorState(null)}
           onSave={handleAssetSave}
         />

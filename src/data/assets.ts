@@ -708,6 +708,13 @@ export function normalizeAssetRelations(value: unknown): AssetRelation[] {
     : [];
 }
 
+// 关系挂在各类资产的元数据上，读取统一走这里，免得每处都判断资产类型
+export function readAssetRelations(metadata: unknown): AssetRelation[] {
+  const source = isRecord(metadata) ? metadata : {};
+
+  return normalizeAssetRelations(source.relations);
+}
+
 export type TechProfileMetadataForm = {
   stack: TechStackEntry[];
   relations: AssetRelation[];

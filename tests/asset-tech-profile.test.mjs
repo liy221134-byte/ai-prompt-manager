@@ -11,6 +11,10 @@ import {
   listAdrCandidates,
   validateTechStack,
 } from "../src/lib/tech-profile.ts";
+import {
+  buildCreateAssetInput,
+  createEmptyAssetDraft,
+} from "../src/lib/asset-draft.ts";
 
 function createTechProfile(metadata, overrides = {}) {
   return {
@@ -197,4 +201,40 @@ test("一个项目只认一份技术档案", () => {
   assert.equal(findProjectTechProfile(assets, "default-project")?.id, "tech_profile-a");
   assert.equal(findProjectTechProfile(assets, "p2")?.id, "tech_profile-b");
   assert.equal(findProjectTechProfile(assets, "p3"), null);
+});
+
+test("关系能写进草稿再存回元数据，没选目标的行会被丢掉", () => {
+  const input = buildCreateAssetInput({
+    id: "document-alpha",
+    projectId: "project-1",
+    draft: {
+      ...createEmptyAssetDraft("document"),
+      title: "需求说明",
+      content: "正文",
+      documentType: "PRD",
+      relations: [
+        {
+          key: "relation-1",
+          targetAssetId: "rule-a",
+          relationType: "reference",
+          note: "引用提交规范",
+        },
+        {
+          key: "relation-2",
+          targetAssetId: "",
+          relationType: "depends_on",
+          note: "没选目标",
+        },
+      ],
+    },
+    now: "2026-09-22T10:00:00.000Z",
+  });
+
+  assert.deepEqual(input.asset.metadata.relations, [
+    {
+      targetAssetId: "rule-a",
+      relationType: "reference",
+      note: "引用提交规范",
+    },
+  ]);
 });

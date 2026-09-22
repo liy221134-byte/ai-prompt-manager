@@ -12,7 +12,9 @@ import {
   ruleLifecycles,
   ruleOverrideScopes,
   documentRoles,
+  assetRelationTypes,
   type AssetStatus,
+  type AssetRelationType,
   type DocumentRole,
   type RuleLevel,
   type RuleLifecycle,
@@ -34,6 +36,7 @@ import {
   type EditableAssetType,
 } from "@/lib/asset-draft";
 import {
+  assetRelationLabels,
   assetStatusLabels,
   documentTypeOptions,
   ruleScopeLabels,
@@ -45,6 +48,8 @@ type AssetEditorDrawerProps = {
   asset: EditableAssetData | null;
   // 可以关联的 ADR 文档；偏离默认选型时必须选一条
   adrOptions?: Array<{ id: string; title: string }>;
+  // 可以建立关系的其他资产（同项目、未删除、不含自己）
+  relationTargetOptions?: Array<{ id: string; title: string }>;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -155,6 +160,7 @@ export function AssetEditorDrawer({
   assetType,
   asset,
   adrOptions = [],
+  relationTargetOptions = [],
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -221,6 +227,37 @@ export function AssetEditorDrawer({
           }
         : current,
     );
+  }
+
+  function updateRelationRow(key: string, patch: Record<string, unknown>) {
+    setDraft((current) => ({
+      ...current,
+      relations: current.relations.map((row) =>
+        row.key === key ? { ...row, ...patch } : row,
+      ),
+    }) as AssetDraft);
+  }
+
+  function addRelationRow() {
+    setDraft((current) => ({
+      ...current,
+      relations: [
+        ...current.relations,
+        {
+          key: `relation-${Date.now()}-${current.relations.length}`,
+          targetAssetId: "",
+          relationType: "reference" as const,
+          note: "",
+        },
+      ],
+    }) as AssetDraft);
+  }
+
+  function removeRelationRow(key: string) {
+    setDraft((current) => ({
+      ...current,
+      relations: current.relations.filter((row) => row.key !== key),
+    }) as AssetDraft);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -548,6 +585,98 @@ export function AssetEditorDrawer({
                 列表默认只显示活跃资产，保存后可以在状态筛选里找到这条记录。
               </p>
             )}
+
+            <section className="mt-5 rounded-lg border border-slate-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  资产关系
+                </h3>
+                <button
+                  className="text-xs font-semibold text-blue-700 hover:underline disabled:text-slate-400"
+                  disabled={relationTargetOptions.length === 0}
+                  onClick={addRelationRow}
+                  type="button"
+                >
+                  新增关系
+                </button>
+              </div>
+
+              {draft.relations.length === 0 ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  还没有关系。关系是单向的，这里填的是「这条资产指向谁」。
+                </p>
+              ) : (
+                <ul className="mt-3 flex flex-col gap-3">
+                  {draft.relations.map((row) => (
+                    <li
+                      className="rounded-lg border border-slate-200 px-3 py-3"
+                      key={row.key}
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <select
+                          aria-label="关系目标"
+                          className={inputClassName}
+                          onChange={(event) =>
+                            updateRelationRow(row.key, {
+                              targetAssetId: event.target.value,
+                            })
+                          }
+                          value={row.targetAssetId}
+                        >
+                          <option value="">选择目标资产</option>
+                          {relationTargetOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.title}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          aria-label="关系类型"
+                          className={inputClassName}
+                          onChange={(event) =>
+                            updateRelationRow(row.key, {
+                              relationType: event.target
+                                .value as AssetRelationType,
+                            })
+                          }
+                          value={row.relationType}
+                        >
+                          {assetRelationTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {assetRelationLabels[type]}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          aria-label="关系说明"
+                          className={inputClassName}
+                          onChange={(event) =>
+                            updateRelationRow(row.key, { note: event.target.value })
+                          }
+                          placeholder="一句说明，可留空"
+                          value={row.note}
+                        />
+                      </div>
+                      <div className="mt-2 flex justify-end">
+                        <button
+                          className="text-xs font-semibold text-red-600 hover:underline"
+                          onClick={() => removeRelationRow(row.key)}
+                          type="button"
+                        >
+                          删除这条关系
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {relationTargetOptions.length === 0 && (
+                <p className="mt-3 text-xs text-slate-500">
+                  当前项目还没有别的资产可以关联，先建几条规则或文档。
+                </p>
+              )}
+            </section>
 
             {draft.assetType === "tech_profile" && (
               <section className="mt-5 rounded-lg border border-slate-200 px-4 py-3">

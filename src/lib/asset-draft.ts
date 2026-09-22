@@ -1,5 +1,7 @@
 import {
   type AssetData,
+  type AssetRelation,
+  type AssetRelationType,
   type AssetStatus,
   type DocumentAssetData,
   type DocumentAssetMetadata,
@@ -18,6 +20,7 @@ import {
   normalizeDocumentMetadata,
   normalizeRuleMetadata,
   normalizeTechProfileMetadata,
+  readAssetRelations,
   type TechProfileAssetData,
   type TechProfileAssetMetadata,
 } from "../data/assets.ts";
@@ -42,6 +45,14 @@ export const editableAssetStatuses: AssetStatus[] = [
   "archived",
 ];
 
+// 关系一行：界面上用 key 做稳定标识，保存时转成元数据里的数组
+export type AssetRelationDraft = {
+  key: string;
+  targetAssetId: string;
+  relationType: AssetRelationType;
+  note: string;
+};
+
 export type RuleAssetDraft = {
   assetType: "rule";
   title: string;
@@ -60,6 +71,7 @@ export type RuleAssetDraft = {
   overrideScope: RuleOverrideScope | "";
   evidence: string;
   verification: string;
+  relations: AssetRelationDraft[];
 };
 
 export type DocumentAssetDraft = {
@@ -77,6 +89,7 @@ export type DocumentAssetDraft = {
   updateTrigger: string;
   freshness: string;
   lastVerifiedAt: string;
+  relations: AssetRelationDraft[];
 };
 
 // 技术栈一行：界面上用 key 做稳定标识，保存时转成元数据里的数组
@@ -96,6 +109,7 @@ export type TechProfileAssetDraft = {
   content: string;
   status: AssetStatus;
   stack: TechStackEntryDraft[];
+  relations: AssetRelationDraft[];
 };
 
 export type AssetDraft =
@@ -137,6 +151,7 @@ export function createEmptyAssetDraft(
       overrideScope: "",
       evidence: "",
       verification: "",
+      relations: [],
     };
   }
 
@@ -148,6 +163,7 @@ export function createEmptyAssetDraft(
       content: "",
       status: "active",
       stack: [],
+      relations: [],
     };
   }
 
@@ -166,7 +182,30 @@ export function createEmptyAssetDraft(
     updateTrigger: "",
     freshness: "",
     lastVerifiedAt: "",
+    relations: [],
   };
+}
+
+function relationsToDraft(relations: AssetRelation[]): AssetRelationDraft[] {
+  return relations.map((relation, index) => ({
+    key: `relation-${index + 1}`,
+    targetAssetId: relation.targetAssetId,
+    relationType: relation.relationType,
+    note: relation.note,
+  }));
+}
+
+// 没选目标的行直接丢掉，不让半截关系进元数据
+function draftRelationsToMetadata(
+  relations: AssetRelationDraft[],
+): AssetRelation[] {
+  return relations
+    .filter((relation) => relation.targetAssetId)
+    .map((relation) => ({
+      targetAssetId: relation.targetAssetId,
+      relationType: relation.relationType,
+      note: relation.note.trim(),
+    }));
 }
 
 export function assetToDraft(asset: EditableAssetData): AssetDraft {
@@ -195,6 +234,7 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
       overrideScope: metadata.overrideScope,
       evidence: metadata.evidence,
       verification: metadata.verification,
+      relations: relationsToDraft(readAssetRelations(asset.metadata)),
     };
   }
 
@@ -215,6 +255,7 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
     updateTrigger: metadata.updateTrigger,
     freshness: metadata.freshness,
     lastVerifiedAt: metadata.lastVerifiedAt,
+    relations: relationsToDraft(readAssetRelations(asset.metadata)),
   };
 }
 
@@ -237,6 +278,7 @@ export function techProfileToDraft(
       isDeviation: entry.isDeviation,
       adrAssetId: entry.adrAssetId ?? "",
     })),
+    relations: relationsToDraft(readAssetRelations(asset.metadata)),
   };
 }
 
@@ -324,6 +366,9 @@ function buildAsset(
       ...(draft.overrideScope ? { overrideScope: draft.overrideScope } : {}),
       evidence: draft.evidence.trim(),
       verification: draft.verification.trim(),
+      ...(draft.relations.length
+        ? { relations: draftRelationsToMetadata(draft.relations) }
+        : {}),
     };
 
     return {
@@ -336,7 +381,9 @@ function buildAsset(
   if (draft.assetType === "tech_profile") {
     const techMetadata: TechProfileAssetMetadata = {
       stack: normalizeDraftStack(draft.stack).filter((entry) => entry.name),
-      relations: [],
+      ...(draft.relations.length
+        ? { relations: draftRelationsToMetadata(draft.relations) }
+        : {}),
     };
 
     return {
@@ -356,6 +403,9 @@ function buildAsset(
     updateTrigger: draft.updateTrigger.trim(),
     freshness: draft.freshness.trim(),
     lastVerifiedAt: draft.lastVerifiedAt.trim(),
+    ...(draft.relations.length
+      ? { relations: draftRelationsToMetadata(draft.relations) }
+      : {}),
   };
 
   return {

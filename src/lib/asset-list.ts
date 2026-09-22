@@ -2,6 +2,7 @@ import type {
   AssetData,
   AssetStatus,
   AssetType,
+  AssetRelationType,
   RuleScope,
   RuleType,
 } from "../data/assets.ts";
@@ -31,6 +32,13 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   rule: "规则",
   document: "文档",
   tech_profile: "技术档案",
+};
+
+export const assetRelationLabels: Record<AssetRelationType, string> = {
+  reference: "引用",
+  depends_on: "依赖",
+  replaces: "替代",
+  implements: "实现",
 };
 
 export const assetStatusLabels: Record<AssetStatus, string> = {

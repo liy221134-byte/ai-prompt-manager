@@ -16,6 +16,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import type { AssetStatus, AssetVersionData } from "@/data/assets";
+import {
+  readAssetRelations,
+  type AssetData,
+} from "@/data/assets";
+import { assetRelationLabels } from "@/lib/asset-list";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import type { EditableAssetData } from "@/lib/asset-draft";
 import {
@@ -34,6 +39,8 @@ import type { PromptDataSource } from "@/lib/prompt-source";
 
 type AssetDetailDrawerProps = {
   asset: EditableAssetData;
+  // 用来把关系目标解析成标题，以及算「被谁引用」
+  allAssets?: AssetData[];
   dataSource: PromptDataSource;
   onClose: () => void;
   onEdit: (asset: EditableAssetData) => void;
@@ -96,6 +103,7 @@ function describeAssetMetadata(asset: EditableAssetData) {
 
 export function AssetDetailDrawer({
   asset,
+  allAssets = [],
   dataSource,
   onClose,
   onEdit,
@@ -105,6 +113,15 @@ export function AssetDetailDrawer({
 }: AssetDetailDrawerProps) {
   // 版本按「资产 + 当前版本」缓存，切换版本后 key 变化，界面自动回到加载状态。
   const versionsKey = `${asset.id}:${asset.currentVersionId}`;
+  // 正向关系写在自己身上；反向关系要从别的资产里找谁指向我
+  const relations = readAssetRelations(asset.metadata);
+  const incomingRelations = allAssets
+    .filter((item) => item.id !== asset.id && !item.deletedAt)
+    .flatMap((item) =>
+      readAssetRelations(item.metadata)
+        .filter((relation) => relation.targetAssetId === asset.id)
+        .map((relation) => ({ asset: item, relation })),
+    );
   const [versionState, setVersionState] = useState<{
     key: string;
     versions: AssetVersionData[];
@@ -289,6 +306,54 @@ export function AssetDetailDrawer({
               </span>
             ))}
           </div>
+
+          {(relations.length > 0 || incomingRelations.length > 0) && (
+            <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+              <h3 className="text-sm font-semibold text-slate-700">资产关系</h3>
+
+              {relations.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-1 text-sm text-slate-700">
+                  {relations.map((relation) => {
+                    const target = allAssets.find(
+                      (item) => item.id === relation.targetAssetId,
+                    );
+                    const suffix = !target
+                      ? "（目标已不存在）"
+                      : target.deletedAt || target.status === "archived"
+                        ? "（目标已归档）"
+                        : "";
+
+                    return (
+                      <li
+                        key={`${relation.targetAssetId}-${relation.relationType}`}
+                      >
+                        {assetRelationLabels[relation.relationType]}：
+                        {target ? target.title : relation.targetAssetId}
+                        {suffix}
+                        {relation.note ? ` —— ${relation.note}` : ""}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              {incomingRelations.length > 0 && (
+                <>
+                  <h4 className="mt-3 text-xs font-semibold text-slate-600">
+                    被谁引用
+                  </h4>
+                  <ul className="mt-1 flex flex-col gap-1 text-sm text-slate-700">
+                    {incomingRelations.map(({ asset: source, relation }) => (
+                      <li key={`${source.id}-${relation.relationType}`}>
+                        {source.title}（
+                        {assetRelationLabels[relation.relationType]}）
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
 
           {isConfirmingArchive && (
             <section className="mt-5 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3">
