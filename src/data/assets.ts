@@ -153,7 +153,7 @@ export type DocumentAssetMetadata = {
   relations?: AssetRelation[];
 };
 
-// 技术档案：一个项目一份，记录技术栈清单和选型说明。
+// 技术档案：一个项目一份，记录技术栈清单；选型说明写在资产正文里。
 // 偏离默认选型的条目必须挂一条 ADR。
 export type TechStackEntry = {
   name: string;
@@ -165,7 +165,6 @@ export type TechStackEntry = {
 
 export type TechProfileAssetMetadata = {
   stack: TechStackEntry[];
-  notes: string;
   relations?: AssetRelation[];
 };
 
@@ -191,10 +190,11 @@ export type DocumentAssetData = AssetBase<
   "document",
   DocumentAssetMetadata
 >;
-export type ReservedAssetType =
-  | "template"
-  | "tech_profile"
-  | "source_package";
+export type TechProfileAssetData = AssetBase<
+  "tech_profile",
+  TechProfileAssetMetadata
+>;
+export type ReservedAssetType = "template" | "source_package";
 export type ReservedAssetData = AssetBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -204,6 +204,7 @@ export type AssetData =
   | PromptAssetData
   | RuleAssetData
   | DocumentAssetData
+  | TechProfileAssetData
   | ReservedAssetData;
 
 type AssetVersionBase<TType extends AssetType, TMetadata> = {
@@ -235,6 +236,10 @@ export type DocumentAssetVersionData = AssetVersionBase<
   "document",
   DocumentAssetMetadata
 >;
+export type TechProfileAssetVersionData = AssetVersionBase<
+  "tech_profile",
+  TechProfileAssetMetadata
+>;
 export type ReservedAssetVersionData = AssetVersionBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -244,6 +249,7 @@ export type AssetVersionData =
   | PromptAssetVersionData
   | RuleAssetVersionData
   | DocumentAssetVersionData
+  | TechProfileAssetVersionData
   | ReservedAssetVersionData;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -316,7 +322,6 @@ function isTechProfileAssetMetadata(
     isRecord(value) &&
     Array.isArray(value.stack) &&
     value.stack.every((entry) => isTechStackEntry(entry)) &&
-    typeof value.notes === "string" &&
     isOptionalRelations(value.relations)
   );
 }
@@ -705,7 +710,6 @@ export function normalizeAssetRelations(value: unknown): AssetRelation[] {
 
 export type TechProfileMetadataForm = {
   stack: TechStackEntry[];
-  notes: string;
   relations: AssetRelation[];
 };
 
@@ -720,7 +724,6 @@ export function normalizeTechProfileMetadata(
           .filter((entry) => isTechStackEntry(entry))
           .map((entry) => ({ ...entry }))
       : [],
-    notes: readString(source.notes),
     relations: normalizeAssetRelations(source.relations),
   };
 }

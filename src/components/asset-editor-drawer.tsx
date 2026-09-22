@@ -43,6 +43,8 @@ import {
 type AssetEditorDrawerProps = {
   assetType: EditableAssetType;
   asset: EditableAssetData | null;
+  // 可以关联的 ADR 文档；偏离默认选型时必须选一条
+  adrOptions?: Array<{ id: string; title: string }>;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -152,6 +154,7 @@ function TextField({
 export function AssetEditorDrawer({
   assetType,
   asset,
+  adrOptions = [],
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -163,11 +166,61 @@ export function AssetEditorDrawer({
 
   useModalBehavior(isSaving ? () => undefined : onClose, isSaving);
 
-  const typeLabel = assetType === "rule" ? "规则" : "文档";
+  const typeLabel =
+    assetType === "rule"
+      ? "规则"
+      : assetType === "document"
+        ? "文档"
+        : "技术档案";
   const isEditing = Boolean(asset);
 
   function updateDraft(patch: Record<string, unknown>) {
     setDraft((current) => ({ ...current, ...patch }) as AssetDraft);
+  }
+
+  function updateStackRow(key: string, patch: Record<string, unknown>) {
+    setDraft((current) =>
+      current.assetType === "tech_profile"
+        ? {
+            ...current,
+            stack: current.stack.map((row) =>
+              row.key === key ? { ...row, ...patch } : row,
+            ),
+          }
+        : current,
+    );
+  }
+
+  function addStackRow() {
+    setDraft((current) =>
+      current.assetType === "tech_profile"
+        ? {
+            ...current,
+            stack: [
+              ...current.stack,
+              {
+                key: `stack-${Date.now()}-${current.stack.length}`,
+                name: "",
+                version: "",
+                purpose: "",
+                isDeviation: false,
+                adrAssetId: "",
+              },
+            ],
+          }
+        : current,
+    );
+  }
+
+  function removeStackRow(key: string) {
+    setDraft((current) =>
+      current.assetType === "tech_profile"
+        ? {
+            ...current,
+            stack: current.stack.filter((row) => row.key !== key),
+          }
+        : current,
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -313,7 +366,7 @@ export function AssetEditorDrawer({
                     </select>
                   </label>
                 </>
-              ) : (
+              ) : draft.assetType === "document" ? (
                 <label className="flex flex-col gap-2">
                   <span className={labelClassName}>文档类型</span>
                   <select
@@ -330,6 +383,10 @@ export function AssetEditorDrawer({
                     ))}
                   </select>
                 </label>
+              ) : (
+                <p className="text-sm leading-6 text-slate-500 sm:col-span-2">
+                  技术档案的基础字段在下面的「技术栈清单」里填，选型说明写在正文。
+                </p>
               )}
 
               <label className="flex flex-col gap-2">
@@ -419,7 +476,7 @@ export function AssetEditorDrawer({
                     value={draft.verification}
                   />
                 </div>
-              ) : (
+              ) : draft.assetType === "document" ? (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <OptionalSelect
                     label="文档角色"
@@ -479,6 +536,10 @@ export function AssetEditorDrawer({
                     </span>
                   </label>
                 </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-500">
+                  技术档案暂时没有额外的元数据字段。
+                </p>
               )}
             </details>
 
@@ -488,9 +549,131 @@ export function AssetEditorDrawer({
               </p>
             )}
 
+            {draft.assetType === "tech_profile" && (
+              <section className="mt-5 rounded-lg border border-slate-200 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-700">
+                    技术栈清单
+                  </h3>
+                  <button
+                    className="text-xs font-semibold text-blue-700 hover:underline"
+                    onClick={addStackRow}
+                    type="button"
+                  >
+                    新增一行
+                  </button>
+                </div>
+
+                {draft.stack.length === 0 ? (
+                  <p className="mt-3 text-xs text-slate-500">
+                    还没有技术栈，点「新增一行」开始填。
+                  </p>
+                ) : (
+                  <ul className="mt-3 flex flex-col gap-3">
+                    {draft.stack.map((row) => (
+                      <li
+                        className="rounded-lg border border-slate-200 px-3 py-3"
+                        key={row.key}
+                      >
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <input
+                            aria-label="技术名称"
+                            className={inputClassName}
+                            onChange={(event) =>
+                              updateStackRow(row.key, {
+                                name: event.target.value,
+                              })
+                            }
+                            placeholder="技术名称"
+                            value={row.name}
+                          />
+                          <input
+                            aria-label="版本"
+                            className={inputClassName}
+                            onChange={(event) =>
+                              updateStackRow(row.key, {
+                                version: event.target.value,
+                              })
+                            }
+                            placeholder="版本，可留空"
+                            value={row.version}
+                          />
+                          <input
+                            aria-label="用途"
+                            className={inputClassName}
+                            onChange={(event) =>
+                              updateStackRow(row.key, {
+                                purpose: event.target.value,
+                              })
+                            }
+                            placeholder="用来做什么"
+                            value={row.purpose}
+                          />
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <label className="flex items-center gap-2 text-xs text-slate-600">
+                            <input
+                              checked={row.isDeviation}
+                              onChange={(event) =>
+                                updateStackRow(row.key, {
+                                  isDeviation: event.target.checked,
+                                })
+                              }
+                              type="checkbox"
+                            />
+                            偏离默认选型
+                          </label>
+
+                          {row.isDeviation && (
+                            <select
+                              aria-label="关联 ADR"
+                              className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
+                              onChange={(event) =>
+                                updateStackRow(row.key, {
+                                  adrAssetId: event.target.value,
+                                })
+                              }
+                              value={row.adrAssetId}
+                            >
+                              <option value="">选择 ADR（必填）</option>
+                              {adrOptions.map((option) => (
+                                <option key={option.id} value={option.id}>
+                                  {option.title}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+
+                          <button
+                            className="ml-auto text-xs font-semibold text-red-600 hover:underline"
+                            onClick={() => removeStackRow(row.key)}
+                            type="button"
+                          >
+                            删除这一行
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {adrOptions.length === 0 && (
+                  <p className="mt-3 text-xs text-slate-500">
+                    当前项目还没有 ADR 文档。要标记偏离默认选型，先在「文档」里新增一条类型为
+                    ADR 的文档。
+                  </p>
+                )}
+              </section>
+            )}
+
             <label className="mt-5 flex flex-col gap-2">
               <span className={labelClassName}>
-                {assetType === "rule" ? "规则正文" : "文档正文"}
+                {assetType === "rule"
+                  ? "规则正文"
+                  : assetType === "document"
+                    ? "文档正文"
+                    : "选型说明"}
               </span>
               <textarea
                 className="min-h-72 rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

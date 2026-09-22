@@ -280,12 +280,13 @@ test("资产活跃判定排除归档、草稿和垃圾箱内容", () => {
   );
 });
 
-test("类型筛选支持全部、提示词、规则和文档", () => {
+test("类型筛选支持全部、提示词、规则、文档和技术档案", () => {
   assert.deepEqual([...assetTypeFilterOptions], [
     "all",
     "prompt",
     "rule",
     "document",
+    "tech_profile",
   ]);
 
   for (const filter of assetTypeFilterOptions) {

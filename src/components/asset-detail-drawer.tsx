@@ -80,6 +80,17 @@ function describeAssetMetadata(asset: EditableAssetData) {
     ];
   }
 
+  if (asset.assetType === "tech_profile") {
+    const entries = asset.metadata.stack;
+    const deviations = entries.filter((entry) => entry.isDeviation).length;
+
+    return [
+      `技术栈：${entries.length} 项${
+        deviations > 0 ? `，其中 ${deviations} 项偏离默认选型` : ""
+      }`,
+    ];
+  }
+
   return [`文档类型：${asset.metadata.documentType}`];
 }
 

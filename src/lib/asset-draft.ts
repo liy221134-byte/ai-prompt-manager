@@ -17,13 +17,20 @@ import {
   defaultDocumentType,
   normalizeDocumentMetadata,
   normalizeRuleMetadata,
+  normalizeTechProfileMetadata,
+  type TechProfileAssetData,
+  type TechProfileAssetMetadata,
 } from "../data/assets.ts";
 import type { AssetSaveInput } from "./prompt-api.ts";
 import { assetStatusLabels } from "./asset-list.ts";
+import { validateTechStack } from "./tech-profile.ts";
 
-export const editableAssetTypes = ["rule", "document"] as const;
+export const editableAssetTypes = ["rule", "document", "tech_profile"] as const;
 export type EditableAssetType = (typeof editableAssetTypes)[number];
-export type EditableAssetData = RuleAssetData | DocumentAssetData;
+export type EditableAssetData =
+  | RuleAssetData
+  | DocumentAssetData
+  | TechProfileAssetData;
 
 export const ASSET_TITLE_MAX_LENGTH = 60;
 
@@ -72,7 +79,29 @@ export type DocumentAssetDraft = {
   lastVerifiedAt: string;
 };
 
-export type AssetDraft = RuleAssetDraft | DocumentAssetDraft;
+// 技术栈一行：界面上用 key 做稳定标识，保存时转成元数据里的数组
+export type TechStackEntryDraft = {
+  key: string;
+  name: string;
+  version: string;
+  purpose: string;
+  isDeviation: boolean;
+  adrAssetId: string;
+};
+
+export type TechProfileAssetDraft = {
+  assetType: "tech_profile";
+  title: string;
+  summary: string;
+  content: string;
+  status: AssetStatus;
+  stack: TechStackEntryDraft[];
+};
+
+export type AssetDraft =
+  | RuleAssetDraft
+  | DocumentAssetDraft
+  | TechProfileAssetDraft;
 
 // 2.0.0 只有规则和文档有编辑入口，提示词继续走既有流程。
 export function isEditableAssetData(value: AssetData): value is EditableAssetData {
@@ -111,6 +140,17 @@ export function createEmptyAssetDraft(
     };
   }
 
+  if (assetType === "tech_profile") {
+    return {
+      assetType: "tech_profile",
+      title: "",
+      summary: "",
+      content: "",
+      status: "active",
+      stack: [],
+    };
+  }
+
   return {
     assetType: "document",
     title: "",
@@ -130,6 +170,10 @@ export function createEmptyAssetDraft(
 }
 
 export function assetToDraft(asset: EditableAssetData): AssetDraft {
+  if (asset.assetType === "tech_profile") {
+    return techProfileToDraft(asset);
+  }
+
   if (asset.assetType === "rule") {
     // 旧数据只有核心字段，这里统一补成空值，编辑器不用自己兜底
     const metadata = normalizeRuleMetadata(asset.metadata);
@@ -174,6 +218,39 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
   };
 }
 
+export function techProfileToDraft(
+  asset: TechProfileAssetData,
+): TechProfileAssetDraft {
+  const metadata = normalizeTechProfileMetadata(asset.metadata);
+
+  return {
+    assetType: "tech_profile",
+    title: asset.title,
+    summary: asset.summary,
+    content: asset.content,
+    status: asset.status,
+    stack: metadata.stack.map((entry, index) => ({
+      key: `stack-${index + 1}`,
+      name: entry.name,
+      version: entry.version,
+      purpose: entry.purpose,
+      isDeviation: entry.isDeviation,
+      adrAssetId: entry.adrAssetId ?? "",
+    })),
+  };
+}
+
+// 缺字段的旧数据补成空值，界面不因为扩展字段为空而拦截保存
+function normalizeDraftStack(stack: TechStackEntryDraft[]) {
+  return stack.map((entry) => ({
+    name: entry.name.trim(),
+    version: entry.version.trim(),
+    purpose: entry.purpose.trim(),
+    isDeviation: entry.isDeviation,
+    adrAssetId: entry.isDeviation && entry.adrAssetId ? entry.adrAssetId : null,
+  }));
+}
+
 export function validateAssetDraft(draft: AssetDraft) {
   if (!draft.title.trim()) {
     return "请填写标题。";
@@ -183,12 +260,17 @@ export function validateAssetDraft(draft: AssetDraft) {
     return `标题最多 ${ASSET_TITLE_MAX_LENGTH} 个字。`;
   }
 
-  if (!draft.content.trim()) {
+  // 技术档案的正文是选型说明，允许先留空，技术栈清单才是必填
+  if (draft.assetType !== "tech_profile" && !draft.content.trim()) {
     return draft.assetType === "rule" ? "请填写规则正文。" : "请填写文档正文。";
   }
 
   if (draft.assetType === "document" && !draft.documentType.trim()) {
     return "请填写文档类型。";
+  }
+
+  if (draft.assetType === "tech_profile") {
+    return validateTechStack(normalizeDraftStack(draft.stack));
   }
 
   return null;
@@ -248,6 +330,19 @@ function buildAsset(
       ...common,
       assetType: "rule",
       metadata: ruleMetadata,
+    };
+  }
+
+  if (draft.assetType === "tech_profile") {
+    const techMetadata: TechProfileAssetMetadata = {
+      stack: normalizeDraftStack(draft.stack).filter((entry) => entry.name),
+      relations: [],
+    };
+
+    return {
+      ...common,
+      assetType: "tech_profile",
+      metadata: techMetadata,
     };
   }
 

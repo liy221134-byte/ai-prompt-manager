@@ -49,14 +49,13 @@ const entry = (overrides = {}) => ({
 
 test("技术档案元数据合法时通过校验", () => {
   assert.equal(
-    isAssetData(createTechProfile({ stack: [entry()], notes: "默认选型" })),
+    isAssetData(createTechProfile({ stack: [entry()] })),
     true,
   );
   assert.equal(
     isAssetData(
       createTechProfile({
         stack: [entry({ isDeviation: true, adrAssetId: "document-adr-1" })],
-        notes: "",
       }),
     ),
     true,
@@ -64,9 +63,9 @@ test("技术档案元数据合法时通过校验", () => {
 });
 
 test("技术档案元数据不合法时被拒绝", () => {
-  assert.equal(isAssetData(createTechProfile({ stack: "不是数组", notes: "" })), false);
-  assert.equal(isAssetData(createTechProfile({ stack: [entry({ isDeviation: "yes" })], notes: "" })), false);
-  assert.equal(isAssetData(createTechProfile({ stack: [entry({ name: "" })], notes: "" })), false);
+  assert.equal(isAssetData(createTechProfile({ stack: "不是数组" })), false);
+  assert.equal(isAssetData(createTechProfile({ stack: [entry({ isDeviation: "yes" })] })), false);
+  assert.equal(isAssetData(createTechProfile({ stack: [entry({ name: "" })] })), false);
 });
 
 test("规则和文档也可以带关系，关系类型不合法会被拒绝", () => {
@@ -116,7 +115,6 @@ test("规则和文档也可以带关系，关系类型不合法会被拒绝", ()
 test("技术档案元数据缺字段时补成空值，不完整的条目会被丢掉", () => {
   const form = normalizeTechProfileMetadata({ stack: [entry()] });
 
-  assert.equal(form.notes, "");
   assert.deepEqual(form.relations, []);
   assert.equal(form.stack.length, 1);
   assert.equal(form.stack[0].name, "Next.js");
@@ -128,7 +126,7 @@ test("技术档案元数据缺字段时补成空值，不完整的条目会被�
   );
 
   const empty = normalizeTechProfileMetadata(null);
-  assert.deepEqual(empty, { stack: [], notes: "", relations: [] });
+  assert.deepEqual(empty, { stack: [], relations: [] });
 });
 
 test("认不出来的关系会被丢掉", () => {

@@ -21,6 +21,7 @@ export const assetTypeFilterOptions = [
   "prompt",
   "rule",
   "document",
+  "tech_profile",
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
@@ -29,6 +30,7 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   prompt: "提示词",
   rule: "规则",
   document: "文档",
+  tech_profile: "技术档案",
 };
 
 export const assetStatusLabels: Record<AssetStatus, string> = {

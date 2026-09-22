@@ -129,7 +129,6 @@ test("AI 返回的不是 JSON 草稿时给出明确错误", async () => {
 
 test("AI 服务没配置时返回 503", async () => {
   const restoreEnv = useAiEnv();
-  const original = process.env.AI_API_KEY;
   delete process.env.AI_API_KEY;
 
   try {

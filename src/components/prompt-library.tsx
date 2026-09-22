@@ -34,6 +34,10 @@ import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
+import {
+  findProjectTechProfile,
+  listAdrCandidates,
+} from "@/lib/tech-profile";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -483,8 +487,27 @@ export function PromptLibrary({
       document: projectAssetEntries.filter(
         (asset) => asset.assetType === "document",
       ).length,
+      tech_profile: projectAssetEntries.filter(
+        (asset) => asset.assetType === "tech_profile",
+      ).length,
     }),
     [projectAssetEntries, projectPrompts],
+  );
+
+  // 技术档案偏离默认选型时要挂 ADR，这里备好当前项目能选的 ADR 文档
+  const adrOptions = useMemo(
+    () =>
+      listAdrCandidates(assets, activeProjectId ?? "").map((asset) => ({
+        id: asset.id,
+        title: asset.title,
+      })),
+    [activeProjectId, assets],
+  );
+  // 一个项目一份技术档案：已有就直接编辑，没有就新建
+  const projectTechProfile = useMemo(
+    () =>
+      activeProjectId ? findProjectTechProfile(assets, activeProjectId) : null,
+    [activeProjectId, assets],
   );
   const listEntries = useMemo<ProjectListEntry[]>(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -1383,6 +1406,21 @@ export function PromptLibrary({
                 </button>
               )}
               <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError) || !activeProjectId}
+                onClick={() =>
+                  setAssetEditorState(
+                    projectTechProfile
+                      ? { mode: "edit", assetId: projectTechProfile.id }
+                      : { mode: "create", assetType: "tech_profile" },
+                  )
+                }
+                type="button"
+              >
+                <Layers3 aria-hidden="true" className="size-4" />
+                {projectTechProfile ? "技术档案" : "新建技术档案"}
+              </button>
+              <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 disabled={isLoading || Boolean(loadError)}
                 onClick={handleOpenTrash}
@@ -1686,6 +1724,7 @@ export function PromptLibrary({
               ? `asset-editor-${assetEditorState.assetId}`
               : `asset-editor-new-${assetEditorState.assetType}`
           }
+          adrOptions={adrOptions}
           onClose={() => setAssetEditorState(null)}
           onSave={handleAssetSave}
         />
