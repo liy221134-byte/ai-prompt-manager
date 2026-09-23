@@ -43,6 +43,7 @@
 - [v2.7.0 MCP 动态查询设计](superpowers/specs/2026-09-23-v2.7.0-mcp-dynamic-query-design.md)
 - [v2.8.0 生产工程治理设计（质量等级）](superpowers/specs/2026-09-23-v2.8.0-quality-level-design.md)
 - [v2.9.0 验收证据链设计](superpowers/specs/2026-09-23-v2.9.0-acceptance-evidence-design.md)
+- [v2.10.0 发布门禁与故障演练设计](superpowers/specs/2026-09-23-v2.10.0-release-gate-design.md)
 - [2.1.2 技术档案、资产关系与备份升级设计](superpowers/specs/2026-09-22-v2.1.2-tech-profile-relations-backup-design.md)
 - [2.1.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.1.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
@@ -76,7 +77,7 @@
 ### 工程学习
 
 - [工程能力学习计划](learning/engineering-readiness.md)
-- [工程文档模板（八份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线，用「导入模板」装进项目
+- [工程文档模板（九份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线、故障演练记录，用「导入模板」装进项目
 - [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：17 条工程方法、规则、模板和案例，`0.2.1` 已确认，可作为文档包导入的样本
 
 ### 验收与测试
@@ -105,6 +106,7 @@
 - [v2.7.0 验收清单（MCP 动态查询）](acceptance/v2.7.0.md)
 - [v2.8.0 验收清单（项目质量等级与工程基线）](acceptance/v2.8.0.md)
 - [v2.9.0 验收清单（验收证据链）](acceptance/v2.9.0.md)
+- [v2.10.0 验收清单（发布门禁与故障演练）](acceptance/v2.10.0.md)
 
 ### 云端部署
 
