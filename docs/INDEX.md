@@ -41,6 +41,7 @@
 - [v2.5.0 项目图谱设计](superpowers/specs/2026-09-23-v2.5.0-project-graph-design.md)
 - [v2.6.0 工程导入设计](superpowers/specs/2026-09-23-v2.6.0-engineering-import-design.md)
 - [v2.7.0 MCP 动态查询设计](superpowers/specs/2026-09-23-v2.7.0-mcp-dynamic-query-design.md)
+- [v2.8.0 生产工程治理设计（质量等级，待确认）](superpowers/specs/2026-09-23-v2.8.0-quality-level-design.md)
 - [2.1.2 技术档案、资产关系与备份升级设计](superpowers/specs/2026-09-22-v2.1.2-tech-profile-relations-backup-design.md)
 - [2.1.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.1.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
@@ -74,6 +75,7 @@
 ### 工程学习
 
 - [工程能力学习计划](learning/engineering-readiness.md)
+- [工程文档模板（八份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线，用「导入模板」装进项目
 - [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：17 条工程方法、规则、模板和案例，`0.2.1` 已确认，可作为文档包导入的样本
 
 ### 验收与测试
