@@ -1,5 +1,7 @@
 // 把仓库里的种子资产包（Markdown）编译成可导入的规则包文件。
-// 用法：node scripts/build-seed-pack.mjs
+// 用法：node scripts/build-seed-pack.mjs [包目录名]
+//   node scripts/build-seed-pack.mjs                    → engineering-foundations
+//   node scripts/build-seed-pack.mjs operator-training  → 操作者训练包
 // 改了种子包的 Markdown 之后要重跑一次，测试会检查两边是否一致。
 
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -11,9 +13,30 @@ import {
 } from "../src/lib/seed-pack-import.ts";
 
 const projectRoot = resolve(import.meta.dirname, "..");
-const packRoot = join(projectRoot, "seed-packs", "engineering-foundations");
-const outputPath = join(packRoot, "engineering-foundations.pack.json");
-const packId = "rule-pack-engineering-foundations";
+
+// 每个包的标识和标题；新增包时在这里加一行
+const packs = {
+  "engineering-foundations": {
+    packId: "rule-pack-engineering-foundations",
+    title: "工程方法种子资产包",
+  },
+  "operator-training": {
+    packId: "rule-pack-operator-training",
+    title: "操作者训练包",
+  },
+};
+
+const packDirectoryName = process.argv[2] ?? "engineering-foundations";
+const packConfig = packs[packDirectoryName];
+
+if (!packConfig) {
+  throw new Error(
+    `没有这个包：${packDirectoryName}。可选：${Object.keys(packs).join("、")}`,
+  );
+}
+
+const packRoot = join(projectRoot, "seed-packs", packDirectoryName);
+const outputPath = join(packRoot, `${packDirectoryName}.pack.json`);
 
 function readMarkdownFiles(directory) {
   const files = [];
@@ -43,9 +66,9 @@ if (!statSync(packRoot).isDirectory()) {
 
 const exportedAt = new Date().toISOString();
 const parsed = seedPackFilesToRulePack(readMarkdownFiles(packRoot), {
-  packId,
+  packId: packConfig.packId,
   exportedAt,
-  fallbackTitle: "工程方法种子资产包",
+  fallbackTitle: packConfig.title,
 });
 const packFile = createRulePackFile({
   pack: parsed.pack,
