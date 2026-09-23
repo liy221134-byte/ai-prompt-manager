@@ -51,6 +51,7 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `src/components/engineering-import-drawer.tsx` | 导入工程面板：两个来源、预览勾选、确认写库 | 改导入界面时 |
 | `src/lib/mcp-query.ts`、`src/lib/mcp-write.ts` | MCP 的查询整理与写入草稿（纯逻辑） | 改 MCP 工具行为时 |
 | `scripts/mcp-server.ts` | 本机 MCP 服务：九个工具、只读开关、stdio 传输 | 加工具或改工具描述时 |
+| `src/lib/quality-level.ts`、`src/components/engineering-baseline-drawer.tsx` | 质量等级到工程文档要求的对照表、缺口判定与面板 | 改等级要求或缺口口径时 |
 | `src/lib/prompt-backup.ts` | 备份导出与导入预览 | 改备份范围时 |
 | `src/lib/server/runtime-config.ts` | 运行模式判定与配置失败关闭 | 改环境变量规则时 |
 | `supabase/migrations/*.sql` | 云端表结构、行级安全策略、RPC，每个迁移可重复执行 | 改云端结构时 |

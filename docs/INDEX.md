@@ -41,7 +41,7 @@
 - [v2.5.0 项目图谱设计](superpowers/specs/2026-09-23-v2.5.0-project-graph-design.md)
 - [v2.6.0 工程导入设计](superpowers/specs/2026-09-23-v2.6.0-engineering-import-design.md)
 - [v2.7.0 MCP 动态查询设计](superpowers/specs/2026-09-23-v2.7.0-mcp-dynamic-query-design.md)
-- [v2.8.0 生产工程治理设计（质量等级，待确认）](superpowers/specs/2026-09-23-v2.8.0-quality-level-design.md)
+- [v2.8.0 生产工程治理设计（质量等级）](superpowers/specs/2026-09-23-v2.8.0-quality-level-design.md)
 - [2.1.2 技术档案、资产关系与备份升级设计](superpowers/specs/2026-09-22-v2.1.2-tech-profile-relations-backup-design.md)
 - [2.1.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.1.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
@@ -102,6 +102,7 @@
 - [v2.5.0 验收清单（项目图谱）](acceptance/v2.5.0.md)
 - [v2.6.0 验收清单（工程导入）](acceptance/v2.6.0.md)
 - [v2.7.0 验收清单（MCP 动态查询）](acceptance/v2.7.0.md)
+- [v2.8.0 验收清单（项目质量等级与工程基线）](acceptance/v2.8.0.md)
 
 ### 云端部署
 
