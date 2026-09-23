@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 
 import type { RuleAssetData } from "@/data/assets";
+import type { TemplateAssetData } from "@/data/assets";
 import { ruleConfidenceLabels } from "@/lib/asset-list";
 import { downloadCompiledDraft } from "@/lib/backup-download";
 import type {
@@ -26,8 +27,13 @@ type RuleCompileDrawerProps = {
   candidates: CompileCandidates;
   conflicts: ConflictCandidate[];
   drafts: { agents: CompiledDraft; startPrompt: CompiledDraft };
+  templates: TemplateAssetData[];
+  selectedTemplateId: string;
+  pendingVariables: string[];
+  rulesAppended: boolean;
   packTitles: Record<string, string>;
   isBusy: boolean;
+  onSelectTemplate: (templateId: string) => void;
   onExcludeRule: (rule: RuleAssetData, note: string) => Promise<void>;
   onIncludeRule: (rule: RuleAssetData) => Promise<void>;
   onSaveDraft: (draft: CompiledDraft) => Promise<void>;
@@ -42,8 +48,13 @@ export function RuleCompileDrawer({
   candidates,
   conflicts,
   drafts,
+  templates,
+  selectedTemplateId,
+  pendingVariables,
+  rulesAppended,
   packTitles,
   isBusy,
+  onSelectTemplate,
   onExcludeRule,
   onIncludeRule,
   onSaveDraft,
@@ -276,6 +287,47 @@ export function RuleCompileDrawer({
 
           <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-slate-700">产物模板</h3>
+              <label className="flex items-center gap-2 text-xs text-slate-500">
+                模板
+                <select
+                  aria-label="选择产物模板"
+                  className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-900 outline-none"
+                  onChange={(event) => onSelectTemplate(event.target.value)}
+                  value={selectedTemplateId}
+                >
+                  <option value="">内置结构</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.title}
+                      {template.metadata.outputFileName
+                        ? `（${template.metadata.outputFileName}）`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              选模板后，主产物按模板结构生成：项目名、项目说明和技术栈自动填，
+              <code className="mx-1 rounded bg-slate-100 px-1">{"{{规则集}}"}</code>
+              位置插入规则段落；START_PROMPT.md 保持内置结构。
+            </p>
+            {rulesAppended && (
+              <p className="mt-2 text-xs leading-5 text-amber-700">
+                模板里没有 <code className="rounded bg-amber-100 px-1">{"{{规则集}}"}</code>
+                占位符，规则段落已追加到产物末尾。
+              </p>
+            )}
+            {pendingVariables.length > 0 && (
+              <p className="mt-2 text-xs leading-5 text-slate-600">
+                还要你填的变量：{pendingVariables.join("、")}
+              </p>
+            )}
+          </section>
+
+          <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 {(["agents", "start_prompt"] as DraftTab[]).map((tab) => (
                   <button
@@ -290,7 +342,7 @@ export function RuleCompileDrawer({
                     type="button"
                   >
                     {tab === "agents"
-                      ? `AGENTS.md（${drafts.agents.ruleCount}）`
+                      ? `${drafts.agents.fileName}（${drafts.agents.ruleCount}）`
                       : `START_PROMPT.md（${drafts.startPrompt.ruleCount}）`}
                   </button>
                 ))}

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   DatabaseBackup,
   FileCode2,
+  FilePlus2,
   GitMerge,
   Layers3,
   ListChecks,
@@ -20,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  type ChangeEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -58,6 +60,12 @@ import {
   listConflictCandidates,
   type CompiledDraft,
 } from "@/lib/rule-compile";
+import {
+  compileWithTemplate,
+  listProjectTemplates,
+  templateDraftToAsset,
+  templateFileToDraft,
+} from "@/lib/template-asset";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -268,6 +276,8 @@ export function PromptLibrary({
     useState(false);
   const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
+  const [compileTemplateId, setCompileTemplateId] = useState("");
+  const templateFileInputRef = useRef<HTMLInputElement>(null);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
   // 记录优化记录属于哪条提示词，避免切换详情时显示上一条的回退入口。
@@ -600,6 +610,9 @@ export function PromptLibrary({
       tech_profile: projectAssetEntries.filter(
         (asset) => asset.assetType === "tech_profile",
       ).length,
+      template: projectAssetEntries.filter(
+        (asset) => asset.assetType === "template",
+      ).length,
       rule_pack: projectAssetEntries.filter(
         (asset) => asset.assetType === "rule_pack",
       ).length,
@@ -637,6 +650,32 @@ export function PromptLibrary({
     });
   }, [activeProjectId, assetEditorState, editorState, assets]);
   // 规则编译：候选集和「可能打架的规则」都从当前项目的资产里算
+  const templatesInProject = useMemo(
+    () => (activeProjectId ? listProjectTemplates(assets, activeProjectId) : []),
+    [activeProjectId, assets],
+  );
+  // 技术档案里的技术栈摘要，编译产物头部会带上一行
+  const techStackSummary = useMemo(() => {
+    const profile = activeProjectId
+      ? findProjectTechProfile(assets, activeProjectId)
+      : null;
+    const stack =
+      profile && profile.assetType === "tech_profile"
+        ? profile.metadata.stack
+        : [];
+
+    return stack.length > 0
+      ? [
+          ...new Set(
+            stack
+              .map((entry) =>
+                [entry.name, entry.version].filter(Boolean).join(" "),
+              )
+              .filter(Boolean),
+          ),
+        ].join(" / ")
+      : "";
+  }, [activeProjectId, assets]);
   const compileCandidates = useMemo(
     () => (activeProjectId ? listCompileCandidates(assets, activeProjectId) : null),
     [activeProjectId, assets],
@@ -666,40 +705,68 @@ export function PromptLibrary({
       return null;
     }
 
-    const profile = activeProjectId
-      ? findProjectTechProfile(assets, activeProjectId)
-      : null;
-    const stack =
-      profile && profile.assetType === "tech_profile"
-        ? profile.metadata.stack
-        : [];
-    const stackSummary = stack.length > 0
-      ? [
-          ...new Set(
-            stack
-              .map((entry) =>
-                [entry.name, entry.version].filter(Boolean).join(" "),
-              )
-              .filter(Boolean),
-          ),
-        ].join(" / ")
-      : "";
-
     return compileRuleDrafts({
       projectName: activeProject?.name ?? "当前项目",
       rules: compileCandidates.included.map((candidate) => candidate.rule),
       packTitles,
       excludedCount: compileCandidates.excluded.length,
-      ...(stackSummary ? { profileSummary: `技术档案：${stackSummary}` } : {}),
+      ...(techStackSummary ? { profileSummary: `技术档案：${techStackSummary}` } : {}),
       now: compileOpenedAt,
     });
   }, [
     activeProject,
-    activeProjectId,
-    assets,
     compileCandidates,
     compileOpenedAt,
     packTitles,
+    techStackSummary,
+  ]);
+  // 选中的模板只套在主产物上，START_PROMPT.md 保持内置结构
+  const compileResult = useMemo(() => {
+    if (!compileDrafts || !compileOpenedAt) {
+      return null;
+    }
+
+    const template = templatesInProject.find(
+      (item) => item.id === compileTemplateId,
+    );
+
+    if (!template) {
+      return {
+        drafts: compileDrafts,
+        pendingVariables: [] as string[],
+        rulesAppended: false,
+      };
+    }
+
+    const compiled = compileWithTemplate({
+      template,
+      projectName: activeProject?.name ?? "当前项目",
+      projectGoal: activeProject?.description?.trim() ?? "",
+      techStack: techStackSummary,
+      rulesDraft: compileDrafts.agents,
+      now: compileOpenedAt,
+    });
+
+    return {
+      drafts: {
+        agents: {
+          target: compiled.target,
+          fileName: compiled.fileName,
+          content: compiled.content,
+          ruleCount: compiled.ruleCount,
+        },
+        startPrompt: compileDrafts.startPrompt,
+      },
+      pendingVariables: compiled.pendingVariables,
+      rulesAppended: compiled.rulesAppended,
+    };
+  }, [
+    activeProject,
+    compileDrafts,
+    compileOpenedAt,
+    compileTemplateId,
+    techStackSummary,
+    templatesInProject,
   ]);
   // 提示词详情要显示关系目标，这里把目标标题和「还能不能用」一起备好。
   // 目标可能是别的提示词、垃圾箱里的提示词，或已归档的规则/文档/技术档案。
@@ -1019,9 +1086,17 @@ export function PromptLibrary({
     setMergeSelection(createEmptySelection());
   }
 
-  function readAssetTypeLabel(assetType: EditableAssetType) {
-    return assetType === "rule" ? "规则" : "文档";
+function readAssetTypeLabel(assetType: EditableAssetType) {
+  if (assetType === "rule") {
+    return "规则";
   }
+
+  if (assetType === "template") {
+    return "模板";
+  }
+
+  return assetType === "tech_profile" ? "技术档案" : "文档";
+}
 
   async function handleAssetSave(draft: AssetDraft) {
     const now = new Date().toISOString();
@@ -1161,6 +1236,61 @@ export function PromptLibrary({
   }
 
   // 从文件导入规则包：库里没有这个包就先建包资产，再装成员
+  // 导入模板：一次选多个 Markdown，每个文件直接建成一条模板资产（不走 AI）
+  async function handleImportTemplateFiles(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (files.length === 0) {
+      return;
+    }
+
+    if (!activeProjectId) {
+      notify("请先选择项目。");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    let created = 0;
+
+    try {
+      for (const file of files) {
+        const draft = templateFileToDraft({
+          fileName: file.name,
+          content: await file.text(),
+        });
+        const asset = templateDraftToAsset({
+          id: createAssetId("template"),
+          projectId: activeProjectId,
+          draft,
+          originalFilename: file.name,
+          now,
+        });
+
+        await dataSource.createAsset({
+          asset,
+          versionId: asset.currentVersionId,
+          changeReason: "导入模板",
+          versionReason: "initial",
+        });
+        created += 1;
+      }
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? `导入模板失败：${error.message}`
+          : "导入模板失败",
+      );
+      return;
+    }
+
+    await reloadAssets();
+    setAssetTypeFilter("template");
+    notify(`已导入 ${created} 个模板`);
+  }
+
   async function handleCompileDecision(
     rule: RuleAssetData,
     decision: "included" | "excluded",
@@ -1863,6 +1993,24 @@ export function PromptLibrary({
                 <FileCode2 aria-hidden="true" className="size-4" />
                 规则编译
               </button>
+              <input
+                accept=".md,.markdown,text/markdown,text/plain"
+                aria-label="选择模板文件"
+                className="hidden"
+                multiple
+                onChange={(event) => void handleImportTemplateFiles(event)}
+                ref={templateFileInputRef}
+                type="file"
+              />
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError) || !activeProjectId}
+                onClick={() => templateFileInputRef.current?.click()}
+                type="button"
+              >
+                <FilePlus2 aria-hidden="true" className="size-4" />
+                导入模板
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -2174,19 +2322,27 @@ export function PromptLibrary({
         />
       )}
 
-      {compileOpenedAt && compileCandidates && compileDrafts && (
+      {compileOpenedAt && compileCandidates && compileResult && (
         <RuleCompileDrawer
           candidates={compileCandidates}
           conflicts={compileConflicts}
-          drafts={compileDrafts}
+          drafts={compileResult.drafts}
           isBusy={isLoading}
-          onClose={() => setCompileOpenedAt(null)}
+          onClose={() => {
+            setCompileOpenedAt(null);
+            setCompileTemplateId("");
+          }}
           onExcludeRule={handleExcludeFromCompile}
           onIncludeRule={handleIncludeInCompile}
           onNotify={notify}
           onSaveDraft={handleSaveCompiledDraft}
+          onSelectTemplate={setCompileTemplateId}
           packTitles={packTitles}
+          pendingVariables={compileResult.pendingVariables}
           projectName={activeProject?.name ?? "当前项目"}
+          rulesAppended={compileResult.rulesAppended}
+          selectedTemplateId={compileTemplateId}
+          templates={templatesInProject}
         />
       )}
 
