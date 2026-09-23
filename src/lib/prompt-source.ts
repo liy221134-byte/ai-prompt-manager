@@ -316,7 +316,10 @@ function rowToAsset(row: SupabaseAssetRow): AssetData {
   };
 
   if (!isAssetData(value)) {
-    throw new Error("云端资产数据无法识别。");
+    throw new Error(
+      `云端资产数据无法识别：${row.id}（类型 ${row.asset_type}）。` +
+        "这个版本可能不认识这种资产类型，先导出一份备份再处理。",
+    );
   }
 
   return value;

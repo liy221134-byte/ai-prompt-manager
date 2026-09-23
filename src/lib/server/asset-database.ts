@@ -173,7 +173,13 @@ function rowToAsset(row: AssetRow): AssetData {
   };
 
   if (!isAssetData(value)) {
-    throw new Error(`资产数据无法识别：${row.id}。`);
+    // 回滚演练发现的场景：用更新的版本建过数据后，旧代码读到不认识的资产类型。
+    // 这里不静默跳过（少显示数据比报错更危险），而是把话说明白，告诉人怎么办。
+    throw new Error(
+      `资产数据无法识别：${row.id}（类型 ${row.asset_type}）。` +
+        "这个版本可能不认识这种资产类型，也就是用更新的版本建过数据；" +
+        "先导出一份备份，再决定是升级回新版本，还是把这条记录归档或删除。",
+    );
   }
 
   return value;
@@ -198,7 +204,10 @@ function rowToAssetVersion(row: AssetVersionRow): AssetVersionData {
   };
 
   if (!isAssetVersionData(value)) {
-    throw new Error(`资产版本数据无法识别：${row.version_id}。`);
+    throw new Error(
+      `资产版本数据无法识别：${row.version_id}（类型 ${row.asset_type}）。` +
+        "可能是用更新的版本建过数据，先导出一份备份再处理。",
+    );
   }
 
   return value;

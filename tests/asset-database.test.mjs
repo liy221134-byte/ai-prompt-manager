@@ -346,3 +346,41 @@ test("老库升级：项目表缺质量等级列时自动补列，老项目读�
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+// 回滚演练发现的场景：用新版本建过数据后，旧代码读到不认识的类型。
+// 这里验证报错说得清楚，而不是丢一个「无法识别」让人猜。
+test("读到不认识的资产类型时，报错里带类型和处置办法", () => {
+  const context = createContext();
+
+  try {
+    context.database.close();
+
+    const raw = new DatabaseSync(context.databasePath);
+
+    raw.exec(`
+      INSERT INTO assets (
+        id, project_id, asset_type, title, summary, content, metadata_json,
+        source_type, source_asset_id, import_batch_id, original_filename,
+        current_version_id, status, archived_at, deleted_at, deleted_reason,
+        created_at, updated_at
+      ) VALUES (
+        'future-asset-1', 'default-project', 'future_type', '未来版本建的资产', '', '正文', '{}',
+        'manual', NULL, NULL, NULL,
+        'current-future-asset-1', 'active', NULL, NULL, NULL,
+        '2026-09-24T00:00:00.000Z', '2026-09-24T00:00:00.000Z'
+      );
+    `);
+    raw.close();
+
+    // 和回滚演练里一样：旧代码连库都打不开，报错发生在启动阶段
+    assert.throws(
+      () => new PromptDatabase(context.databasePath),
+      (error) =>
+        error.message.includes("future-asset-1") &&
+        error.message.includes("future_type") &&
+        error.message.includes("导出一份备份"),
+    );
+  } finally {
+    context.cleanup();
+  }
+});
