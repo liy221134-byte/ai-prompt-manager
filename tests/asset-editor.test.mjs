@@ -216,6 +216,67 @@ test("规则、文档和技术档案都能进编辑器，提示词和规则包�
   assert.equal(isEditableAssetData(pack), false);
 });
 
+test("编辑器改不到的元数据在保存时不会丢", () => {
+  const asset = {
+    ...createRuleAsset(),
+    metadata: {
+      ...createRuleAsset().metadata,
+      confidence: "provisional",
+      compileTarget: ["agents"],
+      compileDecision: {
+        decision: "excluded",
+        note: "和另一条冲突",
+        decidedAt: "2026-09-23T00:00:00.000Z",
+      },
+      pack: {
+        packId: "rule-pack-engineering-foundations",
+        packItemId: "RULE-BOUNDARY-001",
+        packVersion: "0.2.1",
+        packAssetType: "rule",
+        projectScale: ["personal"],
+      },
+    },
+  };
+  const input = buildUpdateAssetInput(asset, assetToDraft(asset), {
+    versionId: "version-7",
+    now: "2026-09-23T05:00:00.000Z",
+  });
+
+  assert.equal(input.asset.metadata.confidence, "provisional");
+  assert.deepEqual(input.asset.metadata.compileTarget, ["agents"]);
+  assert.equal(input.asset.metadata.compileDecision.decision, "excluded");
+  assert.equal(
+    input.asset.metadata.pack.packItemId,
+    "RULE-BOUNDARY-001",
+  );
+  assert.equal(isAssetData(input.asset), true);
+});
+
+test("文档的所属包链接也不会被编辑覆盖", () => {
+  const asset = {
+    ...createRuleAsset(),
+    id: "document-pack-member",
+    assetType: "document",
+    metadata: {
+      documentType: "模板",
+      pack: {
+        packId: "rule-pack-engineering-foundations",
+        packItemId: "TPL-ACCEPT-001",
+        packVersion: "0.2.1",
+        packAssetType: "template",
+        projectScale: ["personal"],
+      },
+    },
+  };
+  const input = buildUpdateAssetInput(asset, assetToDraft(asset), {
+    versionId: "version-8",
+    now: "2026-09-23T05:00:00.000Z",
+  });
+
+  assert.equal(input.asset.metadata.pack.packItemId, "TPL-ACCEPT-001");
+  assert.equal(input.asset.metadata.documentType, "模板");
+});
+
 test("新建规则会生成合法的资产和初始版本标识", () => {
   const input = buildCreateAssetInput({
     id: "rule-alpha",

@@ -326,6 +326,29 @@ export function validateAssetDraft(draft: AssetDraft) {
   return null;
 }
 
+// 编辑器里改不到的元数据（可信度、编译去向、编译裁决、来自哪个包）
+// 要在保存时原样带回来，否则编辑一次导入的规则就把这些信息抹掉了
+function keepRuleMetadata(metadata: RuleAssetMetadata | null) {
+  if (!metadata) {
+    return {};
+  }
+
+  return {
+    ...(metadata.confidence ? { confidence: metadata.confidence } : {}),
+    ...(metadata.compileTarget?.length
+      ? { compileTarget: metadata.compileTarget }
+      : {}),
+    ...(metadata.compileDecision
+      ? { compileDecision: metadata.compileDecision }
+      : {}),
+    ...(metadata.pack ? { pack: metadata.pack } : {}),
+  };
+}
+
+function keepDocumentMetadata(metadata: DocumentAssetMetadata | null) {
+  return metadata?.pack ? { pack: metadata.pack } : {};
+}
+
 function buildAsset(
   draft: AssetDraft,
   base: {
@@ -339,6 +362,8 @@ function buildAsset(
     source: AssetData["source"];
     createdAt: string;
     updatedAt: string;
+    // 更新时把编辑器改不到的字段带回来
+    previousMetadata?: AssetData["metadata"] | null;
   },
 ): AssetData {
   const common = {
@@ -358,7 +383,12 @@ function buildAsset(
   };
 
   if (draft.assetType === "rule") {
+    const previousRuleMetadata =
+      base.previousMetadata && "ruleType" in base.previousMetadata
+        ? (base.previousMetadata as RuleAssetMetadata)
+        : null;
     const ruleMetadata: RuleAssetMetadata = {
+      ...keepRuleMetadata(previousRuleMetadata),
       ruleType: draft.ruleType,
       scope: draft.scope,
       purpose: draft.purpose.trim(),
@@ -406,6 +436,11 @@ function buildAsset(
   }
 
   const documentMetadata: DocumentAssetMetadata = {
+    ...keepDocumentMetadata(
+      base.previousMetadata && "documentType" in base.previousMetadata
+        ? (base.previousMetadata as DocumentAssetMetadata)
+        : null,
+    ),
     documentType: draft.documentType.trim() || defaultDocumentType,
     ...(draft.role ? { role: draft.role } : {}),
     authority: draft.authority,
@@ -509,12 +544,47 @@ export function buildUpdateAssetInput(
     source: asset.source,
     createdAt: asset.createdAt,
     updatedAt: options.now,
+    previousMetadata: asset.metadata,
   });
 
   return {
     asset: nextAsset,
     versionId: options.versionId,
     changeReason: describeSaveReason(asset, draft),
+    versionReason: "save",
+  };
+}
+
+// 只改编译裁决：内容和其它元数据原样不动，仍然产生一个新版本。
+// 恢复到「参与编译」且没有备注时，把裁决字段清掉，回到默认状态。
+export function buildCompileDecisionInput(
+  asset: RuleAssetData,
+  decision: "included" | "excluded",
+  note: string,
+  options: { versionId: string; now: string },
+): AssetSaveInput {
+  const metadata: RuleAssetMetadata = { ...asset.metadata };
+
+  if (decision === "excluded" || note.trim()) {
+    metadata.compileDecision = {
+      decision,
+      note: note.trim(),
+      decidedAt: options.now,
+    };
+  } else {
+    delete metadata.compileDecision;
+  }
+
+  return {
+    asset: {
+      ...asset,
+      metadata,
+      currentVersionId: options.versionId,
+      updatedAt: options.now,
+    },
+    versionId: options.versionId,
+    changeReason:
+      decision === "excluded" ? "排除参与编译" : "恢复到参与编译",
     versionReason: "save",
   };
 }
