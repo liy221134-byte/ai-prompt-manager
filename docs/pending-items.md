@@ -15,17 +15,28 @@
 
 分支处置记录（2026-09-22）：三个历史分支已删除，本地与远端都已清理。
 
-2026-09-23 决定：其余分支（含本地 `feat/v2.1.0-prompt-write-path` 分支和它挂的工作区、
-远端 `docs/engineering-seed-pack`、`feat/v0.9.1-variable-management`、`feat/week-05-supabase-cloud`、
-`feat/week-06-ai-capture`、`fix/optimize-restore-and-scroll-lock`、`fix/week-07-auth-hardening`）
-**先不动**，等整个 2.0 做完再统一清理。
+2026-09-24 分支清理（2.0 收口后执行）：按 9-23 的决定统一清理，删除前逐个核对过
+**相对 `main` 的未合并提交都是 0**，代码不丢：
+
+| 分支 | 删除前的提交 |
+| --- | --- |
+| 本地 `feat/v2.1.0-prompt-write-path`（含它挂的工作区） | `f3ab494` |
+| 远端 `docs/engineering-seed-pack` | `712d1c2` |
+| 远端 `feat/v0.9.1-variable-management` | `d114944` |
+| 远端 `feat/week-05-supabase-cloud` | `da60b22` |
+| 远端 `feat/week-06-ai-capture` | `2171baf` |
+| 远端 `fix/optimize-restore-and-scroll-lock` | `b7370ec` |
+| 远端 `fix/week-07-auth-hardening` | `3cadef1` |
+
+清理后：本地只剩 `main`，远端只剩 `origin/main`，工作区只剩项目目录本身。
 
 - `feat/v0.8.0-ai-prompt-merge`（`8798e9c`）和 `feat/v0.9.0-ai-prompt-optimize`（`3f8304a`）
   都已并入 `main`，删除不丢代码；前者挂着的旧工作区已一并移除。
 - `feat/rule-asset-center`（`123b63b`）没有并入 `main`，属于已作废方向。这个提交对象在本地
   仓库里还能通过该编号找回，远端已不可见。
 - 其余历史分支（`feat/week-05`、`feat/week-06`、`fix/week-07`、`feat/v0.9.1`、
-  `docs/engineering-seed-pack`、`fix/optimize-restore-and-scroll-lock`）本次未处理。
+  `docs/engineering-seed-pack`、`fix/optimize-restore-and-scroll-lock`）
+  2026-09-22 那次未处理，2026-09-24 已统一清理（见上表）。
 
 ## 已经决定，不必再问
 
