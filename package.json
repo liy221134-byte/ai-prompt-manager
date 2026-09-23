@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint --cache --cache-strategy content",
     "typecheck": "tsc --noEmit",
+    "mcp": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/mcp-server.ts",
     "pack:seed": "node scripts/build-seed-pack.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test \"tests/*.test.mjs\"",
     "check:fast": "npm run typecheck && npm run test",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.5",
     "@types/react": "^19",
@@ -35,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "zod": "^3.25.76"
   }
 }
