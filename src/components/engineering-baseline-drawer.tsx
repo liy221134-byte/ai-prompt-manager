@@ -10,6 +10,11 @@ import {
 } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { rankRequirementsByEvidence } from "@/lib/acceptance-evidence";
+import { findLatestReleaseRecord, summarizeReleaseGates } from "@/lib/release-record";
+import {
+  normalizeReleaseRecordMetadata,
+} from "@/data/assets";
+import { releaseRecordResultLabels } from "@/lib/asset-list";
 import {
   listDocumentGaps,
   readQualityProfile,
@@ -22,6 +27,7 @@ type EngineeringBaselineDrawerProps = {
   onChangeLevel: (level: ProjectRiskLevel) => Promise<void>;
   onCreateDocument: (input: { title: string; documentType: string }) => void;
   onCreateEvidence: (input: { nodeId: string; title: string }) => void;
+  onCreateRelease: () => void;
   onOpenAsset: (assetId: string) => void;
   onClose: () => void;
 };
@@ -34,6 +40,7 @@ export function EngineeringBaselineDrawer({
   onChangeLevel,
   onCreateDocument,
   onCreateEvidence,
+  onCreateRelease,
   onOpenAsset,
   onClose,
 }: EngineeringBaselineDrawerProps) {
@@ -48,6 +55,13 @@ export function EngineeringBaselineDrawer({
   const unverifiedCount = requirementEvidence.filter(
     (item) => item.summary.passed === 0,
   ).length;
+  const latestRelease = findLatestReleaseRecord(assets, project.id);
+  const latestReleaseGates = latestRelease
+    ? summarizeReleaseGates(latestRelease)
+    : null;
+  const latestReleaseMetadata = latestRelease
+    ? normalizeReleaseRecordMetadata(latestRelease.metadata)
+    : null;
 
   useModalBehavior(onClose);
 
@@ -274,6 +288,62 @@ export function EngineeringBaselineDrawer({
               口径：需求节点里还没有「通过」的验收记录就算未覆盖；
               结论默认「待确认」，改成「通过」要你看过证据自己点。
             </p>
+          </section>
+
+          <section className="mt-4 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">
+                最近一次发布
+              </h3>
+              <button
+                className="rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
+                onClick={onCreateRelease}
+                type="button"
+              >
+                新建发布记录
+              </button>
+            </div>
+
+            {!latestRelease || !latestReleaseGates || !latestReleaseMetadata ? (
+              <p className="mt-2 text-sm text-slate-500">
+                还没有发布记录。下次上线前建一条，把「迁移跑过没有、备份做了没有、
+                回滚退到哪个版本」这些逐项勾上，出事时不用现场回忆。
+              </p>
+            ) : (
+              <>
+                <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                  <span className="font-semibold">
+                    {latestReleaseMetadata.version}
+                  </span>
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
+                    {releaseRecordResultLabels[latestReleaseMetadata.result]}
+                  </span>
+                  {latestReleaseMetadata.releasedAt && (
+                    <span className="text-xs text-slate-500">
+                      {latestReleaseMetadata.releasedAt}
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-500">
+                    门禁 {latestReleaseGates.done}／{latestReleaseGates.total} 项完成
+                  </span>
+                  <button
+                    className="text-xs font-semibold text-sky-700 hover:underline"
+                    onClick={() => onOpenAsset(latestRelease.id)}
+                    type="button"
+                  >
+                    打开记录
+                  </button>
+                </p>
+                {latestReleaseGates.pending.length > 0 && (
+                  <p className="mt-1 text-xs leading-5 text-amber-700">
+                    还没完成：{latestReleaseGates.pending.join("、")}
+                  </p>
+                )}
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  回滚目标：{latestReleaseMetadata.rollbackTarget || "还没定"}
+                </p>
+              </>
+            )}
           </section>
 
           <section className="mt-4 rounded-xl border border-slate-200 px-4 py-3">

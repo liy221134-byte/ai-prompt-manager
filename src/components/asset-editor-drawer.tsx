@@ -13,11 +13,13 @@ import {
   ruleOverrideScopes,
   documentRoles,
   evidenceConclusions,
+  releaseRecordResults,
   assetRelationTypes,
   type AssetStatus,
   type AssetRelationType,
   type DocumentRole,
   type EvidenceConclusion,
+  type ReleaseRecordResult,
   type RuleLevel,
   type RuleLifecycle,
   type RuleOverrideScope,
@@ -45,6 +47,7 @@ import {
   documentTypeOptions,
   evidenceConclusionLabels,
   graphNodeTypeLabels,
+  releaseRecordResultLabels,
   ruleScopeLabels,
   ruleTypeLabels,
 } from "@/lib/asset-list";
@@ -70,6 +73,13 @@ type AssetEditorDrawerProps = {
   initialTitle?: string;
   // 新建验收记录时的预填：先在草稿里选好对应需求节点
   initialNodeId?: string;
+  // 新建发布记录时的预填：按项目质量等级带出门禁清单
+  initialGates?: Array<{
+    key: string;
+    label: string;
+    done: boolean;
+    note: string;
+  }>;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -186,6 +196,7 @@ export function AssetEditorDrawer({
   initialDocumentType,
   initialTitle,
   initialNodeId,
+  initialGates,
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -196,6 +207,7 @@ export function AssetEditorDrawer({
           createEmptyAssetDraft(assetType, {
             ...(initialNodeType ? { nodeType: initialNodeType } : {}),
             ...(initialNodeId ? { nodeId: initialNodeId } : {}),
+            ...(initialGates ? { gates: initialGates } : {}),
           }),
           { documentType: initialDocumentType, title: initialTitle },
         ),
@@ -216,7 +228,9 @@ export function AssetEditorDrawer({
             ? "图谱节点"
             : assetType === "evidence"
               ? "验收记录"
-              : "技术档案";
+              : assetType === "release_record"
+                ? "发布记录"
+                : "技术档案";
   const isEditing = Boolean(asset);
 
   function updateDraft(patch: Record<string, unknown>) {
@@ -376,20 +390,27 @@ export function AssetEditorDrawer({
           onSubmit={handleSubmit}
         >
           <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-6">
-            <label className="flex flex-col gap-2">
-              <span className={labelClassName}>标题</span>
-              <input
-                className={inputClassName}
-                maxLength={ASSET_TITLE_MAX_LENGTH}
-                onChange={(event) => updateDraft({ title: event.target.value })}
-                placeholder={
-                  assetType === "rule"
-                    ? "例如：提交前必须通过完整检查"
-                    : "例如：2.0.0 项目资产底座设计"
-                }
-                value={draft.title}
-              />
-            </label>
+            {assetType === "release_record" ? (
+              // 发布记录的标题从版本号生成，不用单独填一遍
+              <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                标题会按版本号生成（例如「v2.10.0 发布记录」），下面填版本号就行。
+              </p>
+            ) : (
+              <label className="flex flex-col gap-2">
+                <span className={labelClassName}>标题</span>
+                <input
+                  className={inputClassName}
+                  maxLength={ASSET_TITLE_MAX_LENGTH}
+                  onChange={(event) => updateDraft({ title: event.target.value })}
+                  placeholder={
+                    assetType === "rule"
+                      ? "例如：提交前必须通过完整检查"
+                      : "例如：2.0.0 项目资产底座设计"
+                  }
+                  value={draft.title}
+                />
+              </label>
+            )}
 
             <label className="mt-5 flex flex-col gap-2">
               <span className={labelClassName}>一句话说明</span>
@@ -701,6 +722,193 @@ export function AssetEditorDrawer({
                         ))}
                       </ul>
                     )}
+                  </div>
+                </div>
+              ) : draft.assetType === "release_record" ? (
+                <div className="flex flex-col gap-4 sm:col-span-2">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <TextField
+                      label="版本号或标签"
+                      onChange={(value) => updateDraft({ version: value })}
+                      placeholder="例如：v2.10.0"
+                      value={draft.version}
+                    />
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>发布日期</span>
+                      <input
+                        className={inputClassName}
+                        onChange={(event) =>
+                          updateDraft({ releasedAt: event.target.value })
+                        }
+                        type="date"
+                        value={draft.releasedAt}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>结果</span>
+                      <select
+                        className={inputClassName}
+                        onChange={(event) =>
+                          updateDraft({
+                            result: event.target.value as ReleaseRecordResult,
+                          })
+                        }
+                        value={draft.result}
+                      >
+                        {releaseRecordResults.map((result) => (
+                          <option key={result} value={result}>
+                            {releaseRecordResultLabels[result]}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-xs leading-5 text-slate-500">
+                        发布中就先留「进行中」，出事回滚了改成「已回滚」。
+                      </span>
+                    </label>
+                    <TextField
+                      label="回滚目标"
+                      onChange={(value) =>
+                        updateDraft({ rollbackTarget: value })
+                      }
+                      placeholder="出事退回哪个版本，例如 v2.9.0"
+                      value={draft.rollbackTarget}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={labelClassName}>门禁清单</span>
+                      <button
+                        className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        onClick={() =>
+                          setDraft((current) =>
+                            current.assetType === "release_record"
+                              ? {
+                                  ...current,
+                                  gates: [
+                                    ...current.gates,
+                                    {
+                                      key: `gate-${Date.now()}-${current.gates.length}`,
+                                      label: "",
+                                      done: false,
+                                      note: "",
+                                    },
+                                  ],
+                                }
+                              : current,
+                          )
+                        }
+                        type="button"
+                      >
+                        加一项门禁
+                      </button>
+                    </div>
+
+                    {draft.gates.length === 0 ? (
+                      <p className="text-xs leading-5 text-slate-500">
+                        还没有门禁项。新建时会按项目质量等级带出默认清单，也可以自己加。
+                      </p>
+                    ) : (
+                      <ul className="flex flex-col gap-2">
+                        {draft.gates.map((gate) => (
+                          <li
+                            className="flex flex-wrap items-center gap-2"
+                            key={gate.key}
+                          >
+                            <input
+                              aria-label={`门禁：${gate.label || "未命名"}`}
+                              checked={gate.done}
+                              className="size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                              onChange={(event) =>
+                                setDraft((current) =>
+                                  current.assetType === "release_record"
+                                    ? {
+                                        ...current,
+                                        gates: current.gates.map((entry) =>
+                                          entry.key === gate.key
+                                            ? {
+                                                ...entry,
+                                                done: event.target.checked,
+                                              }
+                                            : entry,
+                                        ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              type="checkbox"
+                            />
+                            <input
+                              aria-label="门禁项"
+                              className={`${inputClassName} min-w-48 flex-1`}
+                              onChange={(event) =>
+                                setDraft((current) =>
+                                  current.assetType === "release_record"
+                                    ? {
+                                        ...current,
+                                        gates: current.gates.map((entry) =>
+                                          entry.key === gate.key
+                                            ? {
+                                                ...entry,
+                                                label: event.target.value,
+                                              }
+                                            : entry,
+                                        ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              placeholder="要检查什么，例如「备份已生成」"
+                              value={gate.label}
+                            />
+                            <input
+                              aria-label="门禁证据"
+                              className={`${inputClassName} min-w-40 flex-1`}
+                              onChange={(event) =>
+                                setDraft((current) =>
+                                  current.assetType === "release_record"
+                                    ? {
+                                        ...current,
+                                        gates: current.gates.map((entry) =>
+                                          entry.key === gate.key
+                                            ? {
+                                                ...entry,
+                                                note: event.target.value,
+                                              }
+                                            : entry,
+                                        ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              placeholder="证据说明，例如「check 全过，见 2026-09-23 记录」"
+                              value={gate.note}
+                            />
+                            <button
+                              className="rounded-lg border border-slate-300 px-2.5 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                              onClick={() =>
+                                setDraft((current) =>
+                                  current.assetType === "release_record"
+                                    ? {
+                                        ...current,
+                                        gates: current.gates.filter(
+                                          (entry) => entry.key !== gate.key,
+                                        ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              type="button"
+                            >
+                              删除
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="text-xs leading-5 text-slate-500">
+                      门禁是「人工可验证的证据」：勾之前先确认真的做了，备注里写清凭什么。
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -1103,7 +1311,9 @@ export function AssetEditorDrawer({
                         ? "节点说明"
                         : assetType === "evidence"
                           ? "验收条件、步骤与实际结果"
-                          : "选型说明"}
+                          : assetType === "release_record"
+                            ? "这次发布改了什么、异常和后续"
+                            : "选型说明"}
               </span>
               <textarea
                 className="min-h-72 rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

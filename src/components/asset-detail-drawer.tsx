@@ -24,6 +24,7 @@ import type {
 import { readAssetRelations } from "@/data/assets";
 import { assetRelationLabels } from "@/lib/asset-list";
 import { describeNodeEvidence } from "@/lib/acceptance-evidence";
+import { summarizeGates } from "@/lib/release-record";
 import { readTemplateVariables } from "@/lib/template-asset";
 import { buildNodePath } from "@/lib/graph-node";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
@@ -33,6 +34,7 @@ import {
   describeAssetSummary,
   evidenceConclusionLabels,
   graphNodeTypeLabels,
+  releaseRecordResultLabels,
   ruleConfidenceLabels,
   ruleScopeLabels,
   ruleTypeLabels,
@@ -175,6 +177,24 @@ function describeAssetMetadata(
     ];
   }
 
+  if (asset.assetType === "release_record") {
+    const summary = summarizeGates(asset.metadata.gates);
+
+    return [
+      `版本：${asset.metadata.version}`,
+      `结果：${releaseRecordResultLabels[asset.metadata.result]}`,
+      ...(asset.metadata.releasedAt
+        ? [`发布日期：${asset.metadata.releasedAt}`]
+        : []),
+      `回滚目标：${asset.metadata.rollbackTarget || "还没定"}`,
+      `门禁：${summary.done}／${summary.total} 项完成${
+        summary.pending.length > 0
+          ? `，还差：${summary.pending.join("、")}`
+          : ""
+      }`,
+    ];
+  }
+
   return [`文档类型：${asset.metadata.documentType}`];
 }
 
@@ -220,9 +240,11 @@ export function AssetDetailDrawer({
         ? "图谱节点"
         : asset.assetType === "evidence"
           ? "验收记录"
-          : asset.assetType === "template"
-            ? "模板"
-            : "文档";
+          : asset.assetType === "release_record"
+            ? "发布记录"
+            : asset.assetType === "template"
+              ? "模板"
+              : "文档";
   const isBusy = isRestoring || isUpdatingStatus;
   const isLoadingVersions = versionState?.key !== versionsKey;
   const versionsError =
@@ -528,7 +550,9 @@ export function AssetDetailDrawer({
                 ? "规则正文"
                 : asset.assetType === "evidence"
                   ? "验收条件、步骤与实际结果"
-                  : "文档正文"}
+                  : asset.assetType === "release_record"
+                    ? "这次发布改了什么、异常和后续"
+                    : "文档正文"}
             </h3>
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-5 sm:px-5">
               <MarkdownContent content={asset.content} />

@@ -43,6 +43,7 @@ import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
 import { GraphViewDrawer } from "@/components/graph-view-drawer";
 import { EngineeringImportDrawer } from "@/components/engineering-import-drawer";
 import { EngineeringBaselineDrawer } from "@/components/engineering-baseline-drawer";
+import { buildGateItemsFromLevel } from "@/lib/release-record";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -203,6 +204,12 @@ type AssetEditorState =
       initialDocumentType?: string;
       initialTitle?: string;
       initialNodeId?: string;
+      initialGates?: Array<{
+        key: string;
+        label: string;
+        done: boolean;
+        note: string;
+      }>;
     }
   | { mode: "edit"; assetId: string };
 
@@ -646,6 +653,9 @@ export function PromptLibrary({
       ).length,
       evidence: projectAssetEntries.filter(
         (asset) => asset.assetType === "evidence",
+      ).length,
+      release_record: projectAssetEntries.filter(
+        (asset) => asset.assetType === "release_record",
       ).length,
     }),
     [projectAssetEntries, projectPrompts],
@@ -1138,6 +1148,20 @@ export function PromptLibrary({
       assetType: "evidence",
       initialTitle: input.title,
       initialNodeId: input.nodeId,
+    });
+  }
+
+  // 工程基线里的「新建发布记录」：门禁清单按当前项目的质量等级带出来
+  function handleCreateReleaseRecord() {
+    if (!activeProject) {
+      return;
+    }
+
+    setIsEngineeringBaselineOpen(false);
+    setAssetEditorState({
+      mode: "create",
+      assetType: "release_record",
+      initialGates: buildGateItemsFromLevel(activeProject.riskLevel),
     });
   }
 
@@ -2526,6 +2550,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onClose={() => setIsEngineeringBaselineOpen(false)}
           onCreateDocument={handleCreateBaselineDocument}
           onCreateEvidence={handleCreateRequirementEvidence}
+          onCreateRelease={handleCreateReleaseRecord}
           onOpenAsset={(assetId) => {
             setIsEngineeringBaselineOpen(false);
             setAssetDetailId(assetId);
@@ -2620,6 +2645,11 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           initialNodeId={
             assetEditorState.mode === "create"
               ? assetEditorState.initialNodeId
+              : undefined
+          }
+          initialGates={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialGates
               : undefined
           }
           initialTitle={

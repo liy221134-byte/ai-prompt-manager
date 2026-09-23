@@ -570,3 +570,63 @@ test("验收记录草稿：需求节点必填，空的证据行会被丢掉", ()
     [["跑了一遍导入", "docs/acceptance"]],
   );
 });
+
+test("发布记录草稿：版本号必填，空白门禁行会被丢掉", () => {
+  const draft = {
+    ...createEmptyAssetDraft("release_record", {
+      gates: [
+        { key: "gate-1", label: "工程检查通过", done: false, note: "" },
+      ],
+    }),
+    title: "v2.10.0 发布记录",
+    content: "这次补上发布门禁。",
+    version: " v2.10.0 ",
+    releasedAt: "2026-09-23",
+    result: "released",
+    rollbackTarget: " v2.9.0 ",
+    gates: [
+      { key: "gate-1", label: "工程检查通过", done: true, note: " 跑了 check " },
+      { key: "gate-2", label: "   ", done: false, note: "写了一半" },
+    ],
+  };
+  const input = buildCreateAssetInput({
+    id: "release-1",
+    projectId: "project-1",
+    draft,
+    now: "2026-09-23T00:00:00.000Z",
+  });
+
+  assert.equal(input.asset.assetType, "release_record");
+  assert.deepEqual(input.asset.metadata, {
+    version: "v2.10.0",
+    releasedAt: "2026-09-23",
+    result: "released",
+    rollbackTarget: "v2.9.0",
+    gates: [
+      { key: "gate-1", label: "工程检查通过", done: true, note: "跑了 check" },
+    ],
+  });
+
+  // 没写版本号就保存不了
+  assert.equal(
+    validateAssetDraft({ ...draft, version: "  " }),
+    "请填写版本号或标签，例如 v2.10.0。",
+  );
+
+  // 读回草稿时门禁勾选状态还在
+  const back = assetToDraft(input.asset);
+
+  assert.equal(back.assetType, "release_record");
+  assert.equal(back.version, "v2.10.0");
+  assert.equal(back.gates[0].done, true);
+
+  // 标题没填时按版本号生成，不用再想名字
+  const withoutTitle = buildCreateAssetInput({
+    id: "release-2",
+    projectId: "project-1",
+    draft: { ...draft, title: "" },
+    now: "2026-09-23T00:00:00.000Z",
+  });
+
+  assert.equal(withoutTitle.asset.title, "v2.10.0 发布记录");
+});

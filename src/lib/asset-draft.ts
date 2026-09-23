@@ -9,6 +9,10 @@ import {
   type EvidenceConclusion,
   type EvidenceAssetData,
   type EvidenceAssetMetadata,
+  type ReleaseGateItem,
+  type ReleaseRecordAssetData,
+  type ReleaseRecordMetadata,
+  type ReleaseRecordResult,
   type GraphNodeAssetData,
   type GraphNodeAssetMetadata,
   type GraphNodeType,
@@ -25,6 +29,7 @@ import {
   defaultDocumentType,
   normalizeDocumentMetadata,
   normalizeEvidenceMetadata,
+  normalizeReleaseRecordMetadata,
   normalizeGraphNodeMetadata,
   normalizeRuleMetadata,
   normalizeTemplateMetadata,
@@ -46,6 +51,7 @@ export const editableAssetTypes = [
   "template",
   "graph_node",
   "evidence",
+  "release_record",
 ] as const;
 export type EditableAssetType = (typeof editableAssetTypes)[number];
 export type EditableAssetData =
@@ -54,7 +60,8 @@ export type EditableAssetData =
   | TechProfileAssetData
   | TemplateAssetData
   | GraphNodeAssetData
-  | EvidenceAssetData;
+  | EvidenceAssetData
+  | ReleaseRecordAssetData;
 
 export const ASSET_TITLE_MAX_LENGTH = 60;
 
@@ -184,13 +191,29 @@ export type EvidenceAssetDraft = {
   relations: AssetRelationDraft[];
 };
 
+// 发布记录：门禁项要人勾、要写证据，所以门禁清单是草稿的一部分
+export type ReleaseRecordAssetDraft = {
+  assetType: "release_record";
+  title: string;
+  summary: string;
+  content: string;
+  status: AssetStatus;
+  version: string;
+  releasedAt: string;
+  result: ReleaseRecordResult;
+  rollbackTarget: string;
+  gates: ReleaseGateItem[];
+  relations: AssetRelationDraft[];
+};
+
 export type AssetDraft =
   | RuleAssetDraft
   | DocumentAssetDraft
   | TechProfileAssetDraft
   | TemplateAssetDraft
   | GraphNodeAssetDraft
-  | EvidenceAssetDraft;
+  | EvidenceAssetDraft
+  | ReleaseRecordAssetDraft;
 
 // 新建时的预填：只补标题和文档类型，其他字段保持空草稿的默认值。
 // 从「工程基线」缺口点进来时用，让用户少填两个字段。
@@ -225,7 +248,12 @@ export function createAssetId(assetType: EditableAssetType) {
 
 export function createEmptyAssetDraft(
   assetType: EditableAssetType,
-  options: { nodeType?: GraphNodeType; nodeId?: string } = {},
+  options: {
+    nodeType?: GraphNodeType;
+    nodeId?: string;
+    // 发布记录的门禁项：按项目质量等级预填进来
+    gates?: ReleaseGateItem[];
+  } = {},
 ): AssetDraft {
   if (assetType === "rule") {
     return {
@@ -303,6 +331,22 @@ export function createEmptyAssetDraft(
       conclusion: "pending",
       commitRef: "",
       evidenceItems: [],
+      relations: [],
+    };
+  }
+
+  if (assetType === "release_record") {
+    return {
+      assetType: "release_record",
+      title: "",
+      summary: "",
+      content: "",
+      status: "active",
+      version: "",
+      releasedAt: "",
+      result: "in_progress",
+      rollbackTarget: "",
+      gates: (options.gates ?? []).map((gate) => ({ ...gate })),
       relations: [],
     };
   }
@@ -406,6 +450,24 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
     };
   }
 
+  if (asset.assetType === "release_record") {
+    const metadata = normalizeReleaseRecordMetadata(asset.metadata);
+
+    return {
+      assetType: "release_record",
+      title: asset.title,
+      summary: asset.summary,
+      content: asset.content,
+      status: asset.status,
+      version: metadata.version,
+      releasedAt: metadata.releasedAt,
+      result: metadata.result,
+      rollbackTarget: metadata.rollbackTarget,
+      gates: metadata.gates.map((gate) => ({ ...gate })),
+      relations: relationsToDraft(readAssetRelations(asset.metadata)),
+    };
+  }
+
   if (asset.assetType === "rule") {
     // 旧数据只有核心字段，这里统一补成空值，编辑器不用自己兜底
     const metadata = normalizeRuleMetadata(asset.metadata);
@@ -489,7 +551,8 @@ function normalizeDraftStack(stack: TechStackEntryDraft[]) {
 }
 
 export function validateAssetDraft(draft: AssetDraft) {
-  if (!draft.title.trim()) {
+  // 发布记录的标题由版本号生成，不单独要求填
+  if (draft.assetType !== "release_record" && !draft.title.trim()) {
     return "请填写标题。";
   }
 
@@ -517,6 +580,11 @@ export function validateAssetDraft(draft: AssetDraft) {
   // 验收记录必须挂在一条需求上，否则覆盖统计算不出来
   if (draft.assetType === "evidence" && !draft.nodeId.trim()) {
     return "请选择这条验收记录对应的需求节点。";
+  }
+
+  // 版本号是发布记录的标识，没有它没法对应到一次真实发布
+  if (draft.assetType === "release_record" && !draft.version.trim()) {
+    return "请填写版本号或标签，例如 v2.10.0。";
   }
 
   if (draft.assetType === "document" && !draft.documentType.trim()) {
@@ -694,6 +762,35 @@ function buildAsset(
       ...common,
       assetType: "evidence",
       metadata: evidenceMetadata,
+    };
+  }
+
+  if (draft.assetType === "release_record") {
+    const releaseMetadata: ReleaseRecordMetadata = {
+      version: draft.version.trim(),
+      releasedAt: draft.releasedAt.trim(),
+      result: draft.result,
+      rollbackTarget: draft.rollbackTarget.trim(),
+      // 空白的门禁行丢掉：没写检查内容的行不算一项
+      gates: draft.gates
+        .map((gate) => ({
+          key: gate.key,
+          label: gate.label.trim(),
+          done: gate.done,
+          note: gate.note.trim(),
+        }))
+        .filter((gate) => gate.label),
+      ...(draft.relations.length
+        ? { relations: draftRelationsToMetadata(draft.relations) }
+        : {}),
+    };
+
+    return {
+      ...common,
+      // 标题没填就用版本号生成：一次发布只有一个版本号，不用再想名字
+      title: common.title || `${releaseMetadata.version} 发布记录`,
+      assetType: "release_record",
+      metadata: releaseMetadata,
     };
   }
 
