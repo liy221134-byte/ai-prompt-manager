@@ -36,6 +36,7 @@
 ### 设计
 
 - [v2.2.0 规则包与种子资产包导入设计](superpowers/specs/2026-09-23-v2.2.0-rule-pack-and-seed-import-design.md)
+- [v2.3.0 规则编译设计](superpowers/specs/2026-09-23-v2.3.0-rule-compile-design.md)
 - [2.1.2 技术档案、资产关系与备份升级设计](superpowers/specs/2026-09-22-v2.1.2-tech-profile-relations-backup-design.md)
 - [2.1.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.1.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
