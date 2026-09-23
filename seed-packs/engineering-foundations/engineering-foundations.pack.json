@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-23T04:49:40.665Z",
+  "exportedAt": "2026-09-23T05:08:43.551Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
@@ -57,6 +57,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 用“个人工具”方法管理省级平台。 - 用“大型平台”方法过度建设个人工具。 - 只按合同金额安排人员和治理。 - 忽略外部接口和数据安全带来的复杂度。",
         "relations": [
           {
             "targetAssetId": "rule-mth-route-001",
@@ -106,6 +107,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 大型项目先做完整前端，后期发现权限和数据模型不成立。 - 早期产品先建设完整平台，投入过高但用户价值未验证。 - 原型和生产代码边界不清，导致临时方案进入生产。",
         "relations": [
           {
             "targetAssetId": "rule-mth-project-001",
@@ -155,6 +157,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 把设计方案写成不可调整的需求。 - 外部接口没有测试环境，开发后期才发现不可用。 - 只记录功能，不记录数据所有权和非功能要求。 - 变更没有影响分析和重新验收。",
         "relations": [
           {
             "targetAssetId": "rule-mth-req-002",
@@ -204,6 +207,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 同文档同时出现多个并发用户数。 - 分钟吞吐量与每秒吞吐量混用。 - 端到端响应时间与数据库查询时间混为一谈。 - 指标没有测试环境和数据规模，无法复现。",
         "relations": [
           {
             "targetAssetId": "rule-mth-req-001",
@@ -253,6 +257,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 先并行开发，后补接口和数据模型。 - 所有模块直接访问同一批数据表。 - 配置错误时自动降级到不安全模式。 - 没有回滚目标和恢复证据。",
         "relations": [
           {
             "targetAssetId": "rule-mth-module-001",
@@ -311,6 +316,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 骨架只做前端和假数据。 - 每条链路都依赖尚未完成的平台能力。 - 骨架通过后不更新架构和接口基线。 - 团队把骨架代码直接扩张成不可维护的临时系统。",
         "relations": [
           {
             "targetAssetId": "rule-mth-arch-001",
@@ -360,6 +366,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 按页面拆模块，多个模块反复修改同一业务规则。 - 多个模块直接写同一张表。 - 共享数据库导致无法独立发布和回滚。 - 微服务数量增长，但没有平台治理能力。",
         "relations": [
           {
             "targetAssetId": "rule-mth-arch-001",
@@ -408,6 +415,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 多模块同时拥有同一字段的写入逻辑。 - 接口没有版本，修改后导致调用方失效。 - 共享表变更没有通知和迁移顺序。 - 通过数据库直连绕过权限和审计。",
         "relations": [
           {
             "targetAssetId": "rule-mth-module-001",
@@ -458,6 +466,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 个人项目生成大型项目全套文档。 - 涉及用户数据的项目没有备份和回滚。 - 门禁只有复选框，没有证据和责任人。",
         "relations": [
           {
             "targetAssetId": "rule-mth-project-001",
@@ -497,7 +506,8 @@
             "large",
             "regulated"
           ]
-        }
+        },
+        "rationale": "- 只有任务清单，没有实际结果。 - 验收条件不可观察。 - 修复后没有复验和回归。 - 文档勾选完成，但生产配置未验证。"
       },
       "status": "active"
     },
@@ -535,6 +545,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 先部署代码，后补数据库结构。 - 没有备份就迁移或合并数据。 - Preview 使用生产密钥。 - 回滚只恢复代码，不处理数据兼容。",
         "relations": [
           {
             "targetAssetId": "rule-mth-quality-001",
@@ -583,6 +594,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 只看备份文件存在，不验证恢复。 - 只回滚代码，不验证数据。 - 没有记录恢复时间和失败步骤。 - 演练结果没有进入发布和运维改进。",
         "relations": [
           {
             "targetAssetId": "rule-playbook-release-001",
@@ -617,7 +629,8 @@
             "medium",
             "large"
           ]
-        }
+        },
+        "rationale": "- 用\"两个会话一起做更快\"判断并行价值，而不判断切分是否正交。 - 两个会话都从脏工作区分支，拿到不稳定基线。 - 发现重复后只删掉多余代码，不记录教训和门禁，下次继续发生。"
       },
       "status": "active"
     },
@@ -640,7 +653,8 @@
             "medium",
             "large"
           ]
-        }
+        },
+        "rationale": "- 把根因理解成\"命名错\"或\"作用域错\"其中之一，修一半。 - 只删掉几条显眼变量，留着完整的一套带前缀变量当噪音。 - 用页面显示的截断名字下结论。 - 事故处理完不把检查项写进发布清单，下次集成安装再犯。"
       },
       "status": "active"
     },
@@ -663,7 +677,8 @@
             "medium",
             "large"
           ]
-        }
+        },
+        "rationale": "- 手工执行迁移但不回写历史表，自动部署时重复执行。 - 结构迁移和数据迁移拆成两次执行，中途失败留下半迁移状态。 - 只看迁移执行成功，不做顾问检查和权限策略复查。"
       },
       "status": "active"
     },
@@ -702,6 +717,7 @@
             "regulated"
           ]
         },
+        "rationale": "- 先选产品再补理由，偏离默认选型却不写决策记录。 - 没有对外承诺却上了高可用架构，成本上升但风险没降。 - 预览或测试环境持有生产密钥。 - 内网或物理隔离环境依赖公网服务，现场交付时全部失效。 - 只做主备、从不演练，以为有备份就等于能恢复。",
         "relations": [
           {
             "targetAssetId": "rule-mth-project-001",
@@ -747,7 +763,8 @@
             "large",
             "regulated"
           ]
-        }
+        },
+        "rationale": "- 只写用了什么，不写为什么用。 - 换了运行环境却不更新档案，实际打法和档案不一致。 - 偏离默认选型不写决策记录。 - 只列技术栈，没有禁止项、替代条件和维护责任。 - 维护责任人空缺，出问题时没人认领。"
       },
       "status": "active"
     },
@@ -815,7 +832,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-01-personal-tool-result",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []
@@ -833,7 +850,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-01-personal-tool",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []
@@ -851,7 +868,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-02-cloud-product-result",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []
@@ -869,7 +886,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-02-cloud-product",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []
@@ -887,7 +904,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-03-large-platform-result",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []
@@ -905,7 +922,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-03-large-platform",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []
@@ -923,7 +940,7 @@
         "documentType": "编译验证记录",
         "pack": {
           "packId": "rule-pack-engineering-foundations",
-          "packItemId": "",
+          "packItemId": "validation-README",
           "packVersion": "",
           "packAssetType": "validation",
           "projectScale": []

@@ -219,9 +219,11 @@ function pickFirstMapped<T extends string>(
   return "";
 }
 
-// 「## 核心结论」的第一段：用来说明这条资产解决什么问题
-function readCoreConclusion(body: string) {
-  const section = body.split(/^##\s+/m).find((part) => part.startsWith("核心结论"));
+// 取某个二级标题下的第一段，用来把「核心结论」「失败模式」这类小节搬进元数据
+function readSectionParagraph(body: string, heading: string) {
+  const section = body
+    .split(/^##\s+/m)
+    .find((part) => part.startsWith(heading));
 
   if (!section) {
     return "";
@@ -243,14 +245,16 @@ function readHeading(body: string) {
 
 function buildPackLink(
   packId: string,
-  parsed: FrontMatter,
+  seedId: string,
+  packVersion: string,
   packAssetType: string,
   projectScale: ProjectScale[],
 ): AssetPackLink {
   return {
     packId,
-    packItemId: parsed.fields.id ?? "",
-    packVersion: parsed.fields.version ?? "",
+    // 画像和验证记录没有 front-matter 编号，用解析出来的稳定编号兜底
+    packItemId: seedId,
+    packVersion,
     packAssetType,
     projectScale,
   };
@@ -263,9 +267,27 @@ function buildContent(body: string, raw: string) {
     : body;
 }
 
+// 种子包的资产用「失败模式」说明这条规则防的是什么问题，正好对应「理由」字段
+function withFailureModeRationale(
+  metadata: RuleAssetMetadata | DocumentAssetMetadata,
+  body: string,
+) {
+  const failureMode = readSectionParagraph(body, "失败模式");
+
+  if (!failureMode || "rationale" in metadata) {
+    return metadata;
+  }
+
+  return {
+    ...metadata,
+    rationale: failureMode,
+  } as RuleAssetMetadata;
+}
+
 function buildRuleMetadata(
   parsed: FrontMatter,
   packId: string,
+  seedId: string,
   projectScale: ProjectScale[],
   packAssetType: string,
   ruleType: RuleType,
@@ -317,13 +339,20 @@ function buildRuleMetadata(
       : {}),
     ...(confidence ? { confidence } : {}),
     ...(compileTarget.length > 0 ? { compileTarget } : {}),
-    pack: buildPackLink(packId, parsed, packAssetType, projectScale),
+    pack: buildPackLink(
+      packId,
+      seedId,
+      parsed.fields.version ?? "",
+      packAssetType,
+      projectScale,
+    ),
   };
 }
 
 function buildDocumentMetadata(
   parsed: FrontMatter,
   packId: string,
+  seedId: string,
   projectScale: ProjectScale[],
   packAssetType: string,
 ): DocumentAssetMetadata {
@@ -332,7 +361,13 @@ function buildDocumentMetadata(
     ...(readList(parsed, "source_references").length > 0
       ? { sourceLocation: readList(parsed, "source_references").join("；") }
       : {}),
-    pack: buildPackLink(packId, parsed, packAssetType, projectScale),
+    pack: buildPackLink(
+      packId,
+      seedId,
+      parsed.fields.version ?? "",
+      packAssetType,
+      projectScale,
+    ),
   };
 }
 
@@ -429,9 +464,22 @@ export function seedPackFilesToRulePack(
         ? (parsed.fields.rule_type as RuleType)
         : "must");
     const metadata = isRule
-      ? buildRuleMetadata(parsed, options.packId, projectScale, packAssetType, ruleType)
-      : buildDocumentMetadata(parsed, options.packId, projectScale, packAssetType);
-    const coreConclusion = readCoreConclusion(parsed.body);
+      ? buildRuleMetadata(
+          parsed,
+          options.packId,
+          seedId,
+          projectScale,
+          packAssetType,
+          ruleType,
+        )
+      : buildDocumentMetadata(
+          parsed,
+          options.packId,
+          seedId,
+          projectScale,
+          packAssetType,
+        );
+  const coreConclusion = readSectionParagraph(parsed.body, "核心结论");
 
     if (parsed.body.length === 0) {
       warnings.push(`成员正文为空：${normalizedPath}`);
@@ -443,7 +491,7 @@ export function seedPackFilesToRulePack(
       title: parsed.fields.title ?? readHeading(parsed.body) ?? seedId,
       summary: coreConclusion.slice(0, 120),
       content: buildContent(parsed.body, parsed.raw),
-      metadata,
+      metadata: withFailureModeRationale(metadata, parsed.body),
       status: "active",
     });
 

@@ -123,6 +123,8 @@ test("规则带理由、来源片段和可信度，正文保留包内原始元�
   assert.equal(rule.metadata.overrideScope, "none");
   assert.deepEqual(rule.metadata.compileTarget, ["agents"]);
   assert.match(rule.metadata.evidence, /RLS/);
+  // 种子包用「失败模式」小节说明这条规则防什么问题，导入后落到「理由」
+  assert.match(rule.metadata.rationale, /多模块同时拥有同一字段的写入逻辑/);
   assert.equal(rule.summary.startsWith("每类业务数据必须有唯一写入方"), true);
   assert.match(rule.content, /## 包内原始元数据/);
   assert.match(rule.content, /last_reviewed: 2026-09-21/);
@@ -185,6 +187,22 @@ test("同一份种子包解析两次结果完全一致，成员标识稳定", ()
     true,
   );
   assert.equal(first.members[0].id.startsWith("rule-mth-"), true);
+});
+
+test("每条成员都带包内编号，没有 front-matter 的附属文档也一样", () => {
+  const { members } = parseRealPack();
+  const missing = members.filter(
+    (member) => !member.metadata.pack?.packItemId,
+  );
+
+  assert.deepEqual(missing, []);
+
+  const validation = members.find(
+    (member) => member.id === "document-validation-readme",
+  );
+  // 附属文档没有 front-matter 编号，包内编号用「目录-文件名」兜底
+  assert.equal(validation.metadata.pack.packItemId, "validation-README");
+  assert.equal(validation.metadata.pack.packAssetType, "validation");
 });
 
 test("仓库里的规则包文件和种子包源文件保持一致", () => {
