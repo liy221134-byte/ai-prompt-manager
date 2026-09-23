@@ -10,6 +10,7 @@ export const assetTypes = [
   "template",
   "tech_profile",
   "rule_pack",
+  "graph_node",
   "source_package",
 ] as const;
 export type AssetType = (typeof assetTypes)[number];
@@ -85,6 +86,16 @@ export const compileTargets = [
   "none",
 ] as const;
 export type CompileTarget = (typeof compileTargets)[number];
+
+// 项目图谱的节点类型：需求、模块、数据、接口、测试
+export const graphNodeTypes = [
+  "requirement",
+  "module",
+  "data",
+  "interface",
+  "test",
+] as const;
+export type GraphNodeType = (typeof graphNodeTypes)[number];
 
 // 编译裁决：这条规则在生成 AGENTS.md 这类产物时算不算数
 export type RuleCompileDecision = {
@@ -229,6 +240,15 @@ export type TemplateAssetMetadata = {
   relations?: AssetRelation[];
 };
 
+// 图谱节点：稳定编号 + 父节点串成树；映射关系继续用通用关系字段
+export type GraphNodeAssetMetadata = {
+  nodeType: GraphNodeType;
+  code: string;
+  parentId: string | null;
+  note: string;
+  relations?: AssetRelation[];
+};
+
 // 规则包：可复用的规则集合（一个项目可以装多个包）。
 // 包自己的发布状态直接用资产状态，不再另存一份。
 export type RulePackAssetMetadata = {
@@ -270,6 +290,10 @@ export type RulePackAssetData = AssetBase<
   RulePackAssetMetadata
 >;
 export type TemplateAssetData = AssetBase<"template", TemplateAssetMetadata>;
+export type GraphNodeAssetData = AssetBase<
+  "graph_node",
+  GraphNodeAssetMetadata
+>;
 export type ReservedAssetType = "source_package";
 export type ReservedAssetData = AssetBase<
   ReservedAssetType,
@@ -283,6 +307,7 @@ export type AssetData =
   | TechProfileAssetData
   | RulePackAssetData
   | TemplateAssetData
+  | GraphNodeAssetData
   | ReservedAssetData;
 
 type AssetVersionBase<TType extends AssetType, TMetadata> = {
@@ -326,6 +351,10 @@ export type TemplateAssetVersionData = AssetVersionBase<
   "template",
   TemplateAssetMetadata
 >;
+export type GraphNodeAssetVersionData = AssetVersionBase<
+  "graph_node",
+  GraphNodeAssetMetadata
+>;
 export type ReservedAssetVersionData = AssetVersionBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -338,6 +367,7 @@ export type AssetVersionData =
   | TechProfileAssetVersionData
   | RulePackAssetVersionData
   | TemplateAssetVersionData
+  | GraphNodeAssetVersionData
   | ReservedAssetVersionData;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -581,6 +611,22 @@ function isTemplateAssetMetadata(
   );
 }
 
+function isGraphNodeAssetMetadata(
+  value: unknown,
+): value is GraphNodeAssetMetadata {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    graphNodeTypes.includes(value.nodeType as GraphNodeType) &&
+    typeof value.code === "string" &&
+    isNullableString(value.parentId) &&
+    typeof value.note === "string" &&
+    isOptionalRelations(value.relations)
+  );
+}
+
 function isDocumentAssetMetadata(
   value: unknown,
 ): value is DocumentAssetMetadata {
@@ -655,6 +701,10 @@ export function isAssetData(value: unknown): value is AssetData {
     return isTemplateAssetMetadata(value.metadata);
   }
 
+  if (value.assetType === "graph_node") {
+    return isGraphNodeAssetMetadata(value.metadata);
+  }
+
   return isRecord(value.metadata);
 }
 
@@ -720,6 +770,10 @@ export function isAssetVersionData(
 
   if (value.assetType === "template") {
     return isTemplateAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "graph_node") {
+    return isGraphNodeAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -854,6 +908,14 @@ export type TemplateMetadataForm = {
   note: string;
 };
 
+// 图谱节点编辑器用的表单形状：编号可以为空，父节点用空串表示根
+export type GraphNodeMetadataForm = {
+  nodeType: GraphNodeType;
+  code: string;
+  parentId: string;
+  note: string;
+};
+
 export type DocumentMetadataForm = {
   documentType: string;
   role: DocumentRole | "";
@@ -941,6 +1003,21 @@ export function normalizeTemplateMetadata(
 
   return {
     outputFileName: readString(source.outputFileName),
+    note: readString(source.note),
+  };
+}
+
+export function normalizeGraphNodeMetadata(
+  value: unknown,
+): GraphNodeMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    nodeType: graphNodeTypes.includes(source.nodeType as GraphNodeType)
+      ? (source.nodeType as GraphNodeType)
+      : "requirement",
+    code: readString(source.code),
+    parentId: readString(source.parentId),
     note: readString(source.note),
   };
 }

@@ -6,6 +6,9 @@ import {
   type DocumentAssetData,
   type DocumentAssetMetadata,
   type DocumentRole,
+  type GraphNodeAssetData,
+  type GraphNodeAssetMetadata,
+  type GraphNodeType,
   type RuleAssetMetadata,
   type RuleAssetData,
   type RuleLevel,
@@ -18,6 +21,7 @@ import {
   createInitialAssetVersionId,
   defaultDocumentType,
   normalizeDocumentMetadata,
+  normalizeGraphNodeMetadata,
   normalizeRuleMetadata,
   normalizeTemplateMetadata,
   normalizeTechProfileMetadata,
@@ -36,13 +40,15 @@ export const editableAssetTypes = [
   "document",
   "tech_profile",
   "template",
+  "graph_node",
 ] as const;
 export type EditableAssetType = (typeof editableAssetTypes)[number];
 export type EditableAssetData =
   | RuleAssetData
   | DocumentAssetData
   | TechProfileAssetData
-  | TemplateAssetData;
+  | TemplateAssetData
+  | GraphNodeAssetData;
 
 export const ASSET_TITLE_MAX_LENGTH = 60;
 
@@ -136,11 +142,26 @@ export type TemplateAssetDraft = {
   relations: AssetRelationDraft[];
 };
 
+// 图谱节点：编号是给人看的稳定标识，父节点限定同类型
+export type GraphNodeAssetDraft = {
+  assetType: "graph_node";
+  title: string;
+  summary: string;
+  content: string;
+  status: AssetStatus;
+  nodeType: GraphNodeType;
+  code: string;
+  parentId: string;
+  note: string;
+  relations: AssetRelationDraft[];
+};
+
 export type AssetDraft =
   | RuleAssetDraft
   | DocumentAssetDraft
   | TechProfileAssetDraft
-  | TemplateAssetDraft;
+  | TemplateAssetDraft
+  | GraphNodeAssetDraft;
 
 // 有编辑入口的资产类型：规则、文档和技术档案；提示词继续走既有流程，
 // 规则包由导入和打包生成，不做手工编辑。
@@ -158,6 +179,7 @@ export function createAssetId(assetType: EditableAssetType) {
 
 export function createEmptyAssetDraft(
   assetType: EditableAssetType,
+  options: { nodeType?: GraphNodeType } = {},
 ): AssetDraft {
   if (assetType === "rule") {
     return {
@@ -203,6 +225,21 @@ export function createEmptyAssetDraft(
       content: "",
       status: "active",
       outputFileName: "",
+      note: "",
+      relations: [],
+    };
+  }
+
+  if (assetType === "graph_node") {
+    return {
+      assetType: "graph_node",
+      title: "",
+      summary: "",
+      content: "",
+      status: "active",
+      nodeType: options.nodeType ?? "requirement",
+      code: "",
+      parentId: "",
       note: "",
       relations: [],
     };
@@ -264,6 +301,23 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
       content: asset.content,
       status: asset.status,
       outputFileName: metadata.outputFileName,
+      note: metadata.note,
+      relations: relationsToDraft(readAssetRelations(asset.metadata)),
+    };
+  }
+
+  if (asset.assetType === "graph_node") {
+    const metadata = normalizeGraphNodeMetadata(asset.metadata);
+
+    return {
+      assetType: "graph_node",
+      title: asset.title,
+      summary: asset.summary,
+      content: asset.content,
+      status: asset.status,
+      nodeType: metadata.nodeType,
+      code: metadata.code,
+      parentId: metadata.parentId,
       note: metadata.note,
       relations: relationsToDraft(readAssetRelations(asset.metadata)),
     };
@@ -368,7 +422,13 @@ export function validateAssetDraft(draft: AssetDraft) {
 
     return draft.assetType === "template"
       ? "请填写模板正文。"
-      : "请填写文档正文。";
+      : draft.assetType === "graph_node"
+        ? "请填写节点说明。"
+        : "请填写文档正文。";
+  }
+
+  if (draft.assetType === "graph_node" && !draft.code.trim()) {
+    return "请填写节点编号，例如 REQ-001。";
   }
 
   if (draft.assetType === "document" && !draft.documentType.trim()) {
@@ -504,6 +564,24 @@ function buildAsset(
       ...common,
       assetType: "template",
       metadata: templateMetadata,
+    };
+  }
+
+  if (draft.assetType === "graph_node") {
+    const nodeMetadata: GraphNodeAssetMetadata = {
+      nodeType: draft.nodeType,
+      code: draft.code.trim(),
+      parentId: draft.parentId.trim() ? draft.parentId : null,
+      note: draft.note.trim(),
+      ...(draft.relations.length
+        ? { relations: draftRelationsToMetadata(draft.relations) }
+        : {}),
+    };
+
+    return {
+      ...common,
+      assetType: "graph_node",
+      metadata: nodeMetadata,
     };
   }
 

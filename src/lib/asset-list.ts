@@ -5,6 +5,7 @@ import type {
   ProjectScale,
   RuleConfidence,
   AssetRelationType,
+  GraphNodeType,
   RuleScope,
   RuleType,
 } from "../data/assets.ts";
@@ -19,7 +20,16 @@ export const assetTypeLabels: Record<AssetType, string> = {
   template: "模板",
   tech_profile: "技术档案",
   rule_pack: "规则包",
+  graph_node: "图谱节点",
   source_package: "来源包",
+};
+
+export const graphNodeTypeLabels: Record<GraphNodeType, string> = {
+  requirement: "需求",
+  module: "模块",
+  data: "数据",
+  interface: "接口",
+  test: "测试",
 };
 
 // 2.0.0 只开放提示词、规则和文档三种筛选，模板和技术档案由后续版本接入。
@@ -31,6 +41,7 @@ export const assetTypeFilterOptions = [
   "tech_profile",
   "template",
   "rule_pack",
+  "graph_node",
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
@@ -42,6 +53,7 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   tech_profile: "技术档案",
   template: "模板",
   rule_pack: "规则包",
+  graph_node: "图谱节点",
 };
 
 export const assetRelationLabels: Record<AssetRelationType, string> = {

@@ -15,18 +15,22 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
-import type { AssetStatus, AssetVersionData } from "@/data/assets";
-import {
-  readAssetRelations,
-  type AssetData,
+import type {
+  AssetData,
+  AssetStatus,
+  AssetVersionData,
+  GraphNodeAssetData,
 } from "@/data/assets";
+import { readAssetRelations } from "@/data/assets";
 import { assetRelationLabels } from "@/lib/asset-list";
 import { readTemplateVariables } from "@/lib/template-asset";
+import { buildNodePath } from "@/lib/graph-node";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import type { EditableAssetData } from "@/lib/asset-draft";
 import {
   assetStatusLabels,
   describeAssetSummary,
+  graphNodeTypeLabels,
   ruleConfidenceLabels,
   ruleScopeLabels,
   ruleTypeLabels,
@@ -81,7 +85,10 @@ function formatDateTime(value: string) {
   });
 }
 
-function describeAssetMetadata(asset: EditableAssetData) {
+function describeAssetMetadata(
+  asset: EditableAssetData,
+  allAssets: AssetData[],
+) {
   if (asset.assetType === "rule") {
     return [
       `规则类型：${ruleTypeLabels[asset.metadata.ruleType]}`,
@@ -111,6 +118,22 @@ function describeAssetMetadata(asset: EditableAssetData) {
         ? [`产物文件名：${asset.metadata.outputFileName}`]
         : []),
       `变量：${variables.length} 个`,
+    ];
+  }
+
+  if (asset.assetType === "graph_node") {
+    const nodes = allAssets.filter(
+      (item): item is GraphNodeAssetData =>
+        item.assetType === "graph_node" && item.deletedAt === null,
+    );
+    const path = buildNodePath(nodes, asset.id)
+      .map((node) => node.title)
+      .join(" → ");
+
+    return [
+      `节点类型：${graphNodeTypeLabels[asset.metadata.nodeType]}`,
+      ...(asset.metadata.code ? [`编号：${asset.metadata.code}`] : []),
+      ...(path ? [`路径：${path}`] : []),
     ];
   }
 
@@ -313,7 +336,7 @@ export function AssetDetailDrawer({
             >
               {assetStatusLabels[asset.status]}
             </span>
-            {describeAssetMetadata(asset).map((item) => (
+            {describeAssetMetadata(asset, allAssets).map((item) => (
               <span
                 className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
                 key={item}

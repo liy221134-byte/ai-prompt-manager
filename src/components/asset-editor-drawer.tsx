@@ -25,6 +25,7 @@ import {
   type RuleType,
 } from "@/data/assets";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
+import { graphNodeTypes, type GraphNodeType } from "@/data/assets";
 import {
   ASSET_TITLE_MAX_LENGTH,
   assetToDraft,
@@ -39,6 +40,7 @@ import {
   assetRelationLabels,
   assetStatusLabels,
   documentTypeOptions,
+  graphNodeTypeLabels,
   ruleScopeLabels,
   ruleTypeLabels,
 } from "@/lib/asset-list";
@@ -50,6 +52,15 @@ type AssetEditorDrawerProps = {
   adrOptions?: Array<{ id: string; title: string }>;
   // 可以建立关系的其他资产（同项目、未删除、不含自己）
   relationTargetOptions?: Array<{ id: string; title: string }>;
+  // 图谱节点候选：父节点下拉用，按当前草稿的类型过滤并去掉自己
+  graphNodeOptions?: Array<{
+    id: string;
+    title: string;
+    code: string;
+    nodeType: GraphNodeType;
+  }>;
+  // 新建图谱节点时预选的节点类型（从图谱视图进来的那一类）
+  initialNodeType?: GraphNodeType;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -161,11 +172,17 @@ export function AssetEditorDrawer({
   asset,
   adrOptions = [],
   relationTargetOptions = [],
+  graphNodeOptions = [],
+  initialNodeType,
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
   const [draft, setDraft] = useState<AssetDraft>(() =>
-    asset ? assetToDraft(asset) : createEmptyAssetDraft(assetType),
+    asset
+      ? assetToDraft(asset)
+      : createEmptyAssetDraft(assetType, {
+          ...(initialNodeType ? { nodeType: initialNodeType } : {}),
+        }),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -179,7 +196,9 @@ export function AssetEditorDrawer({
         ? "文档"
         : assetType === "template"
           ? "模板"
-          : "技术档案";
+          : assetType === "graph_node"
+            ? "图谱节点"
+            : "技术档案";
   const isEditing = Boolean(asset);
 
   function updateDraft(patch: Record<string, unknown>) {
@@ -436,6 +455,68 @@ export function AssetEditorDrawer({
                     placeholder="这个模板什么时候用"
                     value={draft.note}
                   />
+                </div>
+              ) : draft.assetType === "graph_node" ? (
+                <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>节点类型</span>
+                    <select
+                      className={inputClassName}
+                      onChange={(event) =>
+                        updateDraft({
+                          nodeType: event.target.value,
+                          // 换了类型父节点也要重选：父节点限定同类型
+                          parentId: "",
+                        })
+                      }
+                      value={draft.nodeType}
+                    >
+                      {graphNodeTypes.map((nodeType) => (
+                        <option key={nodeType} value={nodeType}>
+                          {graphNodeTypeLabels[nodeType]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <TextField
+                    label="稳定编号"
+                    onChange={(value) => updateDraft({ code: value })}
+                    placeholder="例如：REQ-001"
+                    value={draft.code}
+                  />
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>父节点</span>
+                    <select
+                      className={inputClassName}
+                      onChange={(event) =>
+                        updateDraft({ parentId: event.target.value })
+                      }
+                      value={draft.parentId}
+                    >
+                      <option value="">（根节点）</option>
+                      {graphNodeOptions
+                        .filter(
+                          (option) =>
+                            option.nodeType === draft.nodeType &&
+                            option.id !== asset?.id,
+                        )
+                        .map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.code ? `${option.code} ` : ""}
+                          {option.title}
+                        </option>
+                        ))}
+                    </select>
+                  </label>
+                  <TextField
+                    label="备注"
+                    onChange={(value) => updateDraft({ note: value })}
+                    placeholder="补充说明，可留空"
+                    value={draft.note}
+                  />
+                  <p className="text-xs leading-5 text-slate-500 sm:col-span-2">
+                    父节点只能选同类型的节点；编号在同一个项目、同一类型里不能重复。
+                  </p>
                 </div>
               ) : (
                 <p className="text-sm leading-6 text-slate-500 sm:col-span-2">
@@ -831,7 +912,11 @@ export function AssetEditorDrawer({
                   ? "规则正文"
                   : assetType === "document"
                     ? "文档正文"
-                    : "选型说明"}
+                    : assetType === "template"
+                      ? "模板正文"
+                      : assetType === "graph_node"
+                        ? "节点说明"
+                        : "选型说明"}
               </span>
               <textarea
                 className="min-h-72 rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
