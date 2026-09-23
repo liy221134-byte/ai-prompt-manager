@@ -6,6 +6,7 @@ import {
   DatabaseBackup,
   FileCode2,
   FilePlus2,
+  FolderTree,
   GitBranch,
   GitMerge,
   Layers3,
@@ -39,6 +40,7 @@ import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
 import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
 import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
 import { GraphViewDrawer } from "@/components/graph-view-drawer";
+import { EngineeringImportDrawer } from "@/components/engineering-import-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -289,6 +291,7 @@ export function PromptLibrary({
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [compileTemplateId, setCompileTemplateId] = useState("");
   const [isGraphViewOpen, setIsGraphViewOpen] = useState(false);
+  const [isEngineeringImportOpen, setIsEngineeringImportOpen] = useState(false);
   const templateFileInputRef = useRef<HTMLInputElement>(null);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
@@ -2070,6 +2073,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 <GitBranch aria-hidden="true" className="size-4" />
                 项目图谱
               </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError) || !activeProjectId}
+                onClick={() => setIsEngineeringImportOpen(true)}
+                type="button"
+              >
+                <FolderTree aria-hidden="true" className="size-4" />
+                导入工程
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -2421,6 +2433,23 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             setIsGraphViewOpen(false);
             setAssetDetailId(asset.id);
           }}
+          projectName={activeProject?.name ?? "当前项目"}
+        />
+      )}
+
+      {isEngineeringImportOpen && activeProjectId && (
+        <EngineeringImportDrawer
+          dataMode={dataMode}
+          nodes={graphNodes}
+          onClose={() => setIsEngineeringImportOpen(false)}
+          onCreateAsset={async (input) => {
+            await dataSource.createAsset(input);
+          }}
+          onImported={async (createdCount) => {
+            await reloadAssets();
+            notify(`已从现有工程导入 ${createdCount} 个图谱节点。`);
+          }}
+          projectId={activeProjectId}
           projectName={activeProject?.name ?? "当前项目"}
         />
       )}
