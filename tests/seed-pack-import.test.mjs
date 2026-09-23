@@ -59,14 +59,14 @@ test("种子包的包信息按 manifest 和 README 落地", () => {
   const { pack, members } = parseRealPack();
 
   assert.equal(pack.title, "工程方法种子资产包");
-  assert.equal(pack.metadata.packVersion, "0.2.1");
+  assert.equal(pack.metadata.packVersion, "0.3.0");
   assert.equal(pack.metadata.packConfidence, "provisional");
   assert.equal(pack.status, "active");
   assert.match(pack.summary, /分析方法/);
-  assert.equal(members.length, 27);
+  assert.equal(members.length, 28);
   assert.equal(
     members.filter((member) => member.assetType === "rule").length,
-    12,
+    13,
   );
   assert.equal(
     members.filter((member) => member.assetType === "document").length,
@@ -91,6 +91,14 @@ test("方法、流程、规则落成规则资产，模板和案例落成文档�
 
   const playbook = byId.get("rule-playbook-release-001");
   assert.equal(playbook.metadata.ruleType, "process");
+
+  // 0.3.0 新增的外部来源资产：流程型规则，可信度先标假设
+  const debugPlaybook = byId.get("rule-playbook-debug-001");
+  assert.equal(debugPlaybook.assetType, "rule");
+  assert.equal(debugPlaybook.metadata.ruleType, "process");
+  assert.equal(debugPlaybook.metadata.confidence, "hypothesis");
+  assert.equal(debugPlaybook.metadata.pack.packItemId, "PLAYBOOK-DEBUG-001");
+  assert.ok(debugPlaybook.metadata.pack.projectScale.includes("personal"));
 
   const template = byId.get("document-tpl-accept-001");
   assert.equal(template.assetType, "document");
