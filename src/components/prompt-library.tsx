@@ -32,6 +32,7 @@ import { AssetCard } from "@/components/asset-card";
 import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
+import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -44,9 +45,11 @@ import {
   listPackMembers,
   listPackMembersForInstall,
   listProjectPacks,
+  planRulePackImport,
   planRulePackInstall,
   toRulePackMember,
 } from "@/lib/rule-pack";
+import type { RulePackFile } from "@/lib/seed-pack-import";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -253,6 +256,7 @@ export function PromptLibrary({
   const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
   const [isSourcePackageImportOpen, setIsSourcePackageImportOpen] =
     useState(false);
+  const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
   // 记录优化记录属于哪条提示词，避免切换详情时显示上一条的回退入口。
@@ -1080,6 +1084,47 @@ export function PromptLibrary({
     notify(`规则包已导出：${file.members.length} 条成员`);
   }
 
+  // 从文件导入规则包：库里没有这个包就先建包资产，再装成员
+  async function handleInstallRulePackFile(
+    file: RulePackFile,
+    projectId: string,
+  ) {
+    const now = new Date().toISOString();
+    const plan = planRulePackImport({
+      file,
+      existingAssets: assets,
+      targetProjectId: projectId,
+      now,
+    });
+
+    if (plan.packAsset) {
+      await dataSource.createAsset({
+        asset: plan.packAsset,
+        versionId: plan.packAsset.currentVersionId,
+        changeReason: "导入规则包",
+        versionReason: "initial",
+      });
+    }
+
+    for (const asset of plan.assetsToCreate) {
+      await dataSource.createAsset({
+        asset,
+        versionId: asset.currentVersionId,
+        changeReason: "安装规则包",
+        versionReason: "initial",
+      });
+    }
+
+    await reloadAssets();
+
+    const projectName =
+      projects.find((project) => project.id === projectId)?.name ?? projectId;
+
+    notify(
+      `规则包已装到「${projectName}」：新增 ${plan.assetsToCreate.length} 条、跳过 ${plan.skipped.length} 条`,
+    );
+  }
+
   function handleOpenTrash() {
     setIsTrashOpen(true);
     void loadTrash();
@@ -1657,6 +1702,15 @@ export function PromptLibrary({
                 <PackageOpen aria-hidden="true" className="size-4" />
                 导入文档包
               </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError) || projects.length === 0}
+                onClick={() => setIsRulePackImportOpen(true)}
+                type="button"
+              >
+                <Layers3 aria-hidden="true" className="size-4" />
+                导入规则包
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -1955,6 +2009,15 @@ export function PromptLibrary({
             await reloadAssets();
             notify("导入完成，已创建项目和资产。");
           }}
+          projects={projects}
+        />
+      )}
+
+      {isRulePackImportOpen && (
+        <RulePackImportDialog
+          activeProjectId={activeProjectId}
+          onClose={() => setIsRulePackImportOpen(false)}
+          onInstall={handleInstallRulePackFile}
           projects={projects}
         />
       )}

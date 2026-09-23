@@ -26,6 +26,11 @@ export type RulePackInstallPlan = {
   skipped: Array<{ packItemId: string; title: string }>;
 };
 
+export type RulePackImportPlan = RulePackInstallPlan & {
+  // 库里还没有这个包时要顺手建一条包资产，已经有时为 null
+  packAsset: AssetData | null;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -298,4 +303,70 @@ export function planRulePackInstall(input: {
   });
 
   return { assetsToCreate, skipped };
+}
+
+// 建包资产：包文件本身不带项目和生命周期字段，导入时补齐
+function buildPackAsset(
+  pack: RulePackFilePack,
+  targetProjectId: string,
+  now: string,
+): RulePackAssetData {
+  return {
+    id: pack.id,
+    projectId: targetProjectId,
+    assetType: "rule_pack",
+    title: pack.title,
+    summary: pack.summary,
+    content: pack.content,
+    metadata: {
+      packVersion: pack.metadata.packVersion,
+      packConfidence: pack.metadata.packConfidence,
+      projectScale: [...pack.metadata.projectScale],
+      sourceNote: pack.metadata.sourceNote,
+    },
+    source: {
+      sourceType: "import",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: createInitialAssetVersionId(pack.id),
+    status: pack.status,
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+// 导入包文件：库里没有这个包就先建包资产，再按安装计划把成员装进目标项目
+export function planRulePackImport(input: {
+  file: RulePackFile;
+  existingAssets: AssetData[];
+  targetProjectId: string;
+  now: string;
+}): RulePackImportPlan {
+  const existingPack = input.existingAssets.find(
+    (asset): asset is RulePackAssetData =>
+      asset.id === input.file.pack.id && asset.assetType === "rule_pack",
+  );
+  const packAsset =
+    existingPack ??
+    buildPackAsset(input.file.pack, input.targetProjectId, input.now);
+  const install = planRulePackInstall({
+    pack: packAsset,
+    members: input.file.members,
+    existingAssets: existingPack
+      ? input.existingAssets
+      : [...input.existingAssets, packAsset],
+    targetProjectId: input.targetProjectId,
+    now: input.now,
+  });
+
+  return {
+    packAsset: existingPack ? null : packAsset,
+    assetsToCreate: install.assetsToCreate,
+    skipped: install.skipped,
+  };
 }

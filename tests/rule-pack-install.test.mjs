@@ -7,6 +7,7 @@ import {
   listPackMembers,
   listPackMembersForInstall,
   listProjectPacks,
+  planRulePackImport,
   planRulePackInstall,
   readAssetPackLink,
 } from "../src/lib/rule-pack.ts";
@@ -336,6 +337,73 @@ test("装到第三个项目时按包内编号去重，跳过数不重复计算",
     now,
   });
 
+  assert.equal(again.assetsToCreate.length, 0);
+  assert.equal(again.skipped.length, 2);
+});
+
+test("导入包文件：空库里先建包资产，再把成员装进目标项目", () => {
+  const parsed = createSamplePack();
+  const file = parseRulePackFile(
+    JSON.stringify(
+      createRulePackFileFromAssets({
+        pack: createPackAsset(parsed),
+        members: [],
+        exportedAt: now,
+      }),
+    ),
+  );
+  // 用解析出来的成员装，等价于从文件读到的内容
+  const importFile = { ...file, members: parsed.members };
+  const plan = planRulePackImport({
+    file: importFile,
+    existingAssets: [],
+    targetProjectId: "project-a",
+    now,
+  });
+
+  assert.equal(plan.packAsset?.id, packId);
+  assert.equal(plan.packAsset?.assetType, "rule_pack");
+  assert.equal(plan.packAsset?.projectId, "project-a");
+  assert.equal(isAssetData(plan.packAsset), true);
+  assert.equal(plan.assetsToCreate.length, 2);
+  assert.equal(plan.skipped.length, 0);
+  assert.equal(plan.assetsToCreate[0].projectId, "project-a");
+});
+
+test("导入包文件：库里已经有这个包就不再建包资产，成员装到别的项目", () => {
+  const parsed = createSamplePack();
+  const pack = createPackAsset(parsed);
+  const file = { ...createRulePackFileFromAssets({
+    pack,
+    members: [],
+    exportedAt: now,
+  }), members: parsed.members };
+  const first = planRulePackImport({
+    file,
+    existingAssets: [pack],
+    targetProjectId: "project-a",
+    now,
+  });
+  const second = planRulePackImport({
+    file,
+    existingAssets: [pack, ...first.assetsToCreate],
+    targetProjectId: "project-b",
+    now,
+  });
+  const again = planRulePackImport({
+    file,
+    existingAssets: [pack, ...first.assetsToCreate, ...second.assetsToCreate],
+    targetProjectId: "project-b",
+    now,
+  });
+
+  assert.equal(first.packAsset, null);
+  assert.equal(second.packAsset, null);
+  assert.equal(second.assetsToCreate.length, 2);
+  assert.deepEqual(
+    second.assetsToCreate.map((asset) => asset.id),
+    ["rule-sample-001-2", "rule-sample-002-2"],
+  );
   assert.equal(again.assetsToCreate.length, 0);
   assert.equal(again.skipped.length, 2);
 });
