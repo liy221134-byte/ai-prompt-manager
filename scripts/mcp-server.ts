@@ -389,7 +389,8 @@ export function createMcpServer(options: McpServerOptions) {
     "create_asset",
     {
       description:
-        "新建资产（提示词／规则／文档／图谱节点／模板）。只新增，不覆盖任何已有内容。",
+        "新建资产（提示词／规则／文档／图谱节点／模板／验收记录）。只新增，不覆盖任何已有内容。" +
+        "验收记录的结论一律先是「待确认」，AI 不能把它标成通过。",
       inputSchema: z.object({
         assetType: z.enum(mcpWritableAssetTypes).describe("资产类型"),
         project: z.string().optional().describe("项目名称或项目标识，省略则用默认项目"),
@@ -412,6 +413,23 @@ export function createMcpServer(options: McpServerOptions) {
         parentCode: z.string().optional().describe("图谱节点父节点编号"),
         note: z.string().optional().describe("图谱节点或模板的备注"),
         outputFileName: z.string().optional().describe("模板产物文件名"),
+        requirementCode: z
+          .string()
+          .optional()
+          .describe("验收记录挂在哪个需求上，填需求编号，例如 REQ-001"),
+        commitRef: z
+          .string()
+          .optional()
+          .describe("验收记录对应的提交号或版本标签"),
+        evidenceItems: z
+          .array(
+            z.object({
+              label: z.string().describe("证据说明：怎么验的、看到什么"),
+              reference: z.string().describe("链接或文件路径，可留空"),
+            }),
+          )
+          .optional()
+          .describe("验收记录的证据清单"),
       }),
     },
     async (input) => {
@@ -429,7 +447,10 @@ export function createMcpServer(options: McpServerOptions) {
         }
 
         return text(
-          `已新建${readAssetTypeLabel(saveInput.asset.assetType)}「${saveInput.asset.title}」，项目「${project.name}」，标识 ${saveInput.asset.id}。`,
+          `已新建${readAssetTypeLabel(saveInput.asset.assetType)}「${saveInput.asset.title}」，项目「${project.name}」，标识 ${saveInput.asset.id}。` +
+            (saveInput.asset.assetType === "evidence"
+              ? "结论是「待确认」，要让它在覆盖统计里算通过，得由人在界面上确认。"
+              : ""),
         );
       } catch (error) {
         return failure(error);
@@ -441,7 +462,8 @@ export function createMcpServer(options: McpServerOptions) {
     "update_asset",
     {
       description:
-        "改一条资产：只覆盖你传的字段，没传的保持原样；每次修改都会写一条新版本，旧版本留着可以回退。",
+        "改一条资产：只覆盖你传的字段，没传的保持原样；每次修改都会写一条新版本，旧版本留着可以回退。" +
+        "验收记录的结论改不了：通过与否只能由人在界面上确认。",
       inputSchema: z.object({
         asset: z.string().describe("资产标识或完整标题"),
         title: z.string().optional(),
@@ -464,6 +486,20 @@ export function createMcpServer(options: McpServerOptions) {
         parentCode: z.string().optional().describe("图谱节点父节点编号，空串表示改成根节点"),
         note: z.string().optional(),
         outputFileName: z.string().optional(),
+        requirementCode: z
+          .string()
+          .optional()
+          .describe("验收记录改挂到另一个需求上，填需求编号"),
+        commitRef: z.string().optional().describe("验收记录的提交号或版本标签"),
+        evidenceItems: z
+          .array(
+            z.object({
+              label: z.string(),
+              reference: z.string(),
+            }),
+          )
+          .optional()
+          .describe("验收记录的证据清单，传了就整份替换"),
       }),
     },
     async (input) => {

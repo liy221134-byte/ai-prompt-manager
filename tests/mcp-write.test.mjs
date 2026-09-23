@@ -292,3 +292,107 @@ test("技术档案这类不开放的资产类型会被拒绝", () => {
     /还不支持通过 MCP 修改/,
   );
 });
+
+test("MCP 写验收记录：必须挂需求，结论一律先待确认", () => {
+  const node = createNodeAsset();
+  const input = buildMcpCreateAsset(
+    {
+      assetType: "evidence",
+      projectId: "project-a",
+      title: "REQ-001 验收记录",
+      content: "验收条件：入库后能在图谱里看到。\n实际结果：看到了。",
+      requirementCode: "req-001",
+      commitRef: "v2.9.0",
+      evidenceItems: [{ label: "跑了一遍导入", reference: "docs/acceptance" }],
+    },
+    { now, assets: [node] },
+  );
+
+  assert.equal(input.asset.assetType, "evidence");
+  assert.equal(input.asset.metadata.nodeId, "node-1");
+  assert.equal(input.asset.metadata.conclusion, "pending");
+  assert.equal(input.asset.metadata.commitRef, "v2.9.0");
+  assert.deepEqual(input.asset.metadata.evidenceItems, [
+    { label: "跑了一遍导入", reference: "docs/acceptance" },
+  ]);
+  assert.equal(input.asset.source.sourceType, "ai");
+
+  // 没给需求编号时报错，不写出一条挂不上的记录
+  assert.throws(
+    () =>
+      buildMcpCreateAsset(
+        {
+          assetType: "evidence",
+          projectId: "project-a",
+          title: "没挂需求的记录",
+          content: "正文",
+        },
+        { now, assets: [node] },
+      ),
+    /要挂在一个需求节点上/,
+  );
+
+  // 需求编号写错也报错，并提示先查清单
+  assert.throws(
+    () =>
+      buildMcpCreateAsset(
+        {
+          assetType: "evidence",
+          projectId: "project-a",
+          title: "编号写错了",
+          content: "正文",
+          requirementCode: "REQ-999",
+        },
+        { now, assets: [node] },
+      ),
+    /没有编号为「REQ-999」的需求节点/,
+  );
+});
+
+test("MCP 改验收记录：改内容可以，结论改不了", () => {
+  const node = createNodeAsset();
+  const record = {
+    id: "evidence-1",
+    projectId: "project-a",
+    assetType: "evidence",
+    title: "REQ-001 验收记录",
+    summary: "",
+    content: "验收条件：……",
+    metadata: {
+      nodeId: "node-1",
+      conclusion: "pending",
+      commitRef: "",
+      evidenceItems: [],
+    },
+    source: {
+      sourceType: "ai",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: "current-evidence-1",
+    status: "active",
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const input = buildMcpUpdateAsset(
+    record,
+    {
+      content: "实际结果：重跑一遍仍然通过。",
+      commitRef: "v2.9.1",
+      evidenceItems: [{ label: "重跑记录", reference: "" }],
+    },
+    { versionId, now, assets: [node, record] },
+  );
+
+  assert.equal(input.asset.content, "实际结果：重跑一遍仍然通过。");
+  assert.equal(input.asset.metadata.commitRef, "v2.9.1");
+  assert.deepEqual(input.asset.metadata.evidenceItems, [
+    { label: "重跑记录", reference: "" },
+  ]);
+  // 结论保持原样：MCP 的字段里根本没有结论
+  assert.equal(input.asset.metadata.conclusion, "pending");
+});

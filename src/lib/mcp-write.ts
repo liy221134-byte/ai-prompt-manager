@@ -31,6 +31,7 @@ export const mcpWritableAssetTypes = [
   "rule",
   "document",
   "graph_node",
+  "evidence",
   "template",
 ] as const;
 export type McpWritableAssetType = (typeof mcpWritableAssetTypes)[number];
@@ -63,6 +64,11 @@ export type McpAssetFields = {
   note?: string;
   // 模板
   outputFileName?: string;
+  // 验收记录：对应需求节点的编号、提交版本和证据清单。
+  // 注意这里没有 conclusion：结论只能由人在界面上确认。
+  requirementCode?: string;
+  commitRef?: string;
+  evidenceItems?: Array<{ label: string; reference: string }>;
 };
 
 export type McpAssetCreateInput = McpAssetFields & {
@@ -120,6 +126,35 @@ function resolveParentId(
   return parent.id;
 }
 
+// 验收记录用需求编号指定挂在哪条需求上；找不到就明确报错，不静默丢
+function resolveRequirementId(
+  assets: AssetData[],
+  projectId: string,
+  requirementCode: string | undefined,
+) {
+  const code = requirementCode?.trim();
+
+  if (!code) {
+    throw new Error(
+      "验收记录要挂在一个需求节点上，请用 requirementCode 指定需求编号（例如 REQ-001）。",
+    );
+  }
+
+  const node = listProjectGraphNodes(assets, projectId).find(
+    (item) =>
+      item.metadata.nodeType === "requirement" &&
+      item.metadata.code.toLocaleUpperCase() === code.toLocaleUpperCase(),
+  );
+
+  if (!node) {
+    throw new Error(
+      `项目里没有编号为「${code}」的需求节点，先用 list_graph_nodes 看一下。`,
+    );
+  }
+
+  return node.id;
+}
+
 // 编号唯一的口径和界面一致：同项目、同类型、忽略大小写
 function assertNodeCodeAvailable(
   assets: AssetData[],
@@ -175,6 +210,27 @@ function buildPromptAsset(
 }
 
 function createDraft(input: McpAssetCreateInput): AssetDraft {
+  if (input.assetType === "evidence") {
+    return {
+      assetType: "evidence",
+      title: input.title ?? "",
+      summary: input.summary ?? "",
+      content: input.content ?? "",
+      status: input.status ?? "active",
+      // nodeId 由调用方解析出来后传进来，这里先用空串，稍后覆盖
+      nodeId: "",
+      // AI 写进来的记录一律先待确认：通过与否由人说了算
+      conclusion: "pending",
+      commitRef: input.commitRef ?? "",
+      evidenceItems: (input.evidenceItems ?? []).map((item, index) => ({
+        key: `evidence-item-${index + 1}`,
+        label: item.label ?? "",
+        reference: item.reference ?? "",
+      })),
+      relations: [],
+    };
+  }
+
   if (input.assetType === "rule") {
     return {
       assetType: "rule",
@@ -284,6 +340,25 @@ function patchDraft(draft: AssetDraft, patch: McpAssetFields): AssetDraft {
     };
   }
 
+  if (draft.assetType === "evidence") {
+    return {
+      ...draft,
+      title,
+      content,
+      summary,
+      status,
+      commitRef: patch.commitRef ?? draft.commitRef,
+      // 结论不在这里改：patch 里根本没有这个字段
+      evidenceItems: patch.evidenceItems
+        ? patch.evidenceItems.map((item, index) => ({
+            key: `evidence-item-${index + 1}`,
+            label: item.label ?? "",
+            reference: item.reference ?? "",
+          }))
+        : draft.evidenceItems,
+    };
+  }
+
   if (draft.assetType === "template") {
     return {
       ...draft,
@@ -348,12 +423,9 @@ export function buildMcpCreateAsset(
   }
 
   const draft = createDraft(input);
-  const error = validateAssetDraft(draft);
 
-  if (error) {
-    throw new Error(error);
-  }
-
+  // 先把「按编号找目标」这类解析做完，再校验：
+  // 验收记录的需求节点、图谱节点的父节点都是校验的前置条件
   if (draft.assetType === "graph_node") {
     assertNodeCodeAvailable(options.assets, input.projectId, {
       id,
@@ -368,6 +440,20 @@ export function buildMcpCreateAsset(
         input.parentCode,
         id,
       ) ?? "";
+  }
+
+  if (draft.assetType === "evidence") {
+    draft.nodeId = resolveRequirementId(
+      options.assets,
+      input.projectId,
+      input.requirementCode,
+    );
+  }
+
+  const error = validateAssetDraft(draft);
+
+  if (error) {
+    throw new Error(error);
   }
 
   return markAiSource(
@@ -418,7 +504,8 @@ export function buildMcpUpdateAsset(
     asset.assetType !== "rule" &&
     asset.assetType !== "document" &&
     asset.assetType !== "template" &&
-    asset.assetType !== "graph_node"
+    asset.assetType !== "graph_node" &&
+    asset.assetType !== "evidence"
   ) {
     throw new Error("这一类资产还不支持通过 MCP 修改。");
   }
@@ -447,6 +534,14 @@ export function buildMcpUpdateAsset(
           asset.id,
         ) ?? "";
     }
+  }
+
+  if (draft.assetType === "evidence" && patch.requirementCode !== undefined) {
+    draft.nodeId = resolveRequirementId(
+      options.assets,
+      asset.projectId,
+      patch.requirementCode,
+    );
   }
 
   return buildUpdateAssetInput(asset, draft, {
