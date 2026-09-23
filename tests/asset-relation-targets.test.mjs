@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { listRelationTargetOptions } from "../src/lib/asset-list.ts";
+import {
+  listRelationTargetOptions,
+  resetMissingFilter,
+} from "../src/lib/asset-list.ts";
 
 function createAsset(overrides = {}) {
   return {
@@ -83,4 +86,13 @@ test("同时编辑提示词和资产时，两条都能被排除", () => {
     options.map((option) => option.id),
     ["prompt-b"],
   );
+});
+
+test("筛选目标还在时保持原值", () => {
+  assert.equal(resetMissingFilter("标签A", ["标签A", "标签B"]), "标签A");
+});
+
+test("筛选目标被删除或归档后筛选自动复位", () => {
+  assert.equal(resetMissingFilter("已归档的目标", ["标签A"]), "");
+  assert.equal(resetMissingFilter("", []), "");
 });

@@ -257,6 +257,12 @@ export function listRelationTargetOptions(
     .map((asset) => ({ id: asset.id, title: asset.title }));
 }
 
+// 筛选目标被删除或归档后，下拉里就没有这个选项了。
+// 这时把筛选复位，避免列表变成空的、又看不出是哪个条件造成的。
+export function resetMissingFilter(current: string, available: string[]) {
+  return current !== "" && !available.includes(current) ? "" : current;
+}
+
 // 默认项目里的提示词走的是老列表（不走 filterProjectAssets），
 // 所以标签和关系目标这两个筛选要在这里再判一次。
 export function matchesPromptLibraryFilters(

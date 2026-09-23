@@ -84,6 +84,7 @@ import {
   listRelationTargets,
   matchesPromptLibraryFilters,
   matchesAssetTypeFilter,
+  resetMissingFilter,
   type AssetTypeFilter,
 } from "@/lib/asset-list";
 import {
@@ -106,10 +107,7 @@ import {
   saveLastBackupAt,
   savePromptLibrary,
 } from "@/lib/prompt-storage";
-import {
-  downloadAssetBackup,
-  downloadPromptBackup,
-} from "@/lib/backup-download";
+import { downloadAssetBackup } from "@/lib/backup-download";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
 import {
   loadActiveProjectId,
@@ -483,6 +481,26 @@ export function PromptLibrary({
   const isDefaultProjectSelected = activeProject
     ? isDefaultProject(activeProject)
     : false;
+  // 组合筛选用到的选项：标签和「被指向过的目标」
+  const tagFilterOptions = useMemo(
+    () => (activeProjectId ? listProjectTags(assets, activeProjectId) : []),
+    [activeProjectId, assets],
+  );
+  const relationFilterOptions = useMemo(
+    () =>
+      activeProjectId ? listRelationTargets(assets, activeProjectId) : [],
+    [activeProjectId, assets],
+  );
+  // 筛选目标被删除或归档后，下拉选项会消失。这时按「没有筛选」处理，
+  // 免得列表变成空的、又看不出是哪个条件造成的。
+  const effectiveTagFilter = resetMissingFilter(
+    assetTagFilter,
+    tagFilterOptions,
+  );
+  const effectiveRelationFilter = resetMissingFilter(
+    assetRelationFilter,
+    relationFilterOptions.map((asset) => asset.id),
+  );
   // 2.0.0 过渡规则：提示词仍由现有提示词数据源提供，并且都属于默认项目。
   // 统一资产表当前承载规则、文档等新类型，写入路径切换后这里会统一。
   const projectPrompts = useMemo(
@@ -490,17 +508,17 @@ export function PromptLibrary({
       isDefaultProjectSelected && assetStatusFilter === "active"
         ? prompts.filter((prompt) =>
             matchesPromptLibraryFilters(prompt, {
-              ...(assetTagFilter ? { tag: assetTagFilter } : {}),
-              ...(assetRelationFilter
-                ? { relationTargetId: assetRelationFilter }
+              ...(effectiveTagFilter ? { tag: effectiveTagFilter } : {}),
+              ...(effectiveRelationFilter
+                ? { relationTargetId: effectiveRelationFilter }
                 : {}),
             }),
           )
         : [],
     [
-      assetRelationFilter,
       assetStatusFilter,
-      assetTagFilter,
+      effectiveRelationFilter,
+      effectiveTagFilter,
       isDefaultProjectSelected,
       prompts,
     ],
@@ -513,9 +531,9 @@ export function PromptLibrary({
     const visibleAssets = filterProjectAssets(assets, {
       projectId: activeProjectId,
       status: assetStatusFilter,
-      ...(assetTagFilter ? { tag: assetTagFilter } : {}),
-      ...(assetRelationFilter
-        ? { relationTargetId: assetRelationFilter }
+      ...(effectiveTagFilter ? { tag: effectiveTagFilter } : {}),
+      ...(effectiveRelationFilter
+        ? { relationTargetId: effectiveRelationFilter }
         : {}),
     });
 
@@ -524,10 +542,10 @@ export function PromptLibrary({
       : visibleAssets;
   }, [
     activeProjectId,
-    assetRelationFilter,
     assetStatusFilter,
-    assetTagFilter,
     assets,
+    effectiveRelationFilter,
+    effectiveTagFilter,
     isDefaultProjectSelected,
   ]);
   const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(
@@ -575,16 +593,6 @@ export function PromptLibrary({
       excludeAssetIds: editingIds,
     });
   }, [activeProjectId, assetEditorState, editorState, assets]);
-  // 组合筛选用到的选项：标签和「被指向过的目标」
-  const tagFilterOptions = useMemo(
-    () => (activeProjectId ? listProjectTags(assets, activeProjectId) : []),
-    [activeProjectId, assets],
-  );
-  const relationFilterOptions = useMemo(
-    () =>
-      activeProjectId ? listRelationTargets(assets, activeProjectId) : [],
-    [activeProjectId, assets],
-  );
   // 提示词详情要显示关系目标，这里把目标标题和「还能不能用」一起备好。
   // 目标可能是别的提示词、垃圾箱里的提示词，或已归档的规则/文档/技术档案。
   const promptRelationTargets = useMemo(() => {
@@ -1404,7 +1412,7 @@ export function PromptLibrary({
                 aria-label="按标签筛选资产"
                 className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
                 onChange={(event) => setAssetTagFilter(event.target.value)}
-                value={assetTagFilter}
+                value={effectiveTagFilter}
               >
                 <option value="">全部标签</option>
                 {tagFilterOptions.map((tag) => (
@@ -1425,7 +1433,7 @@ export function PromptLibrary({
                 aria-label="按关系目标筛选资产"
                 className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
                 onChange={(event) => setAssetRelationFilter(event.target.value)}
-                value={assetRelationFilter}
+                value={effectiveRelationFilter}
               >
                 <option value="">全部目标</option>
                 {relationFilterOptions.map((asset) => (
