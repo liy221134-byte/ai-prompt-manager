@@ -6,6 +6,7 @@ import {
   DatabaseBackup,
   FileCode2,
   FilePlus2,
+  GitBranch,
   GitMerge,
   Layers3,
   ListChecks,
@@ -37,6 +38,7 @@ import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
 import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
 import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
+import { GraphViewDrawer } from "@/components/graph-view-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -66,6 +68,10 @@ import {
   templateDraftToAsset,
   templateFileToDraft,
 } from "@/lib/template-asset";
+import {
+  findNodeWithSameCode,
+  listProjectGraphNodes,
+} from "@/lib/graph-node";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -81,6 +87,7 @@ import type {
   AssetData,
   AssetStatus,
   AssetVersionData,
+  GraphNodeType,
   RuleAssetData,
 } from "@/data/assets";
 import {
@@ -182,7 +189,11 @@ type ProjectDialogState =
   | { mode: "edit"; projectId: string };
 
 type AssetEditorState =
-  | { mode: "create"; assetType: EditableAssetType }
+  | {
+      mode: "create";
+      assetType: EditableAssetType;
+      initialNodeType?: GraphNodeType;
+    }
   | { mode: "edit"; assetId: string };
 
 // 资产列表把提示词和统一资产合并成一个可按类型筛选的列表。
@@ -277,6 +288,7 @@ export function PromptLibrary({
   const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [compileTemplateId, setCompileTemplateId] = useState("");
+  const [isGraphViewOpen, setIsGraphViewOpen] = useState(false);
   const templateFileInputRef = useRef<HTMLInputElement>(null);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
@@ -616,6 +628,9 @@ export function PromptLibrary({
       rule_pack: projectAssetEntries.filter(
         (asset) => asset.assetType === "rule_pack",
       ).length,
+      graph_node: projectAssetEntries.filter(
+        (asset) => asset.assetType === "graph_node",
+      ).length,
     }),
     [projectAssetEntries, projectPrompts],
   );
@@ -650,6 +665,21 @@ export function PromptLibrary({
     });
   }, [activeProjectId, assetEditorState, editorState, assets]);
   // 规则编译：候选集和「可能打架的规则」都从当前项目的资产里算
+  // 项目图谱：当前项目的节点，以及编辑器里可选的父节点（同类型、不含自己）
+  const graphNodes = useMemo(
+    () => (activeProjectId ? listProjectGraphNodes(assets, activeProjectId) : []),
+    [activeProjectId, assets],
+  );
+  const graphNodeOptions = useMemo(
+    () =>
+      graphNodes.map((node) => ({
+        id: node.id,
+        title: node.title,
+        code: node.metadata.code,
+        nodeType: node.metadata.nodeType,
+      })),
+    [graphNodes],
+  );
   const templatesInProject = useMemo(
     () => (activeProjectId ? listProjectTemplates(assets, activeProjectId) : []),
     [activeProjectId, assets],
@@ -1095,12 +1125,32 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     return "模板";
   }
 
+  if (assetType === "graph_node") {
+    return "图谱节点";
+  }
+
   return assetType === "tech_profile" ? "技术档案" : "文档";
 }
 
   async function handleAssetSave(draft: AssetDraft) {
     const now = new Date().toISOString();
     const typeLabel = readAssetTypeLabel(draft.assetType);
+
+    // 图谱节点的编号在同一个项目、同一类型里必须唯一
+    if (draft.assetType === "graph_node") {
+      const conflict = findNodeWithSameCode(graphNodes, {
+        id:
+          assetEditorState?.mode === "edit" ? assetEditorState.assetId : "",
+        nodeType: draft.nodeType,
+        code: draft.code,
+      });
+
+      if (conflict) {
+        throw new Error(
+          `编号「${conflict.metadata.code}」已经被「${conflict.title}」用了，换一个。`,
+        );
+      }
+    }
 
     if (assetEditorState?.mode === "edit") {
       if (!editingAsset) {
@@ -2011,6 +2061,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 <FilePlus2 aria-hidden="true" className="size-4" />
                 导入模板
               </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError) || !activeProjectId}
+                onClick={() => setIsGraphViewOpen(true)}
+                type="button"
+              >
+                <GitBranch aria-hidden="true" className="size-4" />
+                项目图谱
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -2346,6 +2405,26 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
         />
       )}
 
+      {isGraphViewOpen && activeProjectId && (
+        <GraphViewDrawer
+          assets={assets}
+          nodes={graphNodes}
+          onClose={() => setIsGraphViewOpen(false)}
+          onCreateNode={(nodeType) =>
+            setAssetEditorState({
+              mode: "create",
+              assetType: "graph_node",
+              initialNodeType: nodeType,
+            })
+          }
+          onOpenAsset={(asset) => {
+            setIsGraphViewOpen(false);
+            setAssetDetailId(asset.id);
+          }}
+          projectName={activeProject?.name ?? "当前项目"}
+        />
+      )}
+
       {isTrashOpen && (
         <PromptTrashDialog
           isLoading={isTrashLoading}
@@ -2415,9 +2494,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           key={
             assetEditorState.mode === "edit"
               ? `asset-editor-${assetEditorState.assetId}`
-              : `asset-editor-new-${assetEditorState.assetType}`
+              : `asset-editor-new-${assetEditorState.assetType}-${assetEditorState.initialNodeType ?? ""}`
           }
           adrOptions={adrOptions}
+          graphNodeOptions={graphNodeOptions}
+          initialNodeType={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialNodeType
+              : undefined
+          }
           relationTargetOptions={relationTargetOptions}
           onClose={() => setAssetEditorState(null)}
           onSave={handleAssetSave}
