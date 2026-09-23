@@ -31,6 +31,7 @@ import { AiCaptureDrawer } from "@/components/ai-capture-drawer";
 import { AssetCard } from "@/components/asset-card";
 import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
+import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -38,6 +39,14 @@ import {
   findProjectTechProfile,
   listAdrCandidates,
 } from "@/lib/tech-profile";
+import {
+  createRulePackFileFromAssets,
+  listPackMembers,
+  listPackMembersForInstall,
+  listProjectPacks,
+  planRulePackInstall,
+  toRulePackMember,
+} from "@/lib/rule-pack";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -107,7 +116,7 @@ import {
   saveLastBackupAt,
   savePromptLibrary,
 } from "@/lib/prompt-storage";
-import { downloadAssetBackup } from "@/lib/backup-download";
+import { downloadAssetBackup, downloadRulePack } from "@/lib/backup-download";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
 import {
   loadActiveProjectId,
@@ -225,6 +234,7 @@ export function PromptLibrary({
   // 组合筛选：标签和关系目标（空字符串表示不筛）
   const [assetTagFilter, setAssetTagFilter] = useState("");
   const [assetRelationFilter, setAssetRelationFilter] = useState("");
+  const [assetPackFilter, setAssetPackFilter] = useState("");
   const [assetDetailId, setAssetDetailId] = useState<string | null>(null);
   const [assetEditorState, setAssetEditorState] =
     useState<AssetEditorState | null>(null);
@@ -491,6 +501,11 @@ export function PromptLibrary({
       activeProjectId ? listRelationTargets(assets, activeProjectId) : [],
     [activeProjectId, assets],
   );
+  // 按规则包筛选：当前项目里装过哪些包
+  const packFilterOptions = useMemo(
+    () => (activeProjectId ? listProjectPacks(assets, activeProjectId) : []),
+    [activeProjectId, assets],
+  );
   // 筛选目标被删除或归档后，下拉选项会消失。这时按「没有筛选」处理，
   // 免得列表变成空的、又看不出是哪个条件造成的。
   const effectiveTagFilter = resetMissingFilter(
@@ -501,11 +516,18 @@ export function PromptLibrary({
     assetRelationFilter,
     relationFilterOptions.map((asset) => asset.id),
   );
+  const effectivePackFilter = resetMissingFilter(
+    assetPackFilter,
+    packFilterOptions.map((option) => option.packId),
+  );
   // 2.0.0 过渡规则：提示词仍由现有提示词数据源提供，并且都属于默认项目。
   // 统一资产表当前承载规则、文档等新类型，写入路径切换后这里会统一。
   const projectPrompts = useMemo(
     () =>
-      isDefaultProjectSelected && assetStatusFilter === "active"
+      // 提示词不属于任何规则包，按包筛选时提示词要一起隐藏
+      isDefaultProjectSelected &&
+      assetStatusFilter === "active" &&
+      !effectivePackFilter
         ? prompts.filter((prompt) =>
             matchesPromptLibraryFilters(prompt, {
               ...(effectiveTagFilter ? { tag: effectiveTagFilter } : {}),
@@ -519,6 +541,7 @@ export function PromptLibrary({
       assetStatusFilter,
       effectiveRelationFilter,
       effectiveTagFilter,
+      effectivePackFilter,
       isDefaultProjectSelected,
       prompts,
     ],
@@ -535,6 +558,7 @@ export function PromptLibrary({
       ...(effectiveRelationFilter
         ? { relationTargetId: effectiveRelationFilter }
         : {}),
+      ...(effectivePackFilter ? { packId: effectivePackFilter } : {}),
     });
 
     return isDefaultProjectSelected
@@ -546,6 +570,7 @@ export function PromptLibrary({
     assets,
     effectiveRelationFilter,
     effectiveTagFilter,
+    effectivePackFilter,
     isDefaultProjectSelected,
   ]);
   const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(
@@ -559,6 +584,9 @@ export function PromptLibrary({
       ).length,
       tech_profile: projectAssetEntries.filter(
         (asset) => asset.assetType === "tech_profile",
+      ).length,
+      rule_pack: projectAssetEntries.filter(
+        (asset) => asset.assetType === "rule_pack",
       ).length,
     }),
     [projectAssetEntries, projectPrompts],
@@ -731,7 +759,14 @@ export function PromptLibrary({
   const detailAsset = useMemo(() => {
     const match = assets.find((asset) => asset.id === assetDetailId);
 
-    return match && isEditableAssetData(match) ? match : null;
+    if (!match) {
+      return null;
+    }
+
+    // 规则包有自己的一套详情（成员清单、安装、导出）
+    return isEditableAssetData(match) || match.assetType === "rule_pack"
+      ? match
+      : null;
   }, [assetDetailId, assets]);
   const editingAsset = useMemo(() => {
     if (assetEditorState?.mode !== "edit") {
@@ -985,6 +1020,64 @@ export function PromptLibrary({
       }),
     );
     await reloadAssets();
+  }
+
+  // 安装规则包：把成员复制进目标项目，装过的跳过、不覆盖
+  async function handleInstallRulePack(projectId: string) {
+    if (detailAsset?.assetType !== "rule_pack") {
+      return;
+    }
+
+    const packAsset = detailAsset;
+
+    try {
+      const plan = planRulePackInstall({
+        pack: packAsset,
+        members: listPackMembersForInstall(
+          assets,
+          packAsset.id,
+          packAsset.projectId,
+        ).map(toRulePackMember),
+        existingAssets: assets,
+        targetProjectId: projectId,
+        now: new Date().toISOString(),
+      });
+
+      for (const asset of plan.assetsToCreate) {
+        await dataSource.createAsset({
+          asset,
+          versionId: asset.currentVersionId,
+          changeReason: "安装规则包",
+          versionReason: "initial",
+        });
+      }
+
+      await reloadAssets();
+
+      const projectName =
+        projects.find((project) => project.id === projectId)?.name ?? projectId;
+
+      notify(
+        `已安装到「${projectName}」：新增 ${plan.assetsToCreate.length} 条、跳过 ${plan.skipped.length} 条`,
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "安装规则包失败");
+    }
+  }
+
+  function handleExportRulePack() {
+    if (detailAsset?.assetType !== "rule_pack") {
+      return;
+    }
+
+    const file = createRulePackFileFromAssets({
+      pack: detailAsset,
+      members: listPackMembers(assets, detailAsset.id),
+      exportedAt: new Date().toISOString(),
+    });
+
+    downloadRulePack(file);
+    notify(`规则包已导出：${file.members.length} 条成员`);
   }
 
   function handleOpenTrash() {
@@ -1424,8 +1517,8 @@ export function PromptLibrary({
             </label>
           )}
 
-          {relationFilterOptions.length > 0 && (
-            <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
+      {relationFilterOptions.length > 0 && (
+        <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
               <span className="text-xs font-semibold text-slate-500">
                 关系目标
               </span>
@@ -1441,9 +1534,37 @@ export function PromptLibrary({
                     {asset.title}
                   </option>
                 ))}
-              </select>
-            </label>
-          )}
+          </select>
+        </label>
+      )}
+
+      {packFilterOptions.length > 0 && (
+        <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
+          <span className="text-xs font-semibold text-slate-500">规则包</span>
+          <select
+            aria-label="按规则包筛选资产"
+            className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
+            onChange={(event) => {
+              const nextPackId = event.target.value;
+
+              setAssetPackFilter(nextPackId);
+
+              // 提示词不属于任何规则包，停在「提示词」标签会看到空列表
+              if (nextPackId && assetTypeFilter === "prompt") {
+                setAssetTypeFilter("all");
+              }
+            }}
+            value={effectivePackFilter}
+          >
+            <option value="">全部规则包</option>
+            {packFilterOptions.map((option) => (
+              <option key={option.packId} value={option.packId}>
+                {option.title}（{option.memberCount}）
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
         </div>
 
         <div className="mt-3 flex flex-col gap-3 lg:flex-row">
@@ -1865,7 +1986,21 @@ export function PromptLibrary({
         />
       )}
 
-      {detailAsset && (
+      {detailAsset?.assetType === "rule_pack" && (
+        <RulePackDetailDrawer
+          activeProjectId={activeProjectId}
+          key={`pack-detail-${detailAsset.id}`}
+          members={listPackMembers(assets, detailAsset.id)}
+          onClose={() => setAssetDetailId(null)}
+          onExport={handleExportRulePack}
+          onInstall={handleInstallRulePack}
+          onOpenMember={(asset) => setAssetDetailId(asset.id)}
+          pack={detailAsset}
+          projects={projects}
+        />
+      )}
+
+      {detailAsset && isEditableAssetData(detailAsset) && (
         <AssetDetailDrawer
           asset={detailAsset}
           allAssets={assets}

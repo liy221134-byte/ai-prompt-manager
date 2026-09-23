@@ -2,6 +2,7 @@ import type {
   AssetData,
   AssetStatus,
   AssetType,
+  ProjectScale,
   RuleConfidence,
   AssetRelationType,
   RuleScope,
@@ -9,6 +10,7 @@ import type {
 } from "../data/assets.ts";
 import { readAssetRelations } from "../data/assets.ts";
 import type { PromptCardData } from "../data/prompts.ts";
+import { readAssetPackLink } from "./rule-pack.ts";
 
 export const assetTypeLabels: Record<AssetType, string> = {
   prompt: "提示词",
@@ -27,6 +29,7 @@ export const assetTypeFilterOptions = [
   "rule",
   "document",
   "tech_profile",
+  "rule_pack",
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
@@ -36,6 +39,7 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   rule: "规则",
   document: "文档",
   tech_profile: "技术档案",
+  rule_pack: "规则包",
 };
 
 export const assetRelationLabels: Record<AssetRelationType, string> = {
@@ -77,6 +81,13 @@ export const ruleConfidenceLabels: Record<RuleConfidence, string> = {
   verified: "已验证",
 };
 
+export const projectScaleLabels: Record<ProjectScale, string> = {
+  personal: "个人工具",
+  medium: "中型云端产品",
+  large: "大型平台",
+  regulated: "受监管项目",
+};
+
 export const ruleScopeLabels: Record<RuleScope, string> = {
   global: "全局",
   project: "项目",
@@ -106,6 +117,11 @@ export function isTrashedAsset(asset: AssetData) {
   return asset.deletedAt !== null;
 }
 
+// 资产是不是某个规则包带来的
+export function isAssetFromPack(asset: AssetData, packId: string) {
+  return readAssetPackLink(asset.metadata)?.packId === packId;
+}
+
 export function filterProjectAssets(
   assets: AssetData[],
   options: {
@@ -115,6 +131,8 @@ export function filterProjectAssets(
     // 组合筛选：标签和关系目标
     tag?: string;
     relationTargetId?: string;
+    // 按规则包筛选：只看某个包带来的资产
+    packId?: string;
   },
 ) {
   return assets.filter((asset) => {
@@ -127,6 +145,10 @@ export function filterProjectAssets(
     }
 
     if (options.tag && !readAssetTags(asset).includes(options.tag)) {
+      return false;
+    }
+
+    if (options.packId && !isAssetFromPack(asset, options.packId)) {
       return false;
     }
 
