@@ -85,8 +85,8 @@
 - [v2.0.0 整体验收](acceptance/v2.0.0.md)
 - [v2.1.0 整体验收](acceptance/v2.1.0.md)
 - [v2.1.1 整体验收](acceptance/v2.1.1.md)
-- [v2.1.2 验收清单（待签字）](acceptance/v2.1.2.md)
-- [v2.1.3 验收清单（MVP 加固与验收）](acceptance/v2.1.3.md)
+- [v2.1.2 验收清单（已签字）](acceptance/v2.1.2.md)
+- [v2.1.3 验收清单（统一加固，挂起）](acceptance/v2.1.3.md)
 
 ### 云端部署
 
