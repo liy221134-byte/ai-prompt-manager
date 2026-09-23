@@ -46,6 +46,9 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `src/lib/server/asset-database.ts`（19KB） | 项目与资产表结构、迁移、版本读取 | 改资产表结构 |
 | `src/data/*.ts` | 领域类型与校验（资产、项目、提示词） | 改字段或加类型时 |
 | `src/lib/asset-*.ts` | 资产草稿、列表筛选、版本与恢复的纯逻辑 | 改资产规则时 |
+| `src/lib/graph-import.ts`、`src/lib/schema-import.ts`、`src/lib/code-module-scan.ts` | 工程导入：草稿结构与编号查重、SQL 建表语句解析、代码目录归类 | 改导入规则时 |
+| `src/lib/server/code-directory-scan.ts`、`src/app/api/code-scan/route.ts` | 本机目录只读扫描与接口（仅本机模式） | 改扫描范围或上限时 |
+| `src/components/engineering-import-drawer.tsx` | 导入工程面板：两个来源、预览勾选、确认写库 | 改导入界面时 |
 | `src/lib/prompt-backup.ts` | 备份导出与导入预览 | 改备份范围时 |
 | `src/lib/server/runtime-config.ts` | 运行模式判定与配置失败关闭 | 改环境变量规则时 |
 | `supabase/migrations/*.sql` | 云端表结构、行级安全策略、RPC，每个迁移可重复执行 | 改云端结构时 |
@@ -60,8 +63,10 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 - 备份：当前只含提示词内容字段，不含生命周期字段；导入时取更新时间较新的一方，跳过垃圾箱
   中的记录。
 - AI：只有用户点击后才请求，提示词全文不写日志，密钥不进浏览器代码。
+- 工程导入：面板读 SQL 文本（或 `.sql` 文件）或扫本机目录（`/api/code-scan`，仅本机模式），
+  先把结果列成节点草稿，确认之后才走同一套资产写入；同编号默认跳过，不覆盖已有正文。
 
-## 测试分布（45 个文件，298 项，约 14 秒）
+## 测试分布（55 个文件，373 项，约 14 秒）
 
 | 文件前缀 | 覆盖内容 |
 | --- | --- |
@@ -72,6 +77,8 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `supabase-migration-postgres.test.mjs` | 在真实 Postgres 上跑整条迁移链、回填、隔离和资产函数（较慢，约 13 秒） |
 | `source-package-*.test.mjs` | 来源包上传校验、本地原文存储、上传接口、云端私有桶封装 |
 | `seed-pack.test.mjs` | 种子资产包格式门禁 |
+| `schema-import.test.mjs`、`graph-import.test.mjs` | 工程导入：SQL 建表语句解析、草稿编号查重与关系物化 |
+| `code-module-scan.test.mjs`、`code-directory-scan.test.mjs` | 代码目录分析：模块与接口草稿、扫描跳过规则与上限 |
 
 命名规律：`<领域>-<对象>.test.mjs`，新测试按同一规律命名。
 
