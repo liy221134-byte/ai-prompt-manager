@@ -14,8 +14,8 @@ function formatFileDate(date: Date) {
   return `${year}-${month}-${day}-${hours}${minutes}`;
 }
 
-function downloadJsonFile(fileName: string, content: string) {
-  const blob = new Blob([content], { type: "application/json;charset=utf-8" });
+function downloadFile(fileName: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const downloadLink = document.createElement("a");
 
@@ -25,6 +25,10 @@ function downloadJsonFile(fileName: string, content: string) {
   downloadLink.click();
   downloadLink.remove();
   URL.revokeObjectURL(url);
+}
+
+function downloadJsonFile(fileName: string, content: string) {
+  downloadFile(fileName, content, "application/json;charset=utf-8");
 }
 
 export function downloadPromptBackup(prompts: PromptCardData[]) {
@@ -63,4 +67,12 @@ export function downloadRulePack(file: RulePackFile) {
   downloadJsonFile(`rule-pack-${slug}-${date}.json`, JSON.stringify(file, null, 2));
 
   return file.exportedAt;
+}
+
+// 编译草稿按纯文本下载，文件名就是 AGENTS.md 这类产物名
+export function downloadCompiledDraft(draft: {
+  fileName: string;
+  content: string;
+}) {
+  downloadFile(draft.fileName, draft.content, "text/markdown;charset=utf-8");
 }

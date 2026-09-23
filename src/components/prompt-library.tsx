@@ -4,6 +4,7 @@ import {
   BookOpenText,
   CheckCircle2,
   DatabaseBackup,
+  FileCode2,
   GitMerge,
   Layers3,
   ListChecks,
@@ -33,6 +34,7 @@ import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
 import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
+import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -50,6 +52,12 @@ import {
   toRulePackMember,
 } from "@/lib/rule-pack";
 import type { RulePackFile } from "@/lib/seed-pack-import";
+import {
+  compileRuleDrafts,
+  listCompileCandidates,
+  listConflictCandidates,
+  type CompiledDraft,
+} from "@/lib/rule-compile";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
 import { PromptDetailDrawer } from "@/components/prompt-detail-drawer";
@@ -65,6 +73,7 @@ import type {
   AssetData,
   AssetStatus,
   AssetVersionData,
+  RuleAssetData,
 } from "@/data/assets";
 import {
   DEFAULT_PROJECT_ID,
@@ -101,6 +110,7 @@ import {
 } from "@/lib/asset-list";
 import {
   assetToDraft,
+  buildCompileDecisionInput,
   buildCreateAssetInput,
   buildUpdateAssetInput,
   createAssetId,
@@ -257,6 +267,7 @@ export function PromptLibrary({
   const [isSourcePackageImportOpen, setIsSourcePackageImportOpen] =
     useState(false);
   const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
+  const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
   // 记录优化记录属于哪条提示词，避免切换详情时显示上一条的回退入口。
@@ -625,6 +636,71 @@ export function PromptLibrary({
       excludeAssetIds: editingIds,
     });
   }, [activeProjectId, assetEditorState, editorState, assets]);
+  // 规则编译：候选集和「可能打架的规则」都从当前项目的资产里算
+  const compileCandidates = useMemo(
+    () => (activeProjectId ? listCompileCandidates(assets, activeProjectId) : null),
+    [activeProjectId, assets],
+  );
+  const compileConflicts = useMemo(
+    () =>
+      compileCandidates
+        ? listConflictCandidates(
+            compileCandidates.included.map((candidate) => candidate.rule),
+          )
+        : [],
+    [compileCandidates],
+  );
+  const packTitles = useMemo(() => {
+    const titles: Record<string, string> = {};
+
+    for (const asset of assets) {
+      if (asset.assetType === "rule_pack") {
+        titles[asset.id] = asset.title;
+      }
+    }
+
+    return titles;
+  }, [assets]);
+  const compileDrafts = useMemo(() => {
+    if (!compileOpenedAt || !compileCandidates) {
+      return null;
+    }
+
+    const profile = activeProjectId
+      ? findProjectTechProfile(assets, activeProjectId)
+      : null;
+    const stack =
+      profile && profile.assetType === "tech_profile"
+        ? profile.metadata.stack
+        : [];
+    const stackSummary = stack.length > 0
+      ? [
+          ...new Set(
+            stack
+              .map((entry) =>
+                [entry.name, entry.version].filter(Boolean).join(" "),
+              )
+              .filter(Boolean),
+          ),
+        ].join(" / ")
+      : "";
+
+    return compileRuleDrafts({
+      projectName: activeProject?.name ?? "当前项目",
+      rules: compileCandidates.included.map((candidate) => candidate.rule),
+      packTitles,
+      excludedCount: compileCandidates.excluded.length,
+      ...(stackSummary ? { profileSummary: `技术档案：${stackSummary}` } : {}),
+      now: compileOpenedAt,
+    });
+  }, [
+    activeProject,
+    activeProjectId,
+    assets,
+    compileCandidates,
+    compileOpenedAt,
+    packTitles,
+  ]);
   // 提示词详情要显示关系目标，这里把目标标题和「还能不能用」一起备好。
   // 目标可能是别的提示词、垃圾箱里的提示词，或已归档的规则/文档/技术档案。
   const promptRelationTargets = useMemo(() => {
@@ -1085,6 +1161,68 @@ export function PromptLibrary({
   }
 
   // 从文件导入规则包：库里没有这个包就先建包资产，再装成员
+  async function handleCompileDecision(
+    rule: RuleAssetData,
+    decision: "included" | "excluded",
+    note: string,
+  ) {
+    await dataSource.updateAsset(
+      buildCompileDecisionInput(rule, decision, note, {
+        versionId: createAssetVersionId(),
+        now: new Date().toISOString(),
+      }),
+    );
+    await reloadAssets();
+  }
+
+  function handleExcludeFromCompile(rule: RuleAssetData, note: string) {
+    return handleCompileDecision(rule, "excluded", note).then(() =>
+      notify(`「${rule.title}」不再参与编译`),
+    );
+  }
+
+  function handleIncludeInCompile(rule: RuleAssetData) {
+    return handleCompileDecision(rule, "included", "").then(() =>
+      notify(`「${rule.title}」恢复参与编译`),
+    );
+  }
+
+  // 编译草稿存成文档资产：文档类型写文件名，角色标「编译结果」
+  async function handleSaveCompiledDraft(draft: CompiledDraft) {
+    if (!activeProjectId) {
+      throw new Error("请先选择项目。");
+    }
+
+    const assetId = createAssetId("document");
+    const input = buildCreateAssetInput({
+      id: assetId,
+      projectId: activeProjectId,
+      draft: {
+        assetType: "document",
+        title: draft.fileName,
+        summary: `编译结果 · 参与编译 ${draft.ruleCount} 条规则`,
+        content: draft.content,
+        status: "active",
+        documentType: draft.fileName,
+        role: "compiled",
+        authority: false,
+        module: "",
+        effectiveVersion: "",
+        sourceLocation: "",
+        updateTrigger: "",
+        freshness: "",
+        lastVerifiedAt: "",
+        relations: [],
+      },
+      now: new Date().toISOString(),
+    });
+
+    await dataSource.createAsset(input);
+    await reloadAssets();
+    setAssetDetailId(assetId);
+    notify(`${draft.fileName} 已保存为文档资产`);
+  }
+
   async function handleInstallRulePackFile(
     file: RulePackFile,
     projectId: string,
@@ -1711,6 +1849,20 @@ export function PromptLibrary({
                 <Layers3 aria-hidden="true" className="size-4" />
                 导入规则包
               </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={
+                  isLoading ||
+                  Boolean(loadError) ||
+                  !activeProjectId ||
+                  !compileCandidates
+                }
+                onClick={() => setCompileOpenedAt(new Date().toISOString())}
+                type="button"
+              >
+                <FileCode2 aria-hidden="true" className="size-4" />
+                规则编译
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -2019,6 +2171,22 @@ export function PromptLibrary({
           onClose={() => setIsRulePackImportOpen(false)}
           onInstall={handleInstallRulePackFile}
           projects={projects}
+        />
+      )}
+
+      {compileOpenedAt && compileCandidates && compileDrafts && (
+        <RuleCompileDrawer
+          candidates={compileCandidates}
+          conflicts={compileConflicts}
+          drafts={compileDrafts}
+          isBusy={isLoading}
+          onClose={() => setCompileOpenedAt(null)}
+          onExcludeRule={handleExcludeFromCompile}
+          onIncludeRule={handleIncludeInCompile}
+          onNotify={notify}
+          onSaveDraft={handleSaveCompiledDraft}
+          packTitles={packTitles}
+          projectName={activeProject?.name ?? "当前项目"}
         />
       )}
 
