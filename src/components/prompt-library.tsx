@@ -17,6 +17,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  ShieldCheck,
   Target,
   Trash2,
   WandSparkles,
@@ -41,6 +42,7 @@ import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
 import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
 import { GraphViewDrawer } from "@/components/graph-view-drawer";
 import { EngineeringImportDrawer } from "@/components/engineering-import-drawer";
+import { EngineeringBaselineDrawer } from "@/components/engineering-baseline-drawer";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
@@ -96,13 +98,16 @@ import {
   DEFAULT_PROJECT_ID,
   archiveProject,
   createProjectData,
+  type ProjectRiskLevel,
   createProjectId,
   isDefaultProject,
+  projectRiskLevelLabels,
   projectStageLabels,
   projectStatusLabels,
   reactivateProject,
   resolveActiveProject,
   updateProjectDetails,
+  updateProjectRiskLevel,
   type ProjectData,
 } from "@/data/projects";
 import {
@@ -195,6 +200,8 @@ type AssetEditorState =
       mode: "create";
       assetType: EditableAssetType;
       initialNodeType?: GraphNodeType;
+      initialDocumentType?: string;
+      initialTitle?: string;
     }
   | { mode: "edit"; assetId: string };
 
@@ -291,6 +298,8 @@ export function PromptLibrary({
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [compileTemplateId, setCompileTemplateId] = useState("");
   const [isGraphViewOpen, setIsGraphViewOpen] = useState(false);
+  const [isEngineeringBaselineOpen, setIsEngineeringBaselineOpen] =
+    useState(false);
   const [isEngineeringImportOpen, setIsEngineeringImportOpen] = useState(false);
   const templateFileInputRef = useRef<HTMLInputElement>(null);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
@@ -1055,6 +1064,7 @@ export function PromptLibrary({
       name: values.name,
       description: values.description,
       stage: values.stage,
+      riskLevel: values.riskLevel,
     });
     const nextProjects = await dataSource.createProject(project);
 
@@ -1083,6 +1093,34 @@ export function PromptLibrary({
     setProjects(nextProjects);
     setProjectDialog(null);
     notify("项目已更新");
+  }
+
+  // 工程基线里切换质量等级：只改等级，其他项目字段原样带回
+  async function handleChangeProjectLevel(level: ProjectRiskLevel) {
+    if (!activeProject) {
+      return;
+    }
+
+    const nextProjects = await dataSource.updateProject(
+      updateProjectRiskLevel(activeProject, level),
+    );
+
+    setProjects(nextProjects);
+    notify(`质量等级已改为「${projectRiskLevelLabels[level]}」`);
+  }
+
+  // 缺哪份基线文档就从这里进编辑器，标题和文档类型已经填好
+  function handleCreateBaselineDocument(input: {
+    title: string;
+    documentType: string;
+  }) {
+    setIsEngineeringBaselineOpen(false);
+    setAssetEditorState({
+      mode: "create",
+      assetType: "document",
+      initialTitle: input.title,
+      initialDocumentType: input.documentType,
+    });
   }
 
   async function handleArchiveProject() {
@@ -2082,6 +2120,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 <FolderTree aria-hidden="true" className="size-4" />
                 导入工程
               </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-sky-300 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={isLoading || Boolean(loadError) || !activeProjectId}
+                onClick={() => setIsEngineeringBaselineOpen(true)}
+                type="button"
+              >
+                <ShieldCheck aria-hidden="true" className="size-4" />
+                工程基线
+              </button>
               {(assetTypeFilter === "rule" ||
                 assetTypeFilter === "all") && (
                 <button
@@ -2454,6 +2501,20 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
         />
       )}
 
+      {isEngineeringBaselineOpen && activeProject && (
+        <EngineeringBaselineDrawer
+          assets={assets}
+          onChangeLevel={handleChangeProjectLevel}
+          onClose={() => setIsEngineeringBaselineOpen(false)}
+          onCreateDocument={handleCreateBaselineDocument}
+          onOpenAsset={(assetId) => {
+            setIsEngineeringBaselineOpen(false);
+            setAssetDetailId(assetId);
+          }}
+          project={activeProject}
+        />
+      )}
+
       {isTrashOpen && (
         <PromptTrashDialog
           isLoading={isTrashLoading}
@@ -2523,13 +2584,23 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           key={
             assetEditorState.mode === "edit"
               ? `asset-editor-${assetEditorState.assetId}`
-              : `asset-editor-new-${assetEditorState.assetType}-${assetEditorState.initialNodeType ?? ""}`
+              : `asset-editor-new-${assetEditorState.assetType}-${assetEditorState.initialNodeType ?? ""}-${assetEditorState.initialDocumentType ?? ""}`
           }
           adrOptions={adrOptions}
           graphNodeOptions={graphNodeOptions}
+          initialDocumentType={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialDocumentType
+              : undefined
+          }
           initialNodeType={
             assetEditorState.mode === "create"
               ? assetEditorState.initialNodeType
+              : undefined
+          }
+          initialTitle={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialTitle
               : undefined
           }
           relationTargetOptions={relationTargetOptions}

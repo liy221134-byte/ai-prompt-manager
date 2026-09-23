@@ -30,6 +30,7 @@ import {
   ASSET_TITLE_MAX_LENGTH,
   assetToDraft,
   createEmptyAssetDraft,
+  withInitialFields,
   editableAssetStatuses,
   validateAssetDraft,
   type AssetDraft,
@@ -61,6 +62,9 @@ type AssetEditorDrawerProps = {
   }>;
   // 新建图谱节点时预选的节点类型（从图谱视图进来的那一类）
   initialNodeType?: GraphNodeType;
+  // 新建文档时的预填（从工程基线的缺口进来）：文档类型和标题先写上
+  initialDocumentType?: string;
+  initialTitle?: string;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -174,15 +178,20 @@ export function AssetEditorDrawer({
   relationTargetOptions = [],
   graphNodeOptions = [],
   initialNodeType,
+  initialDocumentType,
+  initialTitle,
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
   const [draft, setDraft] = useState<AssetDraft>(() =>
     asset
       ? assetToDraft(asset)
-      : createEmptyAssetDraft(assetType, {
-          ...(initialNodeType ? { nodeType: initialNodeType } : {}),
-        }),
+      : withInitialFields(
+          createEmptyAssetDraft(assetType, {
+            ...(initialNodeType ? { nodeType: initialNodeType } : {}),
+          }),
+          { documentType: initialDocumentType, title: initialTitle },
+        ),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);

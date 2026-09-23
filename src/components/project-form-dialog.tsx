@@ -11,8 +11,10 @@ import {
 import { useState } from "react";
 
 import {
+  projectRiskLevelOptions,
   projectStageOptions,
   type ProjectData,
+  type ProjectRiskLevel,
   type ProjectStage,
 } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
@@ -21,6 +23,7 @@ export type ProjectFormValues = {
   name: string;
   description: string;
   stage: ProjectStage;
+  riskLevel: ProjectRiskLevel;
 };
 
 type ProjectFormDialogProps = {
@@ -44,6 +47,9 @@ export function ProjectFormDialog({
   const [description, setDescription] = useState(project?.description ?? "");
   const [stage, setStage] = useState<ProjectStage>(
     project?.stage ?? "development",
+  );
+  const [riskLevel, setRiskLevel] = useState<ProjectRiskLevel>(
+    project?.riskLevel ?? "personal",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
@@ -78,7 +84,7 @@ export function ProjectFormDialog({
     }
 
     await runAction(
-      () => onSubmit({ name, description, stage }),
+      () => onSubmit({ name, description, stage, riskLevel }),
       isEdit ? "项目更新失败。" : "项目创建失败。",
     );
   }
@@ -171,6 +177,29 @@ export function ProjectFormDialog({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-semibold text-slate-700">
+              质量等级
+            </span>
+            <select
+              className="h-11 rounded-lg border border-[#dbe7f5] bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              onChange={(event) =>
+                setRiskLevel(event.target.value as ProjectRiskLevel)
+              }
+              value={riskLevel}
+            >
+              {projectRiskLevelOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs leading-5 text-slate-500">
+              等级决定这个项目该有哪些工程文档、发布前要做哪些检查。
+              工具栏「工程基线」里能看到缺口对照。
+            </span>
           </label>
 
           {errorMessage && (

@@ -14,6 +14,7 @@ import {
   createEmptyAssetDraft,
   isEditableAssetData,
   validateAssetDraft,
+  withInitialFields,
 } from "../src/lib/asset-draft.ts";
 import {
   assetStatusLabels,
@@ -490,4 +491,35 @@ test("摘要为空时用正文首行代替", () => {
     ),
     "第一行",
   );
+});
+
+test("从工程基线缺口进来时预填标题和文档类型", () => {
+  const draft = createEmptyAssetDraft("document");
+  const prefilled = withInitialFields(draft, {
+    title: "架构与请求链路",
+    documentType: "架构说明",
+  });
+
+  assert.equal(prefilled.assetType, "document");
+  assert.equal(prefilled.title, "架构与请求链路");
+  assert.equal(prefilled.documentType, "架构说明");
+  // 正文仍然空着，等用户自己写
+  assert.equal(prefilled.content, "");
+
+  // 只传标题时不改文档类型；标题为空白时不覆盖
+  assert.equal(
+    withInitialFields(draft, { title: "环境变量清单" }).documentType,
+    draft.documentType,
+  );
+  assert.equal(withInitialFields(draft, { title: "   " }).title, "");
+
+  // 非文档类型的草稿只补标题
+  const ruleDraft = createEmptyAssetDraft("rule");
+  const titledRule = withInitialFields(ruleDraft, {
+    title: "必须校验输入",
+    documentType: "架构说明",
+  });
+
+  assert.equal(titledRule.title, "必须校验输入");
+  assert.equal(titledRule.assetType, "rule");
 });

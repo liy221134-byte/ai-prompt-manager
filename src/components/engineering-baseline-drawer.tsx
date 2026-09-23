@@ -1,0 +1,227 @@
+"use client";
+
+import { CircleCheck, CircleDashed, ShieldCheck, X } from "lucide-react";
+
+import type { AssetData } from "@/data/assets";
+import {
+  projectRiskLevelOptions,
+  type ProjectData,
+  type ProjectRiskLevel,
+} from "@/data/projects";
+import { useModalBehavior } from "@/hooks/use-modal-behavior";
+import {
+  listDocumentGaps,
+  readQualityProfile,
+  summarizeDocumentGaps,
+} from "@/lib/quality-level";
+
+type EngineeringBaselineDrawerProps = {
+  project: ProjectData;
+  assets: AssetData[];
+  onChangeLevel: (level: ProjectRiskLevel) => Promise<void>;
+  onCreateDocument: (input: { title: string; documentType: string }) => void;
+  onOpenAsset: (assetId: string) => void;
+  onClose: () => void;
+};
+
+// 工程基线：按项目质量等级列出该有的文档、该关注的规则方向和发布前检查。
+// 只做对照和跳转，不自动创建任何东西。
+export function EngineeringBaselineDrawer({
+  project,
+  assets,
+  onChangeLevel,
+  onCreateDocument,
+  onOpenAsset,
+  onClose,
+}: EngineeringBaselineDrawerProps) {
+  const profile = readQualityProfile(project.riskLevel);
+  const gaps = listDocumentGaps({
+    level: project.riskLevel,
+    assets,
+    projectId: project.id,
+  });
+  const summary = summarizeDocumentGaps(gaps);
+
+  useModalBehavior(onClose);
+
+  return (
+    <>
+      <button
+        aria-label="关闭工程基线"
+        className="absolute inset-0 cursor-default bg-slate-950/30"
+        onClick={onClose}
+        type="button"
+      />
+      <aside
+        aria-labelledby="engineering-baseline-title"
+        aria-modal="true"
+        className="absolute inset-y-0 right-0 flex w-full flex-col bg-white shadow-2xl sm:max-w-3xl"
+        role="dialog"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+              <ShieldCheck aria-hidden="true" className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500">工程基线</p>
+              <h2
+                className="mt-1 break-words text-lg font-semibold text-slate-950"
+                id="engineering-baseline-title"
+              >
+                {project.name}
+              </h2>
+            </div>
+          </div>
+
+          <button
+            aria-label="关闭工程基线"
+            className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+        </header>
+
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-5 py-3 sm:px-6">
+          {projectRiskLevelOptions.map((option) => (
+            <button
+              aria-pressed={project.riskLevel === option.value}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                project.riskLevel === option.value
+                  ? "bg-sky-600 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+              key={option.value}
+              onClick={() => {
+                if (project.riskLevel !== option.value) {
+                  void onChangeLevel(option.value);
+                }
+              }}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+          <p className="text-sm leading-6 text-slate-600">{profile.summary}</p>
+
+          <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">
+                这个等级必须有的工程文档
+              </h3>
+              <span className="text-xs text-slate-500">
+                已有 {summary.satisfied}／{summary.total}
+                {summary.missing > 0 ? `，还缺 ${summary.missing}` : ""}
+              </span>
+            </div>
+
+            <ul className="mt-2 divide-y divide-slate-100">
+              {gaps.map((gap) => (
+                <li
+                  className="flex items-start gap-3 py-2"
+                  key={gap.document.key}
+                >
+                  {gap.satisfied ? (
+                    <CircleCheck
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                    />
+                  ) : (
+                    <CircleDashed
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 text-slate-400"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {gap.document.title}
+                      </span>
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
+                        {gap.document.documentType}
+                      </span>
+                      {gap.satisfied && (
+                        <span className="text-[11px] text-emerald-700">
+                          已有：{gap.assetTitle}
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                      {gap.document.reason}
+                    </p>
+                  </div>
+                  {gap.satisfied ? (
+                    <button
+                      className="shrink-0 text-xs font-semibold text-sky-700 hover:underline"
+                      onClick={() => onOpenAsset(gap.assetId ?? "")}
+                      type="button"
+                    >
+                      打开
+                    </button>
+                  ) : (
+                    <button
+                      className="shrink-0 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
+                      onClick={() =>
+                        onCreateDocument({
+                          title: gap.document.title,
+                          documentType: gap.document.documentType,
+                        })
+                      }
+                      type="button"
+                    >
+                      新建文档
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              判定口径：同一个项目里「活跃、没进垃圾箱」的文档资产，
+              文档类型对得上或标题一样就算有；草稿和归档不算。
+              新建时已经帮你填好标题和文档类型，正文可以从
+              `templates/engineering` 里对应模板复制。
+            </p>
+          </section>
+
+          <section className="mt-4 rounded-xl border border-slate-200 px-4 py-3">
+            <h3 className="text-sm font-semibold text-slate-700">
+              这个等级建议关注的规则方向
+            </h3>
+            <ul className="mt-2 flex flex-col gap-1">
+              {profile.ruleFocus.map((item) => (
+                <li className="text-sm leading-6 text-slate-600" key={item}>
+                  · {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              这里只提示方向，装不装规则包、立不立规则由你定。
+            </p>
+          </section>
+
+          <section className="mt-4 rounded-xl border border-slate-200 px-4 py-3">
+            <h3 className="text-sm font-semibold text-slate-700">
+              这个等级发布前必须完成的检查
+            </h3>
+            <ul className="mt-2 flex flex-col gap-1">
+              {profile.releaseChecks.map((item) => (
+                <li className="text-sm leading-6 text-slate-600" key={item}>
+                  □ {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              这一版只列要求，不记录「这次做没做」；发布门禁与演练记录排在下一个版本。
+            </p>
+          </section>
+        </div>
+      </aside>
+    </>
+  );
+}

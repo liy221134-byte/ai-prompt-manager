@@ -163,6 +163,23 @@ export type AssetDraft =
   | TemplateAssetDraft
   | GraphNodeAssetDraft;
 
+// 新建时的预填：只补标题和文档类型，其他字段保持空草稿的默认值。
+// 从「工程基线」缺口点进来时用，让用户少填两个字段。
+export function withInitialFields(
+  draft: AssetDraft,
+  input: { title?: string; documentType?: string },
+): AssetDraft {
+  const title = input.title?.trim();
+  const documentType = input.documentType?.trim();
+  const titled = title ? { ...draft, title } : draft;
+
+  if (titled.assetType === "document" && documentType) {
+    return { ...titled, documentType };
+  }
+
+  return titled;
+}
+
 // 有编辑入口的资产类型：规则、文档和技术档案；提示词继续走既有流程，
 // 规则包由导入和打包生成，不做手工编辑。
 export function isEditableAssetData(value: AssetData): value is EditableAssetData {
