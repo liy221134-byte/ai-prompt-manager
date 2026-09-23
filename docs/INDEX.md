@@ -97,7 +97,7 @@
 - [v2.1.0 整体验收](acceptance/v2.1.0.md)
 - [v2.1.1 整体验收](acceptance/v2.1.1.md)
 - [v2.1.2 验收清单（已签字）](acceptance/v2.1.2.md)
-- [v2.1.3 验收清单（统一加固，挂起）](acceptance/v2.1.3.md)
+- [v2.1.3 验收清单（MVP 加固，已并入 v2.11.0）](acceptance/v2.1.3.md)
 - [v2.2.0 验收清单（规则包与种子资产包导入）](acceptance/v2.2.0.md)
 - [v2.3.0 验收清单（规则编译）](acceptance/v2.3.0.md)
 - [v2.4.0 验收清单（模板中心）](acceptance/v2.4.0.md)
@@ -107,6 +107,7 @@
 - [v2.8.0 验收清单（项目质量等级与工程基线）](acceptance/v2.8.0.md)
 - [v2.9.0 验收清单（验收证据链）](acceptance/v2.9.0.md)
 - [v2.10.0 验收清单（发布门禁与故障演练）](acceptance/v2.10.0.md)
+- [v2.11.0 验收清单（统一加固与验收）](acceptance/v2.11.0.md)
 
 ### 云端部署
 
