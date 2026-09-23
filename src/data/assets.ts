@@ -9,6 +9,7 @@ export const assetTypes = [
   "document",
   "template",
   "tech_profile",
+  "rule_pack",
   "source_package",
 ] as const;
 export type AssetType = (typeof assetTypes)[number];
@@ -57,6 +58,33 @@ export type RuleType = (typeof ruleTypes)[number];
 
 export const ruleScopes = ["global", "project", "task"] as const;
 export type RuleScope = (typeof ruleScopes)[number];
+
+// 规则的可信度：从「假设」到「已验证」，跟着资产包一起走
+export const ruleConfidences = [
+  "hypothesis",
+  "provisional",
+  "verified",
+] as const;
+export type RuleConfidence = (typeof ruleConfidences)[number];
+
+// 规则适用的项目规模，和项目地图里的分级对齐
+export const projectScales = [
+  "personal",
+  "medium",
+  "large",
+  "regulated",
+] as const;
+export type ProjectScale = (typeof projectScales)[number];
+
+// 规则的编译去向：现在只存着，供后续版本生成 AGENTS.md 等交付物时用
+export const compileTargets = [
+  "agents",
+  "readme",
+  "start_prompt",
+  "template",
+  "none",
+] as const;
+export type CompileTarget = (typeof compileTargets)[number];
 
 // 规则的作用层级、执行阶段、优先级、生命周期和覆盖权限。
 // 这些都是扩展字段，允许留空；旧数据缺字段按空值处理，不做强制补齐。
@@ -125,6 +153,16 @@ export type PromptAssetMetadata = {
   relations?: AssetRelation[];
 };
 
+// 资产来自哪个规则包：记在成员资产上，包详情反查成员，避免两处各存一份
+export type AssetPackLink = {
+  packId: string;
+  packItemId: string;
+  packVersion: string;
+  // 包内原始类型：method／playbook／rule／template／case_note 等，保留以便回溯
+  packAssetType: string;
+  projectScale: ProjectScale[];
+};
+
 export type RuleAssetMetadata = {
   ruleType: RuleType;
   scope: RuleScope;
@@ -137,6 +175,12 @@ export type RuleAssetMetadata = {
   overrideScope?: RuleOverrideScope;
   evidence?: string;
   verification?: string;
+  // 为什么立这条规则、从原文哪句话来：冲突裁决和回溯时要用
+  rationale?: string;
+  sourceExcerpt?: string;
+  confidence?: RuleConfidence;
+  compileTarget?: CompileTarget[];
+  pack?: AssetPackLink;
   relations?: AssetRelation[];
 };
 
@@ -150,6 +194,7 @@ export type DocumentAssetMetadata = {
   updateTrigger?: string;
   freshness?: string;
   lastVerifiedAt?: string;
+  pack?: AssetPackLink;
   relations?: AssetRelation[];
 };
 
@@ -165,6 +210,16 @@ export type TechStackEntry = {
 
 export type TechProfileAssetMetadata = {
   stack: TechStackEntry[];
+  relations?: AssetRelation[];
+};
+
+// 规则包：可复用的规则集合（一个项目可以装多个包）。
+// 包自己的发布状态直接用资产状态，不再另存一份。
+export type RulePackAssetMetadata = {
+  packVersion: string;
+  packConfidence: RuleConfidence;
+  projectScale: ProjectScale[];
+  sourceNote: string;
   relations?: AssetRelation[];
 };
 
@@ -194,6 +249,10 @@ export type TechProfileAssetData = AssetBase<
   "tech_profile",
   TechProfileAssetMetadata
 >;
+export type RulePackAssetData = AssetBase<
+  "rule_pack",
+  RulePackAssetMetadata
+>;
 export type ReservedAssetType = "template" | "source_package";
 export type ReservedAssetData = AssetBase<
   ReservedAssetType,
@@ -205,6 +264,7 @@ export type AssetData =
   | RuleAssetData
   | DocumentAssetData
   | TechProfileAssetData
+  | RulePackAssetData
   | ReservedAssetData;
 
 type AssetVersionBase<TType extends AssetType, TMetadata> = {
@@ -240,6 +300,10 @@ export type TechProfileAssetVersionData = AssetVersionBase<
   "tech_profile",
   TechProfileAssetMetadata
 >;
+export type RulePackAssetVersionData = AssetVersionBase<
+  "rule_pack",
+  RulePackAssetMetadata
+>;
 export type ReservedAssetVersionData = AssetVersionBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -250,6 +314,7 @@ export type AssetVersionData =
   | RuleAssetVersionData
   | DocumentAssetVersionData
   | TechProfileAssetVersionData
+  | RulePackAssetVersionData
   | ReservedAssetVersionData;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -301,6 +366,40 @@ function isOptionalRelations(value: unknown) {
     value === undefined ||
     (Array.isArray(value) && value.every((item) => isAssetRelation(item)))
   );
+}
+
+function isOptionalEnumList<T extends string>(
+  value: unknown,
+  options: readonly T[],
+) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every((item) => options.includes(item as T)))
+  );
+}
+
+function isAssetPackLink(value: unknown): value is AssetPackLink {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.packId === "string" &&
+    Boolean(value.packId.trim()) &&
+    typeof value.packItemId === "string" &&
+    Boolean(value.packItemId.trim()) &&
+    typeof value.packVersion === "string" &&
+    typeof value.packAssetType === "string" &&
+    Array.isArray(value.projectScale) &&
+    value.projectScale.every((item) =>
+      projectScales.includes(item as ProjectScale),
+    )
+  );
+}
+
+function isOptionalPackLink(value: unknown) {
+  return value === undefined || isAssetPackLink(value);
 }
 
 function isTechStackEntry(value: unknown): value is TechStackEntry {
@@ -399,7 +498,31 @@ function isRuleAssetMetadata(value: unknown): value is RuleAssetMetadata {
     isOptionalEnum(value.overrideScope, ruleOverrideScopes) &&
     isOptionalString(value.evidence) &&
     isOptionalString(value.verification) &&
+    isOptionalString(value.rationale) &&
+    isOptionalString(value.sourceExcerpt) &&
+    isOptionalEnum(value.confidence, ruleConfidences) &&
+    isOptionalEnumList(value.compileTarget, compileTargets) &&
+    isOptionalPackLink(value.pack) &&
     isOptionalStringList(value.techContext) &&
+    isOptionalRelations(value.relations)
+  );
+}
+
+function isRulePackAssetMetadata(
+  value: unknown,
+): value is RulePackAssetMetadata {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.packVersion === "string" &&
+    ruleConfidences.includes(value.packConfidence as RuleConfidence) &&
+    Array.isArray(value.projectScale) &&
+    value.projectScale.every((item) =>
+      projectScales.includes(item as ProjectScale),
+    ) &&
+    typeof value.sourceNote === "string" &&
     isOptionalRelations(value.relations)
   );
 }
@@ -419,6 +542,7 @@ function isDocumentAssetMetadata(
     isOptionalString(value.updateTrigger) &&
     isOptionalString(value.freshness) &&
     isOptionalString(value.lastVerifiedAt) &&
+    isOptionalPackLink(value.pack) &&
     isOptionalRelations(value.relations)
   );
 }
@@ -467,6 +591,10 @@ export function isAssetData(value: unknown): value is AssetData {
 
   if (value.assetType === "tech_profile") {
     return isTechProfileAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "rule_pack") {
+    return isRulePackAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -526,6 +654,10 @@ export function isAssetVersionData(
 
   if (value.assetType === "tech_profile") {
     return isTechProfileAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "rule_pack") {
+    return isRulePackAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -640,6 +772,18 @@ export type RuleMetadataForm = {
   overrideScope: RuleOverrideScope | "";
   evidence: string;
   verification: string;
+  rationale: string;
+  sourceExcerpt: string;
+  confidence: RuleConfidence | "";
+  compileTarget: CompileTarget[];
+};
+
+// 规则包编辑器用的表单形状：包级字段单独一组，成员不在这里维护
+export type RulePackMetadataForm = {
+  packVersion: string;
+  packConfidence: RuleConfidence;
+  projectScale: ProjectScale[];
+  sourceNote: string;
 };
 
 export type DocumentMetadataForm = {
@@ -670,6 +814,15 @@ function readStringList(value: unknown) {
     : [];
 }
 
+function readEnumList<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): T[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is T => allowed.includes(item as T))
+    : [];
+}
+
 export function normalizeRuleMetadata(value: unknown): RuleMetadataForm {
   const source = isRecord(value) ? value : {};
 
@@ -689,6 +842,27 @@ export function normalizeRuleMetadata(value: unknown): RuleMetadataForm {
     overrideScope: readEnum(source.overrideScope, ruleOverrideScopes),
     evidence: readString(source.evidence),
     verification: readString(source.verification),
+    rationale: readString(source.rationale),
+    sourceExcerpt: readString(source.sourceExcerpt),
+    confidence: readEnum(source.confidence, ruleConfidences),
+    compileTarget: readEnumList(source.compileTarget, compileTargets),
+  };
+}
+
+export function normalizeRulePackMetadata(
+  value: unknown,
+): RulePackMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    packVersion: readString(source.packVersion),
+    packConfidence: ruleConfidences.includes(
+      source.packConfidence as RuleConfidence,
+    )
+      ? (source.packConfidence as RuleConfidence)
+      : "provisional",
+    projectScale: readEnumList(source.projectScale, projectScales),
+    sourceNote: readString(source.sourceNote),
   };
 }
 

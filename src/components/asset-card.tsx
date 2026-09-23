@@ -19,6 +19,7 @@ const typeStyles: Record<AssetType, string> = {
   document: "bg-amber-50 text-amber-700 ring-amber-200",
   template: "bg-violet-50 text-violet-700 ring-violet-200",
   tech_profile: "bg-sky-50 text-sky-700 ring-sky-200",
+  rule_pack: "bg-indigo-50 text-indigo-700 ring-indigo-200",
   source_package: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 

@@ -15,6 +15,7 @@ export const assetTypeLabels: Record<AssetType, string> = {
   document: "文档",
   template: "模板",
   tech_profile: "技术档案",
+  rule_pack: "规则包",
   source_package: "来源包",
 };
 

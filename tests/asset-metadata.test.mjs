@@ -5,6 +5,7 @@ import {
   createAssetVersion,
   isAssetData,
   normalizeDocumentMetadata,
+  normalizeRulePackMetadata,
   normalizeRuleMetadata,
 } from "../src/data/assets.ts";
 
@@ -96,6 +97,89 @@ test("文档元数据能区分来源、工作稿、权威版和编译结果", ()
   assert.equal(legacy.role, "");
   assert.equal(legacy.authority, false);
   assert.equal(legacy.module, "");
+});
+
+test("规则能带上理由、来源片段、可信度和编译去向", () => {
+  const rule = createRule({
+    ruleType: "must",
+    scope: "project",
+    rationale: "上一版因为漏了检查出过事故",
+    sourceExcerpt: "提交前必须跑完整检查。",
+    confidence: "provisional",
+    compileTarget: ["agents", "none"],
+  });
+
+  assert.equal(isAssetData(rule), true);
+
+  const form = normalizeRuleMetadata(rule.metadata);
+  assert.equal(form.rationale, "上一版因为漏了检查出过事故");
+  assert.equal(form.sourceExcerpt, "提交前必须跑完整检查。");
+  assert.equal(form.confidence, "provisional");
+  assert.deepEqual(form.compileTarget, ["agents", "none"]);
+});
+
+test("认不出来的可信度和编译去向按空值处理", () => {
+  const form = normalizeRuleMetadata({
+    ruleType: "must",
+    scope: "project",
+    confidence: "很有把握",
+    compileTarget: ["agents", "某个不存在的去向"],
+  });
+
+  assert.equal(form.confidence, "");
+  assert.deepEqual(form.compileTarget, ["agents"]);
+});
+
+test("规则包元数据校验包版本、可信度和适用规模", () => {
+  const pack = {
+    ...createRule({}),
+    id: "rule-pack-a",
+    assetType: "rule_pack",
+    metadata: {
+      packVersion: "0.2.1",
+      packConfidence: "verified",
+      projectScale: ["personal", "medium"],
+      sourceNote: "来自工程方法种子资产包",
+    },
+  };
+
+  assert.equal(isAssetData(pack), true);
+
+  const form = normalizeRulePackMetadata(pack.metadata);
+  assert.equal(form.packVersion, "0.2.1");
+  assert.equal(form.packConfidence, "verified");
+  assert.deepEqual(form.projectScale, ["personal", "medium"]);
+  assert.equal(form.sourceNote, "来自工程方法种子资产包");
+});
+
+test("规则包缺关键字段或字段乱填时不通过校验", () => {
+  const missing = {
+    ...createRule({}),
+    id: "rule-pack-b",
+    assetType: "rule_pack",
+    metadata: { packVersion: "1.0.0" },
+  };
+
+  assert.equal(isAssetData(missing), false);
+
+  const weird = {
+    ...createRule({}),
+    id: "rule-pack-c",
+    assetType: "rule_pack",
+    metadata: {
+      packVersion: "1.0.0",
+      packConfidence: "很有把握",
+      projectScale: ["personal"],
+      sourceNote: "",
+    },
+  };
+
+  assert.equal(isAssetData(weird), false);
+
+  const legacyForm = normalizeRulePackMetadata(undefined);
+  assert.equal(legacyForm.packVersion, "");
+  assert.equal(legacyForm.packConfidence, "provisional");
+  assert.deepEqual(legacyForm.projectScale, []);
 });
 
 test("扩展字段给了非法值时视为数据不合法", () => {
