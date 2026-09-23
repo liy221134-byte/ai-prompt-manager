@@ -283,23 +283,35 @@ function createDraft(input: McpAssetCreateInput): AssetDraft {
     };
   }
 
-  return {
-    assetType: "document",
-    title: input.title ?? "",
-    summary: input.summary ?? "",
-    content: input.content ?? "",
-    status: input.status ?? "active",
-    documentType: input.documentType ?? "参考资料",
-    role: input.role ?? "",
-    authority: false,
-    module: "",
-    effectiveVersion: "",
-    sourceLocation: "",
-    updateTrigger: "",
-    freshness: "",
-    lastVerifiedAt: "",
-    relations: [],
-  };
+  if (input.assetType === "document") {
+    return {
+      assetType: "document",
+      title: input.title ?? "",
+      summary: input.summary ?? "",
+      content: input.content ?? "",
+      status: input.status ?? "active",
+      documentType: input.documentType ?? "参考资料",
+      role: input.role ?? "",
+      authority: false,
+      module: "",
+      effectiveVersion: "",
+      sourceLocation: "",
+      updateTrigger: "",
+      freshness: "",
+      lastVerifiedAt: "",
+      relations: [],
+    };
+  }
+
+  // 剩下的一律拒绝：写工具只开放 mcpWritableAssetTypes 里那几种，
+  // 别因为漏写分支把「发布记录」这类只许人工填的资产悄悄当文档建出来
+  throw new Error(
+    `${input.assetType} 不支持通过 MCP 新建：${readWritableTypeHint()}`,
+  );
+}
+
+function readWritableTypeHint() {
+  return `可以写的是${mcpWritableAssetTypes.join("、")}。发布记录是人工可验证证据，只能在界面上填。`;
 }
 
 // 只覆盖这次真的传了的字段，没传的一律保持原样

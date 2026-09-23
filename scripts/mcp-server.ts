@@ -390,7 +390,8 @@ export function createMcpServer(options: McpServerOptions) {
     {
       description:
         "新建资产（提示词／规则／文档／图谱节点／模板／验收记录）。只新增，不覆盖任何已有内容。" +
-        "验收记录的结论一律先是「待确认」，AI 不能把它标成通过。",
+        "验收记录的结论一律先是「待确认」，AI 不能把它标成通过。" +
+        "发布记录不在可写范围：门禁是人工可验证证据，只能在界面上填。",
       inputSchema: z.object({
         assetType: z.enum(mcpWritableAssetTypes).describe("资产类型"),
         project: z.string().optional().describe("项目名称或项目标识，省略则用默认项目"),

@@ -396,3 +396,58 @@ test("MCP 改验收记录：改内容可以，结论改不了", () => {
   // 结论保持原样：MCP 的字段里根本没有结论
   assert.equal(input.asset.metadata.conclusion, "pending");
 });
+
+test("发布记录不给 AI 写：新建和修改都拒绝", () => {
+  assert.throws(
+    () =>
+      buildMcpCreateAsset(
+        {
+          assetType: "release_record",
+          projectId: "project-a",
+          title: "v2.10.0 发布记录",
+          content: "这次发布……",
+        },
+        { now, assets: [] },
+      ),
+    /不支持通过 MCP 新建/,
+  );
+
+  const record = {
+    id: "release-1",
+    projectId: "project-a",
+    assetType: "release_record",
+    title: "v2.10.0 发布记录",
+    summary: "",
+    content: "这次发布……",
+    metadata: {
+      version: "v2.10.0",
+      releasedAt: "2026-09-23",
+      result: "in_progress",
+      rollbackTarget: "",
+      gates: [],
+    },
+    source: {
+      sourceType: "manual",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: "current-release-1",
+    status: "active",
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  assert.throws(
+    () =>
+      buildMcpUpdateAsset(
+        record,
+        { content: "AI 想把门禁全勾上" },
+        { versionId, now, assets: [record] },
+      ),
+    /还不支持通过 MCP 修改/,
+  );
+});
