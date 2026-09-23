@@ -40,7 +40,7 @@
 - [v2.4.0 模板中心设计](superpowers/specs/2026-09-23-v2.4.0-template-center-design.md)
 - [v2.5.0 项目图谱设计](superpowers/specs/2026-09-23-v2.5.0-project-graph-design.md)
 - [v2.6.0 工程导入设计](superpowers/specs/2026-09-23-v2.6.0-engineering-import-design.md)
-- [v2.7.0 MCP 动态查询设计（待确认）](superpowers/specs/2026-09-23-v2.7.0-mcp-dynamic-query-design.md)
+- [v2.7.0 MCP 动态查询设计](superpowers/specs/2026-09-23-v2.7.0-mcp-dynamic-query-design.md)
 - [2.1.2 技术档案、资产关系与备份升级设计](superpowers/specs/2026-09-22-v2.1.2-tech-profile-relations-backup-design.md)
 - [2.1.1 文档包导入与元数据编辑设计](superpowers/specs/2026-09-21-v2.1.1-import-and-metadata-design.md)
 - [提示词写入路径切换到统一资产设计](superpowers/specs/2026-09-21-v2.1.0-prompt-write-path-design.md)
@@ -63,6 +63,7 @@
 ### 数据与运维
 
 - [v2.1.0 交接与待办](operations/v2.1.0-handoff.md)
+- [本机 MCP 服务](operations/mcp-server.md)
 - [数据库结构](database-schema.md)
 - [数据库迁移](operations/database-migrations.md)
 - [可用性与恢复目标](operations/availability-targets.md)
@@ -98,6 +99,7 @@
 - [v2.4.0 验收清单（模板中心）](acceptance/v2.4.0.md)
 - [v2.5.0 验收清单（项目图谱）](acceptance/v2.5.0.md)
 - [v2.6.0 验收清单（工程导入）](acceptance/v2.6.0.md)
+- [v2.7.0 验收清单（MCP 动态查询）](acceptance/v2.7.0.md)
 
 ### 云端部署
 
