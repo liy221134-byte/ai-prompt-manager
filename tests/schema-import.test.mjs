@@ -123,10 +123,15 @@ test("生成草稿：编号按 TBL- 表名，正文带字段清单", () => {
   assert.match(drafts[1].content, /- project_id → projects\(id\)/);
 });
 
-test("外键指向同批的表时建依赖关系，指向批外的表不建", () => {
+test("外键按编号记关系：批内的直接对上，批外的带上 TBL- 编号等落库时再判", () => {
   const drafts = buildSchemaImportDrafts(parseSqlSchema(sql));
 
   assert.deepEqual(drafts[1].relations, [
+    {
+      targetCode: "TBL-users",
+      relationType: "depends_on",
+      note: "user_id → users(id)",
+    },
     {
       targetCode: "TBL-projects",
       relationType: "depends_on",

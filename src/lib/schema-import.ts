@@ -636,7 +636,13 @@ function buildCodeResolver(tables: SchemaTable[]) {
         return qualified;
       }
 
-      return codeByBareName.get(foreignKey.refTable.toLowerCase()) ?? "";
+      const bare = codeByBareName.get(foreignKey.refTable.toLowerCase());
+
+      // 批内没有这张表时按 TBL-表名 记一个编号：
+      // 库里已经有同编号的节点就连上（增量导入下一份迁移时用得上），
+      // 没有的话物化阶段会丢掉这条关系。
+      // bare 是空串表示批内有两张同名表，这时不能猜，直接不建关系。
+      return bare ?? `TBL-${foreignKey.refTable}`;
     },
   };
 }
