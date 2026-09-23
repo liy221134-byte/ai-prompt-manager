@@ -104,6 +104,7 @@ prompt_versions_user_expires_idx (user_id, expires_at)
 | `description` | `text` | 是 | 项目说明 |
 | `status` | `text` | 是 | `active` 或 `archived` |
 | `stage` | `text` | 是 | 原型、开发、发布或维护阶段 |
+| `risk_level` | `text` | 是 | 质量等级：`personal`、`low_risk`、`user_data`、`high_sensitive`，默认 `personal` |
 | `created_at` | `timestamptz` | 是 | 创建时间 |
 | `updated_at` | `timestamptz` | 是 | 更新时间 |
 | `archived_at` | `timestamptz` | 否 | 归档时间 |

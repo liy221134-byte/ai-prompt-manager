@@ -15,13 +15,15 @@
 202609210001  add_prompt_optimize
 20260921054052 add_project_asset_foundation
 20260921120000 add_asset_prompt_storage
+20260922040501 add_source_package_storage
+20260923150000 add_project_risk_level
 ```
 
 `add_project_asset_foundation` 属于 2.0.0，`add_asset_prompt_storage` 属于 2.1.0，
 后者只新增统一资产上的原子操作函数（进垃圾箱、合并提交、恢复合并、优化提交、回到优化前、
 清空垃圾箱），不改表结构，也不删除 2.0.0 的旧函数，保证回滚到旧代码时仍然可用。
 
-六条迁移已于 2026-09-22 全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
+八条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
 
 ## 三种执行方式
 
@@ -58,6 +60,10 @@
 
 ## 事实记录
 
+- 2026-09-23：`add_project_risk_level` 随 2.8.0 推送到 `main`，由 GitHub 集成自动应用到线上；
+  用只读接口核对线上 `projects` 已存在 `risk_level`（老项目值为 `personal`）。
+  同一天顺带核对：早先的 `add_source_package_storage` 也已生效（私有桶 `source-packages`
+  存在，file_size_limit 20 MB，public=false）。
 - 2026-09-22：`add_project_asset_foundation` 与 `add_asset_prompt_storage` 应用到线上，
   迁移历史现有 6 条。应用前在真实 Postgres 17 上完整执行过一遍，发现并修好了 2.0.0
   迁移里的两处错误：
