@@ -23,6 +23,7 @@ import type {
 } from "@/data/assets";
 import { readAssetRelations } from "@/data/assets";
 import { assetRelationLabels } from "@/lib/asset-list";
+import { describeNodeEvidence } from "@/lib/acceptance-evidence";
 import { readTemplateVariables } from "@/lib/template-asset";
 import { buildNodePath } from "@/lib/graph-node";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
@@ -30,6 +31,7 @@ import type { EditableAssetData } from "@/lib/asset-draft";
 import {
   assetStatusLabels,
   describeAssetSummary,
+  evidenceConclusionLabels,
   graphNodeTypeLabels,
   ruleConfidenceLabels,
   ruleScopeLabels,
@@ -129,11 +131,47 @@ function describeAssetMetadata(
     const path = buildNodePath(nodes, asset.id)
       .map((node) => node.title)
       .join(" → ");
+    // 需求节点顺带把验收情况亮出来：几条通过、几条没过
+    const evidence =
+      asset.metadata.nodeType === "requirement"
+        ? describeNodeEvidence(allAssets, asset.projectId, asset.id)
+        : null;
 
     return [
       `节点类型：${graphNodeTypeLabels[asset.metadata.nodeType]}`,
       ...(asset.metadata.code ? [`编号：${asset.metadata.code}`] : []),
       ...(path ? [`路径：${path}`] : []),
+      ...(evidence && evidence.total > 0
+        ? [
+            `验收记录：${evidence.total} 条，通过 ${evidence.passed} 条${
+              evidence.failed > 0 ? `，未通过 ${evidence.failed} 条` : ""
+            }${evidence.pending > 0 ? `，待确认 ${evidence.pending} 条` : ""}`,
+          ]
+        : asset.metadata.nodeType === "requirement"
+          ? ["验收记录：还没有，去「工程基线」里的验收覆盖建一条"]
+          : []),
+    ];
+  }
+
+  if (asset.assetType === "evidence") {
+    const requirement = allAssets.find(
+      (item) => item.id === asset.metadata.nodeId,
+    );
+    const requirementLabel = requirement
+      ? `${requirement.title}${
+          "code" in requirement.metadata && requirement.metadata.code
+            ? `（${requirement.metadata.code}）`
+            : ""
+        }`
+      : "还没挂到需求节点上";
+
+    return [
+      `结论：${evidenceConclusionLabels[asset.metadata.conclusion]}`,
+      `对应需求：${requirementLabel}`,
+      ...(asset.metadata.commitRef
+        ? [`提交版本：${asset.metadata.commitRef}`]
+        : []),
+      `证据：${asset.metadata.evidenceItems.length} 条`,
     ];
   }
 
@@ -174,7 +212,17 @@ export function AssetDetailDrawer({
   const [isConfirmingArchive, setIsConfirmingArchive] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const typeLabel = asset.assetType === "rule" ? "规则" : "文档";
+  // 详情抽屉支持的类型比编辑器多，标签按类型给全，别都落到「文档」
+  const typeLabel =
+    asset.assetType === "rule"
+      ? "规则"
+      : asset.assetType === "graph_node"
+        ? "图谱节点"
+        : asset.assetType === "evidence"
+          ? "验收记录"
+          : asset.assetType === "template"
+            ? "模板"
+            : "文档";
   const isBusy = isRestoring || isUpdatingStatus;
   const isLoadingVersions = versionState?.key !== versionsKey;
   const versionsError =
@@ -476,7 +524,11 @@ export function AssetDetailDrawer({
 
           <section className="mt-8 border-t border-slate-200 pt-7">
             <h3 className="text-sm font-semibold text-slate-900">
-              {asset.assetType === "rule" ? "规则正文" : "文档正文"}
+              {asset.assetType === "rule"
+                ? "规则正文"
+                : asset.assetType === "evidence"
+                  ? "验收条件、步骤与实际结果"
+                  : "文档正文"}
             </h3>
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-5 sm:px-5">
               <MarkdownContent content={asset.content} />

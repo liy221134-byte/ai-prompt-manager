@@ -202,6 +202,7 @@ type AssetEditorState =
       initialNodeType?: GraphNodeType;
       initialDocumentType?: string;
       initialTitle?: string;
+      initialNodeId?: string;
     }
   | { mode: "edit"; assetId: string };
 
@@ -642,6 +643,9 @@ export function PromptLibrary({
       ).length,
       graph_node: projectAssetEntries.filter(
         (asset) => asset.assetType === "graph_node",
+      ).length,
+      evidence: projectAssetEntries.filter(
+        (asset) => asset.assetType === "evidence",
       ).length,
     }),
     [projectAssetEntries, projectPrompts],
@@ -1120,6 +1124,20 @@ export function PromptLibrary({
       assetType: "document",
       initialTitle: input.title,
       initialDocumentType: input.documentType,
+    });
+  }
+
+  // 缺口里的「新建验收记录」：进编辑器时已经选好对应的需求节点
+  function handleCreateRequirementEvidence(input: {
+    nodeId: string;
+    title: string;
+  }) {
+    setIsEngineeringBaselineOpen(false);
+    setAssetEditorState({
+      mode: "create",
+      assetType: "evidence",
+      initialTitle: input.title,
+      initialNodeId: input.nodeId,
     });
   }
 
@@ -2507,6 +2525,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onChangeLevel={handleChangeProjectLevel}
           onClose={() => setIsEngineeringBaselineOpen(false)}
           onCreateDocument={handleCreateBaselineDocument}
+          onCreateEvidence={handleCreateRequirementEvidence}
           onOpenAsset={(assetId) => {
             setIsEngineeringBaselineOpen(false);
             setAssetDetailId(assetId);
@@ -2596,6 +2615,11 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           initialNodeType={
             assetEditorState.mode === "create"
               ? assetEditorState.initialNodeType
+              : undefined
+          }
+          initialNodeId={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialNodeId
               : undefined
           }
           initialTitle={

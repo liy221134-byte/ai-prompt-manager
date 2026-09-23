@@ -12,10 +12,12 @@ import {
   ruleLifecycles,
   ruleOverrideScopes,
   documentRoles,
+  evidenceConclusions,
   assetRelationTypes,
   type AssetStatus,
   type AssetRelationType,
   type DocumentRole,
+  type EvidenceConclusion,
   type RuleLevel,
   type RuleLifecycle,
   type RuleOverrideScope,
@@ -41,6 +43,7 @@ import {
   assetRelationLabels,
   assetStatusLabels,
   documentTypeOptions,
+  evidenceConclusionLabels,
   graphNodeTypeLabels,
   ruleScopeLabels,
   ruleTypeLabels,
@@ -65,6 +68,8 @@ type AssetEditorDrawerProps = {
   // 新建文档时的预填（从工程基线的缺口进来）：文档类型和标题先写上
   initialDocumentType?: string;
   initialTitle?: string;
+  // 新建验收记录时的预填：先在草稿里选好对应需求节点
+  initialNodeId?: string;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -180,6 +185,7 @@ export function AssetEditorDrawer({
   initialNodeType,
   initialDocumentType,
   initialTitle,
+  initialNodeId,
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -189,6 +195,7 @@ export function AssetEditorDrawer({
       : withInitialFields(
           createEmptyAssetDraft(assetType, {
             ...(initialNodeType ? { nodeType: initialNodeType } : {}),
+            ...(initialNodeId ? { nodeId: initialNodeId } : {}),
           }),
           { documentType: initialDocumentType, title: initialTitle },
         ),
@@ -207,7 +214,9 @@ export function AssetEditorDrawer({
           ? "模板"
           : assetType === "graph_node"
             ? "图谱节点"
-            : "技术档案";
+            : assetType === "evidence"
+              ? "验收记录"
+              : "技术档案";
   const isEditing = Boolean(asset);
 
   function updateDraft(patch: Record<string, unknown>) {
@@ -526,6 +535,173 @@ export function AssetEditorDrawer({
                   <p className="text-xs leading-5 text-slate-500 sm:col-span-2">
                     父节点只能选同类型的节点；编号在同一个项目、同一类型里不能重复。
                   </p>
+                </div>
+              ) : draft.assetType === "evidence" ? (
+                <div className="flex flex-col gap-4 sm:col-span-2">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>对应需求节点</span>
+                      <select
+                        className={inputClassName}
+                        onChange={(event) =>
+                          updateDraft({ nodeId: event.target.value })
+                        }
+                        value={draft.nodeId}
+                      >
+                        <option value="">（请选择）</option>
+                        {graphNodeOptions
+                          .filter(
+                            (option) => option.nodeType === "requirement",
+                          )
+                          .map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.code ? `${option.code} ` : ""}
+                              {option.title}
+                            </option>
+                          ))}
+                      </select>
+                      <span className="text-xs leading-5 text-slate-500">
+                        只能选需求节点；覆盖统计按这个字段算。
+                      </span>
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>结论</span>
+                      <select
+                        className={inputClassName}
+                        onChange={(event) =>
+                          updateDraft({
+                            conclusion: event.target.value as EvidenceConclusion,
+                          })
+                        }
+                        value={draft.conclusion}
+                      >
+                        {evidenceConclusions.map((conclusion) => (
+                          <option key={conclusion} value={conclusion}>
+                            {evidenceConclusionLabels[conclusion]}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-xs leading-5 text-slate-500">
+                        新建默认「待确认」；「通过」要你看过证据再点。
+                      </span>
+                    </label>
+                  </div>
+
+                  <TextField
+                    label="提交版本"
+                    onChange={(value) => updateDraft({ commitRef: value })}
+                    placeholder="提交号或版本标签，例如 v2.9.0 / 7fdfb5a"
+                    value={draft.commitRef}
+                  />
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={labelClassName}>证据</span>
+                      <button
+                        className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        onClick={() =>
+                          setDraft((current) =>
+                            current.assetType === "evidence"
+                              ? {
+                                  ...current,
+                                  evidenceItems: [
+                                    ...current.evidenceItems,
+                                    {
+                                      key: `evidence-item-${Date.now()}-${current.evidenceItems.length}`,
+                                      label: "",
+                                      reference: "",
+                                    },
+                                  ],
+                                }
+                              : current,
+                          )
+                        }
+                        type="button"
+                      >
+                        加一条证据
+                      </button>
+                    </div>
+
+                    {draft.evidenceItems.length === 0 ? (
+                      <p className="text-xs leading-5 text-slate-500">
+                        还没有证据。写清「怎么验的、看到什么」，链接或文件路径填在第二列。
+                      </p>
+                    ) : (
+                      <ul className="flex flex-col gap-2">
+                        {draft.evidenceItems.map((item) => (
+                          <li className="flex flex-wrap items-center gap-2" key={item.key}>
+                            <input
+                              aria-label="证据说明"
+                              className={`${inputClassName} min-w-40 flex-1`}
+                              onChange={(event) =>
+                                setDraft((current) =>
+                                  current.assetType === "evidence"
+                                    ? {
+                                        ...current,
+                                        evidenceItems: current.evidenceItems.map(
+                                          (entry) =>
+                                            entry.key === item.key
+                                              ? {
+                                                  ...entry,
+                                                  label: event.target.value,
+                                                }
+                                              : entry,
+                                        ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              placeholder="说明：例如「跑了一遍导入，41 条资产核对通过」"
+                              value={item.label}
+                            />
+                            <input
+                              aria-label="证据链接或路径"
+                              className={`${inputClassName} min-w-40 flex-1`}
+                              onChange={(event) =>
+                                setDraft((current) =>
+                                  current.assetType === "evidence"
+                                    ? {
+                                        ...current,
+                                        evidenceItems: current.evidenceItems.map(
+                                          (entry) =>
+                                            entry.key === item.key
+                                              ? {
+                                                  ...entry,
+                                                  reference: event.target.value,
+                                                }
+                                              : entry,
+                                        ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              placeholder="链接或文件路径，可留空"
+                              value={item.reference}
+                            />
+                            <button
+                              className="rounded-lg border border-slate-300 px-2.5 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                              onClick={() =>
+                                setDraft((current) =>
+                                  current.assetType === "evidence"
+                                    ? {
+                                        ...current,
+                                        evidenceItems:
+                                          current.evidenceItems.filter(
+                                            (entry) => entry.key !== item.key,
+                                          ),
+                                      }
+                                    : current,
+                                )
+                              }
+                              type="button"
+                            >
+                              删除
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm leading-6 text-slate-500 sm:col-span-2">
@@ -925,7 +1101,9 @@ export function AssetEditorDrawer({
                       ? "模板正文"
                       : assetType === "graph_node"
                         ? "节点说明"
-                        : "选型说明"}
+                        : assetType === "evidence"
+                          ? "验收条件、步骤与实际结果"
+                          : "选型说明"}
               </span>
               <textarea
                 className="min-h-72 rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

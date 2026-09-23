@@ -9,6 +9,7 @@ import {
   type ProjectRiskLevel,
 } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
+import { rankRequirementsByEvidence } from "@/lib/acceptance-evidence";
 import {
   listDocumentGaps,
   readQualityProfile,
@@ -20,6 +21,7 @@ type EngineeringBaselineDrawerProps = {
   assets: AssetData[];
   onChangeLevel: (level: ProjectRiskLevel) => Promise<void>;
   onCreateDocument: (input: { title: string; documentType: string }) => void;
+  onCreateEvidence: (input: { nodeId: string; title: string }) => void;
   onOpenAsset: (assetId: string) => void;
   onClose: () => void;
 };
@@ -31,6 +33,7 @@ export function EngineeringBaselineDrawer({
   assets,
   onChangeLevel,
   onCreateDocument,
+  onCreateEvidence,
   onOpenAsset,
   onClose,
 }: EngineeringBaselineDrawerProps) {
@@ -41,6 +44,10 @@ export function EngineeringBaselineDrawer({
     projectId: project.id,
   });
   const summary = summarizeDocumentGaps(gaps);
+  const requirementEvidence = rankRequirementsByEvidence(assets, project.id);
+  const unverifiedCount = requirementEvidence.filter(
+    (item) => item.summary.passed === 0,
+  ).length;
 
   useModalBehavior(onClose);
 
@@ -186,6 +193,86 @@ export function EngineeringBaselineDrawer({
               文档类型对得上或标题一样就算有；草稿和归档不算。
               新建时已经帮你填好标题和文档类型，正文可以从
               `templates/engineering` 里对应模板复制。
+            </p>
+          </section>
+
+          <section className="mt-4 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">
+                验收覆盖
+              </h3>
+              <span className="text-xs text-slate-500">
+                需求 {requirementEvidence.length} 个
+                {unverifiedCount > 0
+                  ? `，其中 ${unverifiedCount} 个还没有通过验收`
+                  : "，全部有通过的验收记录"}
+              </span>
+            </div>
+
+            {requirementEvidence.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-500">
+                这个项目还没有需求节点。先去「项目图谱」建需求，再回来做验收。
+              </p>
+            ) : (
+              <ul className="mt-2 divide-y divide-slate-100">
+                {requirementEvidence.map(({ node, summary: evidence }) => (
+                  <li className="flex items-start gap-3 py-2" key={node.id}>
+                    {evidence.passed > 0 ? (
+                      <CircleCheck
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                      />
+                    ) : (
+                      <CircleDashed
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0 text-slate-400"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs text-slate-500">
+                          {node.metadata.code}
+                        </span>
+                        <span className="truncate text-sm text-slate-800">
+                          {node.title}
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        验收 {evidence.total} 条：通过 {evidence.passed}、未通过{" "}
+                        {evidence.failed}、待确认 {evidence.pending}、例外{" "}
+                        {evidence.exception}
+                      </p>
+                    </div>
+                    {evidence.total > 0 && (
+                      <button
+                        className="shrink-0 text-xs font-semibold text-sky-700 hover:underline"
+                        onClick={() => onOpenAsset(node.id)}
+                        type="button"
+                      >
+                        打开需求
+                      </button>
+                    )}
+                    <button
+                      className="shrink-0 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
+                      onClick={() =>
+                        onCreateEvidence({
+                          nodeId: node.id,
+                          // 标题里不再重复编号：编号和标题在面板上本来就挨着显示
+                          title: `${node.title} 验收记录`,
+                        })
+                      }
+                      type="button"
+                    >
+                      新建验收记录
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              口径：需求节点里还没有「通过」的验收记录就算未覆盖；
+              结论默认「待确认」，改成「通过」要你看过证据自己点。
             </p>
           </section>
 

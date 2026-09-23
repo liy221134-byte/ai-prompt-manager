@@ -6,6 +6,9 @@ import {
   type DocumentAssetData,
   type DocumentAssetMetadata,
   type DocumentRole,
+  type EvidenceConclusion,
+  type EvidenceAssetData,
+  type EvidenceAssetMetadata,
   type GraphNodeAssetData,
   type GraphNodeAssetMetadata,
   type GraphNodeType,
@@ -21,6 +24,7 @@ import {
   createInitialAssetVersionId,
   defaultDocumentType,
   normalizeDocumentMetadata,
+  normalizeEvidenceMetadata,
   normalizeGraphNodeMetadata,
   normalizeRuleMetadata,
   normalizeTemplateMetadata,
@@ -41,6 +45,7 @@ export const editableAssetTypes = [
   "tech_profile",
   "template",
   "graph_node",
+  "evidence",
 ] as const;
 export type EditableAssetType = (typeof editableAssetTypes)[number];
 export type EditableAssetData =
@@ -48,7 +53,8 @@ export type EditableAssetData =
   | DocumentAssetData
   | TechProfileAssetData
   | TemplateAssetData
-  | GraphNodeAssetData;
+  | GraphNodeAssetData
+  | EvidenceAssetData;
 
 export const ASSET_TITLE_MAX_LENGTH = 60;
 
@@ -156,12 +162,35 @@ export type GraphNodeAssetDraft = {
   relations: AssetRelationDraft[];
 };
 
+// 证据一行：说明 + 链接或文件路径，界面上用 key 做稳定标识
+export type EvidenceItemDraft = {
+  key: string;
+  label: string;
+  reference: string;
+};
+
+// 验收记录：正文写验收条件和结果，元数据放结构化的部分；
+// 结论默认待确认，改成「通过」只能由人在界面上操作。
+export type EvidenceAssetDraft = {
+  assetType: "evidence";
+  title: string;
+  summary: string;
+  content: string;
+  status: AssetStatus;
+  nodeId: string;
+  conclusion: EvidenceConclusion;
+  commitRef: string;
+  evidenceItems: EvidenceItemDraft[];
+  relations: AssetRelationDraft[];
+};
+
 export type AssetDraft =
   | RuleAssetDraft
   | DocumentAssetDraft
   | TechProfileAssetDraft
   | TemplateAssetDraft
-  | GraphNodeAssetDraft;
+  | GraphNodeAssetDraft
+  | EvidenceAssetDraft;
 
 // 新建时的预填：只补标题和文档类型，其他字段保持空草稿的默认值。
 // 从「工程基线」缺口点进来时用，让用户少填两个字段。
@@ -196,7 +225,7 @@ export function createAssetId(assetType: EditableAssetType) {
 
 export function createEmptyAssetDraft(
   assetType: EditableAssetType,
-  options: { nodeType?: GraphNodeType } = {},
+  options: { nodeType?: GraphNodeType; nodeId?: string } = {},
 ): AssetDraft {
   if (assetType === "rule") {
     return {
@@ -258,6 +287,22 @@ export function createEmptyAssetDraft(
       code: "",
       parentId: "",
       note: "",
+      relations: [],
+    };
+  }
+
+  if (assetType === "evidence") {
+    return {
+      assetType: "evidence",
+      title: "",
+      summary: "",
+      content: "",
+      status: "active",
+      nodeId: options.nodeId ?? "",
+      // 新建时一律待确认：结论要人看过才算数
+      conclusion: "pending",
+      commitRef: "",
+      evidenceItems: [],
       relations: [],
     };
   }
@@ -336,6 +381,27 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
       code: metadata.code,
       parentId: metadata.parentId,
       note: metadata.note,
+      relations: relationsToDraft(readAssetRelations(asset.metadata)),
+    };
+  }
+
+  if (asset.assetType === "evidence") {
+    const metadata = normalizeEvidenceMetadata(asset.metadata);
+
+    return {
+      assetType: "evidence",
+      title: asset.title,
+      summary: asset.summary,
+      content: asset.content,
+      status: asset.status,
+      nodeId: metadata.nodeId,
+      conclusion: metadata.conclusion,
+      commitRef: metadata.commitRef,
+      evidenceItems: metadata.evidenceItems.map((item, index) => ({
+        key: `evidence-item-${index + 1}`,
+        label: item.label,
+        reference: item.reference,
+      })),
       relations: relationsToDraft(readAssetRelations(asset.metadata)),
     };
   }
@@ -446,6 +512,11 @@ export function validateAssetDraft(draft: AssetDraft) {
 
   if (draft.assetType === "graph_node" && !draft.code.trim()) {
     return "请填写节点编号，例如 REQ-001。";
+  }
+
+  // 验收记录必须挂在一条需求上，否则覆盖统计算不出来
+  if (draft.assetType === "evidence" && !draft.nodeId.trim()) {
+    return "请选择这条验收记录对应的需求节点。";
   }
 
   if (draft.assetType === "document" && !draft.documentType.trim()) {
@@ -599,6 +670,30 @@ function buildAsset(
       ...common,
       assetType: "graph_node",
       metadata: nodeMetadata,
+    };
+  }
+
+  if (draft.assetType === "evidence") {
+    const evidenceMetadata: EvidenceAssetMetadata = {
+      nodeId: draft.nodeId.trim() ? draft.nodeId : null,
+      conclusion: draft.conclusion,
+      commitRef: draft.commitRef.trim(),
+      // 空行丢掉：说明和链接都空的证据不算一条
+      evidenceItems: draft.evidenceItems
+        .map((item) => ({
+          label: item.label.trim(),
+          reference: item.reference.trim(),
+        }))
+        .filter((item) => item.label || item.reference),
+      ...(draft.relations.length
+        ? { relations: draftRelationsToMetadata(draft.relations) }
+        : {}),
+    };
+
+    return {
+      ...common,
+      assetType: "evidence",
+      metadata: evidenceMetadata,
     };
   }
 

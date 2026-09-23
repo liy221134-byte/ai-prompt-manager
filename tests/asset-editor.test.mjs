@@ -523,3 +523,50 @@ test("从工程基线缺口进来时预填标题和文档类型", () => {
   assert.equal(titledRule.title, "必须校验输入");
   assert.equal(titledRule.assetType, "rule");
 });
+
+test("验收记录草稿：需求节点必填，空的证据行会被丢掉", () => {
+  const draft = {
+    ...createEmptyAssetDraft("evidence"),
+    title: "REQ-001 验收记录",
+    content: "验收条件：入库后能在图谱里看到。",
+    nodeId: "node-1",
+    conclusion: "passed",
+    commitRef: " v2.9.0 ",
+    evidenceItems: [
+      { key: "a", label: "跑了一遍导入", reference: " docs/acceptance " },
+      { key: "b", label: "   ", reference: "" },
+    ],
+  };
+  const input = buildCreateAssetInput({
+    id: "evidence-1",
+    projectId: "project-1",
+    draft,
+    now: "2026-09-23T00:00:00.000Z",
+  });
+
+  assert.equal(input.asset.assetType, "evidence");
+  assert.deepEqual(input.asset.metadata, {
+    nodeId: "node-1",
+    conclusion: "passed",
+    commitRef: "v2.9.0",
+    evidenceItems: [{ label: "跑了一遍导入", reference: "docs/acceptance" }],
+  });
+  assert.equal(input.versionReason, "initial");
+
+  // 没选需求节点就保存不了
+  assert.equal(
+    validateAssetDraft({ ...draft, nodeId: "" }),
+    "请选择这条验收记录对应的需求节点。",
+  );
+
+  // 读回草稿时结论和证据都在
+  const back = assetToDraft(input.asset);
+
+  assert.equal(back.assetType, "evidence");
+  assert.equal(back.conclusion, "passed");
+  assert.equal(back.nodeId, "node-1");
+  assert.deepEqual(
+    back.evidenceItems.map((item) => [item.label, item.reference]),
+    [["跑了一遍导入", "docs/acceptance"]],
+  );
+});
