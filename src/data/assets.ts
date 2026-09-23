@@ -86,6 +86,13 @@ export const compileTargets = [
 ] as const;
 export type CompileTarget = (typeof compileTargets)[number];
 
+// 编译裁决：这条规则在生成 AGENTS.md 这类产物时算不算数
+export type RuleCompileDecision = {
+  decision: "included" | "excluded";
+  note: string;
+  decidedAt: string;
+};
+
 // 规则的作用层级、执行阶段、优先级、生命周期和覆盖权限。
 // 这些都是扩展字段，允许留空；旧数据缺字段按空值处理，不做强制补齐。
 export const ruleLevels = ["global", "module", "task", "code"] as const;
@@ -180,6 +187,7 @@ export type RuleAssetMetadata = {
   sourceExcerpt?: string;
   confidence?: RuleConfidence;
   compileTarget?: CompileTarget[];
+  compileDecision?: RuleCompileDecision;
   pack?: AssetPackLink;
   relations?: AssetRelation[];
 };
@@ -402,6 +410,22 @@ function isOptionalPackLink(value: unknown) {
   return value === undefined || isAssetPackLink(value);
 }
 
+function isOptionalCompileDecision(value: unknown) {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    (value.decision === "included" || value.decision === "excluded") &&
+    typeof value.note === "string" &&
+    isValidDateString(value.decidedAt)
+  );
+}
+
 function isTechStackEntry(value: unknown): value is TechStackEntry {
   return (
     isRecord(value) &&
@@ -502,6 +526,7 @@ function isRuleAssetMetadata(value: unknown): value is RuleAssetMetadata {
     isOptionalString(value.sourceExcerpt) &&
     isOptionalEnum(value.confidence, ruleConfidences) &&
     isOptionalEnumList(value.compileTarget, compileTargets) &&
+    isOptionalCompileDecision(value.compileDecision) &&
     isOptionalPackLink(value.pack) &&
     isOptionalStringList(value.techContext) &&
     isOptionalRelations(value.relations)
