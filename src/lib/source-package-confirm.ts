@@ -10,6 +10,7 @@ import type {
 } from "../data/assets.ts";
 import { defaultDocumentType } from "../data/assets.ts";
 import type { ProjectData } from "../data/projects.ts";
+import { defaultProjectRiskLevel } from "../data/projects.ts";
 import type {
   SourcePackageDraft,
   SourcePackageDraftType,
@@ -116,6 +117,8 @@ export function planSourcePackageCreation(input: {
             input.project.stage === "maintenance"
               ? input.project.stage
               : "development",
+          // 导入出来的项目还不知道风险多大，先按最低等级，用户在项目设置里改
+          riskLevel: defaultProjectRiskLevel,
           createdAt: now,
           updatedAt: now,
           archivedAt: null,

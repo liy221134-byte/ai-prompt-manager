@@ -151,11 +151,22 @@ test("云端项目查询会映射为项目领域数据", async () => {
       description: "项目描述",
       status: "active",
       stage: "development",
+      riskLevel: "personal",
       createdAt: "2026-09-21T00:00:00.000Z",
       updatedAt: "2026-09-21T00:00:00.000Z",
       archivedAt: null,
     },
   ]);
+});
+
+test("云端项目带上质量等级时按真实等级映射", async () => {
+  const fake = createFakeClient({
+    projectRows: [{ ...createProjectRow(), risk_level: "user_data" }],
+  });
+  const dataSource = createSupabasePromptDataSource(fake.client);
+  const [project] = await dataSource.fetchProjects();
+
+  assert.equal(project.riskLevel, "user_data");
 });
 
 test("云端创建资产通过 save_asset 原子保存并返回资产列表", async () => {

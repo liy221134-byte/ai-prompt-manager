@@ -7,6 +7,7 @@ import { isPromptCard } from "./prompt-storage.ts";
 import type { AssetData } from "../data/assets.ts";
 import { isAssetData } from "../data/assets.ts";
 import type { ProjectData } from "../data/projects.ts";
+import { normalizeProjectData } from "../data/projects.ts";
 
 export const PROMPT_BACKUP_TYPE = "ai-prompt-manager-backup";
 export const PROMPT_BACKUP_VERSION = 1;
@@ -101,18 +102,18 @@ function parseAssetBackup(value: unknown): AssetBackup {
   }
 
   for (const project of candidate.projects) {
-    if (
-      !project ||
-      typeof project.id !== "string" ||
-      !project.id.trim() ||
-      typeof project.name !== "string" ||
-      !project.name.trim()
-    ) {
+    // 老备份里没有质量等级，这里统一补齐成默认值，读回来就是完整的项目数据
+    if (!normalizeProjectData(project)) {
       throw new Error("备份文件里有项目数据不完整，无法导入。");
     }
   }
 
-  return candidate as AssetBackup;
+  return {
+    ...(candidate as AssetBackup),
+    projects: candidate.projects.map(
+      (project) => normalizeProjectData(project) as ProjectData,
+    ),
+  };
 }
 
 // 导入到已有库时，同名项目按名称合并到已有项目，不新建重复项目

@@ -19,7 +19,11 @@ import {
   promptToAsset,
 } from "../data/assets.ts";
 import type { ProjectData } from "../data/projects.ts";
-import { DEFAULT_PROJECT_ID, isProjectData } from "../data/projects.ts";
+import {
+  DEFAULT_PROJECT_ID,
+  isProjectData,
+  readProjectRiskLevel,
+} from "../data/projects.ts";
 import {
   createAssetOnServer,
   createProjectOnServer,
@@ -146,6 +150,7 @@ type SupabaseProjectRow = {
   description: string;
   status: string;
   stage: string;
+  risk_level?: string | null;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
@@ -272,6 +277,8 @@ function rowToProject(row: SupabaseProjectRow): ProjectData {
     description: row.description,
     status: row.status,
     stage: row.stage,
+    // 迁移还没跑到线上时这一列读不到，按最低等级处理，不炸
+    riskLevel: readProjectRiskLevel(row.risk_level),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archivedAt: row.archived_at,
@@ -350,6 +357,7 @@ function projectToRow(project: ProjectData, userId: string) {
     description: project.description,
     status: project.status,
     stage: project.stage,
+    risk_level: project.riskLevel,
     created_at: project.createdAt,
     updated_at: project.updatedAt,
     archived_at: project.archivedAt,
@@ -382,7 +390,7 @@ export function createSupabasePromptDataSource(
   client: SupabaseClient,
 ): PromptDataSource {
   const projectSelect =
-    "user_id, id, name, description, status, stage, created_at, updated_at, archived_at";
+    "user_id, id, name, description, status, stage, risk_level, created_at, updated_at, archived_at";
   const assetSelect =
     "user_id, id, project_id, asset_type, title, summary, content, metadata_json, source_type, source_asset_id, import_batch_id, original_filename, current_version_id, status, archived_at, deleted_at, deleted_reason, created_at, updated_at";
   const assetVersionSelect =
@@ -487,6 +495,7 @@ export function createSupabasePromptDataSource(
           description: project.description,
           status: project.status,
           stage: project.stage,
+          risk_level: project.riskLevel,
           updated_at: project.updatedAt,
           archived_at: project.archivedAt,
         })

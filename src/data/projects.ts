@@ -9,6 +9,18 @@ export const projectStages = [
 ] as const;
 export type ProjectStage = (typeof projectStages)[number];
 
+// 项目质量等级：决定这个项目该有哪些工程文档、该关注哪些规则方向、发布前要做哪些检查。
+// 它是项目的一级属性，和「阶段」正交——阶段说的是走到哪了，等级说的是出事的代价有多大。
+export const projectRiskLevels = [
+  "personal",
+  "low_risk",
+  "user_data",
+  "high_sensitive",
+] as const;
+export type ProjectRiskLevel = (typeof projectRiskLevels)[number];
+
+export const defaultProjectRiskLevel: ProjectRiskLevel = "personal";
+
 export const DEFAULT_PROJECT_ID = "default-project";
 
 export type ProjectData = {
@@ -17,6 +29,7 @@ export type ProjectData = {
   description: string;
   status: ProjectStatus;
   stage: ProjectStage;
+  riskLevel: ProjectRiskLevel;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -34,9 +47,28 @@ export const projectStageLabels: Record<ProjectStage, string> = {
   maintenance: "维护",
 };
 
+export const projectRiskLevelLabels: Record<ProjectRiskLevel, string> = {
+  personal: "个人工具",
+  low_risk: "低风险生产",
+  user_data: "涉及用户数据",
+  high_sensitive: "高敏感项目",
+};
+
+// 老数据和老备份里没有这个字段，一律按最低等级读，不做强制补齐
+export function readProjectRiskLevel(value: unknown): ProjectRiskLevel {
+  return projectRiskLevels.includes(value as ProjectRiskLevel)
+    ? (value as ProjectRiskLevel)
+    : defaultProjectRiskLevel;
+}
+
 export const projectStageOptions = projectStages.map((stage) => ({
   label: projectStageLabels[stage],
   value: stage,
+}));
+
+export const projectRiskLevelOptions = projectRiskLevels.map((level) => ({
+  label: projectRiskLevelLabels[level],
+  value: level,
 }));
 
 function isValidDateString(value: unknown): value is string {
@@ -56,10 +88,25 @@ export function createDefaultProject(
     description: "现有提示词迁移后的默认归属项目。",
     status: "active",
     stage: "development",
+    riskLevel: defaultProjectRiskLevel,
     createdAt: now,
     updatedAt: now,
     archivedAt: null,
   };
+}
+
+// 补齐缺省字段后再校验：老备份、老行数据都能读进来
+export function normalizeProjectData(value: unknown): ProjectData | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = {
+    ...(value as Record<string, unknown>),
+    riskLevel: readProjectRiskLevel((value as Record<string, unknown>).riskLevel),
+  };
+
+  return isProjectData(candidate) ? candidate : null;
 }
 
 export function isProjectData(value: unknown): value is ProjectData {
@@ -77,6 +124,7 @@ export function isProjectData(value: unknown): value is ProjectData {
     typeof project.description !== "string" ||
     !projectStatuses.includes(project.status as ProjectStatus) ||
     !projectStages.includes(project.stage as ProjectStage) ||
+    !projectRiskLevels.includes(project.riskLevel as ProjectRiskLevel) ||
     !isValidDateString(project.createdAt) ||
     !isValidDateString(project.updatedAt)
   ) {
@@ -108,6 +156,7 @@ export function createProjectData(input: {
   name: string;
   description?: string;
   stage?: ProjectStage;
+  riskLevel?: ProjectRiskLevel;
   now?: string;
 }): ProjectData {
   const name = input.name.trim();
@@ -124,6 +173,7 @@ export function createProjectData(input: {
     description: (input.description ?? "").trim(),
     status: "active",
     stage: input.stage ?? "development",
+    riskLevel: input.riskLevel ?? defaultProjectRiskLevel,
     createdAt: now,
     updatedAt: now,
     archivedAt: null,
@@ -132,7 +182,12 @@ export function createProjectData(input: {
 
 export function updateProjectDetails(
   project: ProjectData,
-  input: { name: string; description: string; stage: ProjectStage },
+  input: {
+    name: string;
+    description: string;
+    stage: ProjectStage;
+    riskLevel?: ProjectRiskLevel;
+  },
   now = new Date().toISOString(),
 ): ProjectData {
   const name = input.name.trim();
@@ -146,6 +201,24 @@ export function updateProjectDetails(
     name,
     description: input.description.trim(),
     stage: input.stage,
+    riskLevel: input.riskLevel ?? project.riskLevel,
+    updatedAt: now,
+  };
+}
+
+// 只改质量等级：项目设置里切换等级走这条，其他字段原样不动
+export function updateProjectRiskLevel(
+  project: ProjectData,
+  riskLevel: ProjectRiskLevel,
+  now = new Date().toISOString(),
+): ProjectData {
+  if (project.riskLevel === riskLevel) {
+    return project;
+  }
+
+  return {
+    ...project,
+    riskLevel,
     updatedAt: now,
   };
 }

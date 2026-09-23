@@ -14,6 +14,7 @@ import {
   type ProjectData,
   createDefaultProject,
   isProjectData,
+  readProjectRiskLevel,
 } from "../../data/projects.ts";
 import type {
   PromptCardData,
@@ -58,6 +59,7 @@ type ProjectRow = {
   description: string;
   status: string;
   stage: string;
+  risk_level: string;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
@@ -133,6 +135,7 @@ function rowToProject(row: ProjectRow): ProjectData {
     description: row.description,
     status: row.status,
     stage: row.stage,
+    riskLevel: readProjectRiskLevel(row.risk_level),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archivedAt: row.archived_at,
@@ -209,6 +212,7 @@ export function ensureAssetSchema(database: DatabaseSync) {
       description TEXT NOT NULL,
       status TEXT NOT NULL,
       stage TEXT NOT NULL,
+      risk_level TEXT NOT NULL DEFAULT 'personal',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       archived_at TEXT
@@ -267,6 +271,21 @@ export function ensureAssetSchema(database: DatabaseSync) {
     CREATE INDEX IF NOT EXISTS asset_versions_asset_created_idx
     ON asset_versions (asset_id, created_at DESC);
   `);
+
+  ensureProjectColumns(database);
+}
+
+// 老库升级：2.8.0 之前建的项目表没有 risk_level，补一列，老数据按「个人工具」
+function ensureProjectColumns(database: DatabaseSync) {
+  const columns = database
+    .prepare("PRAGMA table_info(projects)")
+    .all() as Array<{ name: string }>;
+
+  if (!columns.some((column) => column.name === "risk_level")) {
+    database.exec(
+      "ALTER TABLE projects ADD COLUMN risk_level TEXT NOT NULL DEFAULT 'personal'",
+    );
+  }
 }
 
 function insertProject(database: DatabaseSync, project: ProjectData) {
@@ -274,8 +293,8 @@ function insertProject(database: DatabaseSync, project: ProjectData) {
     .prepare(
       `
         INSERT OR IGNORE INTO projects (
-          id, name, description, status, stage, created_at, updated_at, archived_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          id, name, description, status, stage, risk_level, created_at, updated_at, archived_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .run(
@@ -284,6 +303,7 @@ function insertProject(database: DatabaseSync, project: ProjectData) {
       project.description,
       project.status,
       project.stage,
+      project.riskLevel,
       project.createdAt,
       project.updatedAt,
       project.archivedAt,
@@ -298,13 +318,14 @@ export function saveProject(
     .prepare(
       `
         INSERT INTO projects (
-          id, name, description, status, stage, created_at, updated_at, archived_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          id, name, description, status, stage, risk_level, created_at, updated_at, archived_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           name = excluded.name,
           description = excluded.description,
           status = excluded.status,
           stage = excluded.stage,
+          risk_level = excluded.risk_level,
           updated_at = excluded.updated_at,
           archived_at = excluded.archived_at
       `,
@@ -315,6 +336,7 @@ export function saveProject(
       project.description,
       project.status,
       project.stage,
+      project.riskLevel,
       project.createdAt,
       project.updatedAt,
       project.archivedAt,
@@ -677,7 +699,7 @@ export function listProjects(database: DatabaseSync) {
     .prepare(
       `
         SELECT
-          id, name, description, status, stage, created_at, updated_at, archived_at
+          id, name, description, status, stage, risk_level, created_at, updated_at, archived_at
         FROM projects
         ORDER BY created_at ASC, id ASC
       `,
@@ -700,7 +722,7 @@ export function getDefaultProject(database: DatabaseSync) {
     .prepare(
       `
         SELECT
-          id, name, description, status, stage, created_at, updated_at, archived_at
+          id, name, description, status, stage, risk_level, created_at, updated_at, archived_at
         FROM projects
         WHERE id = ?
       `,

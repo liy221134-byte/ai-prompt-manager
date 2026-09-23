@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
 import { DEFAULT_PROJECT_ID } from "../src/data/projects.ts";
@@ -197,6 +198,7 @@ test("本地数据库可以创建和更新项目", () => {
     description: "项目管理测试",
     status: "active",
     stage: "development",
+    riskLevel: "user_data",
     createdAt: "2026-09-21T10:00:00.000Z",
     updatedAt: "2026-09-21T10:00:00.000Z",
     archivedAt: null,
@@ -216,7 +218,10 @@ test("本地数据库可以创建和更新项目", () => {
     assert.ok(
       context.database
         .listProjects()
-        .some((item) => item.name === "更新后的项目"),
+        .some(
+          (item) =>
+            item.name === "更新后的项目" && item.riskLevel === "user_data",
+        ),
     );
   } finally {
     context.database.close();
@@ -295,5 +300,49 @@ test("本地数据库可以创建规则资产并保存不可变版本", () => {
   } finally {
     context.database.close();
     context.cleanup();
+  }
+});
+
+// 2.8.0 之前建的库没有 projects.risk_level 这一列，打开时要自动补上，不能报错
+test("老库升级：项目表缺质量等级列时自动补列，老项目读成个人工具", () => {
+  const directory = mkdtempSync(join(tmpdir(), "asset-database-legacy-"));
+  const databasePath = join(directory, "prompts.sqlite");
+  const legacy = new DatabaseSync(databasePath);
+
+  legacy.exec(`
+    CREATE TABLE projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      status TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      archived_at TEXT
+    );
+
+    INSERT INTO projects (
+      id, name, description, status, stage, created_at, updated_at, archived_at
+    ) VALUES (
+      'default-project', '默认项目', '升级前建的项目', 'active', 'development',
+      '2026-09-20T00:00:00.000Z', '2026-09-20T00:00:00.000Z', NULL
+    );
+  `);
+  legacy.close();
+
+  const database = new PromptDatabase(databasePath);
+
+  try {
+    const [project] = database.listProjects();
+
+    assert.equal(project.id, DEFAULT_PROJECT_ID);
+    assert.equal(project.riskLevel, "personal");
+
+    // 补完列之后还能正常改等级
+    database.updateProject({ ...project, riskLevel: "low_risk" });
+    assert.equal(database.listProjects()[0].riskLevel, "low_risk");
+  } finally {
+    database.close();
+    rmSync(directory, { recursive: true, force: true });
   }
 });
