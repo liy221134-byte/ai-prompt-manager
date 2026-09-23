@@ -389,8 +389,10 @@ function createLibraryResponse(prompts: PromptCardData[]) {
 export function createSupabasePromptDataSource(
   client: SupabaseClient,
 ): PromptDataSource {
-  const projectSelect =
-    "user_id, id, name, description, status, stage, risk_level, created_at, updated_at, archived_at";
+  // 项目表用 * 而不是写死列名：2.8.0 加了 risk_level，线上迁移可能晚于代码上线，
+  // 写死列名会让「还没迁移」的那段时间整个项目列表读不出来。
+  // 读端对缺字段按默认值处理（readProjectRiskLevel），所以两种状态都能用。
+  const projectSelect = "*";
   const assetSelect =
     "user_id, id, project_id, asset_type, title, summary, content, metadata_json, source_type, source_asset_id, import_batch_id, original_filename, current_version_id, status, archived_at, deleted_at, deleted_reason, created_at, updated_at";
   const assetVersionSelect =
