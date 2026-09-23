@@ -512,6 +512,18 @@ export function AssetEditorDrawer({
                     placeholder="怎么确认这条规则被遵守了"
                     value={draft.verification}
                   />
+                  <TextField
+                    label="理由"
+                    onChange={(value) => updateDraft({ rationale: value })}
+                    placeholder="为什么立这条规则"
+                    value={draft.rationale}
+                  />
+                  <TextField
+                    label="来源片段"
+                    onChange={(value) => updateDraft({ sourceExcerpt: value })}
+                    placeholder="从原文哪句话提炼出来的"
+                    value={draft.sourceExcerpt}
+                  />
                 </div>
               ) : draft.assetType === "document" ? (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">

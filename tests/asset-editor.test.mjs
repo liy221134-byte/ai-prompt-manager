@@ -153,6 +153,41 @@ test("已有资产可以还原成草稿再保存，字段保持一致", () => {
   assert.equal(isAssetData(input.asset), true);
 });
 
+test("规则的理由和来源片段能放进草稿再存回元数据", () => {
+  const asset = createRuleAsset();
+  const draft = assetToDraft(asset);
+
+  const input = buildUpdateAssetInput(
+    asset,
+    {
+      ...draft,
+      rationale: "上一版漏了检查出过事故",
+      sourceExcerpt: "提交前必须跑完整检查。",
+    },
+    { versionId: "version-5", now: "2026-09-23T03:00:00.000Z" },
+  );
+
+  assert.equal(input.asset.metadata.rationale, "上一版漏了检查出过事故");
+  assert.equal(input.asset.metadata.sourceExcerpt, "提交前必须跑完整检查。");
+  assert.equal(isAssetData(input.asset), true);
+
+  const backToDraft = assetToDraft(input.asset);
+  assert.equal(backToDraft.rationale, "上一版漏了检查出过事故");
+  assert.equal(backToDraft.sourceExcerpt, "提交前必须跑完整检查。");
+});
+
+test("理由和来源片段留空时不写进元数据", () => {
+  const asset = createRuleAsset();
+  const input = buildUpdateAssetInput(
+    asset,
+    { ...assetToDraft(asset), rationale: "   ", sourceExcerpt: "" },
+    { versionId: "version-6", now: "2026-09-23T04:00:00.000Z" },
+  );
+
+  assert.equal("rationale" in input.asset.metadata, false);
+  assert.equal("sourceExcerpt" in input.asset.metadata, false);
+});
+
 test("新建规则会生成合法的资产和初始版本标识", () => {
   const input = buildCreateAssetInput({
     id: "rule-alpha",

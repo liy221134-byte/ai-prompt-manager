@@ -2,6 +2,7 @@ import type {
   AssetData,
   AssetStatus,
   AssetType,
+  RuleConfidence,
   AssetRelationType,
   RuleScope,
   RuleType,
@@ -68,6 +69,12 @@ export const ruleTypeLabels: Record<RuleType, string> = {
   process: "流程",
   acceptance: "验收",
   technology: "技术约束",
+};
+
+export const ruleConfidenceLabels: Record<RuleConfidence, string> = {
+  hypothesis: "假设",
+  provisional: "暂时验证",
+  verified: "已验证",
 };
 
 export const ruleScopeLabels: Record<RuleScope, string> = {

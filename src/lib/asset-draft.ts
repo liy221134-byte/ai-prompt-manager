@@ -71,6 +71,9 @@ export type RuleAssetDraft = {
   overrideScope: RuleOverrideScope | "";
   evidence: string;
   verification: string;
+  // 这条规则为什么立、从原文哪句话来：导入的规则会带上，手写也可以补
+  rationale: string;
+  sourceExcerpt: string;
   relations: AssetRelationDraft[];
 };
 
@@ -151,6 +154,8 @@ export function createEmptyAssetDraft(
       overrideScope: "",
       evidence: "",
       verification: "",
+      rationale: "",
+      sourceExcerpt: "",
       relations: [],
     };
   }
@@ -234,6 +239,8 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
       overrideScope: metadata.overrideScope,
       evidence: metadata.evidence,
       verification: metadata.verification,
+      rationale: metadata.rationale,
+      sourceExcerpt: metadata.sourceExcerpt,
       relations: relationsToDraft(readAssetRelations(asset.metadata)),
     };
   }
@@ -366,6 +373,10 @@ function buildAsset(
       ...(draft.overrideScope ? { overrideScope: draft.overrideScope } : {}),
       evidence: draft.evidence.trim(),
       verification: draft.verification.trim(),
+      ...(draft.rationale.trim() ? { rationale: draft.rationale.trim() } : {}),
+      ...(draft.sourceExcerpt.trim()
+        ? { sourceExcerpt: draft.sourceExcerpt.trim() }
+        : {}),
       ...(draft.relations.length
         ? { relations: draftRelationsToMetadata(draft.relations) }
         : {}),

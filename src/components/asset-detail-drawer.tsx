@@ -26,6 +26,7 @@ import type { EditableAssetData } from "@/lib/asset-draft";
 import {
   assetStatusLabels,
   describeAssetSummary,
+  ruleConfidenceLabels,
   ruleScopeLabels,
   ruleTypeLabels,
 } from "@/lib/asset-list";
@@ -84,6 +85,9 @@ function describeAssetMetadata(asset: EditableAssetData) {
     return [
       `规则类型：${ruleTypeLabels[asset.metadata.ruleType]}`,
       `适用范围：${ruleScopeLabels[asset.metadata.scope]}`,
+      ...(asset.metadata.confidence
+        ? [`可信度：${ruleConfidenceLabels[asset.metadata.confidence]}`]
+        : []),
     ];
   }
 
@@ -306,6 +310,25 @@ export function AssetDetailDrawer({
               </span>
             ))}
           </div>
+
+          {asset.assetType === "rule" &&
+            (asset.metadata.rationale || asset.metadata.sourceExcerpt) && (
+              <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  为什么立这条规则
+                </h3>
+                {asset.metadata.rationale && (
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {asset.metadata.rationale}
+                  </p>
+                )}
+                {asset.metadata.sourceExcerpt && (
+                  <p className="mt-2 border-l-2 border-slate-200 pl-3 text-sm leading-6 text-slate-500">
+                    来源片段：{asset.metadata.sourceExcerpt}
+                  </p>
+                )}
+              </section>
+            )}
 
           {(relations.length > 0 || incomingRelations.length > 0) && (
             <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
