@@ -210,3 +210,69 @@ test("同名项目 id 也相同时不会重复创建", () => {
   assert.deepEqual(plan.projectsToCreate, []);
   assert.equal(plan.assetsToCreate.length, 1);
 });
+
+test("备份带上规则包和成员，导入后包与包链接都还在", () => {
+  const packAsset = {
+    ...documentAsset,
+    id: "rule-pack-a",
+    assetType: "rule_pack",
+    title: "样本规则包",
+    content: "包说明",
+    metadata: {
+      packVersion: "0.2.1",
+      packConfidence: "provisional",
+      projectScale: ["personal"],
+      sourceNote: "来自种子包",
+    },
+  };
+  const member = {
+    ...documentAsset,
+    id: "rule-member-a",
+    assetType: "rule",
+    title: "成员规则",
+    metadata: {
+      ruleType: "must",
+      scope: "project",
+      confidence: "provisional",
+      rationale: "防的是漏检查",
+      compileTarget: ["agents"],
+      pack: {
+        packId: "rule-pack-a",
+        packItemId: "SAMPLE-001",
+        packVersion: "0.2.1",
+        packAssetType: "rule",
+        projectScale: ["personal"],
+      },
+    },
+  };
+  const backup = createAssetBackup({
+    projects: [project],
+    assets: [packAsset, member],
+  });
+
+  const parsed = parseBackup(JSON.stringify(backup));
+
+  assert.equal(parsed.kind, "asset");
+
+  if (parsed.kind !== "asset") {
+    return;
+  }
+
+  const byId = new Map(
+    parsed.backup.assets.map((asset) => [asset.id, asset]),
+  );
+
+  assert.equal(byId.get("rule-pack-a")?.assetType, "rule_pack");
+  assert.equal(
+    byId.get("rule-pack-a")?.metadata.packVersion,
+    "0.2.1",
+  );
+  assert.equal(
+    byId.get("rule-member-a")?.metadata.pack.packItemId,
+    "SAMPLE-001",
+  );
+  assert.equal(byId.get("rule-member-a")?.metadata.rationale, "防的是漏检查");
+  assert.deepEqual(byId.get("rule-member-a")?.metadata.compileTarget, [
+    "agents",
+  ]);
+});
