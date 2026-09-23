@@ -6,6 +6,7 @@ import {
   isAssetData,
   normalizeDocumentMetadata,
   normalizeEvidenceMetadata,
+  normalizeReleaseRecordMetadata,
   normalizeRulePackMetadata,
   normalizeRuleMetadata,
   normalizeTemplateMetadata,
@@ -352,5 +353,88 @@ test("验收记录缺字段时按空值补齐，结论回落成待确认", () =>
       commitRef: "",
       evidenceItems: [{ label: "只有说明", reference: "" }],
     },
+  );
+});
+
+test("发布记录元数据：版本、结果和门禁项都要合法", () => {
+  const base = {
+    id: "release-a",
+    projectId: "project-1",
+    assetType: "release_record",
+    title: "v2.10.0 发布记录",
+    summary: "",
+    content: "这次改了……",
+    source: {
+      sourceType: "manual",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: "current-release-a",
+    status: "active",
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: "2026-09-23T00:00:00.000Z",
+    updatedAt: "2026-09-23T00:00:00.000Z",
+  };
+
+  assert.equal(
+    isAssetData({
+      ...base,
+      metadata: {
+        version: "v2.10.0",
+        releasedAt: "2026-09-23",
+        result: "released",
+        rollbackTarget: "v2.9.0",
+        gates: [
+          { key: "gate-1", label: "工程检查通过", done: true, note: "跑了 check" },
+        ],
+      },
+    }),
+    true,
+  );
+
+  // 结果必须是三个枚举值之一
+  assert.equal(
+    isAssetData({
+      ...base,
+      metadata: {
+        version: "v2.10.0",
+        releasedAt: "",
+        result: "成功了",
+        rollbackTarget: "",
+        gates: [],
+      },
+    }),
+    false,
+  );
+
+  // 门禁项缺字段或不是对象都不行
+  assert.equal(
+    isAssetData({
+      ...base,
+      metadata: {
+        version: "v2.10.0",
+        releasedAt: "",
+        result: "in_progress",
+        rollbackTarget: "",
+        gates: ["工程检查通过"],
+      },
+    }),
+    false,
+  );
+
+  // 缺字段时按空值补齐，结果回落成进行中
+  assert.deepEqual(normalizeReleaseRecordMetadata(undefined), {
+    version: "",
+    releasedAt: "",
+    result: "in_progress",
+    rollbackTarget: "",
+    gates: [],
+  });
+  assert.equal(
+    normalizeReleaseRecordMetadata({ result: "乱写的", gates: [] }).result,
+    "in_progress",
   );
 });

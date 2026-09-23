@@ -6,6 +6,7 @@ import type {
   RuleConfidence,
   AssetRelationType,
   EvidenceConclusion,
+  ReleaseRecordResult,
   GraphNodeType,
   RuleScope,
   RuleType,
@@ -23,6 +24,7 @@ export const assetTypeLabels: Record<AssetType, string> = {
   rule_pack: "规则包",
   graph_node: "图谱节点",
   evidence: "验收记录",
+  release_record: "发布记录",
   source_package: "来源包",
 };
 
@@ -31,6 +33,12 @@ export const evidenceConclusionLabels: Record<EvidenceConclusion, string> = {
   passed: "通过",
   failed: "未通过",
   exception: "例外",
+};
+
+export const releaseRecordResultLabels: Record<ReleaseRecordResult, string> = {
+  in_progress: "进行中",
+  released: "已发布",
+  rolled_back: "已回滚",
 };
 
 export const graphNodeTypeLabels: Record<GraphNodeType, string> = {
@@ -52,6 +60,7 @@ export const assetTypeFilterOptions = [
   "rule_pack",
   "graph_node",
   "evidence",
+  "release_record",
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
@@ -65,6 +74,7 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   rule_pack: "规则包",
   graph_node: "图谱节点",
   evidence: "验收记录",
+  release_record: "发布记录",
 };
 
 export const assetRelationLabels: Record<AssetRelationType, string> = {

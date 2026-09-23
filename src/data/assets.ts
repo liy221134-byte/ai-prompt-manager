@@ -12,6 +12,7 @@ export const assetTypes = [
   "rule_pack",
   "graph_node",
   "evidence",
+  "release_record",
   "source_package",
 ] as const;
 export type AssetType = (typeof assetTypes)[number];
@@ -106,6 +107,14 @@ export const evidenceConclusions = [
   "exception",
 ] as const;
 export type EvidenceConclusion = (typeof evidenceConclusions)[number];
+
+// 发布记录的结果：还在发布中、已经发布、回滚了
+export const releaseRecordResults = [
+  "in_progress",
+  "released",
+  "rolled_back",
+] as const;
+export type ReleaseRecordResult = (typeof releaseRecordResults)[number];
 
 // 编译裁决：这条规则在生成 AGENTS.md 这类产物时算不算数
 export type RuleCompileDecision = {
@@ -275,6 +284,24 @@ export type EvidenceAssetMetadata = {
   relations?: AssetRelation[];
 };
 
+// 一条门禁：做什么检查、做了没、证据是什么
+export type ReleaseGateItem = {
+  key: string;
+  label: string;
+  done: boolean;
+  note: string;
+};
+
+// 发布记录：一次上线留一条，门禁项要人勾、要写证据说明
+export type ReleaseRecordMetadata = {
+  version: string;
+  releasedAt: string;
+  result: ReleaseRecordResult;
+  rollbackTarget: string;
+  gates: ReleaseGateItem[];
+  relations?: AssetRelation[];
+};
+
 // 规则包：可复用的规则集合（一个项目可以装多个包）。
 // 包自己的发布状态直接用资产状态，不再另存一份。
 export type RulePackAssetMetadata = {
@@ -321,6 +348,10 @@ export type GraphNodeAssetData = AssetBase<
   GraphNodeAssetMetadata
 >;
 export type EvidenceAssetData = AssetBase<"evidence", EvidenceAssetMetadata>;
+export type ReleaseRecordAssetData = AssetBase<
+  "release_record",
+  ReleaseRecordMetadata
+>;
 export type ReservedAssetType = "source_package";
 export type ReservedAssetData = AssetBase<
   ReservedAssetType,
@@ -336,6 +367,7 @@ export type AssetData =
   | TemplateAssetData
   | GraphNodeAssetData
   | EvidenceAssetData
+  | ReleaseRecordAssetData
   | ReservedAssetData;
 
 type AssetVersionBase<TType extends AssetType, TMetadata> = {
@@ -387,6 +419,10 @@ export type EvidenceAssetVersionData = AssetVersionBase<
   "evidence",
   EvidenceAssetMetadata
 >;
+export type ReleaseRecordAssetVersionData = AssetVersionBase<
+  "release_record",
+  ReleaseRecordMetadata
+>;
 export type ReservedAssetVersionData = AssetVersionBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -401,6 +437,7 @@ export type AssetVersionData =
   | TemplateAssetVersionData
   | GraphNodeAssetVersionData
   | EvidenceAssetVersionData
+  | ReleaseRecordAssetVersionData
   | ReservedAssetVersionData;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -682,6 +719,32 @@ function isEvidenceAssetMetadata(
   );
 }
 
+function isReleaseGateItem(value: unknown): value is ReleaseGateItem {
+  return (
+    isRecord(value) &&
+    typeof value.key === "string" &&
+    typeof value.label === "string" &&
+    Boolean(value.label.trim()) &&
+    typeof value.done === "boolean" &&
+    typeof value.note === "string"
+  );
+}
+
+function isReleaseRecordMetadata(
+  value: unknown,
+): value is ReleaseRecordMetadata {
+  return (
+    isRecord(value) &&
+    typeof value.version === "string" &&
+    typeof value.releasedAt === "string" &&
+    releaseRecordResults.includes(value.result as ReleaseRecordResult) &&
+    typeof value.rollbackTarget === "string" &&
+    Array.isArray(value.gates) &&
+    value.gates.every((item) => isReleaseGateItem(item)) &&
+    isOptionalRelations(value.relations)
+  );
+}
+
 function isDocumentAssetMetadata(
   value: unknown,
 ): value is DocumentAssetMetadata {
@@ -764,6 +827,10 @@ export function isAssetData(value: unknown): value is AssetData {
     return isEvidenceAssetMetadata(value.metadata);
   }
 
+  if (value.assetType === "release_record") {
+    return isReleaseRecordMetadata(value.metadata);
+  }
+
   return isRecord(value.metadata);
 }
 
@@ -837,6 +904,10 @@ export function isAssetVersionData(
 
   if (value.assetType === "evidence") {
     return isEvidenceAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "release_record") {
+    return isReleaseRecordMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -987,6 +1058,15 @@ export type EvidenceMetadataForm = {
   evidenceItems: EvidenceItem[];
 };
 
+// 发布记录编辑器用的表单形状
+export type ReleaseRecordMetadataForm = {
+  version: string;
+  releasedAt: string;
+  result: ReleaseRecordResult;
+  rollbackTarget: string;
+  gates: ReleaseGateItem[];
+};
+
 export type DocumentMetadataForm = {
   documentType: string;
   role: DocumentRole | "";
@@ -1109,6 +1189,26 @@ export function normalizeEvidenceMetadata(
     evidenceItems: Array.isArray(source.evidenceItems)
       ? source.evidenceItems
           .filter((item) => isEvidenceItem(item))
+          .map((item) => ({ ...item }))
+      : [],
+  };
+}
+
+export function normalizeReleaseRecordMetadata(
+  value: unknown,
+): ReleaseRecordMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    version: readString(source.version),
+    releasedAt: readString(source.releasedAt),
+    result: releaseRecordResults.includes(source.result as ReleaseRecordResult)
+      ? (source.result as ReleaseRecordResult)
+      : "in_progress",
+    rollbackTarget: readString(source.rollbackTarget),
+    gates: Array.isArray(source.gates)
+      ? source.gates
+          .filter((item) => isReleaseGateItem(item))
           .map((item) => ({ ...item }))
       : [],
   };

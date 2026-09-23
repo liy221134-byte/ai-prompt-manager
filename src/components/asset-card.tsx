@@ -22,6 +22,7 @@ const typeStyles: Record<AssetType, string> = {
   rule_pack: "bg-indigo-50 text-indigo-700 ring-indigo-200",
   graph_node: "bg-teal-50 text-teal-700 ring-teal-200",
   evidence: "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200",
+  release_record: "bg-lime-50 text-lime-700 ring-lime-200",
   source_package: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 
