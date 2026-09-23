@@ -1,0 +1,935 @@
+{
+  "type": "ai-prompt-manager-rule-pack",
+  "version": 1,
+  "exportedAt": "2026-09-23T04:49:40.665Z",
+  "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
+  "pack": {
+    "id": "rule-pack-engineering-foundations",
+    "title": "工程方法种子资产包",
+    "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.2.1`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：14 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "metadata": {
+      "packVersion": "0.2.1",
+      "packConfidence": "provisional",
+      "projectScale": [
+        "large",
+        "medium",
+        "personal",
+        "regulated"
+      ],
+      "sourceNote": "来自仓库里的种子资产包（Markdown 源文件）；manifest 与 schema 属于包的目录和字段定义，内容已并入包说明。"
+    },
+    "status": "active"
+  },
+  "members": [
+    {
+      "id": "rule-mth-project-001",
+      "assetType": "rule",
+      "title": "项目规模与复杂度分级",
+      "summary": "项目级别不能只看预算或页面数量。应综合业务关键性、模块数量、外部集成、 数据敏感性、团队规模、可用性要求和合规要求判断。",
+      "content": "# 项目规模与复杂度分级\n\n## 核心结论\n\n项目级别不能只看预算或页面数量。应综合业务关键性、模块数量、外部集成、\n数据敏感性、团队规模、可用性要求和合规要求判断。\n\n推荐使用四级画像：\n\n| 级别 | 典型特征 |\n| --- | --- |\n| 个人工具 | 少量用户、低风险、可快速重建、无需强合规 |\n| 中型产品 | 有账号、数据库、备份和发布要求，模块数量有限 |\n| 大型平台 | 多模块、多团队、多系统集成、强非功能要求 |\n| 监管或高敏项目 | 涉及重要数据、云网隔离、等保、审计和可信计算 |\n\n## 使用条件\n\n- 在任何路线选择、架构设计和工期承诺之前。\n- 项目范围发生变化时重新评估。\n- 同一个项目中不同模块可以具有不同风险等级。\n\n## 不适用场景\n\n- 不能把分级当作技术炫耀或团队扩编理由。\n- 不能仅因为使用微服务、AI 或区块链就自动判定为大型项目。\n- 不能把预算规模直接等同于工程复杂度。\n\n## 判断步骤\n\n1. 列出业务关键性和故障影响。\n2. 统计独立业务模块与子系统数量。\n3. 统计外部系统和历史系统集成数量。\n4. 识别数据分级、个人信息和跨域流通要求。\n5. 明确团队人数、驻场要求和交付周期。\n6. 明确可用性、性能、恢复、审计和合规目标。\n7. 判断是否属于多个团队或多个供应商协作。\n\n## 失败模式\n\n- 用“个人工具”方法管理省级平台。\n- 用“大型平台”方法过度建设个人工具。\n- 只按合同金额安排人员和治理。\n- 忽略外部接口和数据安全带来的复杂度。\n\n## 验证证据\n\n- 项目画像记录。\n- 复杂度评分和判断依据。\n- 对应路线、质量等级和阶段门禁。\n\n## 相关资产\n\n- `MTH-ROUTE-001`：根据项目画像选择实施路线。\n- `MTH-QUALITY-001`：根据风险等级选择质量门禁。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-PROJECT-001\ntitle: 项目规模与复杂度分级\nasset_type: method\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - agents\n  - readme\nverification: manual\nevidence:\n  - docs/project-map.md（提交 e6abaca、0afc500、cdea0ad 把分级结果落地为项目地图）\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/roadmap.md\n  - docs/v2-requirements-draft.md\nrelated_assets:\n  - MTH-ROUTE-001\n  - MTH-QUALITY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- docs/project-map.md（提交 e6abaca、0afc500、cdea0ad 把分级结果落地为项目地图）\n- docs/roadmap.md\n- docs/v2-requirements-draft.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "readme"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-PROJECT-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-route-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-route-001",
+      "assetType": "rule",
+      "title": "根据不确定性选择实施路线",
+      "summary": "路线取决于需求不确定性和工程风险，不应机械采用“前端全部先做”或 “后端全部先做”。",
+      "content": "# 根据不确定性选择实施路线\n\n## 核心结论\n\n路线取决于需求不确定性和工程风险，不应机械采用“前端全部先做”或\n“后端全部先做”。\n\n- 个人工具和需求高度不确定时，可以使用交互原型优先。\n- 中型产品应先建立关键数据、接口和安全基线，再按功能纵向交付。\n- 大型平台必须先做领域拆分、架构基线和端到端最小链路，再并行开发。\n\n## 使用条件\n\n- 项目启动、重大范围变化或技术路线调整时。\n- 需求较清晰但集成复杂时，优先降低工程风险。\n- 需求模糊但成本低时，优先验证用户流程和产品价值。\n\n## 不适用场景\n\n- 不能把原型代码直接视为生产底座。\n- 不能用大型项目治理方式拖慢一次低风险验证。\n- 不能因为“先看到页面”就忽略数据结构、权限和集成风险。\n\n## 选择步骤\n\n1. 判断业务价值和需求不确定性。\n2. 判断数据、安全、集成和性能风险。\n3. 判断项目规模和交付周期。\n4. 选择原型优先、端到端骨架优先或两者组合。\n5. 明确哪些原型会被保留，哪些必须重做。\n6. 将路线写入决策记录，并记录放弃的备选方案。\n\n## 失败模式\n\n- 大型项目先做完整前端，后期发现权限和数据模型不成立。\n- 早期产品先建设完整平台，投入过高但用户价值未验证。\n- 原型和生产代码边界不清，导致临时方案进入生产。\n\n## 验证证据\n\n- 路线决策记录。\n- 风险清单和验证顺序。\n- 原型保留或重做的边界。\n\n## 相关资产\n\n- `MTH-DELIVERY-001`：使用端到端最小链路降低集成风险。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-ROUTE-001\ntitle: 根据不确定性选择实施路线\nasset_type: method\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/roadmap.md（8 周计划按\"本地闭环 → 云端 → 生产加固\"分阶段推进，未一次并行）\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/roadmap.md\n  - docs/v2-requirements-draft.md\nrelated_assets:\n  - MTH-PROJECT-001\n  - MTH-DELIVERY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/roadmap.md（8 周计划按\"本地闭环 → 云端 → 生产加固\"分阶段推进，未一次并行）\n- docs/roadmap.md\n- docs/v2-requirements-draft.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-ROUTE-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-project-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-delivery-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-req-001",
+      "assetType": "rule",
+      "title": "需求边界与外部依赖澄清",
+      "summary": "需求基线必须明确“做什么、不做什么、依赖谁、由谁验收”。范围不清时， 架构和工期都无法稳定。",
+      "content": "# 需求边界与外部依赖澄清\n\n## 核心结论\n\n需求基线必须明确“做什么、不做什么、依赖谁、由谁验收”。范围不清时，\n架构和工期都无法稳定。\n\n## 使用条件\n\n- 项目启动和每期迭代开始前。\n- 接入外部系统、历史系统或第三方供应商时。\n- 需求文档同时包含业务要求、技术方案和履约条款时。\n\n## 不适用场景\n\n- 一次性实验不应被大量流程文档阻塞。\n- 详细交互细节可以在原型中逐步确认，不必全部前置冻结。\n\n## 执行步骤\n\n1. 列出本期目标和成功标准。\n2. 列出本期不做的内容。\n3. 把需求拆成业务、数据、接口、安全、运维和信创边界。\n4. 为每个外部依赖记录提供方、测试环境、责任人和异常处理。\n5. 标记假设、待确认项和无法控制事项。\n6. 明确需求负责人和验收负责人。\n7. 形成冻结版本和变更流程。\n\n## 失败模式\n\n- 把设计方案写成不可调整的需求。\n- 外部接口没有测试环境，开发后期才发现不可用。\n- 只记录功能，不记录数据所有权和非功能要求。\n- 变更没有影响分析和重新验收。\n\n## 验证证据\n\n- 范围清单。\n- 外部依赖清单。\n- 需求追踪矩阵。\n- 冻结版本和变更记录。\n\n## 相关资产\n\n- `MTH-REQ-002`：检查需求中的定量指标冲突。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-REQ-001\ntitle: 需求边界与外部依赖澄清\nasset_type: playbook\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - agents\n  - start_prompt\nverification: manual\nevidence:\n  - AGENTS.md 的三道门（需求门、设计门、交付门）要求每期先写清做什么和不做什么\n  - docs/roadmap.md 每周明确标注延后项，例如\"单条提示词的独立 AI 标签优化继续延后\"\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/product-brief.md\n  - docs/acceptance/week-07.md\nrelated_assets:\n  - MTH-REQ-002\n  - MTH-ARCH-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "process",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- AGENTS.md 的三道门（需求门、设计门、交付门）要求每期先写清做什么和不做什么\n- docs/roadmap.md 每周明确标注延后项，例如\"单条提示词的独立 AI 标签优化继续延后\n- docs/product-brief.md\n- docs/acceptance/week-07.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "start_prompt"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-REQ-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "playbook",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-req-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-arch-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-req-002",
+      "assetType": "rule",
+      "title": "定量指标与冲突检查",
+      "summary": "并发、响应时间、吞吐量、可用性和恢复指标必须有场景、负载、环境、统计口径 和验收方法。否则数字无法设计，也无法验收。",
+      "content": "# 定量指标与冲突检查\n\n## 核心结论\n\n并发、响应时间、吞吐量、可用性和恢复指标必须有场景、负载、环境、统计口径\n和验收方法。否则数字无法设计，也无法验收。\n\n## 使用条件\n\n- 需求中出现性能、容量、可靠性和安全数字时。\n- 多个章节对同一指标给出不同数值时。\n- 指标将直接影响架构、硬件、成本和工期时。\n\n## 不适用场景\n\n- 两套指标面向不同场景且已经明确区分时，不能强行视为冲突。\n- 没有业务价值的微小精度差异不应占用过多评审时间。\n\n## 检查步骤\n\n1. 提取所有定量指标。\n2. 为每项指标标注业务场景。\n3. 标注用户量、请求量、数据量和并发模型。\n4. 标注平均值、峰值或分位数。\n5. 标注测试环境和是否包含网络、存储和外部系统。\n6. 对同类指标进行换算和一致性比较。\n7. 建立唯一指标基线和验收方法。\n\n## 失败模式\n\n- 同文档同时出现多个并发用户数。\n- 分钟吞吐量与每秒吞吐量混用。\n- 端到端响应时间与数据库查询时间混为一谈。\n- 指标没有测试环境和数据规模，无法复现。\n\n## 验证证据\n\n- 指标澄清表。\n- 指标负责人和确认记录。\n- 性能测试模型和验收脚本。\n\n## 相关资产\n\n- `TPL-ACCEPT-001`：将指标转成可验证的验收证据。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-REQ-002\ntitle: 定量指标与冲突检查\nasset_type: method\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\noverride_allowed: true\ncompile_target:\n  - agents\n  - template\nverification: manual\nevidence:\n  - docs/operations/availability-targets.md（把备份节奏和恢复目标写成同一口径，避免两个数字打架）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/acceptance/week-07.md\n  - docs/operations/release-rollback.md\nrelated_assets:\n  - MTH-REQ-001\n  - TPL-ACCEPT-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/operations/availability-targets.md（把备份节奏和恢复目标写成同一口径，避免两个数字打架）\n- docs/acceptance/week-07.md\n- docs/operations/release-rollback.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "template"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-REQ-002",
+          "packVersion": "0.2.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-req-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-arch-001",
+      "assetType": "rule",
+      "title": "架构与工程基线",
+      "summary": "在功能并行开发前，应先确定模块边界、数据所有权、接口、安全、环境、 可观察性和发布方式。",
+      "content": "# 架构与工程基线\n\n## 核心结论\n\n在功能并行开发前，应先确定模块边界、数据所有权、接口、安全、环境、\n可观察性和发布方式。\n\n## 使用条件\n\n- 多个模块或多个团队并行开发前。\n- 接入数据库、外部平台、登录、权限或生产环境前。\n- 需要长期维护、迁移或审计时。\n\n## 不适用场景\n\n- 一次性原型可以只保留最小约束。\n- 不应为了“完整架构”提前引入没有真实需求的组件。\n\n## 基线内容\n\n1. 系统上下文、模块和外部依赖。\n2. 数据所有权和生命周期。\n3. API、事件和错误契约。\n4. 身份、权限、密钥和数据隔离。\n5. 开发、测试、预览和生产环境。\n6. CI/CD、构建门禁和版本策略。\n7. 日志、指标、追踪、健康检查和告警。\n8. 备份、恢复、回滚和故障演练。\n9. 性能、容量、成本和免费额度边界。\n\n## 失败模式\n\n- 先并行开发，后补接口和数据模型。\n- 所有模块直接访问同一批数据表。\n- 配置错误时自动降级到不安全模式。\n- 没有回滚目标和恢复证据。\n\n## 验证证据\n\n- 架构图和请求链路。\n- 数据与接口目录。\n- 环境变量和权限矩阵。\n- 发布与恢复演练结果。\n\n## 相关资产\n\n- `MTH-MODULE-001`：拆分并治理模块边界。\n- `RULE-BOUNDARY-001`：限制跨模块数据和接口访问。\n- `MTH-TECH-001`（引用）：技术选型是架构基线的输出之一。\n- `TPL-TECH-001`（引用）：环境、安全和运维项按技术档案固化。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-ARCH-001\ntitle: 架构与工程基线\nasset_type: method\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - agents\n  - readme\nverification: manual\nevidence:\n  - docs/decisions/0001 至 0007（技术栈、存储、备份格式、数据库、云端架构、AI 供应商、生产配置）\n  - docs/project-map.md（架构链路、环境与可用性目标）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/decisions/0005-cloud-architecture.md\n  - docs/decisions/0007-production-configuration-hardening.md\n  - docs/cloud-deployment.md\nrelated_assets:\n  - MTH-MODULE-001\n  - RULE-BOUNDARY-001\n  - MTH-TECH-001\n  - TPL-TECH-001\nversion: 0.2.1\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- docs/decisions/0001 至 0007（技术栈、存储、备份格式、数据库、云端架构、AI 供应商、生产配置）\n- docs/project-map.md（架构链路、环境与可用性目标）\n- docs/decisions/0005-cloud-architecture.md\n- docs/decisions/0007-production-configuration-hardening.md\n- docs/cloud-deployment.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "readme"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-ARCH-001",
+          "packVersion": "0.2.1",
+          "packAssetType": "method",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-module-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-delivery-001",
+      "assetType": "rule",
+      "title": "端到端最小链路",
+      "summary": "在大量页面和功能并行开发前，先用一条最薄但真实的链路验证前端、接口、 权限、数据、外部系统和部署能够贯通。",
+      "content": "# 端到端最小链路\n\n## 核心结论\n\n在大量页面和功能并行开发前，先用一条最薄但真实的链路验证前端、接口、\n权限、数据、外部系统和部署能够贯通。\n\n## 使用条件\n\n- 多模块或多团队项目。\n- 存在数据库、认证、外部接口或复杂部署时。\n- 架构组件较多、后期集成风险较高时。\n\n## 不适用场景\n\n- 不要求最小链路覆盖所有业务规则。\n- 不能把演示数据、假接口或跳过权限的链路视为完成。\n\n## 执行步骤\n\n1. 选择一条最有业务价值的核心链路。\n2. 只实现最小字段和最小权限。\n3. 打通真实数据源、接口、数据库和页面。\n4. 加入登录、错误处理、日志和部署。\n5. 使用真实测试环境完成一次验收。\n6. 记录暴露的架构、接口和数据问题。\n7. 修正基线后再开放大规模并行开发。\n\n## 失败模式\n\n- 骨架只做前端和假数据。\n- 每条链路都依赖尚未完成的平台能力。\n- 骨架通过后不更新架构和接口基线。\n- 团队把骨架代码直接扩张成不可维护的临时系统。\n\n## 验证证据\n\n- 可运行的端到端链路。\n- 请求、数据和安全流转记录。\n- 已知风险和修正后的架构决策。\n\n## 相关资产\n\n- `MTH-MODULE-001`：骨架验证后进行服务域并行开发。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-DELIVERY-001\ntitle: 端到端最小链路\nasset_type: method\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/acceptance/（week-01 至 week-05：页面 → 本机接口 → 云端 Supabase 逐段打通后才加 AI 功能）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/roadmap.md\n  - docs/learning/engineering-readiness.md\nrelated_assets:\n  - MTH-ARCH-001\n  - MTH-MODULE-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/（week-01 至 week-05：页面 → 本机接口 → 云端 Supabase 逐段打通后才加 AI 功能）\n- docs/roadmap.md\n- docs/learning/engineering-readiness.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-DELIVERY-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-arch-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-module-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-module-001",
+      "assetType": "rule",
+      "title": "按业务能力拆分模块",
+      "summary": "模块应按业务能力和数据所有权拆分，而不是按页面、技术人员或数据库表拆分。 模块可以独立开发，但必须共享统一的架构、接口、安全和运维标准。",
+      "content": "# 按业务能力拆分模块\n\n## 核心结论\n\n模块应按业务能力和数据所有权拆分，而不是按页面、技术人员或数据库表拆分。\n模块可以独立开发，但必须共享统一的架构、接口、安全和运维标准。\n\n## 使用条件\n\n- 多模块、多团队或独立发布需求出现时。\n- 需求层级、模块、数据库和代码之间需要建立追踪关系时。\n- 单体系统增长到难以并行交付时。\n\n## 不适用场景\n\n- 小型项目不需要为了形式拆成微服务。\n- 不能把同一业务能力拆给多个团队共同拥有。\n- 不能因为模块独立就让每个模块重复建设身份、日志和网关。\n\n## 拆分步骤\n\n1. 列出业务能力和用户任务。\n2. 明确每个能力的输入、输出和业务规则。\n3. 为数据指定唯一拥有者。\n4. 定义模块 API、事件和依赖方向。\n5. 识别必须共享的平台能力。\n6. 确定模块优先级、团队和发布节奏。\n7. 为每个模块建立独立验收和运行证据。\n\n## 模块边界\n\n- 一个模块拥有自己的业务规则和写数据权限。\n- 跨模块读取通过接口、事件或只读投影。\n- 模块内部实现可替换，外部契约必须版本化。\n- 模块监控、测试、迁移和回滚责任清晰。\n\n## 失败模式\n\n- 按页面拆模块，多个模块反复修改同一业务规则。\n- 多个模块直接写同一张表。\n- 共享数据库导致无法独立发布和回滚。\n- 微服务数量增长，但没有平台治理能力。\n\n## 验证证据\n\n- 模块地图。\n- 数据所有权矩阵。\n- 接口和事件目录。\n- 模块验收与发布记录。\n\n可信度说明：本资产包目前没有可指向的证据（本项目是单体规模，没有实际使用模块拆分），\n按可信度规则保持\"假设\"，等有真实项目使用后再升级。\n\n## 相关资产\n\n- `RULE-BOUNDARY-001`：约束模块之间的数据和接口访问。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-MODULE-001\ntitle: 按业务能力拆分模块\nasset_type: method\npurpose: development\nlayer: module\ntech_context:\n  - generic\npriority: p2\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - docs/v2-requirements-draft.md\n  - docs/learning/engineering-readiness.md\nrelated_assets:\n  - MTH-ARCH-001\n  - RULE-BOUNDARY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "开发",
+        "level": "module",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "may",
+        "overrideScope": "project",
+        "evidence": "- docs/v2-requirements-draft.md\n- docs/learning/engineering-readiness.md",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-MODULE-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-arch-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-boundary-001",
+      "assetType": "rule",
+      "title": "接口契约与数据所有权规则",
+      "summary": "每类业务数据必须有唯一写入方。模块之间通过版本化接口或事件协作，不允许 依赖对方内部表和未声明的实现细节。",
+      "content": "# 接口契约与数据所有权规则\n\n## 核心结论\n\n每类业务数据必须有唯一写入方。模块之间通过版本化接口或事件协作，不允许\n依赖对方内部表和未声明的实现细节。\n\n## 使用条件\n\n- 多个模块、服务、团队或供应商协作时。\n- 数据迁移、独立部署、审计和回滚要求出现时。\n\n## 不适用场景\n\n- 原型阶段可以暂时简化，但必须记录为技术债。\n- 只读报表可以经过数据同步或投影，但必须声明新鲜度和来源。\n\n## 强制规则\n\n1. 一个数据域只有一个业务写入方。\n2. 跨模块访问必须先定义接口或事件契约。\n3. 契约需要版本、兼容策略和废弃流程。\n4. 不允许跨模块直接写表。\n5. 数据库迁移由数据拥有方负责。\n6. 接口错误、超时、重试和幂等语义必须明确。\n7. 敏感字段需要脱敏、授权和审计规则。\n\n## 失败的例外\n\n确需例外时，必须记录：\n\n- 原因。\n- 影响范围。\n- 临时或永久性质。\n- 结束时间和迁移计划。\n- 风险和验收负责人。\n\n## 失败模式\n\n- 多模块同时拥有同一字段的写入逻辑。\n- 接口没有版本，修改后导致调用方失效。\n- 共享表变更没有通知和迁移顺序。\n- 通过数据库直连绕过权限和审计。\n\n## 验证证据\n\n- 数据所有权矩阵。\n- API 与事件契约。\n- 兼容性测试。\n- 例外记录和关闭证据。\n\n## 相关资产\n\n- `MTH-MODULE-001`：模块拆分时必须同时确定数据所有权。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-BOUNDARY-001\ntitle: 接口契约与数据所有权规则\nasset_type: rule\nrule_type: must\npurpose: data\nlayer: data\ntech_context:\n  - generic\npriority: p0\noverride_allowed: false\ncompile_target:\n  - agents\nverification: gate\nevidence:\n  - supabase/migrations 的 RLS 策略（每个账号只能读写自己的数据）\n  - tests/prompt-source-supabase.test.mjs、tests/prompt-source-contract.test.mjs（数据源契约测试）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/v2-requirements-draft.md\n  - docs/decisions/0005-cloud-architecture.md\nrelated_assets:\n  - MTH-MODULE-001\n  - MTH-ARCH-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "数据",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "none",
+        "evidence": "- supabase/migrations 的 RLS 策略（每个账号只能读写自己的数据）\n- tests/prompt-source-supabase.test.mjs、tests/prompt-source-contract.test.mjs（数据源契约测试）\n- docs/v2-requirements-draft.md\n- docs/decisions/0005-cloud-architecture.md",
+        "verification": "门禁检查",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-BOUNDARY-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-module-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-arch-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-quality-001",
+      "assetType": "rule",
+      "title": "项目质量画像与必选门禁",
+      "summary": "不同风险等级应自动选择不同门禁。门禁的目标是控制真实风险，不是让所有项目 都生成相同数量的文档。",
+      "content": "# 项目质量画像与必选门禁\n\n## 核心结论\n\n不同风险等级应自动选择不同门禁。门禁的目标是控制真实风险，不是让所有项目\n都生成相同数量的文档。\n\n## 使用条件\n\n- 创建项目或项目风险等级变化时。\n- 发布、数据迁移、权限变更和外部集成前。\n- 需要判断哪些验证不能被跳过时。\n\n## 不适用场景\n\n- 不能用门禁替代具体验收标准。\n- 不能因为免费或预算低就跳过关键数据安全。\n- 不能把所有门禁都设为强制，导致小型项目无法推进。\n\n## 推荐门禁\n\n| 画像 | 必选门禁 |\n| --- | --- |\n| 个人工具 | 可运行、基本验收、数据导出 |\n| 中型产品 | 工程检查、登录保护、备份、回滚、账号隔离 |\n| 大型平台 | 架构基线、接口契约、端到端骨架、性能、可观察性、发布门禁 |\n| 监管或高敏 | 等保、安全审计、密钥管理、可信环境、恢复演练和合规证据 |\n\n## 画像的例外\n\n门禁不只看团队人数，还要看暴露面。个人工具一旦公开上线、持有生产密钥或保存真实数据，\n就必须按中型产品执行发布和权限门禁。本项目就是这种情况：个人工具画像原本只要求\n\"可运行、基本验收、数据导出\"，实际上必须补上账号隔离、迁移验证、备份和发布门禁，\n否则会出现在预览环境暴露生产密钥这类问题（见 `CASE-ENV-PREFIX-001`）。\n\n## 执行步骤\n\n1. 确定项目质量画像。\n2. 选择该画像的必选门禁。\n3. 标记可以裁剪或延后的门禁。\n4. 将门禁映射到责任人、证据和阶段。\n5. 风险变化时重新计算门禁。\n\n## 失败模式\n\n- 个人项目生成大型项目全套文档。\n- 涉及用户数据的项目没有备份和回滚。\n- 门禁只有复选框，没有证据和责任人。\n\n## 验证证据\n\n- 质量画像。\n- 门禁适用矩阵。\n- 每项门禁的证据和豁免记录。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`：发布时执行质量门禁。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-QUALITY-001\ntitle: 项目质量画像与必选门禁\nasset_type: method\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - agents\n  - template\nverification: gate\nevidence:\n  - docs/acceptance/week-08.md（把 npm run check 设为 Vercel 构建门禁，四项检查全过才允许部署）\n  - docs/acceptance/week-07.md 与 CASE-ENV-PREFIX-001（个人工具画像在本项目上不够用）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\n  - build\n  - release\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/acceptance/week-07.md\n  - docs/operations/release-rollback.md\n  - docs/learning/engineering-readiness.md\nrelated_assets:\n  - MTH-PROJECT-001\n  - TPL-ACCEPT-001\n  - PLAYBOOK-RELEASE-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "发布",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/week-08.md（把 npm run check 设为 Vercel 构建门禁，四项检查全过才允许部署）\n- docs/acceptance/week-07.md 与 CASE-ENV-PREFIX-001（个人工具画像在本项目上不够用）\n- docs/acceptance/week-07.md\n- docs/operations/release-rollback.md\n- docs/learning/engineering-readiness.md",
+        "verification": "门禁检查",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "template"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-QUALITY-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-project-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-playbook-release-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-tpl-accept-001",
+      "assetType": "document",
+      "title": "验收证据链",
+      "summary": "“已经完成”必须有证据。验收不应只记录任务是否勾选，而要把需求、验收条件、 测试步骤、实际结果、版本和已知问题关联起来。",
+      "content": "# 验收证据链\n\n## 核心结论\n\n“已经完成”必须有证据。验收不应只记录任务是否勾选，而要把需求、验收条件、\n测试步骤、实际结果、版本和已知问题关联起来。\n\n## 使用条件\n\n- 每个功能、修复、数据迁移和发布任务。\n- 多方协作或存在返工、审计、回滚要求时。\n\n## 不适用场景\n\n- 一次性探索可以只记录结论，但正式交付不得省略证据。\n- 不能用测试数量代替关键业务验收。\n\n## 证据链结构\n\n```text\n需求编号\n-> 验收条件\n-> 测试步骤\n-> 实际结果\n-> 自动化或人工证据\n-> 代码或提交版本\n-> 已知问题和例外\n```\n\n## 最低内容\n\n1. 要验证的用户可见行为。\n2. 正常流程。\n3. 空数据、边界、错误和重复操作。\n4. 执行环境和数据条件。\n5. 通过或失败结果。\n6. 问题和修复版本。\n\n## 失败模式\n\n- 只有任务清单，没有实际结果。\n- 验收条件不可观察。\n- 修复后没有复验和回归。\n- 文档勾选完成，但生产配置未验证。\n\n## 验证证据\n\n- 验收记录。\n- 自动化和人工测试结果。\n- 提交、版本、部署和回滚记录。\n\n## 相关资产\n\n- `MTH-QUALITY-001`：验收门禁由项目画像决定。\n\n## 包内原始元数据\n\n```yaml\nid: TPL-ACCEPT-001\ntitle: 验收证据链\nasset_type: template\npurpose: testing\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - template\nverification: manual\nevidence:\n  - docs/acceptance/（week-01 至 week-09 与 v1.0.0 清单按\"版本与结论、已通过项、发布门禁、发布记录\"组织并逐项签署）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - build\n  - release\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/acceptance/week-07.md\n  - docs/development-rules.md\nrelated_assets:\n  - MTH-REQ-002\n  - MTH-QUALITY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "documentType": "模板",
+        "sourceLocation": "docs/acceptance/week-07.md；docs/development-rules.md",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "TPL-ACCEPT-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "template",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-playbook-release-001",
+      "assetType": "rule",
+      "title": "发布、回滚与恢复",
+      "summary": "建代码、数据库和配置不能独立发布。上线前必须确定迁移顺序、数据备份、 环境变量范围、回滚目标和发布后验证。",
+      "content": "# 发布、回滚与恢复\n\n## 核心结论\n\n建代码、数据库和配置不能独立发布。上线前必须确定迁移顺序、数据备份、\n环境变量范围、回滚目标和发布后验证。\n\n## 使用条件\n\n- 所有生产发布和数据库迁移。\n- 存在外部依赖、持久化数据或用户影响时。\n\n## 不适用场景\n\n- 纯文档或无运行环境影响的变更可以简化。\n- 简化不能取消版本记录和可回退性。\n\n## 执行顺序\n\n1. 评审代码、数据库和配置变更。\n2. 完成工程检查。\n3. 导出并验证备份。\n4. 先执行兼容性数据库迁移并验证。\n5. 确定上一个正常部署和回滚目标。\n6. 部署应用。\n7. 验证登录、核心数据流和外部接口。\n8. 记录发布证据和未解决问题。\n\n## 发布门禁证据\n\n- 工程检查结果。\n- 迁移名称、时间和验证结果。\n- 备份时间、位置和数据量。\n- 环境变量范围。\n- 回滚目标。\n- 发布后的基础验收结果。\n\n## 失败模式\n\n- 先部署代码，后补数据库结构。\n- 没有备份就迁移或合并数据。\n- Preview 使用生产密钥。\n- 回滚只恢复代码，不处理数据兼容。\n\n## 验证证据\n\n- 发布检查表。\n- 回滚和恢复演练记录。\n- 生产监控和错误记录。\n\n## 相关资产\n\n- `PLAYBOOK-INCIDENT-001`：使用受控故障验证恢复能力。\n\n## 包内原始元数据\n\n```yaml\nid: PLAYBOOK-RELEASE-001\ntitle: 发布、回滚与恢复\nasset_type: playbook\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - agents\n  - readme\nverification: gate\nevidence:\n  - docs/acceptance/week-08.md 第 5 步（在生产用 Vercel Promote 完成一次真实回滚，再切回最新版本）\n  - docs/operations/release-rollback.md\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - release\n  - operate\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/operations/release-rollback.md\n  - docs/operations/backup.md\nrelated_assets:\n  - MTH-QUALITY-001\n  - PLAYBOOK-INCIDENT-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "process",
+        "scope": "project",
+        "purpose": "发布",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "release",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/week-08.md 第 5 步（在生产用 Vercel Promote 完成一次真实回滚，再切回最新版本）\n- docs/operations/release-rollback.md\n- docs/operations/release-rollback.md\n- docs/operations/backup.md",
+        "verification": "门禁检查",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "readme"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "PLAYBOOK-RELEASE-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "playbook",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-playbook-incident-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-playbook-incident-001",
+      "assetType": "rule",
+      "title": "生产故障演练",
+      "summary": "恢复能力不能只靠文档证明。应在隔离环境中制造可控故障，记录发现、恢复时间 和真实改进项。",
+      "content": "# 生产故障演练\n\n## 核心结论\n\n恢复能力不能只靠文档证明。应在隔离环境中制造可控故障，记录发现、恢复时间\n和真实改进项。\n\n## 使用条件\n\n- 项目具备备份、回滚和基础监控后。\n- 每个大版本至少一次。\n- 关键架构、权限、数据或部署方式变化后。\n\n## 不适用场景\n\n- 不在唯一生产数据上直接制造故障。\n- 没有备份、恢复路径和负责人时不执行破坏性演练。\n\n## 首批演练\n\n1. 使用错误环境变量验证系统安全关闭。\n2. 导出测试数据，修改后完成恢复。\n3. 回滚到上一个正常部署并完成基础验收。\n4. 检查 Preview 不包含生产密钥。\n5. 使用测试数据学习慢查询、配额和成本边界。\n\n## 记录模板\n\n```text\n演练目标\n开始前状态\n执行操作\n观察结果\n证据\n是否恢复\n恢复时间\n学到什么\n改进事项\n```\n\n## 失败模式\n\n- 只看备份文件存在，不验证恢复。\n- 只回滚代码，不验证数据。\n- 没有记录恢复时间和失败步骤。\n- 演练结果没有进入发布和运维改进。\n\n## 验证证据\n\n- 演练记录。\n- 恢复前后对比。\n- 改进任务和关闭证据。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`（依赖）：演练前必须先具备备份、回滚和发布门禁。\n- `MTH-QUALITY-001`（引用）：演练结论会回头修正项目的必选门禁。\n\n## 包内原始元数据\n\n```yaml\nid: PLAYBOOK-INCIDENT-001\ntitle: 生产故障演练\nasset_type: playbook\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p2\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/learning/engineering-readiness.md（演练一到七的计划；其中\"配置错误时安全关闭\"已由真实事故间接验证，其余尚未执行）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - operate\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - docs/learning/engineering-readiness.md\n  - docs/operations/release-rollback.md\nrelated_assets:\n  - PLAYBOOK-RELEASE-001\n  - MTH-QUALITY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "process",
+        "scope": "project",
+        "purpose": "发布",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "release",
+        "priority": "may",
+        "overrideScope": "project",
+        "evidence": "- docs/learning/engineering-readiness.md（演练一到七的计划；其中\"配置错误时安全关闭\"已由真实事故间接验证，其余尚未执行）\n- docs/learning/engineering-readiness.md\n- docs/operations/release-rollback.md",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "PLAYBOOK-INCIDENT-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "playbook",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-playbook-release-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-case-parallel-001",
+      "assetType": "document",
+      "title": "多会话并行开发会重复实现同一任务",
+      "summary": "多个会话并行开发时，切分方式必须按迭代任务边界，而不是按技术分层。否则会出现两条 实现同一功能的路径：界面用了其中一条，另一条变成没有被任何界面调用的死代码。",
+      "content": "# 多会话并行开发会重复实现同一任务\n\n## 核心结论\n\n多个会话并行开发时，切分方式必须按迭代任务边界，而不是按技术分层。否则会出现两条\n实现同一功能的路径：界面用了其中一条，另一条变成没有被任何界面调用的死代码。\n\n## 使用条件\n\n- 同时运行多个开发会话，或者多个开发者实际并行时。\n- 一个版本内包含多个相对独立的任务时。\n- 想用并行缩短交付周期、但还没决定怎么切分时。\n\n## 不适用场景\n\n- 串行开发单个任务时不需要这套登记。\n- 不能把结论简化成\"禁止并行\"。并行本身有价值，前提是切分正交：后台契约先于界面、\n  数据迁移先于数据消费。\n\n## 经过与根因\n\n- 背景：2.0.0 的主线会话在做\"规则、文档编辑与版本恢复\"。\n- 另一个会话按建议开了一条\"后台版本服务\"支线，实现了资产版本恢复接口、本地事务和云端函数。\n- 两边都完成了\"恢复到历史版本产生新版本\"的语义：主线在客户端组装恢复内容后走已有保存\n  通道，支线新增了独立接口和数据库函数。\n- 两个提交分别是 `a48da17` 和 `115e16b`，改动文件几乎不重叠，只共同修改了\n  `src/data/assets.ts` 的同一行，但功能完全重叠。\n- 结果：界面只会调用主线的路径，支线的接口和云端函数没有任何调用方，属于重复建设。\n\n根因：\n\n1. 并行分工按技术分层切，而不是按迭代任务切。\n2. 两个会话看的是同一份计划，但开工前没有登记任务名、分支、预计改动的文件集合和交付物。\n3. 没有事先约定同一功能只允许一条实现路径落地。\n\n## 改进与门禁\n\n1. 一个迭代任务只由一个会话负责；并行只允许用在有明确先后依赖的切分上。\n2. 开工前登记：任务名、分支、工作区、预计改动的文件集合、交付物。\n3. 同一功能在合并前必须确认只有一条实现路径会被界面调用。\n4. 并行会话使用独立工作区，并且从已提交的稳定基线分支。\n5. 提交信息里写清任务归属，便于按任务核对是否重复。\n\n## 失败模式\n\n- 用\"两个会话一起做更快\"判断并行价值，而不判断切分是否正交。\n- 两个会话都从脏工作区分支，拿到不稳定基线。\n- 发现重复后只删掉多余代码，不记录教训和门禁，下次继续发生。\n\n## 验证证据\n\n- 两个分支的提交记录和改动文件清单。\n- 2.0 计划文档「当前进度」一节的进度记录与不合并决定。\n- 本资产包 0.2.0 就是这次复盘的产物。\n\n## 相关资产\n\n- `MTH-DELIVERY-001`（引用）：并行前的契约优先思路同样适用于会话协作。\n- `MTH-QUALITY-001`（引用）：协作门禁应进入项目质量画像。\n- 缺口记录：本资产包目前没有\"协作边界\"主题的规则资产，2.1 需要时再补。\n\n## 包内原始元数据\n\n```yaml\nid: CASE-PARALLEL-001\ntitle: 多会话并行开发会重复实现同一任务\nasset_type: case_note\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\noverride_allowed: true\ncompile_target:\n  - agents\n  - start_prompt\nverification: manual\nevidence:\n  - 分支 feat/v2.0.0-asset-version-service 提交 115e16b，与分支 feat/v2.0.0-asset-foundation 提交 a48da17 是两条独立实现\n  - 提交 9bf3d42（记录重复实现与不合并决定，内容位于 2.0 计划文档的「当前进度」一节）\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - AGENTS.md\n  - docs/development-rules.md\nrelated_assets:\n  - MTH-DELIVERY-001\n  - MTH-QUALITY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "documentType": "案例",
+        "sourceLocation": "AGENTS.md；docs/development-rules.md",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "CASE-PARALLEL-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "case_note",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-case-env-prefix-001",
+      "assetType": "document",
+      "title": "集成前缀把命名错误放大成生产密钥泄露风险",
+      "summary": "第三方集成的安装参数会批量生成环境变量。一个填错的前缀会同时造成两个后果：应用读不到 变量，以及能绕过行级安全的生产密钥被投放到预览环境。这两个后果都不会在页面上直接显示出来。",
+      "content": "# 集成前缀把命名错误放大成生产密钥泄露风险\n\n## 核心结论\n\n第三方集成的安装参数会批量生成环境变量。一个填错的前缀会同时造成两个后果：应用读不到\n变量，以及能绕过行级安全的生产密钥被投放到预览环境。这两个后果都不会在页面上直接显示出来。\n\n## 使用条件\n\n- 通过平台集成安装第三方服务时。\n- 环境变量由集成批量生成，而不是手工逐条填写时。\n- 项目区分开发、预览和生产环境时。\n\n## 不适用场景\n\n- 全部变量都由手工创建、并且有命名检查时，不需要这套流程。\n- 不能把结论简化成\"重命名变量\"，作用域问题不会因为改名而消失。\n\n## 经过与根因\n\n- 安装 Vercel 的 Supabase 集成时，安装表单里的「环境变量前缀」被填成了\n  `SUPABASE_SERVICE_ROLE_KEY_`。\n- 集成因此同步出 16 条带错误前缀的变量，默认作用域是 Production + Preview。\n- 命名错：13 条标准变量被套上错误前缀，应用代码只读精确名称，所以读不到这些变量。\n- 作用域错：这批变量里包含能绕过行级安全的生产密钥，修复前确实存在于预览环境，\n  安全门禁不成立。\n- 另有一条与集成无关的独立作用域错：`CRON_SECRET` 被勾成了 Production + Preview。\n- 定位难点：变量页面会截断长名字，只看页面会误判根因是命名还是作用域。\n\n## 改进与门禁\n\n1. 集成安装时「环境变量前缀」必须留空。\n2. 修改环境变量后必须重新部署，运行时不会读取本地 `.env.local`。\n3. 发布门禁必须包含一条：预览环境的变量清单里没有能绕过行级安全的密钥。\n4. 用平台接口读取完整变量名，不用页面截断后的结果做判断。\n5. 调整作用域后要复验生产：首页跳转、登录页和健康检查都要重新确认，防止改作用域时\n   把密钥值清空。\n\n## 失败模式\n\n- 把根因理解成\"命名错\"或\"作用域错\"其中之一，修一半。\n- 只删掉几条显眼变量，留着完整的一套带前缀变量当噪音。\n- 用页面显示的截断名字下结论。\n- 事故处理完不把检查项写进发布清单，下次集成安装再犯。\n\n## 验证证据\n\n- `docs/acceptance/week-07.md` 的处理结果表：16 条前缀变量作用域收窄为 Production，\n  预览环境只剩 6 条公开变量，生产回归结果为 `/` 307、`/login` 200、\n  `/api/health/db` 带错误密钥返回 401。\n- `docs/cloud-deployment.md` 已把这条陷阱写进部署指南。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`（验证）：发布门禁需要包含环境变量范围检查。\n- `MTH-ARCH-001`（引用）：安全基线要覆盖密钥边界和配置失败时的行为。\n\n## 包内原始元数据\n\n```yaml\nid: CASE-ENV-PREFIX-001\ntitle: 集成前缀把命名错误放大成生产密钥泄露风险\nasset_type: case_note\npurpose: safety\nlayer: project\ntech_context:\n  - vercel\n  - supabase\npriority: p0\noverride_allowed: false\ncompile_target:\n  - agents\n  - readme\nverification: gate\nevidence:\n  - docs/acceptance/week-07.md「环境变量范围：定位与修复」\n  - docs/cloud-deployment.md「常见陷阱：Vercel 的 Supabase 集成」\n  - 提交 2d70b3e（记录作用域修复与集成前缀陷阱）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - release\n  - operate\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/decisions/0007-production-configuration-hardening.md\n  - docs/acceptance/week-07.md\nrelated_assets:\n  - PLAYBOOK-RELEASE-001\n  - MTH-ARCH-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "documentType": "案例",
+        "sourceLocation": "docs/decisions/0007-production-configuration-hardening.md；docs/acceptance/week-07.md",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "CASE-ENV-PREFIX-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "case_note",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-case-migration-001",
+      "assetType": "document",
+      "title": "迁移历史必须和仓库文件名一致",
+      "summary": "结构迁移、数据迁移和迁移历史必须一次对齐。手工在控制台执行的迁移如果不回写历史表， 等价于没有迁移记录，自动部署会按空历史重新执行旧迁移。",
+      "content": "# 迁移历史必须和仓库文件名一致\n\n## 核心结论\n\n结构迁移、数据迁移和迁移历史必须一次对齐。手工在控制台执行的迁移如果不回写历史表，\n等价于没有迁移记录，自动部署会按空历史重新执行旧迁移。\n\n## 使用条件\n\n- 数据库迁移改由平台自动部署时。\n- 早期迁移是手工执行、历史表为空时。\n- 迁移涉及权限策略改写时。\n\n## 不适用场景\n\n- 单人本地数据库、没有自动部署时，可以只保留文件记录。\n- 不能把结论简化成\"补两条记录\"：历史、文件名和实际结构三者必须一致。\n\n## 经过与根因\n\n- 早期迁移是手工在 Supabase SQL Editor 里执行的，迁移历史表一直是空的。\n- 仓库里已经有 `202609180001` 这类迁移文件，而自动部署是按历史表判断是否需要执行。\n  历史为空意味着旧迁移可能被重复执行。\n- 对齐历史后，顾问检查发现四条 `auth_rls_initplan` 性能告警：`prompt_versions` 的策略\n  写成 `auth.uid()`，与 `prompts` 的 `(select auth.uid())` 写法不一致。\n- 统一改法后重新应用并复查，告警消失。\n\n## 改进与门禁\n\n1. 一个迁移文件同时包含结构改动和数据迁移，并且可以重复执行。\n2. 文件名与迁移历史表保持一致，按时间前缀排序。\n3. 应用迁移后按清单核对：字段、索引、RLS 策略、函数和顾问检查结果。\n4. 历史表没有对齐之前，不允许开启自动部署。\n5. 迁移演练和回滚记录属于版本验收的一部分，不能只看\"执行成功\"。\n\n## 失败模式\n\n- 手工执行迁移但不回写历史表，自动部署时重复执行。\n- 结构迁移和数据迁移拆成两次执行，中途失败留下半迁移状态。\n- 只看迁移执行成功，不做顾问检查和权限策略复查。\n\n## 验证证据\n\n- `docs/acceptance/week-08.md` 发布记录：迁移历史已对齐为两条记录，四个函数都是\n  `SECURITY INVOKER`，顾问检查没有 error，性能告警处理后清零。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`（验证）：发布门禁需要包含迁移顺序和历史核对。\n- `RULE-BOUNDARY-001`（引用）：权限策略由迁移维护，所有权变更要走同一条链路。\n\n## 包内原始元数据\n\n```yaml\nid: CASE-MIGRATION-001\ntitle: 迁移历史必须和仓库文件名一致\nasset_type: case_note\npurpose: release\nlayer: data\ntech_context:\n  - supabase\n  - postgres\n  - vercel\npriority: p0\noverride_allowed: false\ncompile_target:\n  - agents\n  - readme\nverification: gate\nevidence:\n  - docs/operations/database-migrations.md\n  - docs/acceptance/week-08.md 发布记录（迁移历史曾为空，早期迁移是手工执行）\n  - 提交 c8c46ff、45f0730（对齐迁移历史并验证自动迁移链路）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - release\n  - operate\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/operations/database-migrations.md\n  - docs/operations/release-rollback.md\nrelated_assets:\n  - PLAYBOOK-RELEASE-001\n  - RULE-BOUNDARY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "documentType": "案例",
+        "sourceLocation": "docs/operations/database-migrations.md；docs/operations/release-rollback.md",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "CASE-MIGRATION-001",
+          "packVersion": "0.2.0",
+          "packAssetType": "case_note",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-tech-001",
+      "assetType": "rule",
+      "title": "约束驱动的技术选型",
+      "summary": "技术选型不是挑更先进的产品，而是把约束翻译成必须具备的能力，再决定用托管、自建还是 混合方式实现。顺序固定：约束 → 能力 → 实现 → 偏离记录。先定产品再补理由，等于把风险 推到交付阶段。",
+      "content": "# 约束驱动的技术选型\n\n## 核心结论\n\n技术选型不是挑更先进的产品，而是把约束翻译成必须具备的能力，再决定用托管、自建还是\n混合方式实现。顺序固定：约束 → 能力 → 实现 → 偏离记录。先定产品再补理由，等于把风险\n推到交付阶段。\n\n## 使用条件\n\n- 立项、更换运行环境、可用性目标变化、预算或维护人手变化时。\n- 引入外部服务、第三方集成或自建中间件之前。\n- 数据敏感度或合规要求变化时。\n\n## 不适用场景\n\n- 一次性原型、没有对外承诺的个人试验，只需要最小约束。\n- 能力要求必须由约束推出，不能由团队偏好或流行度推出。\n- 不能把某个流行产品直接写成项目默认选型。\n\n## 选择步骤\n\n1. 定约束：项目规模、运行环境（云托管、内网自建、物理隔离）、可用性三个数字、\n   数据敏感度、预算、维护人手、合规要求。\n2. 写能力要求：把约束翻译成必须具备的属性，例如无状态、可横向扩展、健康检查、\n   备份可恢复、可离线部署、可审计。\n3. 选实现方式：优先托管；托管满足不了约束时再自建。同一能力允许有多个可接受实现。\n4. 写替代条件：什么情况下可以换实现，换的时候要付出什么代价。\n5. 写禁止项：明确不能做的事，例如预览环境不得持有生产密钥。\n6. 偏离要写决策记录：偏离默认选型必须记录理由、影响范围和退出计划。\n\n## 场景到能力的对照\n\n下表是候选对照，落进具体项目时必须经过项目确认，不能直接当结论使用。\n\n| 场景 | 必须具备的能力 | 常见实现 | 明确不做 |\n| --- | --- | --- | --- |\n| 只要能用、单机可重建 | 单实例、定时备份 | 平台托管加托管数据库 | 不做负载均衡和集群 |\n| 有对外可用性承诺 | 多实例、负载均衡、健康检查、无状态会话、连接池、恢复演练 | 云负载均衡或反向代理加多实例 | 只做主备却从不演练 |\n| 数据不能出内网、物理隔离 | 可离线部署、内网证书、容器编排、离线制品包、现场诊断 | 容器加反向代理加内网证书 | 依赖公网服务和远程工具 |\n| 单人维护、成本敏感 | 全托管优先、有成本上限 | 平台托管 | 自建需要专人运维的组件 |\n| 有明确的读写量或延迟指标 | 指标口径、压测模型、缓存或队列、读写分离 | 缓存、队列、只读副本 | 没有指标就上缓存和队列 |\n| 关键数据 | 备份、恢复演练、恢复目标与可用性分开定 | 备份加演练记录 | 把有备份当成能恢复 |\n\n## 失败模式\n\n- 先选产品再补理由，偏离默认选型却不写决策记录。\n- 没有对外承诺却上了高可用架构，成本上升但风险没降。\n- 预览或测试环境持有生产密钥。\n- 内网或物理隔离环境依赖公网服务，现场交付时全部失效。\n- 只做主备、从不演练，以为有备份就等于能恢复。\n\n## 验证证据\n\n- 技术档案：约束、能力要求、已选实现、替代条件和禁止项。\n- 决策记录：每条偏离默认选型的理由和退出计划。\n- 环境差异表：同一条链路在不同环境下的打法。\n- 可用性三个数字与备份恢复演练记录。\n\n## 相关资产\n\n- `MTH-PROJECT-001`（依赖）：规模分级是约束的第一层。\n- `MTH-REQ-002`（依赖）：可用性和性能指标必须先能验收，否则无法选型。\n- `MTH-ARCH-001`（引用）：技术选型是架构基线的一项输出。\n- `TPL-TECH-001`（引用）：选型结果按技术档案模板落地。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-TECH-001\ntitle: 约束驱动的技术选型\nasset_type: method\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - agents\n  - readme\nverification: manual\nevidence:\n  - docs/project-map.md（第三步可用性三个数字、第五步环境差异表：同一条链路在云托管、内网自建和物理隔离下打法不同）\n  - docs/decisions/（7 条技术决策记录，每条选型都写了理由和偏离说明）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/project-map.md\n  - docs/decisions/0001-tech-stack.md\n  - docs/learning/engineering-readiness.md\nrelated_assets:\n  - MTH-PROJECT-001\n  - MTH-REQ-002\n  - MTH-ARCH-001\n  - TPL-TECH-001\nversion: 0.2.1\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- docs/project-map.md（第三步可用性三个数字、第五步环境差异表：同一条链路在云托管、内网自建和物理隔离下打法不同）\n- docs/decisions/（7 条技术决策记录，每条选型都写了理由和偏离说明）\n- docs/project-map.md\n- docs/decisions/0001-tech-stack.md\n- docs/learning/engineering-readiness.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "readme"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-TECH-001",
+          "packVersion": "0.2.1",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-project-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-req-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-arch-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-tpl-tech-001",
+      "assetType": "document",
+      "title": "技术档案模板",
+      "summary": "技术档案把项目的技术选择一次写清：约束是什么、选了哪些技术、禁止用什么、什么条件下 可以替代、哪些偏离必须写决策记录。它是项目的一级档案，不是几条零散规则。",
+      "content": "# 技术档案模板\n\n## 核心结论\n\n技术档案把项目的技术选择一次写清：约束是什么、选了哪些技术、禁止用什么、什么条件下\n可以替代、哪些偏离必须写决策记录。它是项目的一级档案，不是几条零散规则。\n\n## 使用条件\n\n- 项目立项时创建，作为技术选型的落地载体。\n- 更换运行环境、换技术、可用性目标或维护人手变化时更新。\n- 把一个项目的资产导入新项目时，作为默认技术档案模板。\n\n## 不适用场景\n\n- 一次性原型可以只填语言、运行环境和数据存放三项。\n- 简化不等于留空：没要求也要写\"暂无要求\"和原因。\n- 技术档案不是技术栈清单，缺少禁止项和替代条件时不算填完。\n\n## 档案结构\n\n| 字段 | 填写要求 |\n| --- | --- |\n| 项目规模 | 个人工具、中型产品、大型平台或监管高敏，以及判断依据 |\n| 运行环境 | 云托管、内网自建或物理隔离；是否允许依赖公网服务 |\n| 预算约束 | 可接受的持续成本上限和触发复核的条件 |\n| 数据敏感度 | 数据类型、是否含个人信息、是否可以出内网 |\n| 可用性三个数字 | 可用性档位、恢复时间目标、恢复点目标；只有对外承诺才提高档位 |\n| 默认技术栈 | 如果没有特殊约束，项目按什么技术起步 |\n| 已选技术栈 | 实际选择，逐项对应上面推导出的能力要求 |\n| 禁止使用的技术 | 明确不能引入的组件或做法，以及原因 |\n| 允许替代的条件 | 什么情况下可以换实现，替换的代价和边界 |\n| 需要决策记录的偏离项 | 偏离默认选型的每一项，附决策记录编号 |\n| 维护责任 | 谁维护、维护到什么程度、超出边界时交给谁 |\n| 关联技术规则与决策 | 相关规则资产和决策记录的标识 |\n\n## 最低内容\n\n重写级或立项就必须定死的项目，档案至少要有七项：\n\n1. 项目规模。\n2. 运行环境。\n3. 数据存放位置。\n4. 主语言与框架族。\n5. 可用性三个数字。\n6. 禁止使用的技术。\n7. 维护责任人。\n\n其余字段可以标注\"待补\"，但要写明补的时间和负责人。\n\n## 失败模式\n\n- 只写用了什么，不写为什么用。\n- 换了运行环境却不更新档案，实际打法和档案不一致。\n- 偏离默认选型不写决策记录。\n- 只列技术栈，没有禁止项、替代条件和维护责任。\n- 维护责任人空缺，出问题时没人认领。\n\n## 验证证据\n\n- 填写完整的技术档案本身。\n- 与偏离项对应的决策记录。\n- 换环境时的差异对照表。\n- 可用性目标与恢复演练记录。\n\n## 相关资产\n\n- `MTH-TECH-001`（依赖）：技术档案是约束驱动选型的落地结构。\n- `MTH-ARCH-001`（引用）：架构基线中的环境、安全和运维项在档案里固化。\n\n## 包内原始元数据\n\n```yaml\nid: TPL-TECH-001\ntitle: 技术档案模板\nasset_type: template\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - template\nverification: manual\nevidence:\n  - docs/project-map.md（本项目的技术栈基线与可用性目标就是一份填好的技术档案）\n  - docs/decisions/（7 条技术决策记录可以作为\"偏离项\"的填写示例）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\n  - build\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/decisions/0001-tech-stack.md\n  - docs/decisions/0005-cloud-architecture.md\n  - docs/project-map.md\nrelated_assets:\n  - MTH-TECH-001\n  - MTH-ARCH-001\nversion: 0.2.1\nlast_reviewed: 2026-09-21\n```",
+      "metadata": {
+        "documentType": "模板",
+        "sourceLocation": "docs/decisions/0001-tech-stack.md；docs/decisions/0005-cloud-architecture.md；docs/project-map.md",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "TPL-TECH-001",
+          "packVersion": "0.2.1",
+          "packAssetType": "template",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-profile-cloud-001",
+      "assetType": "document",
+      "title": "中型云端产品",
+      "summary": "",
+      "content": "# 中型云端产品\n\n## 典型特征\n\n- 个人或小团队维护。\n- 包含登录、云数据库、多设备同步或外部 AI 服务。\n- 用户数据不能丢失，错误会影响真实使用。\n- 需要版本、备份、回滚、监控和成本控制。\n- 可能逐步扩展到更多模块。\n\n## 推荐路线\n\n```text\n范围与数据边界\n-> 架构和工程基线\n-> 登录、数据和部署最小链路\n-> 功能纵向迭代\n-> 生产加固与恢复演练\n```\n\n## 必选资产\n\n- 项目规模与复杂度分级。\n- 需求边界与外部依赖澄清。\n- 架构与工程基线。\n- 端到端最小链路。\n- 项目质量画像与必选门禁。\n- 验收证据链。\n- 发布、回滚与恢复。\n\n## 可选资产\n\n- 按业务能力拆分模块。\n- 接口契约与数据所有权规则。\n- 生产故障演练。\n\n## 验收重点\n\n- 登录和数据隔离。\n- 数据备份与恢复。\n- 环境变量和密钥范围。\n- 构建、测试、部署和回滚。\n- 免费额度、成本和服务暂停风险。\n\n## 包内原始元数据\n\n```yaml\nid: PROFILE-CLOUD-001\ntitle: 中型云端产品\nproject_scale: medium\nrisk_level: medium\nteam_size: 2-8\nprimary_constraint: maintainability\n```",
+      "metadata": {
+        "documentType": "项目画像",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "PROFILE-CLOUD-001",
+          "packVersion": "",
+          "packAssetType": "profile",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-profile-large-001",
+      "assetType": "document",
+      "title": "大型平台",
+      "summary": "",
+      "content": "# 大型平台\n\n## 典型特征\n\n- 多个核心分系统和服务域。\n- 多团队、多供应商或驻场协作。\n- 大量外部接口、历史系统和数据源。\n- 强性能、可靠性、安全、合规和信创要求。\n- 交付周期长，返工和集成失败成本高。\n\n## 推荐路线\n\n```text\n需求与指标澄清\n-> 架构、数据和接口基线\n-> 公共平台能力\n-> 两条端到端最小链路\n-> 服务域并行纵向交付\n-> 集成、性能、安全、信创和试运行\n```\n\n## 必选资产\n\n- 项目规模与复杂度分级。\n- 需求边界与外部依赖澄清。\n- 定量指标与冲突检查。\n- 架构与工程基线。\n- 端到端最小链路。\n- 按业务能力拆分模块。\n- 接口契约与数据所有权规则。\n- 项目质量画像与必选门禁。\n- 验收证据链。\n- 发布、回滚与恢复。\n- 生产故障演练。\n\n## 关键控制点\n\n- 模块、接口和数据所有权。\n- 公共身份、权限、审计和监控。\n- 外部依赖的测试环境和责任方。\n- 性能、容量、可用性和恢复目标。\n- 多团队接口冻结和并行开发。\n- 分阶段验收和上线，而不是一次性大集成。\n\n## 验收重点\n\n- 端到端主链路。\n- 非功能指标和容量模型。\n- 安全、合规和信创兼容。\n- 故障恢复和业务连续性。\n- 需求、代码、数据、测试和发布的追踪。\n\n## 包内原始元数据\n\n```yaml\nid: PROFILE-LARGE-001\ntitle: 大型平台\nproject_scale: large\nrisk_level: high\nteam_size: 10+\nprimary_constraint: integration-risk\n```",
+      "metadata": {
+        "documentType": "项目画像",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "PROFILE-LARGE-001",
+          "packVersion": "",
+          "packAssetType": "profile",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-profile-personal-001",
+      "assetType": "document",
+      "title": "个人工具",
+      "summary": "",
+      "content": "# 个人工具\n\n## 典型特征\n\n- 单人使用或少量可信用户。\n- 数据和流程相对简单。\n- 故障影响有限，可快速重建。\n- 不需要团队权限、复杂审批和正式合规审计。\n- 预算和运维成本敏感。\n\n## 推荐路线\n\n```text\n核心用户流程\n-> 静态或交互原型\n-> 本地可用闭环\n-> 按需增加数据库、登录和部署\n```\n\n## 必选资产\n\n- 项目规模与复杂度分级。\n- 需求边界与外部依赖澄清。\n- 端到端最小链路。\n- 验收证据链。\n\n## 可选资产\n\n- 发布、回滚与恢复。\n- 生产故障演练。\n\n## 不应强制\n\n- 多团队治理。\n- 复杂微服务。\n- 全套等保和可信计算。\n- 多环境和大规模性能测试。\n\n## 验收重点\n\n- 核心流程可用。\n- 数据可以导出和恢复。\n- 页面在目标设备正常工作。\n- 不泄露密钥和个人数据。\n\n## 包内原始元数据\n\n```yaml\nid: PROFILE-PERSONAL-001\ntitle: 个人工具\nproject_scale: personal\nrisk_level: low\nteam_size: 1\nprimary_constraint: speed\n```",
+      "metadata": {
+        "documentType": "项目画像",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "PROFILE-PERSONAL-001",
+          "packVersion": "",
+          "packAssetType": "profile",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-01-personal-tool-result",
+      "assetType": "document",
+      "title": "个人工具编译结果",
+      "summary": "",
+      "content": "# 个人工具编译结果\n\n## 编译信息\n\n| 字段 | 内容 |\n| --- | --- |\n| 编译日期 | 2026-09-21 |\n| 输入画像 | `PROFILE-PERSONAL-001` |\n| 资产包版本 | `0.2.1` |\n| 编译者 | AI 起草 |\n| 状态 | 已确认（2026-09-21） |\n\n> 0.2.1 补充：新增技术选型和技术档案两条资产后，本画像的必选项增加两项，选择清单已按\n> 17 条资产重算。\n\n## 项目分级与路线\n\n- 分级：个人工具，单人维护、数据量小、无合规要求。\n- 例外：只要公开上线并持有生产密钥，发布和权限门禁按中型产品执行（见下文冲突项）。\n- 路线：核心用户流程 → 本地可用闭环 → 按需增加数据库、登录和部署。\n\n## 资产选择\n\n| 资产 | 选择 | 理由 |\n| --- | --- | --- |\n| `MTH-PROJECT-001` | 必选 | 先分级才能决定后面选什么 |\n| `MTH-ROUTE-001` | 必选 | 需求不确定时先做可用闭环 |\n| `MTH-REQ-001` | 必选 | 每期写清做什么和不做什么 |\n| `MTH-DELIVERY-001` | 必选 | 先打通一条真实链路，再堆功能 |\n| `TPL-ACCEPT-001` | 必选 | 每期验收要能拿出证据 |\n| `MTH-QUALITY-001` | 必选（裁剪） | 只保留可运行、基本验收、数据导出三条 |\n| `MTH-TECH-001` | 必选 | 立项就要定技术选型基线和可用性三档 |\n| `TPL-TECH-001` | 必选 | 只填最低内容七项，避免只写\"用了什么\" |\n| `CASE-ENV-PREFIX-001` | 条件必选 | 一旦使用第三方集成或公开上线就必须带 |\n| `PLAYBOOK-RELEASE-001` | 可选 | 上线到公网时转为必选 |\n| `PLAYBOOK-INCIDENT-001` | 可选 | 有大版本或数据不可重建时再启用 |\n\n## 未选资产与原因\n\n- `MTH-ARCH-001`：单人项目不提前做完整架构基线，只保留最小约束。\n- `MTH-REQ-002`：没有对外承诺的性能和可用性数字时，不需要指标冲突检查。\n- `MTH-MODULE-001`：单体规模，按业务能力拆模块会带来无效成本。\n- `RULE-BOUNDARY-001`：只有一条写入链路时，数据所有权规则暂不单独建模。\n- `CASE-MIGRATION-001`：没有自动部署和数据库迁移时暂不需要。\n\n## 冲突、假设和待确认\n\n- 冲突：画像把个人工具的门禁定得较轻，但本项目公开上线并持有生产密钥，\n  实际必须执行发布门禁、账号隔离和迁移核对。冲突处理方式是给 `MTH-QUALITY-001`\n  增加「画像的例外」一节，而不是放宽门禁。\n- 假设：使用者有能力自己完成部署和回滚。做不到时 `PLAYBOOK-RELEASE-001` 转为必选。\n- 待确认：数据导出的格式和恢复验证方式由谁定义。\n\n## 验收与证据要求\n\n- 核心流程可用：一次手工走查记录。\n- 数据可导出可恢复：导出文件加一次导入核对结果。\n- 目标设备可用：桌面端和移动端各一次截图或记录。\n- 不泄露密钥和个人数据：变量清单检查结果。\n\n## 本次编译发现的缺口\n\n- 资产包缺少\"协作边界\"类规则，个人开发者同时开多个会话时无处可依。\n- 资产包缺少\"成本与额度边界\"资产，免费额度触发的暂停条件没有资产承载。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-01-personal-tool",
+      "assetType": "document",
+      "title": "个人工具编译验证",
+      "summary": "",
+      "content": "# 个人工具编译验证\n\n## 验证对象\n\n使用个人工具画像编译一套轻量开发体系。\n\n## 输入约束\n\n- 单人开发。\n- 核心流程明确。\n- 数据量小。\n- 无团队权限和复杂合规要求。\n- 预算敏感，希望快速上线。\n\n## 期望输出\n\n```text\n产品范围\n-> 核心用户流程\n-> 轻量验收\n-> 数据导出\n-> 按需部署与恢复\n```\n\n## 必须避免\n\n- 强制微服务。\n- 多团队治理文档。\n- 完整等保和可信计算方案。\n- 将所有核心资产都设为必选。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-02-cloud-product-result",
+      "assetType": "document",
+      "title": "中型云端产品编译结果",
+      "summary": "",
+      "content": "# 中型云端产品编译结果\n\n## 编译信息\n\n| 字段 | 内容 |\n| --- | --- |\n| 编译日期 | 2026-09-21 |\n| 输入画像 | `PROFILE-CLOUD-001` |\n| 资产包版本 | `0.2.1` |\n| 编译者 | AI 起草 |\n| 状态 | 已确认（2026-09-21） |\n\n> 0.2.1 补充：新增技术选型和技术档案两条资产后，本画像的必选项增加两项，选择清单已按\n> 17 条资产重算。\n\n## 项目分级与路线\n\n- 分级：中型产品，有账号、数据库、备份和发布要求，模块数量有限。\n- 路线：先建立数据、接口、权限和环境基线，再按功能纵向交付。\n\n## 资产选择\n\n| 资产 | 选择 | 理由 |\n| --- | --- | --- |\n| `MTH-PROJECT-001` | 必选 | 分级是后续门禁的输入 |\n| `MTH-ROUTE-001` | 必选 | 集成风险高时优先降低工程不确定性 |\n| `MTH-REQ-001` | 必选 | 涉及外部依赖和多方验收 |\n| `MTH-REQ-002` | 必选 | 通常存在可用性和恢复数字 |\n| `MTH-ARCH-001` | 必选 | 多模块并行前必须定基线 |\n| `MTH-DELIVERY-001` | 必选 | 先打通真实链路再放开并行 |\n| `RULE-BOUNDARY-001` | 必选 | 多写入方和数据隔离要求 |\n| `MTH-QUALITY-001` | 必选 | 工程检查、登录保护、备份、回滚、账号隔离 |\n| `MTH-TECH-001` | 必选 | 可用性承诺和运行环境决定技术能力要求 |\n| `TPL-TECH-001` | 必选 | 技术档案是项目一级档案 |\n| `TPL-ACCEPT-001` | 必选 | 验收要能追溯到版本和部署 |\n| `PLAYBOOK-RELEASE-001` | 必选 | 数据库和配置不能独立发布 |\n| `CASE-ENV-PREFIX-001` | 必选 | 使用平台集成时必须检查变量范围 |\n| `CASE-MIGRATION-001` | 必选 | 自动部署依赖迁移历史对齐 |\n| `PLAYBOOK-INCIDENT-001` | 可选 | 有大版本时启用一轮演练 |\n\n## 未选资产与原因\n\n- `MTH-MODULE-001`：模块数量有限，先按功能纵向交付即可，不提前拆服务。\n\n## 冲突、假设和待确认\n\n- 假设：至少有一个非生产环境用来验证迁移和配置。\n- 待确认：账号隔离用什么方式验收（第二个账号实测还是只做策略检查）。\n- 待确认：备份节奏与恢复目标是否已写成同一口径的数字。\n\n## 验收与证据要求\n\n- 工程检查结果（代码检查、类型检查、测试、构建）。\n- 迁移名称、执行时间和顾问检查结果。\n- 备份时间与恢复演练结果。\n- 预览环境的变量清单（不得包含生产密钥）。\n- 发布后基础验收结果和回滚目标。\n\n## 本次编译发现的缺口\n\n- 资产包没有\"第二个账号验证隔离\"的模板，验收标准里容易漏。\n- 迁移演练的记录格式只在 `CASE-MIGRATION-001` 里描述，没有独立模板。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-02-cloud-product",
+      "assetType": "document",
+      "title": "中型云端产品编译验证",
+      "summary": "",
+      "content": "# 中型云端产品编译验证\n\n## 验证对象\n\n使用中型云端产品画像编译一套可生产使用的开发体系。\n\n## 输入约束\n\n- 包含登录和云数据库。\n- 有真实用户数据或长期积累内容。\n- 小团队维护。\n- 需要跨设备、备份、发布和回滚。\n\n## 期望输出\n\n```text\n数据与安全边界\n-> 架构基线\n-> 登录和数据最小链路\n-> 工程门禁\n-> 备份和回滚\n-> 纵向功能迭代\n```\n\n## 必须包含\n\n- 账号隔离。\n- 密钥和环境范围。\n- 数据备份和恢复。\n- 工程检查与发布门禁。\n- 验收证据链。\n\n## 必须避免\n\n- 自动降级到不安全配置。\n- 只验证代码，不验证数据和回滚。\n- 把 Preview 与 Production 密钥混用。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-03-large-platform-result",
+      "assetType": "document",
+      "title": "大型平台编译结果",
+      "summary": "",
+      "content": "# 大型平台编译结果\n\n## 编译信息\n\n| 字段 | 内容 |\n| --- | --- |\n| 编译日期 | 2026-09-21 |\n| 输入画像 | `PROFILE-LARGE-001` |\n| 资产包版本 | `0.2.1` |\n| 编译者 | AI 起草 |\n| 状态 | 已确认（2026-09-21） |\n\n> 0.2.1 补充：新增技术选型和技术档案两条资产后，本画像使用全部 17 条资产，选择清单已\n> 按 17 条资产重算。\n\n## 项目分级与路线\n\n- 分级：大型平台，多模块、多团队、多系统集成、强非功能要求。\n- 路线：先做领域拆分、架构基线和端到端最小链路，再开放并行开发。\n\n## 资产选择\n\n| 资产 | 选择 | 理由 |\n| --- | --- | --- |\n| `MTH-PROJECT-001` | 必选 | 不同模块可以有不同风险等级 |\n| `MTH-ROUTE-001` | 必选 | 先降低集成风险再并行 |\n| `MTH-REQ-001` | 必选 | 需求要拆到业务、数据、接口、安全、运维边界 |\n| `MTH-REQ-002` | 必选 | 非功能指标是硬约束 |\n| `MTH-ARCH-001` | 必选 | 架构基线是并行开发的前置条件 |\n| `MTH-DELIVERY-001` | 必选 | 骨架通过后才允许大规模并行 |\n| `MTH-MODULE-001` | 必选 | 按业务能力和数据所有权拆分 |\n| `RULE-BOUNDARY-001` | 必选 | 每个数据域只能有一个写入方 |\n| `MTH-QUALITY-001` | 必选 | 架构、契约、骨架、性能、可观察性、发布门禁 |\n| `MTH-TECH-001` | 必选 | 高可用和多环境的技术能力要求必须显式写出 |\n| `TPL-TECH-001` | 必选 | 技术档案与偏离项的决策记录 |\n| `TPL-ACCEPT-001` | 必选 | 验收要能追到需求、模块和版本 |\n| `PLAYBOOK-RELEASE-001` | 必选 | 多环境发布与回滚 |\n| `PLAYBOOK-INCIDENT-001` | 必选 | 每个大版本至少一次演练 |\n| `CASE-ENV-PREFIX-001` | 必选 | 配置和密钥边界 |\n| `CASE-MIGRATION-001` | 必选 | 迁移顺序和历史一致性 |\n| `CASE-PARALLEL-001` | 必选 | 多团队或多会话并行时的任务边界登记 |\n\n## 未选资产与原因\n\n- 本资产包没有在本画像下被排除的资产。大型平台使用全部资产，但每个模块可以按自身\n  风险等级裁剪执行深度。\n\n## 冲突、假设和待确认\n\n- 冲突：`MTH-QUALITY-001` 的门禁表只到\"大型平台\"，监管或高敏项只有一行概述，\n  缺少可执行的等保、审计和可信环境资产。\n- 假设：存在独立测试环境和受控的演练窗口。\n- 待确认：模块验收和整体验收如何避免互相等待。\n\n## 验收与证据要求\n\n- 架构基线与接口契约的版本记录。\n- 端到端骨架的贯通证据。\n- 每个模块的独立验收和发布记录。\n- 性能、可观察性和恢复演练结果。\n\n## 本次编译发现的缺口\n\n- 缺少监管与高敏画像的资产：等保、审计留痕、密钥托管、可信环境。\n- 缺少跨团队协作模板：需求、模块、数据、测试之间的追踪矩阵没有资产承载。\n- 缺少多环境发布矩阵：开发、测试、预发、生产的环境与变量对照表。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-03-large-platform",
+      "assetType": "document",
+      "title": "大型平台编译验证",
+      "summary": "",
+      "content": "# 大型平台编译验证\n\n## 验证对象\n\n使用大型平台画像编译一套多团队、多模块实施体系。\n\n## 输入约束\n\n- 多个核心分系统和公共支撑能力。\n- 多团队并行开发。\n- 外部系统和历史系统接口较多。\n- 强性能、可靠性、安全和合规要求。\n\n## 期望输出\n\n```text\n项目复杂性分级\n-> 需求与指标基线\n-> 领域和数据所有权\n-> 架构与公共平台\n-> 两条端到端最小链路\n-> 服务域并行交付\n-> 集成、专项测试和试运行\n```\n\n## 必须包含\n\n- 指标冲突检查。\n- 模块和团队映射。\n- 接口契约和数据所有权。\n- 非功能与安全门禁。\n- 分阶段验收和故障恢复。\n\n## 必须避免\n\n- 全部前端完成后才设计后端。\n- 全部模块使用一个无边界后端。\n- 模块完全独立，重复建设公共能力。\n- 依赖未验证的国产化、可信计算或 GPU 环境。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-validation-readme",
+      "assetType": "document",
+      "title": "编译验证说明",
+      "summary": "",
+      "content": "# 编译验证说明\n\n## 目的\n\n验证相同的工程资产经过项目画像筛选后，能够编译出不同深度和不同重点的项目\n开发体系，而不是输出同一套模板。\n\n## 输入\n\n- 12 条核心资产。\n- 3 个项目画像。\n- 每个画像对应的当前状态、约束和风险。\n\n## 输出要求\n\n每个场景至少生成：\n\n1. 项目分级和路线选择。\n2. 适用范围和不适用范围。\n3. 必选规则、模板和阶段门禁。\n4. 未选择资产及原因。\n5. 冲突、假设和待确认项。\n6. 项目验收和证据要求。\n\n## 通过标准\n\n- 不同画像的资产选择明显不同。\n- 每条结果可以追溯到资产来源。\n- 冲突不会被静默合并。\n- 输出没有超出项目规模的无用文档。\n- 人工确认后可以形成项目开发体系。\n\n## 执行记录\n\n| 日期 | 资产包版本 | 画像 | 结果文件 | 状态 |\n| --- | --- | --- | --- | --- |\n| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 个人工具 | [01-personal-tool-result.md](01-personal-tool-result.md) | 已确认 |\n| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 中型云端产品 | [02-cloud-product-result.md](02-cloud-product-result.md) | 已确认 |\n| 2026-09-21 | `0.2.0`，`0.2.1` 重算 | 大型平台 | [03-large-platform-result.md](03-large-platform-result.md) | 已确认 |\n\n### 本轮编译的共同发现\n\n1. 三个画像的资产选择明显不同：个人工具 11 项、中型产品 15 项、大型平台 17 项。\n2. 个人工具画像在本项目上不够用：公开上线并持有生产密钥后，必须按中型产品的发布和\n   权限门禁执行，这条例外已经写回 `MTH-QUALITY-001`。\n3. 三次编译都暴露出同一类缺口：资产包缺少协作边界、成本额度和跨团队追踪方向的资产；\n   技术选型缺口已在 `0.2.1` 补齐，监管高敏的具体条款仍未覆盖。\n4. 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+      "metadata": {
+        "documentType": "编译验证记录",
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "",
+          "packVersion": "",
+          "packAssetType": "validation",
+          "projectScale": []
+        }
+      },
+      "status": "active"
+    }
+  ]
+}
