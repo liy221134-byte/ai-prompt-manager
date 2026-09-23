@@ -63,6 +63,7 @@ test("v2 备份包含项目、资产和关系，并写明不包含来源包原�
     { targetAssetId: "rule-a", relationType: "reference", note: "引用" },
   ]);
   assert.match(backup.note, /来源包/);
+  assert.match(backup.note, /历史版本/);
   assert.equal(backup.note, ASSET_BACKUP_NOTE);
 });
 

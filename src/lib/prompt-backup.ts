@@ -17,8 +17,9 @@ export const PROMPT_BACKUP_VERSION = 1;
 export const ASSET_BACKUP_VERSION = 2;
 
 export const ASSET_BACKUP_NOTE =
-  "备份包含项目、提示词、规则、文档、技术档案和资产之间的关"
-  + "系；来源包的原始文件不在备份里，需要另行保留。";
+  "备份包含项目、各类资产（提示词、规则、文档、模板、技术档案、图谱节点、验收记录、"
+  + "发布记录）和资产之间的关系；每个资产的历史版本不在备份里，"
+  + "来源包上传的原始文件也不在备份里，两者都需要另行保留。";
 
 export type AssetBackup = {
   type: typeof PROMPT_BACKUP_TYPE;

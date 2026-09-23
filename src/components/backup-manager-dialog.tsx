@@ -230,8 +230,9 @@ export function BackupManagerDialog({
           {!importPlan && !importError && (
             <>
               <p className="rounded-lg bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-900">
-                备份包含项目、提示词、规则、文档、技术档案和资产关系；
-                来源包上传的原文件不在备份里，需要另行保留。
+                备份包含项目、各类资产（提示词、规则、文档、模板、技术档案、图谱节点、
+                验收记录、发布记录）和资产关系；每个资产的历史版本不在备份里，
+                来源包上传的原文件也不在备份里，需要另行保留。
               </p>
 
               <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -243,8 +244,7 @@ export function BackupManagerDialog({
                     导出备份
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    把项目、提示词、规则、文档、技术档案和资产关系保存成一个 JSON
-                    文件。
+                    把项目、各类资产和资产关系保存成一个 JSON 文件。
                   </p>
                   <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
                     <Clock3 aria-hidden="true" className="size-3.5" />
