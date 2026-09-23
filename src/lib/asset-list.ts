@@ -29,6 +29,7 @@ export const assetTypeFilterOptions = [
   "rule",
   "document",
   "tech_profile",
+  "template",
   "rule_pack",
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
@@ -39,6 +40,7 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   rule: "规则",
   document: "文档",
   tech_profile: "技术档案",
+  template: "模板",
   rule_pack: "规则包",
 };
 

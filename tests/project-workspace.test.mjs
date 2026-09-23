@@ -280,13 +280,14 @@ test("资产活跃判定排除归档、草稿和垃圾箱内容", () => {
   );
 });
 
-test("类型筛选支持全部、提示词、规则、文档、技术档案和规则包", () => {
+test("类型筛选支持全部、提示词、规则、文档、技术档案、模板和规则包", () => {
   assert.deepEqual([...assetTypeFilterOptions], [
     "all",
     "prompt",
     "rule",
     "document",
     "tech_profile",
+    "template",
     "rule_pack",
   ]);
 
@@ -298,6 +299,7 @@ test("类型筛选支持全部、提示词、规则、文档、技术档案和�
   assert.equal(matchesAssetTypeFilter(createAsset(), "rule"), true);
   assert.equal(matchesAssetTypeFilter(createAsset(), "document"), false);
   assert.equal(assetTypeLabels.tech_profile, "技术档案");
+  assert.equal(assetTypeLabels.template, "模板");
   assert.equal(assetTypeLabels.rule_pack, "规则包");
 });
 

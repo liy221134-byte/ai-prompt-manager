@@ -177,7 +177,9 @@ export function AssetEditorDrawer({
       ? "规则"
       : assetType === "document"
         ? "文档"
-        : "技术档案";
+        : assetType === "template"
+          ? "模板"
+          : "技术档案";
   const isEditing = Boolean(asset);
 
   function updateDraft(patch: Record<string, unknown>) {
@@ -420,6 +422,21 @@ export function AssetEditorDrawer({
                     ))}
                   </select>
                 </label>
+              ) : draft.assetType === "template" ? (
+                <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+                  <TextField
+                    label="产物文件名"
+                    onChange={(value) => updateDraft({ outputFileName: value })}
+                    placeholder="例如：AGENTS.md"
+                    value={draft.outputFileName}
+                  />
+                  <TextField
+                    label="备注"
+                    onChange={(value) => updateDraft({ note: value })}
+                    placeholder="这个模板什么时候用"
+                    value={draft.note}
+                  />
+                </div>
               ) : (
                 <p className="text-sm leading-6 text-slate-500 sm:col-span-2">
                   技术档案的基础字段在下面的「技术栈清单」里填，选型说明写在正文。

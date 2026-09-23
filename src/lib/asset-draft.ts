@@ -19,21 +19,30 @@ import {
   defaultDocumentType,
   normalizeDocumentMetadata,
   normalizeRuleMetadata,
+  normalizeTemplateMetadata,
   normalizeTechProfileMetadata,
   readAssetRelations,
   type TechProfileAssetData,
   type TechProfileAssetMetadata,
+  type TemplateAssetData,
+  type TemplateAssetMetadata,
 } from "../data/assets.ts";
 import type { AssetSaveInput } from "./prompt-api.ts";
 import { assetStatusLabels } from "./asset-list.ts";
 import { validateTechStack } from "./tech-profile.ts";
 
-export const editableAssetTypes = ["rule", "document", "tech_profile"] as const;
+export const editableAssetTypes = [
+  "rule",
+  "document",
+  "tech_profile",
+  "template",
+] as const;
 export type EditableAssetType = (typeof editableAssetTypes)[number];
 export type EditableAssetData =
   | RuleAssetData
   | DocumentAssetData
-  | TechProfileAssetData;
+  | TechProfileAssetData
+  | TemplateAssetData;
 
 export const ASSET_TITLE_MAX_LENGTH = 60;
 
@@ -115,10 +124,23 @@ export type TechProfileAssetDraft = {
   relations: AssetRelationDraft[];
 };
 
+// 模板：正文就是产物骨架，产物文件名决定生成时默认叫什么
+export type TemplateAssetDraft = {
+  assetType: "template";
+  title: string;
+  summary: string;
+  content: string;
+  status: AssetStatus;
+  outputFileName: string;
+  note: string;
+  relations: AssetRelationDraft[];
+};
+
 export type AssetDraft =
   | RuleAssetDraft
   | DocumentAssetDraft
-  | TechProfileAssetDraft;
+  | TechProfileAssetDraft
+  | TemplateAssetDraft;
 
 // 有编辑入口的资产类型：规则、文档和技术档案；提示词继续走既有流程，
 // 规则包由导入和打包生成，不做手工编辑。
@@ -173,6 +195,19 @@ export function createEmptyAssetDraft(
     };
   }
 
+  if (assetType === "template") {
+    return {
+      assetType: "template",
+      title: "",
+      summary: "",
+      content: "",
+      status: "active",
+      outputFileName: "",
+      note: "",
+      relations: [],
+    };
+  }
+
   return {
     assetType: "document",
     title: "",
@@ -217,6 +252,21 @@ function draftRelationsToMetadata(
 export function assetToDraft(asset: EditableAssetData): AssetDraft {
   if (asset.assetType === "tech_profile") {
     return techProfileToDraft(asset);
+  }
+
+  if (asset.assetType === "template") {
+    const metadata = normalizeTemplateMetadata(asset.metadata);
+
+    return {
+      assetType: "template",
+      title: asset.title,
+      summary: asset.summary,
+      content: asset.content,
+      status: asset.status,
+      outputFileName: metadata.outputFileName,
+      note: metadata.note,
+      relations: relationsToDraft(readAssetRelations(asset.metadata)),
+    };
   }
 
   if (asset.assetType === "rule") {
@@ -312,7 +362,13 @@ export function validateAssetDraft(draft: AssetDraft) {
 
   // 技术档案的正文是选型说明，允许先留空，技术栈清单才是必填
   if (draft.assetType !== "tech_profile" && !draft.content.trim()) {
-    return draft.assetType === "rule" ? "请填写规则正文。" : "请填写文档正文。";
+    if (draft.assetType === "rule") {
+      return "请填写规则正文。";
+    }
+
+    return draft.assetType === "template"
+      ? "请填写模板正文。"
+      : "请填写文档正文。";
   }
 
   if (draft.assetType === "document" && !draft.documentType.trim()) {
@@ -432,6 +488,22 @@ function buildAsset(
       ...common,
       assetType: "tech_profile",
       metadata: techMetadata,
+    };
+  }
+
+  if (draft.assetType === "template") {
+    const templateMetadata: TemplateAssetMetadata = {
+      outputFileName: draft.outputFileName.trim(),
+      note: draft.note.trim(),
+      ...(draft.relations.length
+        ? { relations: draftRelationsToMetadata(draft.relations) }
+        : {}),
+    };
+
+    return {
+      ...common,
+      assetType: "template",
+      metadata: templateMetadata,
     };
   }
 

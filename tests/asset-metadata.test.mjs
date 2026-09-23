@@ -7,6 +7,7 @@ import {
   normalizeDocumentMetadata,
   normalizeRulePackMetadata,
   normalizeRuleMetadata,
+  normalizeTemplateMetadata,
 } from "../src/data/assets.ts";
 
 function createRule(metadata) {
@@ -180,6 +181,34 @@ test("规则包缺关键字段或字段乱填时不通过校验", () => {
   assert.equal(legacyForm.packVersion, "");
   assert.equal(legacyForm.packConfidence, "provisional");
   assert.deepEqual(legacyForm.projectScale, []);
+});
+
+test("模板元数据记产物文件名和备注，缺字段按空值读", () => {
+  const template = {
+    ...createRule({}),
+    id: "template-agents",
+    assetType: "template",
+    metadata: {
+      outputFileName: "AGENTS.md",
+      note: "新项目开工用",
+    },
+  };
+
+  assert.equal(isAssetData(template), true);
+
+  const form = normalizeTemplateMetadata(template.metadata);
+  assert.equal(form.outputFileName, "AGENTS.md");
+  assert.equal(form.note, "新项目开工用");
+
+  const legacy = normalizeTemplateMetadata(undefined);
+  assert.equal(legacy.outputFileName, "");
+  assert.equal(legacy.note, "");
+
+  const broken = {
+    ...template,
+    metadata: { outputFileName: 42, note: "" },
+  };
+  assert.equal(isAssetData(broken), false);
 });
 
 test("扩展字段给了非法值时视为数据不合法", () => {

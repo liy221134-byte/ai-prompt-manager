@@ -221,6 +221,14 @@ export type TechProfileAssetMetadata = {
   relations?: AssetRelation[];
 };
 
+// 模板：产物结构的骨架，正文里的 {{变量}} 由使用方填。
+// 变量不单独存，读取时从正文里解析，免得正文改了变量清单还对不上。
+export type TemplateAssetMetadata = {
+  outputFileName: string;
+  note: string;
+  relations?: AssetRelation[];
+};
+
 // 规则包：可复用的规则集合（一个项目可以装多个包）。
 // 包自己的发布状态直接用资产状态，不再另存一份。
 export type RulePackAssetMetadata = {
@@ -261,7 +269,8 @@ export type RulePackAssetData = AssetBase<
   "rule_pack",
   RulePackAssetMetadata
 >;
-export type ReservedAssetType = "template" | "source_package";
+export type TemplateAssetData = AssetBase<"template", TemplateAssetMetadata>;
+export type ReservedAssetType = "source_package";
 export type ReservedAssetData = AssetBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -273,6 +282,7 @@ export type AssetData =
   | DocumentAssetData
   | TechProfileAssetData
   | RulePackAssetData
+  | TemplateAssetData
   | ReservedAssetData;
 
 type AssetVersionBase<TType extends AssetType, TMetadata> = {
@@ -312,6 +322,10 @@ export type RulePackAssetVersionData = AssetVersionBase<
   "rule_pack",
   RulePackAssetMetadata
 >;
+export type TemplateAssetVersionData = AssetVersionBase<
+  "template",
+  TemplateAssetMetadata
+>;
 export type ReservedAssetVersionData = AssetVersionBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -323,6 +337,7 @@ export type AssetVersionData =
   | DocumentAssetVersionData
   | TechProfileAssetVersionData
   | RulePackAssetVersionData
+  | TemplateAssetVersionData
   | ReservedAssetVersionData;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -552,6 +567,20 @@ function isRulePackAssetMetadata(
   );
 }
 
+function isTemplateAssetMetadata(
+  value: unknown,
+): value is TemplateAssetMetadata {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.outputFileName === "string" &&
+    typeof value.note === "string" &&
+    isOptionalRelations(value.relations)
+  );
+}
+
 function isDocumentAssetMetadata(
   value: unknown,
 ): value is DocumentAssetMetadata {
@@ -622,6 +651,10 @@ export function isAssetData(value: unknown): value is AssetData {
     return isRulePackAssetMetadata(value.metadata);
   }
 
+  if (value.assetType === "template") {
+    return isTemplateAssetMetadata(value.metadata);
+  }
+
   return isRecord(value.metadata);
 }
 
@@ -683,6 +716,10 @@ export function isAssetVersionData(
 
   if (value.assetType === "rule_pack") {
     return isRulePackAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "template") {
+    return isTemplateAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -811,6 +848,12 @@ export type RulePackMetadataForm = {
   sourceNote: string;
 };
 
+// 模板编辑器用的表单形状：产物文件名和备注都可以留空
+export type TemplateMetadataForm = {
+  outputFileName: string;
+  note: string;
+};
+
 export type DocumentMetadataForm = {
   documentType: string;
   role: DocumentRole | "";
@@ -888,6 +931,17 @@ export function normalizeRulePackMetadata(
       : "provisional",
     projectScale: readEnumList(source.projectScale, projectScales),
     sourceNote: readString(source.sourceNote),
+  };
+}
+
+export function normalizeTemplateMetadata(
+  value: unknown,
+): TemplateMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    outputFileName: readString(source.outputFileName),
+    note: readString(source.note),
   };
 }
 

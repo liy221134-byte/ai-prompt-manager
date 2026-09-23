@@ -21,6 +21,7 @@ import {
   type AssetData,
 } from "@/data/assets";
 import { assetRelationLabels } from "@/lib/asset-list";
+import { readTemplateVariables } from "@/lib/template-asset";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import type { EditableAssetData } from "@/lib/asset-draft";
 import {
@@ -99,6 +100,17 @@ function describeAssetMetadata(asset: EditableAssetData) {
       `技术栈：${entries.length} 项${
         deviations > 0 ? `，其中 ${deviations} 项偏离默认选型` : ""
       }`,
+    ];
+  }
+
+  if (asset.assetType === "template") {
+    const variables = readTemplateVariables(asset.content);
+
+    return [
+      ...(asset.metadata.outputFileName
+        ? [`产物文件名：${asset.metadata.outputFileName}`]
+        : []),
+      `变量：${variables.length} 个`,
     ];
   }
 
@@ -327,6 +339,28 @@ export function AssetDetailDrawer({
                     来源片段：{asset.metadata.sourceExcerpt}
                   </p>
                 )}
+              </section>
+            )}
+
+          {asset.assetType === "template" &&
+            readTemplateVariables(asset.content).length > 0 && (
+              <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  模板变量（{readTemplateVariables(asset.content).length} 个）
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  套模板编译时，项目名称、项目说明和技术栈会自动填，其余保留占位符等人工填。
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {readTemplateVariables(asset.content).map((name) => (
+                    <li
+                      className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                      key={name}
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
