@@ -120,9 +120,10 @@ export type AssetDraft =
   | DocumentAssetDraft
   | TechProfileAssetDraft;
 
-// 2.0.0 只有规则和文档有编辑入口，提示词继续走既有流程。
+// 有编辑入口的资产类型：规则、文档和技术档案；提示词继续走既有流程，
+// 规则包由导入和打包生成，不做手工编辑。
 export function isEditableAssetData(value: AssetData): value is EditableAssetData {
-  return value.assetType === "rule" || value.assetType === "document";
+  return editableAssetTypes.includes(value.assetType as EditableAssetType);
 }
 
 export function createAssetId(assetType: EditableAssetType) {

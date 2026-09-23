@@ -12,6 +12,7 @@ import {
   buildCreateAssetInput,
   buildUpdateAssetInput,
   createEmptyAssetDraft,
+  isEditableAssetData,
   validateAssetDraft,
 } from "../src/lib/asset-draft.ts";
 import {
@@ -186,6 +187,33 @@ test("理由和来源片段留空时不写进元数据", () => {
 
   assert.equal("rationale" in input.asset.metadata, false);
   assert.equal("sourceExcerpt" in input.asset.metadata, false);
+});
+
+test("规则、文档和技术档案都能进编辑器，提示词和规则包不能", () => {
+  const rule = createRuleAsset();
+  const techProfile = {
+    ...rule,
+    id: "tech-profile-1",
+    assetType: "tech_profile",
+    metadata: { stack: [] },
+  };
+  const prompt = { ...rule, id: "prompt-1", assetType: "prompt" };
+  const pack = {
+    ...rule,
+    id: "rule-pack-1",
+    assetType: "rule_pack",
+    metadata: {
+      packVersion: "0.2.1",
+      packConfidence: "provisional",
+      projectScale: ["personal"],
+      sourceNote: "",
+    },
+  };
+
+  assert.equal(isEditableAssetData(rule), true);
+  assert.equal(isEditableAssetData(techProfile), true);
+  assert.equal(isEditableAssetData(prompt), false);
+  assert.equal(isEditableAssetData(pack), false);
 });
 
 test("新建规则会生成合法的资产和初始版本标识", () => {
