@@ -5,10 +5,36 @@ import {
   createAssetVersion,
   isAssetData,
   normalizeDocumentMetadata,
+  normalizeEvidenceMetadata,
   normalizeRulePackMetadata,
   normalizeRuleMetadata,
   normalizeTemplateMetadata,
 } from "../src/data/assets.ts";
+
+function createEvidence(metadata) {
+  return {
+    id: "evidence-a",
+    projectId: "project-1",
+    assetType: "evidence",
+    title: "REQ-001 验收记录",
+    summary: "",
+    content: "验收条件：……",
+    metadata,
+    source: {
+      sourceType: "manual",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: "current-evidence-a",
+    status: "active",
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: "2026-09-23T00:00:00.000Z",
+    updatedAt: "2026-09-23T00:00:00.000Z",
+  };
+}
 
 function createRule(metadata) {
   return {
@@ -251,4 +277,80 @@ test("元数据会完整带进版本记录，改元数据等于产生新版本",
   assert.equal(second.metadata.priority, "should");
   assert.equal(first.versionNumber, 1);
   assert.equal(second.versionNumber, 2);
+});
+
+test("验收记录元数据：合法的认识，结论和证据非法值会被拒", () => {
+  assert.equal(
+    isAssetData(
+      createEvidence({
+        nodeId: "node-1",
+        conclusion: "pending",
+        commitRef: "v2.9.0",
+        evidenceItems: [
+          { label: "跑了一遍导入", reference: "https://example.com/run" },
+        ],
+      }),
+    ),
+    true,
+  );
+
+  // 结论必须是四个枚举值之一
+  assert.equal(
+    isAssetData(
+      createEvidence({
+        nodeId: "node-1",
+        conclusion: "看起来没问题",
+        commitRef: "",
+        evidenceItems: [],
+      }),
+    ),
+    false,
+  );
+
+  // 证据必须是「说明 + 链接」两个字符串，不能塞别的形状
+  assert.equal(
+    isAssetData(
+      createEvidence({
+        nodeId: "node-1",
+        conclusion: "passed",
+        commitRef: "",
+        evidenceItems: ["跑了一遍"],
+      }),
+    ),
+    false,
+  );
+
+  // 还没挂需求时 nodeId 可以是空
+  assert.equal(
+    isAssetData(
+      createEvidence({
+        nodeId: null,
+        conclusion: "pending",
+        commitRef: "",
+        evidenceItems: [],
+      }),
+    ),
+    true,
+  );
+});
+
+test("验收记录缺字段时按空值补齐，结论回落成待确认", () => {
+  assert.deepEqual(normalizeEvidenceMetadata(undefined), {
+    nodeId: "",
+    conclusion: "pending",
+    commitRef: "",
+    evidenceItems: [],
+  });
+  assert.deepEqual(
+    normalizeEvidenceMetadata({
+      conclusion: "乱写的",
+      evidenceItems: [{ label: "只有说明", reference: "" }],
+    }),
+    {
+      nodeId: "",
+      conclusion: "pending",
+      commitRef: "",
+      evidenceItems: [{ label: "只有说明", reference: "" }],
+    },
+  );
 });

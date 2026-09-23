@@ -280,7 +280,7 @@ test("资产活跃判定排除归档、草稿和垃圾箱内容", () => {
   );
 });
 
-test("类型筛选支持全部、提示词、规则、文档、技术档案、模板、规则包和图谱节点", () => {
+test("类型筛选支持全部、提示词、规则、文档、技术档案、模板、规则包、图谱节点和验收记录", () => {
   assert.deepEqual([...assetTypeFilterOptions], [
     "all",
     "prompt",
@@ -290,6 +290,7 @@ test("类型筛选支持全部、提示词、规则、文档、技术档案、�
     "template",
     "rule_pack",
     "graph_node",
+    "evidence",
   ]);
 
   for (const filter of assetTypeFilterOptions) {

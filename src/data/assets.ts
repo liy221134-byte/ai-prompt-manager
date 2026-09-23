@@ -11,6 +11,7 @@ export const assetTypes = [
   "tech_profile",
   "rule_pack",
   "graph_node",
+  "evidence",
   "source_package",
 ] as const;
 export type AssetType = (typeof assetTypes)[number];
@@ -96,6 +97,15 @@ export const graphNodeTypes = [
   "test",
 ] as const;
 export type GraphNodeType = (typeof graphNodeTypes)[number];
+
+// 验收记录的结论：默认待确认，改成「通过」只能由人在界面上操作
+export const evidenceConclusions = [
+  "pending",
+  "passed",
+  "failed",
+  "exception",
+] as const;
+export type EvidenceConclusion = (typeof evidenceConclusions)[number];
 
 // 编译裁决：这条规则在生成 AGENTS.md 这类产物时算不算数
 export type RuleCompileDecision = {
@@ -249,6 +259,22 @@ export type GraphNodeAssetMetadata = {
   relations?: AssetRelation[];
 };
 
+// 一条证据：说明 + 链接或文件路径（真传附件以后再说）
+export type EvidenceItem = {
+  label: string;
+  reference: string;
+};
+
+// 验收记录：正文写验收条件、测试步骤、实际结果和已知问题；
+// 元数据存结构化信息——对应哪个需求节点、结论、提交版本和证据清单。
+export type EvidenceAssetMetadata = {
+  nodeId: string | null;
+  conclusion: EvidenceConclusion;
+  commitRef: string;
+  evidenceItems: EvidenceItem[];
+  relations?: AssetRelation[];
+};
+
 // 规则包：可复用的规则集合（一个项目可以装多个包）。
 // 包自己的发布状态直接用资产状态，不再另存一份。
 export type RulePackAssetMetadata = {
@@ -294,6 +320,7 @@ export type GraphNodeAssetData = AssetBase<
   "graph_node",
   GraphNodeAssetMetadata
 >;
+export type EvidenceAssetData = AssetBase<"evidence", EvidenceAssetMetadata>;
 export type ReservedAssetType = "source_package";
 export type ReservedAssetData = AssetBase<
   ReservedAssetType,
@@ -308,6 +335,7 @@ export type AssetData =
   | RulePackAssetData
   | TemplateAssetData
   | GraphNodeAssetData
+  | EvidenceAssetData
   | ReservedAssetData;
 
 type AssetVersionBase<TType extends AssetType, TMetadata> = {
@@ -355,6 +383,10 @@ export type GraphNodeAssetVersionData = AssetVersionBase<
   "graph_node",
   GraphNodeAssetMetadata
 >;
+export type EvidenceAssetVersionData = AssetVersionBase<
+  "evidence",
+  EvidenceAssetMetadata
+>;
 export type ReservedAssetVersionData = AssetVersionBase<
   ReservedAssetType,
   ReservedAssetMetadata
@@ -368,6 +400,7 @@ export type AssetVersionData =
   | RulePackAssetVersionData
   | TemplateAssetVersionData
   | GraphNodeAssetVersionData
+  | EvidenceAssetVersionData
   | ReservedAssetVersionData;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -627,6 +660,28 @@ function isGraphNodeAssetMetadata(
   );
 }
 
+function isEvidenceItem(value: unknown): value is EvidenceItem {
+  return (
+    isRecord(value) &&
+    typeof value.label === "string" &&
+    typeof value.reference === "string"
+  );
+}
+
+function isEvidenceAssetMetadata(
+  value: unknown,
+): value is EvidenceAssetMetadata {
+  return (
+    isRecord(value) &&
+    isNullableString(value.nodeId) &&
+    evidenceConclusions.includes(value.conclusion as EvidenceConclusion) &&
+    typeof value.commitRef === "string" &&
+    Array.isArray(value.evidenceItems) &&
+    value.evidenceItems.every((item) => isEvidenceItem(item)) &&
+    isOptionalRelations(value.relations)
+  );
+}
+
 function isDocumentAssetMetadata(
   value: unknown,
 ): value is DocumentAssetMetadata {
@@ -705,6 +760,10 @@ export function isAssetData(value: unknown): value is AssetData {
     return isGraphNodeAssetMetadata(value.metadata);
   }
 
+  if (value.assetType === "evidence") {
+    return isEvidenceAssetMetadata(value.metadata);
+  }
+
   return isRecord(value.metadata);
 }
 
@@ -774,6 +833,10 @@ export function isAssetVersionData(
 
   if (value.assetType === "graph_node") {
     return isGraphNodeAssetMetadata(value.metadata);
+  }
+
+  if (value.assetType === "evidence") {
+    return isEvidenceAssetMetadata(value.metadata);
   }
 
   return isRecord(value.metadata);
@@ -916,6 +979,14 @@ export type GraphNodeMetadataForm = {
   note: string;
 };
 
+// 验收记录编辑器用的表单形状：需求节点用空串表示还没挂
+export type EvidenceMetadataForm = {
+  nodeId: string;
+  conclusion: EvidenceConclusion;
+  commitRef: string;
+  evidenceItems: EvidenceItem[];
+};
+
 export type DocumentMetadataForm = {
   documentType: string;
   role: DocumentRole | "";
@@ -1019,6 +1090,27 @@ export function normalizeGraphNodeMetadata(
     code: readString(source.code),
     parentId: readString(source.parentId),
     note: readString(source.note),
+  };
+}
+
+export function normalizeEvidenceMetadata(
+  value: unknown,
+): EvidenceMetadataForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    nodeId: readString(source.nodeId),
+    conclusion: evidenceConclusions.includes(
+      source.conclusion as EvidenceConclusion,
+    )
+      ? (source.conclusion as EvidenceConclusion)
+      : "pending",
+    commitRef: readString(source.commitRef),
+    evidenceItems: Array.isArray(source.evidenceItems)
+      ? source.evidenceItems
+          .filter((item) => isEvidenceItem(item))
+          .map((item) => ({ ...item }))
+      : [],
   };
 }
 

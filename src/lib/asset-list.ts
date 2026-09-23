@@ -5,6 +5,7 @@ import type {
   ProjectScale,
   RuleConfidence,
   AssetRelationType,
+  EvidenceConclusion,
   GraphNodeType,
   RuleScope,
   RuleType,
@@ -21,7 +22,15 @@ export const assetTypeLabels: Record<AssetType, string> = {
   tech_profile: "技术档案",
   rule_pack: "规则包",
   graph_node: "图谱节点",
+  evidence: "验收记录",
   source_package: "来源包",
+};
+
+export const evidenceConclusionLabels: Record<EvidenceConclusion, string> = {
+  pending: "待确认",
+  passed: "通过",
+  failed: "未通过",
+  exception: "例外",
 };
 
 export const graphNodeTypeLabels: Record<GraphNodeType, string> = {
@@ -42,6 +51,7 @@ export const assetTypeFilterOptions = [
   "template",
   "rule_pack",
   "graph_node",
+  "evidence",
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
@@ -54,6 +64,7 @@ export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   template: "模板",
   rule_pack: "规则包",
   graph_node: "图谱节点",
+  evidence: "验收记录",
 };
 
 export const assetRelationLabels: Record<AssetRelationType, string> = {
