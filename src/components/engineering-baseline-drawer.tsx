@@ -66,10 +66,11 @@ export function EngineeringBaselineDrawer({
   useModalBehavior(onClose);
 
   return (
-    <>
+    // 外层固定覆盖层不能省：只写内层 absolute 会相对页面原点定位，页面一滚动浮层就跑到可视区外
+    <div className="fixed inset-0 z-50">
       <button
         aria-label="关闭工程基线"
-        className="absolute inset-0 cursor-default bg-slate-950/30"
+        className="absolute inset-0 cursor-default bg-slate-950/35 backdrop-blur-[2px]"
         onClick={onClose}
         type="button"
       />
@@ -379,6 +380,6 @@ export function EngineeringBaselineDrawer({
           </section>
         </div>
       </aside>
-    </>
+    </div>
   );
 }
