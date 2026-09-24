@@ -1699,6 +1699,107 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
   }
 
   // 文档 → 另存为模板：进公共资产库的模板层（正文原样复制，占位符自己改）
+  // 工程基线缺某类文档时，可以把已有文档标记成那个类型，而不是再建一份
+  // 项目图谱里批量挂文档：给选中的节点各加一条「引用」关系，已经挂过的跳过
+  async function handleLinkDocumentToNodes(input: {
+    nodeIds: string[];
+    documentId: string;
+  }) {
+    const now = new Date().toISOString();
+    let linked = 0;
+
+    for (const nodeId of input.nodeIds) {
+      const node = assets.find((asset) => asset.id === nodeId);
+
+      if (
+        !node ||
+        !isEditableAssetData(node) ||
+        node.assetType !== "graph_node"
+      ) {
+        continue;
+      }
+
+      const draft = assetToDraft(node);
+
+      if (draft.assetType !== "graph_node") {
+        continue;
+      }
+
+      if (
+        draft.relations.some(
+          (relation) => relation.targetAssetId === input.documentId,
+        )
+      ) {
+        continue;
+      }
+
+      await dataSource.updateAsset(
+        buildUpdateAssetInput(
+          node,
+          {
+            ...draft,
+            relations: [
+              ...draft.relations,
+              {
+                key: `relation-${node.id}-${input.documentId}`,
+                targetAssetId: input.documentId,
+                relationType: "reference" as const,
+                note: "从项目图谱挂上",
+              },
+            ],
+          },
+          { versionId: createAssetVersionId(), now },
+        ),
+      );
+      linked += 1;
+    }
+
+    await reloadAssets();
+    notify(
+      linked > 0
+        ? `已把文档挂到 ${linked} 个节点上`
+        : "这些节点已经挂过这份文档了",
+    );
+  }
+
+  async function handleAssignDocumentType(input: {
+    assetId: string;
+    documentType: string;
+  }) {
+    const asset = assets.find((item) => item.id === input.assetId);
+
+    if (
+      !asset ||
+      !isEditableAssetData(asset) ||
+      asset.assetType !== "document"
+    ) {
+      return;
+    }
+
+    try {
+      const draft = assetToDraft(asset);
+
+      if (draft.assetType !== "document") {
+        return;
+      }
+
+      await dataSource.updateAsset(
+        buildUpdateAssetInput(
+          asset,
+          { ...draft, documentType: input.documentType },
+          {
+            versionId: createAssetVersionId(),
+            now: new Date().toISOString(),
+          },
+        ),
+      );
+      await reloadAssets();
+      notify(`已把「${asset.title}」标记为「${input.documentType}」`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "标记失败");
+    }
+  }
+
   async function handleSaveDocumentAsTemplate(asset: AssetData) {
     if (asset.assetType !== "document") {
       return;
@@ -3004,8 +3105,18 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       {isGraphViewOpen && activeProjectId && (
         <GraphViewDrawer
           assets={assets}
+          documents={assets
+            .filter(
+              (asset) =>
+                asset.projectId === activeProjectId &&
+                asset.assetType === "document" &&
+                !asset.deletedAt &&
+                asset.status === "active",
+            )
+            .map((asset) => ({ id: asset.id, title: asset.title }))}
           nodes={graphNodes}
           onClose={() => setIsGraphViewOpen(false)}
+          onLinkDocuments={handleLinkDocumentToNodes}
           onCreateNode={(nodeType) =>
             setAssetEditorState({
               mode: "create",
@@ -3054,6 +3165,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onCreateDocument={handleCreateBaselineDocument}
           onCreateEvidence={handleCreateRequirementEvidence}
           onCreateRelease={handleCreateReleaseRecord}
+          onAssignDocumentType={handleAssignDocumentType}
           onOpenAsset={(assetId) => {
             setIsEngineeringBaselineOpen(false);
             setAssetDetailId(assetId);

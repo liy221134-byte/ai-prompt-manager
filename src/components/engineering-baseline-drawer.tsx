@@ -20,6 +20,7 @@ import {
   readQualityProfile,
   summarizeDocumentGaps,
 } from "@/lib/quality-level";
+import { readProjectChain, type ChainCheck } from "@/lib/document-flow";
 
 type EngineeringBaselineDrawerProps = {
   project: ProjectData;
@@ -29,6 +30,11 @@ type EngineeringBaselineDrawerProps = {
   onCreateEvidence: (input: { nodeId: string; title: string }) => void;
   onCreateRelease: () => void;
   onOpenAsset: (assetId: string) => void;
+  // 把已有文档标记成缺的那个文档类型（工程基线关联已有文档，不重复建）
+  onAssignDocumentType?: (input: {
+    assetId: string;
+    documentType: string;
+  }) => Promise<void>;
   onClose: () => void;
 };
 
@@ -42,6 +48,7 @@ export function EngineeringBaselineDrawer({
   onCreateEvidence,
   onCreateRelease,
   onOpenAsset,
+  onAssignDocumentType,
   onClose,
 }: EngineeringBaselineDrawerProps) {
   const profile = readQualityProfile(project.riskLevel);
@@ -51,6 +58,10 @@ export function EngineeringBaselineDrawer({
     projectId: project.id,
   });
   const summary = summarizeDocumentGaps(gaps);
+  const chain = readProjectChain({
+    assets,
+    projectId: project.id,
+  });
   const requirementEvidence = rankRequirementsByEvidence(assets, project.id);
   const unverifiedCount = requirementEvidence.filter(
     (item) => item.summary.passed === 0,
@@ -62,6 +73,48 @@ export function EngineeringBaselineDrawer({
   const latestReleaseMetadata = latestRelease
     ? normalizeReleaseRecordMetadata(latestRelease.metadata)
     : null;
+
+  // 已经被缺口认领过的文档不重复出现；剩下这些是「游离文档」，
+  // 缺哪类文档时可以拿它们去顶，而不是再新建一份。
+  const matchedDocumentIds = new Set(
+    gaps.map((gap) => gap.assetId).filter((id): id is string => Boolean(id)),
+  );
+  const looseDocuments = assets.filter(
+    (asset) =>
+      asset.projectId === project.id &&
+      asset.assetType === "document" &&
+      asset.status === "active" &&
+      asset.deletedAt === null &&
+      !matchedDocumentIds.has(asset.id),
+  );
+
+  // 链路里缺的那一环：文档类走新建文档，验收走验收覆盖，发布走新建发布记录
+  function handleCreateChainItem(item: ChainCheck) {
+    if (item.key === "release") {
+      onCreateRelease();
+      return;
+    }
+
+    if (item.key === "evidence") {
+      const first = requirementEvidence.find(
+        (entry) => entry.summary.passed === 0,
+      );
+
+      if (first) {
+        onCreateEvidence({
+          nodeId: first.node.id,
+          title: `验收：${first.node.title}`,
+        });
+      }
+
+      return;
+    }
+
+    onCreateDocument({
+      title: item.label,
+      documentType: item.key === "prd" ? "PRD" : "实现规格",
+    });
+  }
 
   useModalBehavior(onClose);
 
@@ -134,6 +187,59 @@ export function EngineeringBaselineDrawer({
           <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-700">
+                链路完整性
+              </h3>
+              <span className="text-xs text-slate-500">
+                需求 → 规格 → 验收 → 发布，缺哪环就补哪环
+              </span>
+            </div>
+            <ul className="mt-2 flex flex-col divide-y divide-slate-100">
+              {chain.map((item) => (
+                <li className="flex items-start gap-3 py-2" key={item.key}>
+                  {item.satisfied ? (
+                    <CircleCheck
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                    />
+                  ) : (
+                    <CircleDashed
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 text-slate-400"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {item.label}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                      {item.hint}
+                    </p>
+                  </div>
+                  {item.satisfied ? (
+                    <button
+                      className="shrink-0 text-xs font-semibold text-sky-700 hover:underline"
+                      onClick={() => onOpenAsset(item.assetId ?? "")}
+                      type="button"
+                    >
+                      打开
+                    </button>
+                  ) : (
+                    <button
+                      className="shrink-0 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
+                      onClick={() => handleCreateChainItem(item)}
+                      type="button"
+                    >
+                      {item.key === "release" ? "新建发布记录" : `新建${item.label}`}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">
                 这个等级必须有的工程文档
               </h3>
               <span className="text-xs text-slate-500">
@@ -186,18 +292,49 @@ export function EngineeringBaselineDrawer({
                       打开
                     </button>
                   ) : (
-                    <button
-                      className="shrink-0 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
-                      onClick={() =>
-                        onCreateDocument({
-                          title: gap.document.title,
-                          documentType: gap.document.documentType,
-                        })
-                      }
-                      type="button"
-                    >
-                      新建文档
-                    </button>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <button
+                        className="rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition-colors hover:border-sky-300 hover:bg-sky-100"
+                        onClick={() =>
+                          onCreateDocument({
+                            title: gap.document.title,
+                            documentType: gap.document.documentType,
+                          })
+                        }
+                        type="button"
+                      >
+                        新建文档
+                      </button>
+                      {onAssignDocumentType && looseDocuments.length > 0 && (
+                        <label className="flex items-center gap-1 text-[11px] text-slate-500">
+                          或用已有
+                          <select
+                            aria-label={`用已有文档当作${gap.document.title}`}
+                            className="max-w-40 rounded border border-slate-300 bg-white px-1 py-0.5 text-[11px] text-slate-700"
+                            onChange={(event) => {
+                              const assetId = event.target.value;
+
+                              event.target.value = "";
+
+                              if (assetId) {
+                                void onAssignDocumentType({
+                                  assetId,
+                                  documentType: gap.document.documentType,
+                                });
+                              }
+                            }}
+                            value=""
+                          >
+                            <option value="">挑一份…</option>
+                            {looseDocuments.map((document) => (
+                              <option key={document.id} value={document.id}>
+                                {document.title}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
                   )}
                 </li>
               ))}

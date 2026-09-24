@@ -16,7 +16,13 @@ type GraphViewDrawerProps = {
   projectName: string;
   nodes: GraphNodeAssetData[];
   assets: AssetData[];
+  // 可以挂到节点上的文档资产（项目里的）
+  documents: Array<{ id: string; title: string }>;
   onCreateNode: (nodeType: GraphNodeType) => void;
+  onLinkDocuments: (input: {
+    nodeIds: string[];
+    documentId: string;
+  }) => Promise<void>;
   onOpenAsset: (asset: AssetData) => void;
   onClose: () => void;
 };
@@ -25,12 +31,17 @@ export function GraphViewDrawer({
   projectName,
   nodes,
   assets,
+  documents,
   onCreateNode,
+  onLinkDocuments,
   onOpenAsset,
   onClose,
 }: GraphViewDrawerProps) {
   const [activeType, setActiveType] = useState<GraphNodeType>("requirement");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [linkNodeIds, setLinkNodeIds] = useState<string[]>([]);
+  const [linkDocumentId, setLinkDocumentId] = useState("");
+  const [isLinking, setIsLinking] = useState(false);
 
   useModalBehavior(onClose);
 
@@ -279,6 +290,108 @@ export function GraphViewDrawer({
               )}
             </section>
           </div>
+
+          <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">
+                批量挂文档
+              </h3>
+              <span className="text-xs text-slate-500">
+                把一份文档一次挂到多个节点上（关系类型：引用）
+              </span>
+            </div>
+            {documents.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-500">
+                项目里还没有文档资产。先在项目视图导入或新建一份文档，再回来挂。
+              </p>
+            ) : nodes.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-500">
+                还没有图谱节点。先用「导入工程」扫代码目录或建表语句。
+              </p>
+            ) : (
+              <>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                    文档
+                    <select
+                      aria-label="选择要挂上的文档"
+                      className="h-9 max-w-64 rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-900 outline-none"
+                      onChange={(event) => setLinkDocumentId(event.target.value)}
+                      value={linkDocumentId}
+                    >
+                      <option value="">选一份文档</option>
+                      {documents.map((document) => (
+                        <option key={document.id} value={document.id}>
+                          {document.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    className="text-xs font-semibold text-teal-700 hover:underline"
+                    onClick={() =>
+                      setLinkNodeIds(
+                        linkNodeIds.length === nodes.length
+                          ? []
+                          : nodes.map((node) => node.id),
+                      )
+                    }
+                    type="button"
+                  >
+                    {linkNodeIds.length === nodes.length ? "全不选" : "全选节点"}
+                  </button>
+                </div>
+
+                <ul className="mt-2 max-h-56 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
+                  {nodes.map((node) => (
+                    <li className="px-3 py-1.5" key={node.id}>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                        <input
+                          checked={linkNodeIds.includes(node.id)}
+                          className="size-4 shrink-0 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                          onChange={() =>
+                            setLinkNodeIds((current) =>
+                              current.includes(node.id)
+                                ? current.filter((id) => id !== node.id)
+                                : [...current, node.id],
+                            )
+                          }
+                          type="checkbox"
+                        />
+                        <span className="text-xs text-slate-500">
+                          {graphNodeTypeLabels[node.metadata.nodeType]}
+                        </span>
+                        <span className="truncate">
+                          {node.metadata.code ? `${node.metadata.code} ` : ""}
+                          {node.title}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-teal-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  disabled={
+                    isLinking || !linkDocumentId || linkNodeIds.length === 0
+                  }
+                  onClick={() => {
+                    setIsLinking(true);
+                    void onLinkDocuments({
+                      nodeIds: linkNodeIds,
+                      documentId: linkDocumentId,
+                    }).finally(() => {
+                      setIsLinking(false);
+                      setLinkNodeIds([]);
+                    });
+                  }}
+                  type="button"
+                >
+                  {isLinking ? "正在挂…" : `挂到选中的 ${linkNodeIds.length} 个节点`}
+                </button>
+              </>
+            )}
+          </section>
         </div>
       </aside>
     </div>

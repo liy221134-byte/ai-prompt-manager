@@ -72,3 +72,70 @@ export function groupDocumentsByStage(assets: AssetData[]) {
     ),
   }));
 }
+
+export type ChainCheck = {
+  key: "prd" | "spec" | "evidence" | "release";
+  label: string;
+  hint: string;
+  satisfied: boolean;
+  // 已经满足时指向那条资产，界面用它做「打开」
+  assetId: string | null;
+};
+
+// 链路完整性：这个项目有没有 需求(PRD) → 规格(Spec) → 验收 → 发布 这四环。
+// 缺哪一环，界面上就给哪一环的入口。
+export function readProjectChain(input: {
+  assets: AssetData[];
+  projectId: string;
+}): ChainCheck[] {
+  const live = input.assets.filter(
+    (asset) =>
+      asset.projectId === input.projectId &&
+      asset.deletedAt === null &&
+      asset.status === "active",
+  );
+  const findDocument = (documentType: string) =>
+    live.find(
+      (asset) =>
+        asset.assetType === "document" &&
+        asset.metadata.documentType === documentType,
+    ) ?? null;
+  const findFirst = (assetType: AssetData["assetType"]) =>
+    live.find((asset) => asset.assetType === assetType) ?? null;
+
+  const prd = findDocument("PRD");
+  const spec = findDocument("实现规格");
+  const evidence = findFirst("evidence");
+  const release = findFirst("release_record");
+
+  return [
+    {
+      key: "prd",
+      label: "需求（PRD）",
+      hint: "为什么做、做什么、成功标准",
+      satisfied: Boolean(prd),
+      assetId: prd?.id ?? null,
+    },
+    {
+      key: "spec",
+      label: "实现规格（Spec）",
+      hint: "这次具体怎么改：动哪些文件、数据怎么变、边界在哪",
+      satisfied: Boolean(spec),
+      assetId: spec?.id ?? null,
+    },
+    {
+      key: "evidence",
+      label: "验收记录",
+      hint: "每条需求的条件、步骤、结果和证据",
+      satisfied: Boolean(evidence),
+      assetId: evidence?.id ?? null,
+    },
+    {
+      key: "release",
+      label: "发布记录",
+      hint: "上线门禁和结果",
+      satisfied: Boolean(release),
+      assetId: release?.id ?? null,
+    },
+  ];
+}

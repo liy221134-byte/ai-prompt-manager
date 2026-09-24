@@ -1115,6 +1115,13 @@ export function AssetEditorDrawer({
                 </button>
               </div>
 
+              {assetType === "evidence" && (
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  验收记录这样关联：先在上面选「对应需求节点」，再在这里挂上相关的文档
+                  （比如这次需求的验收清单或实现规格），以后从节点就能查到这条验收。
+                </p>
+              )}
+
               {draft.relations.length === 0 ? (
                 <p className="mt-3 text-xs text-slate-500">
                   还没有关系。关系是单向的，这里填的是「这条资产指向谁」。
