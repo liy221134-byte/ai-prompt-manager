@@ -1,6 +1,11 @@
 import { rejectLocalApiInCloudMode } from "../../../lib/server/local-data-api.ts";
 import { resolveDataRootDir } from "../../../lib/server/prompt-database.ts";
 import {
+  getRuntimeConfigurationError,
+  isSupabaseDataMode,
+} from "../../../lib/server/runtime-config.ts";
+import { uploadSourcePackageToCloud } from "../../../lib/source-package-cloud.ts";
+import {
   createSourcePackageUploadId,
   readSourcePackageUpload,
   removeSourcePackageUpload,
@@ -27,19 +32,25 @@ function isUploadId(value: string) {
   );
 }
 
-// 上传只把原文落到来源目录，不写资产。
-// 资产和项目要等用户在草稿预览里确认之后才创建。
-export async function POST(request: Request) {
-  const cloudModeError = rejectLocalApiInCloudMode();
+// 本地和云端共用同一套「读文件 + 校验」：两边只是存原文的地方不同。
+type UploadRequestResult =
+  | {
+      filename: string;
+      kind: string;
+      bytes: Uint8Array;
+      contentType: string;
+    }
+  | { error: Response };
 
-  if (cloudModeError) {
-    return cloudModeError;
-  }
-
+async function readUploadRequest(
+  request: Request,
+): Promise<UploadRequestResult> {
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
 
   if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) {
-    return createErrorResponse("ZIP 包超过 20 MB 上限，请拆分后再上传。", 413);
+    return {
+      error: createErrorResponse("ZIP 包超过 20 MB 上限，请拆分后再上传。", 413),
+    };
   }
 
   let form: FormData;
@@ -47,13 +58,15 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
-    return createErrorResponse("请求内容不是有效的文件上传。", 400);
+    return {
+      error: createErrorResponse("请求内容不是有效的文件上传。", 400),
+    };
   }
 
   const file = form.get("file");
 
   if (!(file instanceof File)) {
-    return createErrorResponse("没有收到文件。", 400);
+    return { error: createErrorResponse("没有收到文件。", 400) };
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -64,7 +77,87 @@ export async function POST(request: Request) {
   });
 
   if (!validation.ok) {
-    return createErrorResponse(validation.message, 400);
+    return { error: createErrorResponse(validation.message, 400) };
+  }
+
+  return {
+    filename: validation.filename,
+    kind: validation.kind,
+    bytes,
+    contentType: file.type,
+  };
+}
+
+// 上传只把原文落到来源目录，不写资产。
+// 资产和项目要等用户在草稿预览里确认之后才创建。
+export async function POST(request: Request) {
+  if (isSupabaseDataMode()) {
+    const configurationError = getRuntimeConfigurationError();
+
+    if (configurationError) {
+      return createErrorResponse(configurationError, 503);
+    }
+
+    const upload = await readUploadRequest(request);
+
+    if ("error" in upload) {
+      return upload.error;
+    }
+
+    const { getSupabaseServerClient } = await import(
+      "../../../lib/supabase/server.ts"
+    );
+    const client = await getSupabaseServerClient();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      return createErrorResponse("请先登录再导入文档包。", 401);
+    }
+
+    try {
+      const uploadId = createSourcePackageUploadId();
+      const uploaded = await uploadSourcePackageToCloud(client, {
+        userId: user.id,
+        uploadId,
+        filename: upload.filename,
+        bytes: upload.bytes,
+        ...(upload.contentType ? { contentType: upload.contentType } : {}),
+      });
+
+      return Response.json(
+        {
+          upload: {
+            uploadId,
+            filename: upload.filename,
+            kind: upload.kind,
+            storedPath: uploaded.storedPath,
+            byteSize: uploaded.byteSize,
+            uploadedAt: new Date().toISOString(),
+          },
+        },
+        { status: 201 },
+      );
+    } catch (error) {
+      console.error("上传来源包原文到云端失败", error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : "上传原文失败。",
+        500,
+      );
+    }
+  }
+
+  const cloudModeError = rejectLocalApiInCloudMode();
+
+  if (cloudModeError) {
+    return cloudModeError;
+  }
+
+  const upload = await readUploadRequest(request);
+
+  if ("error" in upload) {
+    return upload.error;
   }
 
   try {
@@ -72,16 +165,16 @@ export async function POST(request: Request) {
     const saved = await saveSourcePackageUpload({
       dataRootDir: resolveDataRootDir(),
       uploadId,
-      filename: validation.filename,
-      bytes,
+      filename: upload.filename,
+      bytes: upload.bytes,
     });
 
     return Response.json(
       {
         upload: {
           uploadId,
-          filename: validation.filename,
-          kind: validation.kind,
+          filename: upload.filename,
+          kind: upload.kind,
           storedPath: saved.relativePath,
           byteSize: saved.byteSize,
           uploadedAt: new Date().toISOString(),

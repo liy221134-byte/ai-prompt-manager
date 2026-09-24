@@ -1,11 +1,12 @@
-import { rejectLocalApiInCloudMode } from "../../../../lib/server/local-data-api.ts";
 import { getPromptDatabase } from "../../../../lib/server/prompt-database.ts";
+import { getRuntimeConfigurationError, isSupabaseDataMode } from "../../../../lib/server/runtime-config.ts";
 import {
   checkSourcePackageDraftLimit,
   type SourcePackageDraft,
 } from "../../../../lib/source-package-draft.ts";
 import {
   planSourcePackageCreation,
+  type SourcePackageCreationPlan,
   type SourcePackageProjectChoice,
   type SourcePackageUploadRef,
 } from "../../../../lib/source-package-confirm.ts";
@@ -109,10 +110,10 @@ function readProjectChoice(value: unknown): SourcePackageProjectChoice | null {
 
 // 用户在预览里确认后才走到这里：项目、来源包、资产一次性创建。
 export async function POST(request: Request) {
-  const cloudModeError = rejectLocalApiInCloudMode();
+  const configurationError = getRuntimeConfigurationError();
 
-  if (cloudModeError) {
-    return cloudModeError;
+  if (configurationError) {
+    return createErrorResponse(configurationError, 503);
   }
 
   let body: unknown;
@@ -161,6 +162,11 @@ export async function POST(request: Request) {
     project,
   });
 
+  // 云端走登录会话写库（行级安全按账号隔离），本地走 SQLite。
+  if (isSupabaseDataMode()) {
+    return createSourcePackageInCloud(plan, project);
+  }
+
   try {
     const created = getPromptDatabase().createSourcePackageImport(plan);
     const projectId = plan.project
@@ -183,4 +189,75 @@ export async function POST(request: Request) {
       409,
     );
   }
+}
+
+async function createSourcePackageInCloud(
+  plan: SourcePackageCreationPlan,
+  project: SourcePackageProjectChoice,
+) {
+  const { getSupabaseServerClient } = await import(
+    "../../../../lib/supabase/server.ts"
+  );
+  const { createSupabasePromptDataSource } = await import(
+    "../../../../lib/prompt-source.ts"
+  );
+  const client = await getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+
+  if (!user) {
+    return createErrorResponse("请先登录再导入文档包。", 401);
+  }
+
+  const source = createSupabasePromptDataSource(client);
+
+  try {
+    if (plan.project) {
+      await source.createProject(plan.project);
+    }
+
+    for (const asset of plan.sourcePackages) {
+      await source.createAsset({
+        asset,
+        versionId: asset.currentVersionId,
+        changeReason: "导入文档包",
+        versionReason: "initial",
+      });
+    }
+
+    for (const item of plan.assets) {
+      await source.createAsset({
+        asset: item.asset,
+        versionId: item.version.versionId,
+        changeReason: "导入文档包",
+        versionReason: "initial",
+      });
+    }
+  } catch (error) {
+    console.error("创建导入资产失败（云端）", error);
+
+    return createErrorResponse(
+      error instanceof Error ? error.message : "创建导入资产失败。",
+      409,
+    );
+  }
+
+  const projectId = plan.project
+    ? plan.project.id
+    : project.mode === "existing"
+      ? project.projectId
+      : null;
+
+  return Response.json(
+    {
+      created: {
+        projects: plan.project ? 1 : 0,
+        sourcePackages: plan.sourcePackages.length,
+        assets: plan.assets.length,
+      },
+      projectId,
+    },
+    { status: 201 },
+  );
 }

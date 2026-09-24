@@ -171,6 +171,21 @@ npm run dev
 
 然后使用浏览器打开 `http://localhost:3000`。
 
+### 本机模式（只有两个能力需要）
+
+下面两件事**只在「本机数据模式」下可用**，需要它们时用这一条命令启动：
+
+```powershell
+npm run dev:local
+```
+
+- **导入工程 →「分析代码目录」**：要读你本机的目录，云端模式读不到。
+- **MCP 服务**：另开一个终端跑 `npm run mcp`（要只读就加 `MCP_READ_ONLY=1`），
+  读写的是同一个 `.data/prompts.sqlite`。
+
+本机模式的数据在 `.data/prompts.sqlite`，和线上那份是两套，不会互相影响；
+`npm run dev`（不加 `:local`）则是用 `.env.local` 里的云端模式，数据和线上同一份。
+
 ## 工程检查
 
 以下命令会依次执行代码检查、类型检查和生产构建：
