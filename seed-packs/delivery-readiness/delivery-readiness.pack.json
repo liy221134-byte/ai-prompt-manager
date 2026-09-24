@@ -1,0 +1,126 @@
+{
+  "type": "ai-prompt-manager-rule-pack",
+  "version": 1,
+  "exportedAt": "2026-09-24T16:57:48.218Z",
+  "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
+  "pack": {
+    "id": "rule-pack-delivery-readiness",
+    "title": "交付就绪包",
+    "summary": "工程方法种子资产包管「AI 该守什么规矩」，操作者训练包管「人怎么指挥 AI」； 这个包管的是**从代码到能访问的服务之间那段**——也就是换环境交付时， 哪些事必须提前判定、哪些东西必须提前写下。 它服务的是一个具体场景：本机用 AI 写完代码，推到公司仓库，过流水线， 最后落到客户给的一台服务器上（可能是内网、可能",
+    "content": "# 交付就绪包\n\n## 用途\n\n工程方法种子资产包管「AI 该守什么规矩」，操作者训练包管「人怎么指挥 AI」；\n这个包管的是**从代码到能访问的服务之间那段**——也就是换环境交付时，\n哪些事必须提前判定、哪些东西必须提前写下。\n\n它服务的是一个具体场景：本机用 AI 写完代码，推到公司仓库，过流水线，\n最后落到客户给的一台服务器上（可能是内网、可能要摆渡），数据库是自建 MySQL 或 PostgreSQL。\n这段路每一环都有一块「配置解决不了、必须补能力」的地方，不提前判定，到了现场才发现。\n\n来源：本项目的 `docs/project-map.md` 第五步「环境差异」那张表（那份表自己标了「未验证假设」），\n以及 2026-09-25 与豆包那次 CI/CD 与 MCP 预研的核对结果（核对记录见\n`docs/v3-requirements-draft.md`）。\n\n## 这个包不做什么\n\n- **不碰部署执行**：怎么把服务跑起来仍然由流水线或服务器上的脚本负责，\n  这个包只管「交付前该确认什么、该留下什么文档」。\n- **不重复已有的两件事**：回滚的结构用工程包的 `PLAYBOOK-RELEASE-001`（发布、回滚与恢复），\n  数据库迁移的做法用 `CASE-MIGRATION-001`（迁移历史与对齐）。这个包只补它们没覆盖的\n  交付段：环境本身的登记、摆渡与部署手册。\n\n## 当前版本\n\n- 版本：`0.1.0`\n- 状态：`candidate`，在一个真实交付项目里跑过一轮、按现场反馈改过之后，再升 `active`\n- 可信度：`hypothesis`——**这个包还没有在真实交付里用过**，现在的内容是从文档和一次\n  预研推出来的。跑完一轮不修正，等于白写。\n\n## 怎么装进产品\n\n```bash\nnpm run pack:delivery\n```\n\n生成的 `delivery-readiness.pack.json` 在产品的「公共资产 → 更多 → 导入规则包」里导入。\n\n## 怎么用\n\n1. 立项或换环境时，按 `MTH-DLV-001` 把目标环境的差异逐项判定，产出那份清单。\n2. 每个目标环境填一份 `TPL-DLV-001` 环境档案（一台机器一份，凭据只写引用名）。\n3. 交付前用 `TPL-DLV-002` 把部署手册写完；回滚那节套工程包的发布与回滚\n   （`PLAYBOOK-RELEASE-001` 与 `templates/engineering/release-rollback.md`）。\n4. 交付完成后，把现场和清单对不上的地方改回这个包——这一包的价值来自现场反馈，\n   不来自一次写得多全。",
+    "metadata": {
+      "packVersion": "0.1.0",
+      "packConfidence": "provisional",
+      "projectScale": [
+        "large",
+        "medium",
+        "personal",
+        "regulated"
+      ],
+      "sourceNote": "来自仓库里的种子资产包（Markdown 源文件）；manifest 与 schema 属于包的目录和字段定义，内容已并入包说明。"
+    },
+    "status": "active"
+  },
+  "members": [
+    {
+      "id": "rule-mth-dlv-001",
+      "assetType": "rule",
+      "title": "交付前环境适配体检",
+      "summary": "**换环境交付时，真正会卡住的不是代码，是六件「配置换不过去」的事。** 动手写部署脚本之前，先把这六件逐项判定成三种结果之一： **配置能解决**、**要补能力**、**不适用**。判定结果就是这次交付的待办清单。",
+      "content": "# 交付前环境适配体检\n\n## 核心结论\n\n**换环境交付时，真正会卡住的不是代码，是六件「配置换不过去」的事。**\n动手写部署脚本之前，先把这六件逐项判定成三种结果之一：\n**配置能解决**、**要补能力**、**不适用**。判定结果就是这次交付的待办清单。\n\n不判定就开做的代价：到了客户现场才发现进不去、装不上、迁移跑不了，\n那时候手上只有一台不能上网的机器和一个等着看结果的人。\n\n## 使用条件\n\n- 立项时就知道要交付到哪一类环境（哪怕还没拿到机器）。\n- 拿到一台新的目标机器、或者客户换了一套环境。\n- 一个原本跑在云上的项目要搬到自建或内网，反过来也一样。\n\n## 不适用场景\n\n- 只在本地跑、不交付给别人的原型：跳过，别为了走流程浪费时间。\n- 同一套环境下的日常发版：按已有的发布与回滚做，不用重新体检。\n\n## 六件事，逐项判定\n\n先把目标环境归到四类之一：**全托管**、**自建云主机**、**公司托管**、**内网隔离**。\n四类的默认打法在这里；实际环境只要有一项对不上，就把它写成「要补能力」。\n\n| 六件事 | 全托管 | 自建云主机 | 公司托管 | 内网隔离 |\n| --- | --- | --- | --- | --- |\n| 代码怎么进 | 推分支，平台自动构建 | 推分支，流水线拉取 | 提交工单或流水线 | **离线包摆渡** |\n| 依赖怎么进 | 平台托管 | 公网或公司私服 | 公司私服 | **离线镜像包** |\n| 数据库迁移怎么执行 | 自动或手动调函数 | 流水线执行 | 审批后执行 | **人工执行，备份先行** |\n| 回滚怎么做 | 平台切版本 | 镜像回滚加 SQL 回滚 | 走审批 | **软链接切回加 SQL 回滚** |\n| 故障怎么响应 | 远程 | 远程 | 远程加工单 | **现场为主，争取 VPN** |\n| 谁有生产权限 | 我 | 我 | 平台或运维 | **客户运维，或我持账密** |\n\n## 判定步骤\n\n1. 先定环境类型，写下来（这一条会进环境档案）。\n2. 上面六件事逐条对照，写「配置能解决／要补能力／不适用」，不写「待定」——\n   待定就是没判定。\n3. 判成「要补能力」的，逐条写清：补什么、谁来补、要多久、卡住会怎样。\n4. 单独回答两个决定打法的问题：\n   - **网络方向**：是「从外面连进去」还是「里面主动拉」？只要环境不允许从外面连进来，\n     就必须做成拉的（CI 推镜像，机器上主动拉取重启），这条改不了。\n   - **数据方向**：数据库能不能从交付机上直接连？不能的话，迁移脚本怎么带进去、谁执行、\n     执行前怎么备份。\n5. 产出一张清单，交给产品负责人确认。清单上每条都要能判定「做完没有」。\n\n## 一条容易搞错的事\n\n**MCP 和智能体替代不了执行引擎。** 它们能读流水线状态、能发指令，\n但真正构建和部署的是 Runner 或服务器上的脚本；物理隔离环境里连不上，就是连不上。\n不要指望装一个 MCP 就把内网交付打通。\n\n## 失败模式\n\n- 把「环境类型」当成唯一答案：同一类的两台机器，网络策略也可能不同。\n- 写了「待定」就当判过了。\n- 只在脑子里判，没落成清单——换一次会话就重来。\n- 该走「拉」的做成「推」，现场被网络策略挡住。\n- 让智能体直接连生产库改表。**这条是红线**：改表只能走仓库里的迁移脚本，\n  由部署流程执行，迁移失败则应用不启动。\n\n## 验证证据\n\n- 填好的那份清单，每条有判定结果和理由。\n- 判成「要补能力」的项，有对应的落地记录（装了 Runner、配了私服、定了摆渡流程）。\n- 一次真实的部署记录：照着清单走完，中途没有发现新的缺口。\n\n## 相关资产\n\n- `TPL-DLV-001`（依赖）：判定出来的环境信息落到环境档案里。\n- `TPL-DLV-002`（依赖）：清单里的部署与验证项进部署手册。\n- `PLAYBOOK-RELEASE-001`（引用）：回滚和发布后验证沿用工程包那份，不重写。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-DLV-001\ntitle: 交付前环境适配体检\nasset_type: method\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/project-map.md（第五步「环境差异」表：同一条流程的四种打法）\n  - docs/v3-requirements-draft.md（2026-09-25 与豆包那次 CI/CD 与 MCP 预研的核对结果）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - release\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - docs/project-map.md\n  - docs/v3-requirements-draft.md\nrelated_assets:\n  - TPL-DLV-001\n  - TPL-DLV-002\n  - PLAYBOOK-RELEASE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-25\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "发布",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "none",
+        "evidence": "- docs/project-map.md（第五步「环境差异」表：同一条流程的四种打法）\n- docs/v3-requirements-draft.md（2026-09-25 与豆包那次 CI/CD 与 MCP 预研的核对结果）\n- docs/project-map.md\n- docs/v3-requirements-draft.md",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-delivery-readiness",
+          "packItemId": "MTH-DLV-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 把「环境类型」当成唯一答案：同一类的两台机器，网络策略也可能不同。 - 写了「待定」就当判过了。 - 只在脑子里判，没落成清单——换一次会话就重来。 - 该走「拉」的做成「推」，现场被网络策略挡住。 - 让智能体直接连生产库改表。**这条是红线**：改表只能走仓库里的迁移脚本，   由部署流程执行，迁移失败则应用不启动。",
+        "relations": [
+          {
+            "targetAssetId": "document-tpl-dlv-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-dlv-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-tpl-dlv-001",
+      "assetType": "document",
+      "title": "交付环境档案模板",
+      "summary": "**一台目标环境一份档案。** 它回答的是「我到底在往哪里交付」： 怎么进、跑的是什么版本、上一次谁动了它、出问题找谁。",
+      "content": "# 交付环境档案模板\n\n## 核心结论\n\n**一台目标环境一份档案。** 它回答的是「我到底在往哪里交付」：\n怎么进、跑的是什么版本、上一次谁动了它、出问题找谁。\n\n没有这份档案的时候，这些答案散在聊天记录、几个 `.env` 和记忆里，\n换个会话就得重新问一遍，也说不清「线上现在到底是哪一版」。\n\n## 使用条件\n\n- 第一次往一台机器上交付之前。\n- 环境换代、搬迁、或者换了运维接手人时更新。\n- 每次交付完成后，至少回来更新「当前版本」和「上一次交付」两行。\n\n## 不适用场景\n\n- 只在本地跑的开发机不用建档案。\n- 托管平台上的预览环境不用逐台建，建档的是**要长期存在**的那几台。\n\n## 一条红线\n\n**档案里不写任何密码、密钥、连接串。** 只写「用哪个引用名」——\n本体的存放位置由人记住或另行约定。这份档案会进资产库、会进备份、\n也可能被贴进对话里，写进去的密钥就等于泄露了。\n\n## 档案结构\n\n### 一、基本\n\n| 字段 | 填写要求 |\n| --- | --- |\n| 环境名称 | 自己认得出的名字，例如「客户 A 生产」「公司测试机」 |\n| 环境类型 | 全托管／自建云主机／公司托管／内网隔离 |\n| 谁维护 | 客户运维、公司运维还是我；出问题先找谁 |\n| 网络边界 | 能不能从外面连进来；要不要过堡垒机或网闸；有没有 VPN |\n\n### 二、怎么进\n\n| 字段 | 填写要求 |\n| --- | --- |\n| 访问方式 | 直连 SSH、跳板机、平台控制台，还是只能现场 |\n| 登录账号 | 用户名和角色，例如 `deploy`（只用于部署，不给 root） |\n| 凭据引用名 | **只写名字**，例如「凭据管理器里的 clientA-deploy」 |\n| 落地目录 | 服务装在哪个路径，日志在哪个路径 |\n\n### 三、跑什么\n\n| 字段 | 填写要求 |\n| --- | --- |\n| 当前部署版本 | 现在这台机器上是哪个版本号 |\n| 回滚目标 | 上一版是什么、怎么切回去 |\n| 运行方式 | Docker Compose、裸进程、还是平台托管 |\n| 数据库 | 类型与版本、库名、只读账号与写账号分别是谁在用 |\n| 迁移状态 | 已执行到哪个迁移编号 |\n\n### 四、记录\n\n| 字段 | 填写要求 |\n| --- | --- |\n| 上一次交付 | 时间、版本、谁做的、结果 |\n| 已知问题 | 现在还带着的毛病，以及绕法 |\n| 变更历史 | 重装、搬迁、换证书这类大动作各记一行 |\n\n## 最低内容\n\n第一次建档至少填这七项，其余可以标「待补」，但要写清补的时间和负责人：\n\n1. 环境类型。\n2. 网络边界（能不能从外面连进来）。\n3. 访问方式与登录账号。\n4. 凭据引用名。\n5. 当前部署版本与回滚目标。\n6. 数据库类型、库名、账号角色分工。\n7. 谁维护。\n\n## 失败模式\n\n- 把密码或密钥直接写进档案。\n- 只写「生产服务器」，不写具体是哪台、怎么进。\n- 交付完不回来更新版本号，档案很快变成错的，比没有更危险。\n- 不写谁维护：出事时现场没人认领。\n\n## 验证证据\n\n- 填好的环境档案本身。\n- 一次照着档案进机器、确认版本号对得上的记录。\n- 换环境时的差异清单（`MTH-DLV-001` 的产出）。\n\n## 相关资产\n\n- `MTH-DLV-001`（被依赖）：环境类型和六件事的判定结果从这里来。\n- `TPL-DLV-002`（依赖）：部署手册里的地址、账号、目录引用这份档案。\n\n## 包内原始元数据\n\n```yaml\nid: TPL-DLV-001\ntitle: 交付环境档案模板\nasset_type: template\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - template\nverification: manual\nevidence:\n  - docs/project-map.md（第五步的环境差异表就是这份档案的填写依据）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - release\n  - operate\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - docs/project-map.md\nrelated_assets:\n  - MTH-DLV-001\n  - TPL-DLV-002\nversion: 0.1.0\nlast_reviewed: 2026-09-25\n```",
+      "metadata": {
+        "documentType": "模板",
+        "sourceLocation": "docs/project-map.md",
+        "pack": {
+          "packId": "rule-pack-delivery-readiness",
+          "packItemId": "TPL-DLV-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "template",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 把密码或密钥直接写进档案。 - 只写「生产服务器」，不写具体是哪台、怎么进。 - 交付完不回来更新版本号，档案很快变成错的，比没有更危险。 - 不写谁维护：出事时现场没人认领。"
+      },
+      "status": "active"
+    },
+    {
+      "id": "document-tpl-dlv-002",
+      "assetType": "document",
+      "title": "客户环境部署手册模板",
+      "summary": "**部署手册是写给「不是你、也不能问你」的人看的。** 交付那天要么是客户运维照着做， 要么是三个月后的你照着做。手册的目的只有一个：照着走能装上、能验、能退回去。",
+      "content": "# 客户环境部署手册模板\n\n## 核心结论\n\n**部署手册是写给「不是你、也不能问你」的人看的。** 交付那天要么是客户运维照着做，\n要么是三个月后的你照着做。手册的目的只有一个：照着走能装上、能验、能退回去。\n\n## 使用条件\n\n- 每次往客户环境交付前写一份，交付时带上。\n- 内网摆渡场景必须先写完手册再打包，包里带的是手册的定稿版。\n\n## 不适用场景\n\n- 自己云上的日常发版用不上，那是流水线的事。\n- 一次性演示环境可以只写「怎么起、怎么停、找谁」三行。\n\n## 手册结构\n\n### 一、这次交付什么\n\n- 项目与版本号：\n- 这次包含哪些改动：\n- 涉及数据变更：有／没有（有就列出迁移文件编号和执行顺序）\n- 目标环境：（引用环境档案 `TPL-DLV-001` 里的名字，不在这里重抄地址和账号）\n\n### 二、交付前必须完成\n\n- [ ] 环境适配体检做完，判成「要补能力」的项全部落地（`MTH-DLV-001`）\n- [ ] 工程检查通过（类型检查、自动化测试、代码检查、生产构建）\n- [ ] 数据库迁移已在隔离环境跑过一遍\n- [ ] 备份已生成，并且确认备份文件能打开\n- [ ] 回滚目标与回滚方式写清楚（套 `PLAYBOOK-RELEASE-001`）\n- [ ] 制品包清单与校验和对过，文件不缺\n\n### 三、制品怎么进去\n\n| 字段 | 填写要求 |\n| --- | --- |\n| 进去的方式 | 摆渡、私服拉取、还是现场直接拷 |\n| 制品清单 | 逐个文件写清，附校验和 |\n| 进去之后放哪 | 绝对路径 |\n| 谁有权限放 | 客户运维还是我 |\n\n### 四、部署步骤\n\n| 顺序 | 动作 | 谁执行 | 预期结果 | 失败怎么办 |\n| --- | --- | --- | --- | --- |\n| 1 |  |  |  |  |\n| 2 |  |  |  |  |\n\n要求：每一步都要写「预期能看到什么」。写不出预期结果的步骤，等于没写。\n\n### 五、数据库迁移怎么执行\n\n- 迁移脚本是仓库里的哪几个文件：\n- 执行人：\n- **执行前先备份**，备份文件放哪、怎么确认能用：\n- 迁移失败怎么办（回滚 SQL 在哪 / 或者向前修复）：\n- **红线：不让智能体直接连生产库改表**，只走仓库里的迁移文件。\n\n### 六、部署后验证\n\n- [ ] 服务起来了（怎么看：端口、容器状态、健康检查地址）\n- [ ] 登录流程正常\n- [ ] 本次改动的功能走一遍（逐条列出「点什么、看到什么」）\n- [ ] 关键数据读写正常\n- [ ] 日志里没有新的报错\n\n### 七、出事怎么办\n\n- 回滚目标版本与回滚步骤：套 `PLAYBOOK-RELEASE-001` 与\n  `templates/engineering/release-rollback.md`\n- 数据要不要跟着退、退到什么程度：\n- 找谁：客户运维 / 我 / 厂商（写清联系方式在哪，不写具体号码）\n\n### 八、交接清单\n\n- [ ] 环境档案更新到最新版本号和迁移编号\n- [ ] 手册定稿归档，现场改过的部分回填\n- [ ] 待办与已知问题交接清楚\n\n## 失败模式\n\n- 手册里直接写明文密码。\n- 只写命令不写「预期看到什么」，执行的人分不清成功还是卡住。\n- 迁移那节没写备份，出问题两头空。\n- 回滚只写「有问题再说」，没写回到哪个版本。\n- 交付完不更新环境档案，下一次交付从错的起点开始。\n\n## 验证证据\n\n- 手册本身，加上一份照着它走完的部署记录。\n- 客户运维照着手册独立装过一次——这是最硬的证据。\n- 现场发现和手册对不上的地方，已经回填。\n\n## 相关资产\n\n- `MTH-DLV-001`（被依赖）：部署前那些必须完成的项从这里来。\n- `TPL-DLV-001`（依赖）：环境信息以档案为准。\n- `PLAYBOOK-RELEASE-001`（引用）：回滚和发布后验证沿用工程包那份。\n\n## 包内原始元数据\n\n```yaml\nid: TPL-DLV-002\ntitle: 客户环境部署手册模板\nasset_type: template\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p0\noverride_allowed: true\ncompile_target:\n  - template\nverification: manual\nevidence:\n  - docs/project-map.md（第五步「环境差异」的四种打法）\n  - templates/engineering/release-rollback.md（回滚那节直接套用，不在这里重写）\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - release\n  - operate\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - docs/project-map.md\n  - templates/engineering/release-rollback.md\nrelated_assets:\n  - MTH-DLV-001\n  - TPL-DLV-001\n  - PLAYBOOK-RELEASE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-25\n```",
+      "metadata": {
+        "documentType": "模板",
+        "sourceLocation": "docs/project-map.md；templates/engineering/release-rollback.md",
+        "pack": {
+          "packId": "rule-pack-delivery-readiness",
+          "packItemId": "TPL-DLV-002",
+          "packVersion": "0.1.0",
+          "packAssetType": "template",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 手册里直接写明文密码。 - 只写命令不写「预期看到什么」，执行的人分不清成功还是卡住。 - 迁移那节没写备份，出问题两头空。 - 回滚只写「有问题再说」，没写回到哪个版本。 - 交付完不更新环境档案，下一次交付从错的起点开始。"
+      },
+      "status": "active"
+    }
+  ]
+}

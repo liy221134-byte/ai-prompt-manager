@@ -30,6 +30,7 @@
 
 - [用户地图（功能在哪、点哪里）](user-map.md)
 - [从沉淀到立项：链路断点评估](project-lifecycle-gaps.md)
+- [零代码交付线需求草案（v3 暂定名，待确认）](v3-requirements-draft.md)
 - [需求收敛：文档／模板边界、Spec 层与交互流程（待确认）](requirements-v2.md)
 - [产品范围](product-brief.md)
 - [8 周路线图](roadmap.md)
@@ -39,6 +40,8 @@
 
 ### 设计
 
+- [v2.20.0 规则引用模型收尾设计（待确认）](superpowers/specs/2026-09-25-v2.20.0-rule-reference-closeout-design.md)
+- [v2.20.0 挑资产引用模型设计](superpowers/specs/2026-09-25-v2.20.0-picked-rule-reference-design.md)
 - [v2.19.0 本地与云端定期同步设计](superpowers/specs/2026-09-24-v2.19.0-cloud-sync-design.md)
 - [v2.18.0 规则引用模型设计](superpowers/specs/2026-09-24-v2.18.0-rule-reference-design.md)
 - [v2.17.0 项目资产两条链路设计（待确认）](superpowers/specs/2026-09-24-v2.17.0-asset-lanes-design.md)
@@ -92,6 +95,7 @@
 - [工程文档模板（九份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线、故障演练记录，用「导入模板」装进项目
 - [操作者训练包（试装）](../seed-packs/operator-training/README.md)：9 条「人怎么指挥 AI」的方法与清单，`npm run pack:operator` 生成可导入文件
 - [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：25 条工程方法、规则、模板和案例，`0.4.0`（新增 7 条来自 2.0 开发过程复盘：三道门、版本边界、设计文档四块、证据只记一处、资产三层、沉淀分流、AI 写入边界），可作为文档包导入的样本
+- [交付就绪包（M0）](../seed-packs/delivery-readiness/README.md)：3 条（交付前环境适配体检、交付环境档案模板、客户环境部署手册模板），`0.1.0`，`npm run pack:delivery` 生成导入文件。换环境交付那条「配置解决不了」的缝，第一条真项目跑完前是**假设**
 
 ### 验收与测试
 
@@ -130,6 +134,7 @@
 - [v2.17.0 验收清单（项目资产两条链路）](acceptance/v2.17.0.md)
 - [v2.18.0 验收清单（规则引用模型）](acceptance/v2.18.0.md)
 - [v2.19.0 验收清单（本地与云端定期同步）](acceptance/v2.19.0.md)
+- [v2.20.0 验收清单（规则引用收尾）](acceptance/v2.20.0.md)
 
 ### 云端部署
 

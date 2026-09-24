@@ -24,6 +24,10 @@ const packs = {
     packId: "rule-pack-operator-training",
     title: "操作者训练包",
   },
+  "delivery-readiness": {
+    packId: "rule-pack-delivery-readiness",
+    title: "交付就绪包",
+  },
 };
 
 const packDirectoryName = process.argv[2] ?? "engineering-foundations";
