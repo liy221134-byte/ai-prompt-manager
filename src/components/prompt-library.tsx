@@ -18,6 +18,7 @@ import {
   PackageOpen,
   Plus,
   RefreshCcw,
+  Rocket,
   Search,
   Sparkles,
   ShieldCheck,
@@ -96,6 +97,7 @@ import {
   type ProjectFormValues,
 } from "@/components/project-form-dialog";
 import { ProjectSwitcher } from "@/components/project-switcher";
+import { ProjectKickoffDrawer } from "@/components/project-kickoff-drawer";
 import { ToolbarMoreMenu } from "@/components/toolbar-more-menu";
 import type {
   AssetData,
@@ -173,7 +175,16 @@ import {
   saveLastBackupAt,
   savePromptLibrary,
 } from "@/lib/prompt-storage";
-import { downloadAssetBackup, downloadRulePack } from "@/lib/backup-download";
+import {
+  downloadAssetBackup,
+  downloadDeliveryPack,
+  downloadRulePack,
+} from "@/lib/backup-download";
+import {
+  buildDeliveryPack,
+  buildKickoffPrompts,
+  listPublicAssetRecommendations,
+} from "@/lib/project-kickoff";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
 import {
   loadActiveProjectId,
@@ -335,6 +346,7 @@ export function PromptLibrary({
   const [isRulePackCreateOpen, setIsRulePackCreateOpen] = useState(false);
   const [isPublicAssetPickerOpen, setIsPublicAssetPickerOpen] = useState(false);
   const [isSedimentCheckupOpen, setIsSedimentCheckupOpen] = useState(false);
+  const [isKickoffOpen, setIsKickoffOpen] = useState(false);
   const [sedimentDiff, setSedimentDiff] = useState<{
     title: string;
     currentContent: string;
@@ -1611,6 +1623,42 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       throw new Error("请先选择项目。");
     }
 
+    const now = new Date().toISOString();
+    // 同一个项目里已经有同名编译产物时，更新那一份（产生新版本），
+    // 不再每次编译都新建一条文档资产
+    const existing = assets.find(
+      (asset) =>
+        asset.projectId === activeProjectId &&
+        asset.assetType === "document" &&
+        asset.title === draft.fileName &&
+        (asset.metadata as { role?: string }).role === "compiled" &&
+        asset.deletedAt === null &&
+        isEditableAssetData(asset),
+    );
+
+    if (existing && isEditableAssetData(existing)) {
+      const draftData = assetToDraft(existing);
+
+      if (draftData.assetType === "document") {
+        await dataSource.updateAsset(
+          buildUpdateAssetInput(
+            existing,
+            {
+              ...draftData,
+              summary: `编译结果 · 参与编译 ${draft.ruleCount} 条规则`,
+              content: draft.content,
+              status: "active",
+            },
+            { versionId: createAssetVersionId(), now },
+          ),
+        );
+        await reloadAssets();
+        setAssetDetailId(existing.id);
+        notify(`${draft.fileName} 已更新（旧内容在版本记录里）`);
+        return;
+      }
+    }
+
     const assetId = createAssetId("document");
     const input = buildCreateAssetInput({
       id: assetId,
@@ -1632,7 +1680,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
         lastVerifiedAt: "",
         relations: [],
       },
-      now: new Date().toISOString(),
+      now,
     });
 
     await dataSource.createAsset(input);
@@ -1715,6 +1763,81 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
 
   // 文档 → 另存为模板：进公共资产库的模板层（正文原样复制，占位符自己改）
   // 项目资产 → 提升为公共资产：公共库多一份副本，两边都记「同源」，项目那份不动
+  // 立项提示词：只复制，产品不调用 AI
+  async function handleCopyKickoffPrompt(prompt: { prompt: string }) {
+    try {
+      await navigator.clipboard.writeText(prompt.prompt);
+      notify("提示词已复制，贴给 AI 就行");
+    } catch {
+      notify("复制失败，请手动选中后复制");
+    }
+  }
+
+  // 导出开发体系包：一个 Markdown 文件带走
+  function handleDownloadDeliveryPack() {
+    if (!deliveryPack) {
+      return;
+    }
+
+    downloadDeliveryPack(deliveryPack);
+    notify(`已下载 ${deliveryPack.fileName}`);
+  }
+
+  // 把开发体系包存成项目里的一份文档，便于版本化留痕
+  async function handleSaveDeliveryPackAsDocument() {
+    if (!deliveryPack || !activeProjectId) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const id = createAssetId("document");
+    const asset: AssetData = {
+      id,
+      projectId: activeProjectId,
+      assetType: "document",
+      title: deliveryPack.fileName.replace(/\.md$/i, ""),
+      summary: `开发体系包 · 导出时间 ${now}`,
+      content: deliveryPack.content,
+      metadata: {
+        documentType: "参考资料",
+        authority: false,
+        module: "",
+        effectiveVersion: "",
+        sourceLocation: deliveryPack.fileName,
+        updateTrigger: "",
+        freshness: "",
+        lastVerifiedAt: "",
+        relations: [],
+      },
+      source: {
+        sourceType: "manual",
+        sourceAssetId: null,
+        importBatchId: null,
+        originalFilename: deliveryPack.fileName,
+      },
+      currentVersionId: createInitialAssetVersionId(id),
+      status: "active",
+      archivedAt: null,
+      deletedAt: null,
+      deletedReason: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    try {
+      await dataSource.createAsset({
+        asset,
+        versionId: asset.currentVersionId,
+        changeReason: "导出开发体系包",
+        versionReason: "initial",
+      });
+      await reloadAssets();
+      notify("开发体系包已存成项目里的一份文档");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "保存失败");
+    }
+  }
+
   async function handlePromoteAssetToPublic(asset: AssetData) {
     if (!isEditableAssetData(asset)) {
       return;
@@ -2323,6 +2446,45 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
 
     return state.hasUpdate && state.upstream ? state.upstream : null;
   }, [assets, detailAsset, projectNameById]);
+  // 立项与交付用到的三样：项目技术栈、四条提示词、交付包。
+  // 数据量小，直接算，交给 React Compiler 决定要不要缓存。
+  const techStackForKickoff =
+    projectTechProfile?.assetType === "tech_profile"
+      ? projectTechProfile.metadata.stack.map((entry) => ({
+          name: entry.name,
+          ...(entry.version ? { version: entry.version } : {}),
+        }))
+      : [];
+  const kickoffPrompts = isKickoffOpen
+    ? buildKickoffPrompts({
+        projectName: activeProject?.name ?? "未命名项目",
+        projectGoal: activeProject?.description ?? "",
+        levelLabel:
+          projectRiskLevelLabels[activeProject?.riskLevel ?? "personal"],
+        stack: techStackForKickoff,
+      })
+    : [];
+  const deliveryPack =
+    isKickoffOpen && activeProject
+      ? buildDeliveryPack({
+          projectName: activeProject.name,
+          projectGoal: activeProject.description,
+          levelLabel: projectRiskLevelLabels[activeProject.riskLevel],
+          stack: techStackForKickoff,
+          assets,
+          projectId: activeProject.id,
+          now: new Date().toISOString(),
+        })
+      : null;
+  // 工程基线里的「建议装这些」：按质量等级挑还没装过的公共资产
+  const publicRecommendations = activeProject
+    ? listPublicAssetRecommendations({
+        assets,
+        publicProjectId: DEFAULT_PROJECT_ID,
+        projectId: activeProject.id,
+        level: activeProject.riskLevel,
+      })
+    : [];
 
   return (
     <main className="min-h-screen">
@@ -2787,6 +2949,16 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                           disabled:
                             isLoading || Boolean(loadError) || !activeProjectId,
                           onSelect: () => setIsEngineeringImportOpen(true),
+                        },
+                        {
+                          key: "kickoff",
+                          label: "立项与交付",
+                          icon: (
+                            <Rocket aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading || Boolean(loadError) || !activeProjectId,
+                          onSelect: () => setIsKickoffOpen(true),
                         },
                         {
                           key: "pick-public-assets",
@@ -3272,6 +3444,19 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
         />
       )}
 
+      {isKickoffOpen && deliveryPack && (
+        <ProjectKickoffDrawer
+          onClose={() => setIsKickoffOpen(false)}
+          onCopyPrompt={handleCopyKickoffPrompt}
+          onDownloadPack={handleDownloadDeliveryPack}
+          onSavePackAsDocument={handleSaveDeliveryPackAsDocument}
+          packFileCount={deliveryPack.files.length}
+          packFileName={deliveryPack.fileName}
+          projectName={activeProject?.name ?? "当前项目"}
+          prompts={kickoffPrompts}
+        />
+      )}
+
       {compileOpenedAt && compileCandidates && compileResult && (
         <RuleCompileDrawer
           candidates={compileCandidates}
@@ -3360,11 +3545,17 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onCreateEvidence={handleCreateRequirementEvidence}
           onCreateRelease={handleCreateReleaseRecord}
           onAssignDocumentType={handleAssignDocumentType}
+          onInstallRecommendations={() =>
+            void handlePickPublicAssets(
+              publicRecommendations.map((item) => item.asset),
+            )
+          }
           onOpenAsset={(assetId) => {
             setIsEngineeringBaselineOpen(false);
             setAssetDetailId(assetId);
           }}
           project={activeProject}
+          recommendations={publicRecommendations}
         />
       )}
 

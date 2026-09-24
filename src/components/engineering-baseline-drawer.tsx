@@ -35,6 +35,9 @@ type EngineeringBaselineDrawerProps = {
     assetId: string;
     documentType: string;
   }) => Promise<void>;
+  // 按质量等级从公共库挑出来的建议资产（还没装进项目的）
+  recommendations?: Array<{ asset: AssetData; reason: string }>;
+  onInstallRecommendations?: () => void;
   onClose: () => void;
 };
 
@@ -49,6 +52,8 @@ export function EngineeringBaselineDrawer({
   onCreateRelease,
   onOpenAsset,
   onAssignDocumentType,
+  recommendations = [],
+  onInstallRecommendations,
   onClose,
 }: EngineeringBaselineDrawerProps) {
   const profile = readQualityProfile(project.riskLevel);
@@ -236,6 +241,64 @@ export function EngineeringBaselineDrawer({
               ))}
             </ul>
           </section>
+
+          {(recommendations.length > 0 || onInstallRecommendations) && (
+            <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  建议从公共库装这些
+                </h3>
+                <span className="text-xs text-slate-500">
+                  {recommendations.length} 条
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                按这个项目 {profile.label} 的等级挑的：硬约束规则优先，再是产物模板和
+                可以参考的工程文档；已经装过的不在里面。
+              </p>
+              {recommendations.length === 0 ? (
+                <p className="mt-2 text-xs text-slate-400">
+                  公共库里的相关资产都装过了。
+                </p>
+              ) : (
+                <>
+                  <ul className="mt-2 divide-y divide-slate-100">
+                    {recommendations.map((item) => (
+                      <li
+                        className="flex items-start gap-3 py-2"
+                        key={item.asset.id}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-800">
+                            {item.asset.title}
+                          </p>
+                          <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                            {item.reason}
+                          </p>
+                        </div>
+                        <button
+                          className="shrink-0 text-xs font-semibold text-sky-700 hover:underline"
+                          onClick={() => onOpenAsset(item.asset.id)}
+                          type="button"
+                        >
+                          打开
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {onInstallRecommendations && (
+                    <button
+                      className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-700"
+                      onClick={onInstallRecommendations}
+                      type="button"
+                    >
+                      把这 {recommendations.length} 条装进项目
+                    </button>
+                  )}
+                </>
+              )}
+            </section>
+          )}
 
           <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">

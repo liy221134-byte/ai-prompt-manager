@@ -31,6 +31,11 @@ function downloadJsonFile(fileName: string, content: string) {
   downloadFile(fileName, content, "application/json;charset=utf-8");
 }
 
+// 导出项目开发体系包：一份 Markdown 文件，直接存到本机
+export function downloadMarkdownFile(fileName: string, content: string) {
+  downloadFile(fileName, content, "text/markdown;charset=utf-8");
+}
+
 export function downloadPromptBackup(prompts: PromptCardData[]) {
   const exportedAt = new Date().toISOString();
   const content = createPromptBackup(prompts, exportedAt);
@@ -75,4 +80,12 @@ export function downloadCompiledDraft(draft: {
   content: string;
 }) {
   downloadFile(draft.fileName, draft.content, "text/markdown;charset=utf-8");
+}
+
+// 开发体系包：同样是 Markdown，一个文件带走
+export function downloadDeliveryPack(pack: {
+  fileName: string;
+  content: string;
+}) {
+  downloadFile(pack.fileName, pack.content, "text/markdown;charset=utf-8");
 }

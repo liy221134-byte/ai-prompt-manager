@@ -38,7 +38,8 @@
 
 ### 设计
 
-- [v2.14.0 沉淀回流设计（待确认）](superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md)
+- [v2.15.0 立项起步包设计](superpowers/specs/2026-09-24-v2.15.0-kickoff-pack-design.md)
+- [v2.14.0 沉淀回流设计](superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md)
 - [v2.13.0 关联录入与用法引导设计（待确认）](superpowers/specs/2026-09-24-v2.13.0-linking-and-guidance-design.md)
 - [v2.12.0／v2.13.0 交互重构与问题修复设计（待确认）](superpowers/specs/2026-09-24-v2.12.0-workspace-split-and-fixes-design.md)
 - [v2.2.0 规则包与种子资产包导入设计](superpowers/specs/2026-09-23-v2.2.0-rule-pack-and-seed-import-design.md)
@@ -120,6 +121,7 @@
 - [v2.12.0 验收清单（交互重构、浮窗修复与资产来源）](acceptance/v2.12.0.md)
 - [v2.13.0 验收清单（关联录入与文档边界）](acceptance/v2.13.0.md)
 - [v2.14.0 验收清单（沉淀回流）](acceptance/v2.14.0.md)
+- [v2.15.0 验收清单（立项起步包）](acceptance/v2.15.0.md)
 
 ### 云端部署
 
