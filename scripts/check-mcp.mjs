@@ -79,14 +79,18 @@ try {
           `需求 ${countOf("需求")}、数据 ${countOf("数据")}、测试 ${countOf("测试")}`,
   );
 
+  // 想看某个节点的影响分析：npm run mcp:check -- --node MOD-src/lib/server
+  const nodeIndex = process.argv.indexOf("--node");
+  const impactNode =
+    nodeIndex >= 0 ? process.argv[nodeIndex + 1] : "API-/api/health/db";
   const impact = readText(
     await client.callTool({
       name: "analyze_impact",
-      arguments: { project: "AI提示词资产管理系统", node: "API-/api/health/db" },
+      arguments: { project: "AI提示词资产管理系统", node: impactNode },
     }),
   );
 
-  console.log("\n--- analyze_impact（/api/health/db 这个接口）---");
+  console.log(`\n--- analyze_impact（${impactNode}）---`);
   console.log(impact);
 } finally {
   await client.close();
