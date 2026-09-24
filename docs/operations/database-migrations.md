@@ -73,6 +73,14 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-09-24（第四次写入）：**新增一条模板资产到云端**（需求 F4，产品负责人确认
+  「把 Spec 模板落进公共模板层」）。
+  内容：`实现规格（Spec）`（`template-ec8963af-…`），进默认项目（公共资产库），
+  产物文件名 `implementation-spec.md`，正文取自仓库 `templates/engineering/implementation-spec.md`。
+  做法：写之前先用产品自己的 `isAssetData` 校验过这一条，再按 `assets` + `asset_versions`
+  两张表写入（service role；`save_asset` RPC 依赖 `auth.uid()`，脚本里没有登录会话）。
+  核对：云端模板从 9 条变 10 条，资产总数 79 → 80，读回的字段和本地一致。
+  回滚方式：删掉这一条资产和它对应的版本行（`asset-…` 与 `current-…` 两条）。
 - 2026-09-24（第三次写入）：**归位模板类资产**（需求 F3，产品负责人确认）。
   5 条资产的 `documentType` 是「模板」（技术档案模板 ×3、验收证据链 ×2，分布在默认项目、
   科创平台2.0、CICD自动部署工具、AI提示词资产管理系统），它们本该是「模板」类型，

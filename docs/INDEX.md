@@ -38,6 +38,7 @@
 
 ### 设计
 
+- [v2.14.0 沉淀回流设计（待确认）](superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md)
 - [v2.13.0 关联录入与用法引导设计（待确认）](superpowers/specs/2026-09-24-v2.13.0-linking-and-guidance-design.md)
 - [v2.12.0／v2.13.0 交互重构与问题修复设计（待确认）](superpowers/specs/2026-09-24-v2.12.0-workspace-split-and-fixes-design.md)
 - [v2.2.0 规则包与种子资产包导入设计](superpowers/specs/2026-09-23-v2.2.0-rule-pack-and-seed-import-design.md)
