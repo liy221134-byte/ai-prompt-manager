@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import type { PromptCardData, PromptVersionData } from "@/data/prompts";
-import { assetRelationLabels } from "@/lib/asset-list";
+import { assetRelationLabels, showPromptRelations } from "@/lib/asset-list";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { applyVariables, extractVariables } from "@/lib/prompt-utils";
 
@@ -303,7 +303,7 @@ export function PromptDetailDrawer({
             </p>
           </section>
 
-          {(prompt.relations ?? []).length > 0 && (
+          {showPromptRelations && (prompt.relations ?? []).length > 0 && (
             <section className="mt-7 border-t border-slate-200 pt-7">
               <h3 className="text-sm font-semibold text-slate-900">资产关系</h3>
               <ul className="mt-3 flex flex-col gap-1 text-sm leading-7 text-slate-600">

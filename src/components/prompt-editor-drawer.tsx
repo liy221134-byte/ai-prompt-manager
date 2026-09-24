@@ -32,7 +32,7 @@ import {
   type AssetRelation,
   type AssetRelationType,
 } from "@/data/assets";
-import { assetRelationLabels } from "@/lib/asset-list";
+import { assetRelationLabels, showPromptRelations } from "@/lib/asset-list";
 
 type PromptEditorDrawerProps = {
   mode: "create" | "edit";
@@ -694,6 +694,7 @@ export function PromptEditorDrawer({
             </div>
           </div>
 
+          {showPromptRelations && (
           <section className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">资产关系</h3>
@@ -769,6 +770,7 @@ export function PromptEditorDrawer({
               </ul>
             )}
           </section>
+          )}
 
           <footer className="border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
             {saveError && (

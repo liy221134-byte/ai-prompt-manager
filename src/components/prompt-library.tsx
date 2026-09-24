@@ -6,6 +6,7 @@ import {
   DatabaseBackup,
   FileCode2,
   FilePlus2,
+  Filter,
   FolderTree,
   GitBranch,
   GitMerge,
@@ -88,6 +89,7 @@ import {
   type ProjectFormValues,
 } from "@/components/project-form-dialog";
 import { ProjectSwitcher } from "@/components/project-switcher";
+import { ToolbarMoreMenu } from "@/components/toolbar-more-menu";
 import type {
   AssetData,
   AssetStatus,
@@ -119,8 +121,8 @@ import {
 import {
   assetStatusFilterOptions,
   assetStatusLabels,
+  assetTypeDescriptions,
   assetTypeFilterLabels,
-  assetTypeFilterOptions,
   buildAssetSearchText,
   filterProjectAssets,
   listProjectTags,
@@ -128,8 +130,12 @@ import {
   listRelationTargets,
   matchesPromptLibraryFilters,
   matchesAssetTypeFilter,
+  matchesWorkspaceViewAsset,
   resetMissingFilter,
+  resolveWorkspaceTypeFilter,
+  workspaceViewTypeOptions,
   type AssetTypeFilter,
+  type WorkspaceView,
 } from "@/lib/asset-list";
 import {
   assetToDraft,
@@ -156,7 +162,9 @@ import { downloadAssetBackup, downloadRulePack } from "@/lib/backup-download";
 import { buildPromptSearchText } from "@/lib/prompt-utils";
 import {
   loadActiveProjectId,
+  loadWorkspaceView,
   saveActiveProjectId,
+  saveWorkspaceView,
 } from "@/lib/project-storage";
 import { ensureDefaultProject } from "@/lib/project-workspace";
 import {
@@ -276,6 +284,8 @@ export function PromptLibrary({
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [assets, setAssets] = useState<AssetData[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  // 首屏分成两个视图：公共资产（账号共享的方法库）和单个项目。
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("public");
   const [assetTypeFilter, setAssetTypeFilter] =
     useState<AssetTypeFilter>("prompt");
   const [assetStatusFilter, setAssetStatusFilter] =
@@ -284,6 +294,8 @@ export function PromptLibrary({
   const [assetTagFilter, setAssetTagFilter] = useState("");
   const [assetRelationFilter, setAssetRelationFilter] = useState("");
   const [assetPackFilter, setAssetPackFilter] = useState("");
+  // 标签、状态、关系和规则包四个筛选收进「筛选」面板，默认收起，把位置让给搜索框。
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [assetDetailId, setAssetDetailId] = useState<string | null>(null);
   const [assetEditorState, setAssetEditorState] =
     useState<AssetEditorState | null>(null);
@@ -391,18 +403,41 @@ export function PromptLibrary({
         storedProjectId = null;
       }
 
+      let storedView: WorkspaceView | null = null;
+
+      try {
+        storedView = loadWorkspaceView();
+      } catch {
+        storedView = null;
+      }
+
       const nextActiveProject = resolveActiveProject(
         projectList,
         storedProjectId,
       );
 
+      // 视图决定能看哪些资产类型：停在「项目」视图时不能还挂在提示词标签上。
+      const nextView: WorkspaceView = storedView ?? "public";
+      // 项目视图必须落在一个真实项目上：公共资产库（默认项目）不算项目。
+      const nextViewProject =
+        nextView === "project" &&
+        (!nextActiveProject || isDefaultProject(nextActiveProject))
+          ? (projectList.find((project) => !isDefaultProject(project)) ??
+            nextActiveProject)
+          : nextActiveProject;
+
       setProjects(projectList);
       setAssets(assetList);
-      setActiveProjectId(nextActiveProject?.id ?? null);
+      setActiveProjectId(nextViewProject?.id ?? null);
 
-      if (nextActiveProject) {
+      setWorkspaceView(nextView);
+      setAssetTypeFilter((current) =>
+        resolveWorkspaceTypeFilter(nextView, current),
+      );
+
+      if (nextViewProject) {
         try {
-          saveActiveProjectId(nextActiveProject.id);
+          saveActiveProjectId(nextViewProject.id);
         } catch {
           notify("项目选择没有保存到本机");
         }
@@ -548,6 +583,17 @@ export function PromptLibrary({
   const isDefaultProjectSelected = activeProject
     ? isDefaultProject(activeProject)
     : false;
+  // 项目视图只认真实项目：公共资产库（默认项目）不算项目。
+  const projectViewProjects = useMemo(
+    () =>
+      workspaceView === "project"
+        ? projects.filter((project) => !isDefaultProject(project))
+        : projects,
+    [projects, workspaceView],
+  );
+  const hasProjectInView = workspaceView === "project"
+    ? Boolean(activeProject) && !isDefaultProjectSelected
+    : Boolean(activeProject);
   // 组合筛选用到的选项：标签和「被指向过的目标」
   const tagFilterOptions = useMemo(
     () => (activeProjectId ? listProjectTags(assets, activeProjectId) : []),
@@ -577,12 +623,18 @@ export function PromptLibrary({
     assetPackFilter,
     packFilterOptions.map((option) => option.packId),
   );
+  // 「筛选」按钮上的角标：有几个筛选条件在生效（状态默认是「活跃」，不算条件）
+  const activeFilterCount =
+    (assetStatusFilter !== "active" ? 1 : 0) +
+    (effectiveTagFilter ? 1 : 0) +
+    (effectiveRelationFilter ? 1 : 0) +
+    (effectivePackFilter ? 1 : 0);
   // 2.0.0 过渡规则：提示词仍由现有提示词数据源提供，并且都属于默认项目。
   // 统一资产表当前承载规则、文档等新类型，写入路径切换后这里会统一。
   const projectPrompts = useMemo(
     () =>
       // 提示词不属于任何规则包，按包筛选时提示词要一起隐藏
-      isDefaultProjectSelected &&
+      workspaceView === "public" &&
       assetStatusFilter === "active" &&
       !effectivePackFilter
         ? prompts.filter((prompt) =>
@@ -599,12 +651,12 @@ export function PromptLibrary({
       effectiveRelationFilter,
       effectiveTagFilter,
       effectivePackFilter,
-      isDefaultProjectSelected,
       prompts,
+      workspaceView,
     ],
   );
   const projectAssetEntries = useMemo(() => {
-    if (!activeProjectId) {
+    if (!activeProjectId || !hasProjectInView) {
       return [];
     }
 
@@ -618,9 +670,12 @@ export function PromptLibrary({
       ...(effectivePackFilter ? { packId: effectivePackFilter } : {}),
     });
 
-    return isDefaultProjectSelected
-      ? visibleAssets.filter((asset) => asset.assetType !== "prompt")
-      : visibleAssets;
+    // 视图决定列表里出现哪些类型；提示词由提示词数据源单独提供，这里去掉重复的那份。
+    return visibleAssets.filter(
+      (asset) =>
+        asset.assetType !== "prompt" &&
+        matchesWorkspaceViewAsset(workspaceView, asset.assetType),
+    );
   }, [
     activeProjectId,
     assetStatusFilter,
@@ -628,11 +683,13 @@ export function PromptLibrary({
     effectiveRelationFilter,
     effectiveTagFilter,
     effectivePackFilter,
-    isDefaultProjectSelected,
+    hasProjectInView,
+    workspaceView,
   ]);
-  const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(
-    () => ({
-      all: projectPrompts.length + projectAssetEntries.length,
+  // 顶部「N 项资产」和标签上的数字必须同一口径：都只算当前视图列出的类型。
+  const assetTypeCounts = useMemo<Record<AssetTypeFilter, number>>(() => {
+    const counts: Record<AssetTypeFilter, number> = {
+      all: 0,
       prompt: projectPrompts.length,
       rule: projectAssetEntries.filter((asset) => asset.assetType === "rule")
         .length,
@@ -657,9 +714,14 @@ export function PromptLibrary({
       release_record: projectAssetEntries.filter(
         (asset) => asset.assetType === "release_record",
       ).length,
-    }),
-    [projectAssetEntries, projectPrompts],
-  );
+    };
+
+    counts.all = workspaceViewTypeOptions[workspaceView]
+      .filter((option) => option !== "all")
+      .reduce((total, option) => total + counts[option], 0);
+
+    return counts;
+  }, [projectAssetEntries, projectPrompts, workspaceView]);
 
   // 技术档案偏离默认选型时要挂 ADR，这里备好当前项目能选的 ADR 文档
   const adrOptions = useMemo(
@@ -1065,10 +1127,60 @@ export function PromptLibrary({
     }
   }
 
-  // 备份导入、本机数据合并和垃圾箱恢复都会写回默认项目，完成后切过去让结果可见。
+  // 备份导入、本机数据合并和垃圾箱恢复都会写回公共资产库，完成后切过去让结果可见。
   function focusDefaultProject() {
+    if (workspaceView !== "public") {
+      setWorkspaceView("public");
+
+      try {
+        saveWorkspaceView("public");
+      } catch {
+        // 存不上只影响下次刷新，不影响这次操作
+      }
+    }
+
     if (!isDefaultProjectSelected) {
       handleSelectProject(DEFAULT_PROJECT_ID);
+    }
+  }
+
+  // 切视图：公共资产固定看默认项目（账号方法库）；项目视图必须落在一个具体项目上。
+  function handleClearFilters() {
+    setAssetStatusFilter("active");
+    setAssetTagFilter("");
+    setAssetRelationFilter("");
+    setAssetPackFilter("");
+  }
+
+  function handleChangeWorkspaceView(nextView: WorkspaceView) {
+    if (nextView === workspaceView) {
+      return;
+    }
+
+    setWorkspaceView(nextView);
+    setAssetTypeFilter((current) =>
+      resolveWorkspaceTypeFilter(nextView, current),
+    );
+    setSelectedPromptId(null);
+    setIsMergeSelectionMode(false);
+    setMergeSelection(createEmptySelection());
+
+    if (nextView === "public") {
+      handleSelectProject(DEFAULT_PROJECT_ID);
+    } else if (isDefaultProjectSelected) {
+      const nextProject = projects.find(
+        (project) => !isDefaultProject(project),
+      );
+
+      if (nextProject) {
+        handleSelectProject(nextProject.id);
+      }
+    }
+
+    try {
+      saveWorkspaceView(nextView);
+    } catch {
+      notify("视图选择没有保存到本机");
     }
   }
 
@@ -1767,30 +1879,42 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       };
     }
 
+    // 项目视图必须落在一个真实项目上：一个都没有时先引导新建项目
+    if (workspaceView === "project" && !hasProjectInView) {
+      return {
+        title: "还没有项目",
+        description: "新建一个项目，再决定从公共资产库里挑哪些资产带过去。",
+        actionLabel: "新建项目",
+        action: "create-project" as const,
+      };
+    }
+
     if (assetTypeFilter === "rule" || assetTypeFilter === "document") {
       const typeLabel = assetTypeFilter === "rule" ? "规则" : "文档";
 
       return {
         title: `还没有${typeLabel}`,
-        description: `当前项目里没有${typeLabel}资产。`,
+        description:
+          workspaceView === "project"
+            ? `这个项目里没有${typeLabel}资产，可以从公共资产库挑，或者自己新增。`
+            : `公共资产库里没有${typeLabel}资产。`,
         actionLabel: `新增${typeLabel}`,
         action: "create-asset" as const,
       };
     }
 
-    if (!isDefaultProjectSelected) {
+    if (workspaceView === "project") {
       return {
         title: "这个项目还没有资产",
-        description:
-          "新建项目从空状态开始，不会复制默认项目的提示词。",
-        actionLabel: "回到默认项目",
-        action: "default-project" as const,
+        description: "可以从公共资产库挑资产，或者导入工程、装一个规则包。",
+        actionLabel: "去公共资产库",
+        action: "public-view" as const,
       };
     }
 
     return {
-      title: "还没有提示词",
-      description: "创建第一条可复用提示词。",
+      title: "公共资产库还没有内容",
+      description: "采集第一条提示词，或者导入一个规则包。",
       actionLabel: "新增提示词",
       action: "create-prompt" as const,
     };
@@ -1862,8 +1986,13 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
 
       <section className="mx-auto w-full max-w-[1280px] px-5 pt-8 sm:px-8">
         <ProjectSwitcher
-          activeProjectId={activeProjectId}
+          activeProjectId={
+            workspaceView === "project" && !hasProjectInView
+              ? null
+              : activeProjectId
+          }
           disabled={isLoading || Boolean(loadError)}
+          onChangeView={handleChangeWorkspaceView}
           onCreateProject={() => setProjectDialog({ mode: "create" })}
           onOpenProjectSettings={() => {
             if (activeProjectId) {
@@ -1874,22 +2003,31 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             }
           }}
           onSelectProject={handleSelectProject}
-          projects={projects}
+          projects={projectViewProjects}
+          view={workspaceView}
         />
       </section>
 
       <section className="mx-auto w-full max-w-[1280px] px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-12">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold text-blue-700">
-            {isDefaultProjectSelected ? "个人 AI 资产库" : "项目工作区"}
+            {workspaceView === "public" ? "账号公共资产" : "项目工作区"}
           </p>
           <h1 className="mt-3 text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
-            {activeProject ? activeProject.name : "项目资产库"}
+            {workspaceView === "public"
+              ? "公共资产库"
+              : hasProjectInView
+                ? (activeProject?.name ?? "项目资产库")
+                : "项目资产库"}
           </h1>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">
-            {activeProject?.description || "积累每一个好用的提示词"}
+            {workspaceView === "public"
+              ? "所有项目共用的提示词、规则和模板，在这里积累一次、多项目复用。"
+              : hasProjectInView
+                ? activeProject?.description || "这个项目自己的资产"
+                : "先新建一个项目，再从公共资产库里挑资产带过去。"}
           </p>
-          {activeProject && (
+          {activeProject && workspaceView === "project" && hasProjectInView && (
             <p className="mt-3 text-sm text-slate-500">
               {projectStageLabels[activeProject.stage]}
               {activeProject.status === "archived" &&
@@ -1898,10 +2036,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               {assetTypeCounts.all} 项资产
             </p>
           )}
+          {workspaceView === "public" && (
+            <p className="mt-3 text-sm text-slate-500">
+              {assetTypeCounts.all} 项资产
+            </p>
+          )}
         </div>
 
         <div className="mt-9 flex flex-wrap items-center gap-2">
-          {assetTypeFilterOptions.map((option) => (
+          {workspaceViewTypeOptions[workspaceView].map((option) => (
             <button
               aria-pressed={assetTypeFilter === option}
               className={`inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors ${
@@ -1925,93 +2068,13 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               </span>
             </button>
           ))}
-
-          <label className="ml-auto flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
-            <span className="text-xs font-semibold text-slate-500">状态</span>
-            <select
-              aria-label="按状态筛选资产"
-              className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
-              onChange={(event) =>
-                setAssetStatusFilter(event.target.value as AssetStatus)
-              }
-              value={assetStatusFilter}
-            >
-              {assetStatusFilterOptions.map((status) => (
-                <option key={status} value={status}>
-                  {assetStatusLabels[status]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {tagFilterOptions.length > 0 && (
-            <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
-              <span className="text-xs font-semibold text-slate-500">标签</span>
-              <select
-                aria-label="按标签筛选资产"
-                className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
-                onChange={(event) => setAssetTagFilter(event.target.value)}
-                value={effectiveTagFilter}
-              >
-                <option value="">全部标签</option>
-                {tagFilterOptions.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-      {relationFilterOptions.length > 0 && (
-        <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
-              <span className="text-xs font-semibold text-slate-500">
-                关系目标
-              </span>
-              <select
-                aria-label="按关系目标筛选资产"
-                className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
-                onChange={(event) => setAssetRelationFilter(event.target.value)}
-                value={effectiveRelationFilter}
-              >
-                <option value="">全部目标</option>
-                {relationFilterOptions.map((asset) => (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.title}
-                  </option>
-                ))}
-          </select>
-        </label>
-      )}
-
-      {packFilterOptions.length > 0 && (
-        <label className="flex items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2">
-          <span className="text-xs font-semibold text-slate-500">规则包</span>
-          <select
-            aria-label="按规则包筛选资产"
-            className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
-            onChange={(event) => {
-              const nextPackId = event.target.value;
-
-              setAssetPackFilter(nextPackId);
-
-              // 提示词不属于任何规则包，停在「提示词」标签会看到空列表
-              if (nextPackId && assetTypeFilter === "prompt") {
-                setAssetTypeFilter("all");
-              }
-            }}
-            value={effectivePackFilter}
-          >
-            <option value="">全部规则包</option>
-            {packFilterOptions.map((option) => (
-              <option key={option.packId} value={option.packId}>
-                {option.title}（{option.memberCount}）
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
         </div>
+
+        {assetTypeFilter !== "all" && (
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            {assetTypeDescriptions[assetTypeFilter]}
+          </p>
+        )}
 
         <div className="mt-3 flex flex-col gap-3 lg:flex-row">
           <label className="relative min-w-0 flex-1">
@@ -2038,6 +2101,27 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               </button>
             )}
           </label>
+
+          {!isMergeSelectionMode && (
+            <button
+              aria-expanded={isFilterPanelOpen}
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors ${
+                isFilterPanelOpen
+                  ? "border-blue-300 bg-blue-50 text-blue-700"
+                  : "border-[#dbe7f5] bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
+              }`}
+              onClick={() => setIsFilterPanelOpen((current) => !current)}
+              type="button"
+            >
+              <Filter aria-hidden="true" className="size-4" />
+              筛选
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {isMergeSelectionMode ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:shrink-0">
@@ -2072,7 +2156,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-              {isDefaultProjectSelected && isPromptTabVisible && (
+              {workspaceView === "public" && isPromptTabVisible && (
                 <>
                   <button
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -2094,38 +2178,6 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                   </button>
                 </>
               )}
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError)}
-                onClick={() => setIsSourcePackageImportOpen(true)}
-                type="button"
-              >
-                <PackageOpen aria-hidden="true" className="size-4" />
-                导入文档包
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError) || projects.length === 0}
-                onClick={() => setIsRulePackImportOpen(true)}
-                type="button"
-              >
-                <Layers3 aria-hidden="true" className="size-4" />
-                导入规则包
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={
-                  isLoading ||
-                  Boolean(loadError) ||
-                  !activeProjectId ||
-                  !compileCandidates
-                }
-                onClick={() => setCompileOpenedAt(new Date().toISOString())}
-                type="button"
-              >
-                <FileCode2 aria-hidden="true" className="size-4" />
-                规则编译
-              </button>
               <input
                 accept=".md,.markdown,text/markdown,text/plain"
                 aria-label="选择模板文件"
@@ -2135,110 +2187,100 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 ref={templateFileInputRef}
                 type="file"
               />
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError) || !activeProjectId}
-                onClick={() => templateFileInputRef.current?.click()}
-                type="button"
-              >
-                <FilePlus2 aria-hidden="true" className="size-4" />
-                导入模板
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError) || !activeProjectId}
-                onClick={() => setIsGraphViewOpen(true)}
-                type="button"
-              >
-                <GitBranch aria-hidden="true" className="size-4" />
-                项目图谱
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError) || !activeProjectId}
-                onClick={() => setIsEngineeringImportOpen(true)}
-                type="button"
-              >
-                <FolderTree aria-hidden="true" className="size-4" />
-                导入工程
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-sky-300 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError) || !activeProjectId}
-                onClick={() => setIsEngineeringBaselineOpen(true)}
-                type="button"
-              >
-                <ShieldCheck aria-hidden="true" className="size-4" />
-                工程基线
-              </button>
-              {(assetTypeFilter === "rule" ||
-                assetTypeFilter === "all") && (
-                <button
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={isLoading || Boolean(loadError)}
-                  onClick={() =>
-                    setAssetEditorState({
-                      mode: "create",
-                      assetType: "rule",
-                    })
-                  }
-                  type="button"
-                >
-                  <Plus aria-hidden="true" className="size-4" />
-                  新增规则
-                </button>
+              {workspaceView === "project" && (
+                <>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    disabled={
+                      isLoading || Boolean(loadError) || !hasProjectInView
+                    }
+                    onClick={() => setIsGraphViewOpen(true)}
+                    type="button"
+                  >
+                    <GitBranch aria-hidden="true" className="size-4" />
+                    项目图谱
+                  </button>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-sky-300 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    disabled={
+                      isLoading || Boolean(loadError) || !hasProjectInView
+                    }
+                    onClick={() => setIsEngineeringBaselineOpen(true)}
+                    type="button"
+                  >
+                    <ShieldCheck aria-hidden="true" className="size-4" />
+                    工程基线
+                  </button>
+                  {(assetTypeFilter === "all" ||
+                    assetTypeFilter === "rule") && (
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      disabled={
+                        isLoading ||
+                        Boolean(loadError) ||
+                        !hasProjectInView ||
+                        !compileCandidates
+                      }
+                      onClick={() =>
+                        setCompileOpenedAt(new Date().toISOString())
+                      }
+                      type="button"
+                    >
+                      <FileCode2 aria-hidden="true" className="size-4" />
+                      规则编译
+                    </button>
+                  )}
+                  {assetTypeFilter === "rule" && (
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || Boolean(loadError)}
+                      onClick={() =>
+                        setAssetEditorState({
+                          mode: "create",
+                          assetType: "rule",
+                        })
+                      }
+                      type="button"
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                      新增规则
+                    </button>
+                  )}
+                  {assetTypeFilter === "document" && (
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-5 text-sm font-semibold text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || Boolean(loadError)}
+                      onClick={() =>
+                        setAssetEditorState({
+                          mode: "create",
+                          assetType: "document",
+                        })
+                      }
+                      type="button"
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                      新增文档
+                    </button>
+                  )}
+                  {assetTypeFilter === "template" && (
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-5 text-sm font-semibold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || Boolean(loadError)}
+                      onClick={() =>
+                        setAssetEditorState({
+                          mode: "create",
+                          assetType: "template",
+                        })
+                      }
+                      type="button"
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                      新建模板
+                    </button>
+                  )}
+                </>
               )}
-              {(assetTypeFilter === "document" ||
-                assetTypeFilter === "all") && (
-                <button
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-5 text-sm font-semibold text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={isLoading || Boolean(loadError)}
-                  onClick={() =>
-                    setAssetEditorState({
-                      mode: "create",
-                      assetType: "document",
-                    })
-                  }
-                  type="button"
-                >
-                  <Plus aria-hidden="true" className="size-4" />
-                  新增文档
-                </button>
-              )}
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError) || !activeProjectId}
-                onClick={() =>
-                  setAssetEditorState(
-                    projectTechProfile
-                      ? { mode: "edit", assetId: projectTechProfile.id }
-                      : { mode: "create", assetType: "tech_profile" },
-                  )
-                }
-                type="button"
-              >
-                <Layers3 aria-hidden="true" className="size-4" />
-                {projectTechProfile ? "技术档案" : "新建技术档案"}
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError)}
-                onClick={handleOpenTrash}
-                type="button"
-              >
-                <Trash2 aria-hidden="true" className="size-4" />
-                垃圾箱
-              </button>
-              <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                disabled={isLoading || Boolean(loadError)}
-                onClick={() => void handleOpenBackupManager()}
-                type="button"
-              >
-                <DatabaseBackup aria-hidden="true" className="size-4" />
-                数据管理
-              </button>
-              {isDefaultProjectSelected && isPromptTabVisible && (
+              {workspaceView === "public" && isPromptTabVisible && (
                 <button
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                   disabled={isLoading || Boolean(loadError)}
@@ -2249,9 +2291,256 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                   新增提示词
                 </button>
               )}
+
+              <ToolbarMoreMenu
+                items={
+                  workspaceView === "public"
+                    ? [
+                        {
+                          key: "import-source-package",
+                          label: "导入文档包",
+                          icon: (
+                            <PackageOpen aria-hidden="true" className="size-4" />
+                          ),
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () => setIsSourcePackageImportOpen(true),
+                        },
+                        {
+                          key: "import-rule-pack",
+                          label: "导入规则包",
+                          icon: (
+                            <Layers3 aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading ||
+                            Boolean(loadError) ||
+                            projects.length === 0,
+                          onSelect: () => setIsRulePackImportOpen(true),
+                        },
+                        {
+                          key: "import-template",
+                          label: "导入模板",
+                          icon: (
+                            <FilePlus2 aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading || Boolean(loadError) || !activeProjectId,
+                          onSelect: () => templateFileInputRef.current?.click(),
+                        },
+                        {
+                          key: "compile-rules",
+                          label: "规则编译",
+                          icon: (
+                            <FileCode2 aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading ||
+                            Boolean(loadError) ||
+                            !activeProjectId ||
+                            !compileCandidates,
+                          onSelect: () =>
+                            setCompileOpenedAt(new Date().toISOString()),
+                        },
+                        {
+                          key: "trash",
+                          label: "垃圾箱",
+                          icon: (
+                            <Trash2 aria-hidden="true" className="size-4" />
+                          ),
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: handleOpenTrash,
+                        },
+                        {
+                          key: "backup",
+                          label: "数据管理",
+                          icon: (
+                            <DatabaseBackup
+                              aria-hidden="true"
+                              className="size-4"
+                            />
+                          ),
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () => void handleOpenBackupManager(),
+                        },
+                      ]
+                    : [
+                        {
+                          key: "import-code",
+                          label: "导入工程",
+                          icon: (
+                            <FolderTree aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading || Boolean(loadError) || !activeProjectId,
+                          onSelect: () => setIsEngineeringImportOpen(true),
+                        },
+                        {
+                          key: "create-rule",
+                          label: "新增规则",
+                          icon: <Plus aria-hidden="true" className="size-4" />,
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () =>
+                            setAssetEditorState({
+                              mode: "create",
+                              assetType: "rule",
+                            }),
+                        },
+                        {
+                          key: "create-document",
+                          label: "新增文档",
+                          icon: <Plus aria-hidden="true" className="size-4" />,
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () =>
+                            setAssetEditorState({
+                              mode: "create",
+                              assetType: "document",
+                            }),
+                        },
+                        {
+                          key: "create-template",
+                          label: "新建模板",
+                          icon: <Plus aria-hidden="true" className="size-4" />,
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () =>
+                            setAssetEditorState({
+                              mode: "create",
+                              assetType: "template",
+                            }),
+                        },
+                        {
+                          key: "trash",
+                          label: "垃圾箱",
+                          icon: (
+                            <Trash2 aria-hidden="true" className="size-4" />
+                          ),
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: handleOpenTrash,
+                        },
+                        {
+                          key: "backup",
+                          label: "数据管理",
+                          icon: (
+                            <DatabaseBackup
+                              aria-hidden="true"
+                              className="size-4"
+                            />
+                          ),
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () => void handleOpenBackupManager(),
+                        },
+                      ]
+                }
+              />
             </div>
           )}
         </div>
+
+        {isFilterPanelOpen && !isMergeSelectionMode && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 py-3">
+            <label className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">状态</span>
+              <select
+                aria-label="按状态筛选资产"
+                className="h-9 rounded-lg border border-[#dbe7f5] bg-white px-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                onChange={(event) =>
+                  setAssetStatusFilter(event.target.value as AssetStatus)
+                }
+                value={assetStatusFilter}
+              >
+                {assetStatusFilterOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {assetStatusLabels[status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {tagFilterOptions.length > 0 && (
+              <label className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500">
+                  标签
+                </span>
+                <select
+                  aria-label="按标签筛选资产"
+                  className="h-9 rounded-lg border border-[#dbe7f5] bg-white px-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  onChange={(event) => setAssetTagFilter(event.target.value)}
+                  value={effectiveTagFilter}
+                >
+                  <option value="">全部标签</option>
+                  {tagFilterOptions.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {relationFilterOptions.length > 0 && (
+              <label className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500">
+                  关系目标
+                </span>
+                <select
+                  aria-label="按关系目标筛选资产"
+                  className="h-9 rounded-lg border border-[#dbe7f5] bg-white px-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  onChange={(event) =>
+                    setAssetRelationFilter(event.target.value)
+                  }
+                  value={effectiveRelationFilter}
+                >
+                  <option value="">全部目标</option>
+                  {relationFilterOptions.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      {asset.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {packFilterOptions.length > 0 && (
+              <label className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500">
+                  规则包
+                </span>
+                <select
+                  aria-label="按规则包筛选资产"
+                  className="h-9 rounded-lg border border-[#dbe7f5] bg-white px-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  onChange={(event) => {
+                    const nextPackId = event.target.value;
+
+                    setAssetPackFilter(nextPackId);
+
+                    // 提示词不属于任何规则包，停在「提示词」标签会看到空列表
+                    if (nextPackId && assetTypeFilter === "prompt") {
+                      setAssetTypeFilter("all");
+                    }
+                  }}
+                  value={effectivePackFilter}
+                >
+                  <option value="">全部规则包</option>
+                  {packFilterOptions.map((option) => (
+                    <option key={option.packId} value={option.packId}>
+                      {option.title}（{option.memberCount}）
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {activeFilterCount > 0 && (
+              <button
+                className="ml-auto inline-flex h-9 items-center gap-2 rounded-lg border border-[#dbe7f5] px-3 text-sm font-semibold text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-700"
+                onClick={handleClearFilters}
+                type="button"
+              >
+                <X aria-hidden="true" className="size-4" />
+                清空筛选
+              </button>
+            )}
+          </div>
+        )}
 
         {isLoading ? (
           <div
@@ -2348,8 +2637,10 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                           ? "document"
                           : "rule",
                     });
-                  } else if (emptyState.action === "default-project") {
-                    handleSelectProject(DEFAULT_PROJECT_ID);
+                  } else if (emptyState.action === "create-project") {
+                    setProjectDialog({ mode: "create" });
+                  } else if (emptyState.action === "public-view") {
+                    handleChangeWorkspaceView("public");
                   } else {
                     setEditorState({ mode: "create" });
                   }
@@ -2671,6 +2962,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               : "project-create"
           }
           mode={projectDialog.mode}
+          hasTechProfile={Boolean(projectTechProfile)}
           onArchive={
             projectDialog.mode === "edit"
               ? handleArchiveProject
@@ -2682,6 +2974,14 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               ? handleReactivateProject
               : undefined
           }
+          onOpenTechProfile={() => {
+            setProjectDialog(null);
+            setAssetEditorState(
+              projectTechProfile
+                ? { mode: "edit", assetId: projectTechProfile.id }
+                : { mode: "create", assetType: "tech_profile" },
+            );
+          }}
           onSubmit={
             projectDialog.mode === "edit"
               ? handleUpdateProject

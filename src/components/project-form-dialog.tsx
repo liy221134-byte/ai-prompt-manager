@@ -3,6 +3,7 @@
 import {
   Archive,
   FolderPlus,
+  Layers3,
   LoaderCircle,
   RotateCcw,
   Settings2,
@@ -18,6 +19,7 @@ import {
   type ProjectStage,
 } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
+import { assetTypeDescriptions } from "@/lib/asset-list";
 
 export type ProjectFormValues = {
   name: string;
@@ -29,19 +31,23 @@ export type ProjectFormValues = {
 type ProjectFormDialogProps = {
   mode: "create" | "edit";
   project: ProjectData | null;
+  hasTechProfile?: boolean;
   onClose: () => void;
   onSubmit: (values: ProjectFormValues) => Promise<void>;
   onArchive?: () => Promise<void>;
   onReactivate?: () => Promise<void>;
+  onOpenTechProfile?: () => void;
 };
 
 export function ProjectFormDialog({
   mode,
   project,
+  hasTechProfile = false,
   onClose,
   onSubmit,
   onArchive,
   onReactivate,
+  onOpenTechProfile,
 }: ProjectFormDialogProps) {
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
@@ -232,6 +238,24 @@ export function ProjectFormDialog({
             </button>
           </div>
         </form>
+
+        {isEdit && onOpenTechProfile && (
+          <section className="mt-6 rounded-lg border border-[#dbe7f5] bg-slate-50 px-4 py-4">
+            <h3 className="text-sm font-semibold text-slate-700">技术档案</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              {assetTypeDescriptions.tech_profile}
+            </p>
+            <button
+              className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isSubmitting}
+              onClick={onOpenTechProfile}
+              type="button"
+            >
+              <Layers3 aria-hidden="true" className="size-4" />
+              {hasTechProfile ? "打开技术档案" : "新建技术档案"}
+            </button>
+          </section>
+        )}
 
         {isEdit && (onArchive || onReactivate) && (
           <div className="mt-6 border-t border-slate-100 pt-5">

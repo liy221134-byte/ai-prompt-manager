@@ -64,6 +64,81 @@ export const assetTypeFilterOptions = [
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
+// 首屏分成两个视图：公共资产（账号共享的方法库，也就是原来的默认项目）和单个项目。
+// 视图决定列表里出现哪些资产类型——提示词只属于公共资产，图谱节点只属于项目。
+export const workspaceViews = ["public", "project"] as const;
+export type WorkspaceView = (typeof workspaceViews)[number];
+
+export const workspaceViewLabels: Record<WorkspaceView, string> = {
+  public: "公共资产",
+  project: "项目",
+};
+
+// 每个视图里的类型标签，顺序就是界面顺序
+export const workspaceViewTypeOptions: Record<
+  WorkspaceView,
+  AssetTypeFilter[]
+> = {
+  public: ["all", "prompt", "rule", "document", "template", "rule_pack"],
+  project: [
+    "all",
+    "rule",
+    "document",
+    "template",
+    "graph_node",
+    "evidence",
+    "release_record",
+  ],
+};
+
+// 视图里能出现的资产类型。技术档案两个视图都不列：一个项目只有一份，
+// 它是项目属性，入口放在「项目设置」里。
+export const workspaceViewAssetTypes: Record<WorkspaceView, AssetType[]> = {
+  public: ["prompt", "rule", "document", "template", "rule_pack"],
+  project: [
+    "rule",
+    "document",
+    "template",
+    "graph_node",
+    "evidence",
+    "release_record",
+  ],
+};
+
+// 每类资产回答什么问题。界面上直接用这句话消除「这到底是什么」的疑问。
+export const assetTypeDescriptions: Record<AssetType, string> = {
+  prompt: "可以直接复制去用的提示词模板",
+  rule: "约束 AI 怎么做事的规则，可以编译成 AGENTS.md",
+  document: "项目过程产出的文档，例如 PRD、ADR、架构说明、验收清单",
+  template: "产物的结构模板，规则编译时可以套用",
+  tech_profile: "这个项目用什么技术，一个项目只有一份",
+  rule_pack: "一组规则和文档的打包，装进项目就有一整套",
+  graph_node: "需求、模块、数据、接口、测试的编号节点",
+  evidence: "一条需求的验收条件、步骤、结果和证据",
+  release_record: "一次上线的门禁清单和结果",
+  source_package: "导入时保留的原始文件",
+};
+
+export function matchesWorkspaceViewAsset(
+  view: WorkspaceView,
+  assetType: AssetType,
+) {
+  return workspaceViewAssetTypes[view].includes(assetType);
+}
+
+// 提示词是一次性取用的东西：复制给智能体之后，关系对它没有实际用处。
+// 2026-09-24 产品负责人决定在提示词界面隐藏关系区——数据保留，只是不显示；
+// 以后要恢复，把这个开关改回 true 即可。
+export const showPromptRelations = false;
+
+// 切换视图后，原来停着的标签可能不属于新视图，统一退回「全部」
+export function resolveWorkspaceTypeFilter(
+  view: WorkspaceView,
+  current: AssetTypeFilter,
+): AssetTypeFilter {
+  return workspaceViewTypeOptions[view].includes(current) ? current : "all";
+}
+
 export const assetTypeFilterLabels: Record<AssetTypeFilter, string> = {
   all: "全部",
   prompt: "提示词",
