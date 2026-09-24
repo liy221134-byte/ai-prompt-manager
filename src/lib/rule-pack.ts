@@ -196,6 +196,111 @@ export function createRulePackFileFromAssets(input: {
   });
 }
 
+// 把库里挑出来的资产打包成一个规则包文件（只生成文件，不动库里的资产）。
+// 成员没有包内编号时，按勾选顺序补一个，保证导入后能按编号去重。
+export function createRulePackFileFromSelection(input: {
+  packId: string;
+  title: string;
+  summary: string;
+  assets: AssetData[];
+  now: string;
+}): RulePackFile {
+  const members: RulePackFileMember[] = input.assets.map((asset, index) => {
+    const link = readAssetPackLink(asset.metadata);
+    const member = toRulePackMember(asset);
+
+    return {
+      ...member,
+      metadata: {
+        ...(member.metadata as Record<string, unknown>),
+        pack: {
+          packId: input.packId,
+          packItemId:
+            link?.packItemId ?? `PACK-${String(index + 1).padStart(3, "0")}`,
+          packVersion: "0.1.0",
+          packAssetType: asset.assetType,
+          projectScale: ["personal"],
+        },
+      },
+    };
+  });
+
+  return createRulePackFile({
+    pack: {
+      id: input.packId,
+      title: input.title,
+      summary: input.summary,
+      content: input.summary,
+      metadata: {
+        packVersion: "0.1.0",
+        packConfidence: "provisional",
+        projectScale: ["personal"],
+        sourceNote: "在公共资产库勾选资产打包生成",
+      },
+      status: "pending",
+    },
+    members,
+    exportedAt: input.now,
+  });
+}
+
+// 「导入规则包 → 下载示例」用：一个字段完整、可以直接导回去的最小规则包。
+// 字段和真实包一致，所以它同时也是格式的活样本。
+export function createSampleRulePackFile(now: string): RulePackFile {
+  const packId = "rule-pack-sample";
+  const packVersion = "0.1.0";
+
+  const pack: RulePackFilePack = {
+    id: packId,
+    title: "示例规则包",
+    summary: "一个最小的规则包样本，用来对照格式；可以直接导入看看装进项目是什么效果。",
+    content:
+      "这个包只用来演示格式：包含包信息和一条成员规则。真实的包由「导出这个包」或打包入口生成。",
+    metadata: {
+      packVersion,
+      packConfidence: "hypothesis",
+      projectScale: ["personal"],
+      sourceNote: "产品里「导入规则包 → 下载示例」生成的样例文件",
+    },
+    status: "pending",
+  };
+
+  const members: RulePackFileMember[] = [
+    {
+      id: "rule-sample-001",
+      assetType: "rule",
+      title: "示例规则：动手之前先说清要改什么",
+      summary: "演示一条规则该有哪些字段：正文、理由、适用层级和包内编号。",
+      content:
+        "# 示例规则：动手之前先说清要改什么\n\n## 核心结论\n\n动手之前先说清三件事：要改什么、为什么改、影响哪些文件。\n\n## 使用条件\n\n- 任何要落成功能或改动的需求。\n\n## 不适用场景\n\n- 一行明显的笔误可以直接改，不用开会。\n",
+      status: "pending",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        purpose: "协作",
+        techContext: ["generic"],
+        stage: "build",
+        priority: "p1",
+        overrideScope: "project",
+        evidence: "示例包，没有证据。",
+        verification: "人工核对",
+        confidence: "hypothesis",
+        compileTarget: ["agents"],
+        rationale: "不先说清范围，AI 只能猜，改了不该改的地方还要返工。",
+        pack: {
+          packId,
+          packItemId: "RULE-SAMPLE-001",
+          packVersion,
+          packAssetType: "rule",
+          projectScale: ["personal"],
+        },
+      },
+    },
+  ];
+
+  return createRulePackFile({ pack, members, exportedAt: now });
+}
+
 // 安装到项目：按「项目 + 包 + 包内编号」去重；成员标识被别的项目占用时加序号后缀。
 // 一条成员都没新增时返回空计划，界面只需要提示「已装过」。
 export function planRulePackInstall(input: {

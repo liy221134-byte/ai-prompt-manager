@@ -66,6 +66,7 @@
 
 ### 数据与运维
 
+- [规则包格式说明](rule-pack-format.md)
 - [v2.1.0 交接与待办](operations/v2.1.0-handoff.md)
 - [本机 MCP 服务](operations/mcp-server.md)
 - [数据库结构](database-schema.md)

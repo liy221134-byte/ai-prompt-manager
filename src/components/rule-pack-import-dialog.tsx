@@ -5,6 +5,8 @@ import { ChangeEvent, useRef, useState } from "react";
 
 import type { ProjectData } from "@/data/projects";
 import { assetTypeLabels, projectScaleLabels, ruleConfidenceLabels } from "@/lib/asset-list";
+import { downloadRulePack } from "@/lib/backup-download";
+import { createSampleRulePackFile } from "@/lib/rule-pack";
 import { parseRulePackFile, type RulePackFile } from "@/lib/seed-pack-import";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 
@@ -156,6 +158,22 @@ export function RulePackImportDialog({
               {fileName && (
                 <p className="mt-3 text-xs text-slate-500">已选文件：{fileName}</p>
               )}
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                规则包是一个 JSON 文件，里面有两块：包信息（包名、版本、可信度、
+                适用规模、来源说明）和成员清单（每条规则或文档的标题、正文、元数据）。
+                数据备份文件不是规则包，恢复数据请用「数据管理 → 导入备份」。
+              </p>
+              <button
+                className="mt-3 text-xs font-semibold text-indigo-700 hover:underline"
+                onClick={() =>
+                  downloadRulePack(
+                    createSampleRulePackFile(new Date().toISOString()),
+                  )
+                }
+                type="button"
+              >
+                下载示例规则包
+              </button>
             </section>
           )}
 

@@ -39,6 +39,7 @@ import { AssetCard } from "@/components/asset-card";
 import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
+import { RulePackCreateDialog } from "@/components/rule-pack-create-dialog";
 import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
 import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
 import { GraphViewDrawer } from "@/components/graph-view-drawer";
@@ -54,6 +55,7 @@ import {
 } from "@/lib/tech-profile";
 import {
   createRulePackFileFromAssets,
+  createRulePackFileFromSelection,
   listPackMembers,
   listPackMembersForInstall,
   listProjectPacks,
@@ -315,6 +317,7 @@ export function PromptLibrary({
   const [isSourcePackageImportOpen, setIsSourcePackageImportOpen] =
     useState(false);
   const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
+  const [isRulePackCreateOpen, setIsRulePackCreateOpen] = useState(false);
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [compileTemplateId, setCompileTemplateId] = useState("");
   const [isGraphViewOpen, setIsGraphViewOpen] = useState(false);
@@ -1150,6 +1153,24 @@ export function PromptLibrary({
     setAssetTagFilter("");
     setAssetRelationFilter("");
     setAssetPackFilter("");
+  }
+
+  // 打包成规则包：只生成文件并下载，不动库里的资产。
+  function handleDownloadPackedRulePack(input: {
+    title: string;
+    assets: AssetData[];
+  }) {
+    const file = createRulePackFileFromSelection({
+      packId: `rule-pack-${Date.now()}`,
+      title: input.title,
+      summary: `在公共资产库勾选打包生成：共 ${input.assets.length} 条资产。`,
+      assets: input.assets,
+      now: new Date().toISOString(),
+    });
+
+    downloadRulePack(file);
+    setIsRulePackCreateOpen(false);
+    notify(`规则包已生成：${file.members.length} 条成员`);
   }
 
   function handleChangeWorkspaceView(nextView: WorkspaceView) {
@@ -2342,6 +2363,16 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                             setCompileOpenedAt(new Date().toISOString()),
                         },
                         {
+                          key: "pack-assets",
+                          label: "打包成规则包",
+                          icon: (
+                            <Layers3 aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading || Boolean(loadError) || !activeProjectId,
+                          onSelect: () => setIsRulePackCreateOpen(true),
+                        },
+                        {
                           key: "trash",
                           label: "垃圾箱",
                           icon: (
@@ -2770,6 +2801,18 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onClose={() => setIsRulePackImportOpen(false)}
           onInstall={handleInstallRulePackFile}
           projects={projects}
+        />
+      )}
+
+      {isRulePackCreateOpen && (
+        <RulePackCreateDialog
+          assets={assets.filter(
+            (asset) =>
+              asset.projectId === activeProjectId &&
+              asset.status !== "archived",
+          )}
+          onClose={() => setIsRulePackCreateOpen(false)}
+          onDownload={handleDownloadPackedRulePack}
         />
       )}
 

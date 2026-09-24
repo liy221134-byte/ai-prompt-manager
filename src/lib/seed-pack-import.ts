@@ -23,6 +23,7 @@ import {
   type RuleStage,
   type RuleType,
 } from "../data/assets.ts";
+import { PROMPT_BACKUP_TYPE } from "./prompt-backup.ts";
 
 export const RULE_PACK_FILE_TYPE = "ai-prompt-manager-rule-pack";
 export const RULE_PACK_FILE_VERSION = 1;
@@ -630,8 +631,21 @@ export function parseRulePackFile(content: string): RulePackFile {
     }
   })();
 
-  if (!isRecord(parsed) || parsed.type !== RULE_PACK_FILE_TYPE) {
+  if (!isRecord(parsed)) {
     throw new Error("这个文件不是规则包。");
+  }
+
+  // 最常见的一次误操作：把「数据备份」当规则包导入。直接告诉他该走哪个入口。
+  if (parsed.type === PROMPT_BACKUP_TYPE) {
+    throw new Error(
+      "这是数据备份文件，不是规则包。要恢复数据请用「数据管理 → 导入备份」。",
+    );
+  }
+
+  if (parsed.type !== RULE_PACK_FILE_TYPE) {
+    throw new Error(
+      "这个文件不是规则包：文件里没有规则包的类型标记（type 应为 ai-prompt-manager-rule-pack）。",
+    );
   }
 
   if (parsed.version !== RULE_PACK_FILE_VERSION) {
