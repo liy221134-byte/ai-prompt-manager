@@ -2928,6 +2928,14 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       {isEngineeringImportOpen && activeProjectId && (
         <EngineeringImportDrawer
           dataMode={dataMode}
+          documents={assets
+            .filter(
+              (asset) =>
+                asset.projectId === activeProjectId &&
+                asset.assetType === "document" &&
+                !asset.deletedAt,
+            )
+            .map((asset) => ({ id: asset.id, title: asset.title }))}
           nodes={graphNodes}
           onClose={() => setIsEngineeringImportOpen(false)}
           onCreateAsset={async (input) => {
@@ -3103,6 +3111,14 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               initialStack: stack,
             });
           }}
+          techStack={
+            projectTechProfile?.assetType === "tech_profile"
+              ? projectTechProfile.metadata.stack.map((entry) => ({
+                  name: entry.name,
+                  ...(entry.version ? { version: entry.version } : {}),
+                }))
+              : []
+          }
           onSubmit={
             projectDialog.mode === "edit"
               ? handleUpdateProject

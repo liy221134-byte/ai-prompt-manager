@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  ClipboardCopy,
   FolderPlus,
   Layers3,
   LoaderCircle,
@@ -22,6 +23,7 @@ import {
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { assetTypeDescriptions } from "@/lib/asset-list";
 import { draftStackFromPackageJson } from "@/lib/tech-profile-draft";
+import { buildTechProfilePrompt } from "@/lib/tech-profile-prompt";
 
 export type ProjectFormValues = {
   name: string;
@@ -40,6 +42,8 @@ type ProjectFormDialogProps = {
   onArchive?: () => Promise<void>;
   onReactivate?: () => Promise<void>;
   onOpenTechProfile?: () => void;
+  // 技术档案里已经记下来的技术栈，用来拼「复制提示词」的内容
+  techStack?: Array<{ name: string; version?: string }>;
 };
 
 export function ProjectFormDialog({
@@ -52,6 +56,7 @@ export function ProjectFormDialog({
   onArchive,
   onReactivate,
   onOpenTechProfile,
+  techStack = [],
 }: ProjectFormDialogProps) {
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
@@ -64,6 +69,7 @@ export function ProjectFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasCopiedPrompt, setHasCopiedPrompt] = useState(false);
   const packageFileInputRef = useRef<HTMLInputElement>(null);
 
   useModalBehavior(isSubmitting ? () => undefined : onClose, isSubmitting);
@@ -124,6 +130,23 @@ export function ProjectFormDialog({
       setErrorMessage(
         error instanceof Error ? error.message : "读取 package.json 失败。",
       );
+    }
+  }
+
+  // 零代码、没有 package.json 的项目走这条路：复制提示词 → 贴给 AI → 结果贴回编辑器
+  async function handleCopyTechProfilePrompt() {
+    const prompt = buildTechProfilePrompt({
+      projectName: name,
+      projectGoal: description,
+      stack: techStack,
+    });
+
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setHasCopiedPrompt(true);
+      setErrorMessage(null);
+    } catch {
+      setErrorMessage("复制失败，请手动选中后复制。");
     }
   }
 
@@ -307,6 +330,19 @@ export function ProjectFormDialog({
                 </button>
               </>
             )}
+            <button
+              className="mt-3 ml-2 inline-flex h-10 items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isSubmitting}
+              onClick={() => void handleCopyTechProfilePrompt()}
+              type="button"
+            >
+              <ClipboardCopy aria-hidden="true" className="size-4" />
+              {hasCopiedPrompt ? "已复制提示词" : "复制技术档案提示词"}
+            </button>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              没有 package.json 也能用：把这段提示词贴给 AI，问完它该问的问题，
+              再把它给的技术栈贴回技术档案编辑器保存。
+            </p>
           </section>
         )}
 
