@@ -30,7 +30,7 @@ source_references:
 related_assets:
   - OPS-TASK-001
   - OPS-ACCEPT-001
-version: 0.1.0
+version: 0.2.0
 last_reviewed: 2026-09-24
 ---
 

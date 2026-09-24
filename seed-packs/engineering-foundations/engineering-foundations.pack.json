@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-24T13:31:44.552Z",
+  "exportedAt": "2026-09-24T15:19:14.306Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.4.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：22 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.5.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：23 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.4.0",
+      "packVersion": "0.5.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -566,7 +566,7 @@
       "assetType": "rule",
       "title": "生产故障演练",
       "summary": "恢复能力不能只靠文档证明。应在隔离环境中制造可控故障，记录发现、恢复时间 和真实改进项。",
-      "content": "# 生产故障演练\n\n## 核心结论\n\n恢复能力不能只靠文档证明。应在隔离环境中制造可控故障，记录发现、恢复时间\n和真实改进项。\n\n## 使用条件\n\n- 项目具备备份、回滚和基础监控后。\n- 每个大版本至少一次。\n- 关键架构、权限、数据或部署方式变化后。\n\n## 不适用场景\n\n- 不在唯一生产数据上直接制造故障。\n- 没有备份、恢复路径和负责人时不执行破坏性演练。\n\n## 首批演练\n\n1. 使用错误环境变量验证系统安全关闭。\n2. 导出测试数据，修改后完成恢复。\n3. 回滚到上一个正常部署并完成基础验收。\n4. 检查 Preview 不包含生产密钥。\n5. 使用测试数据学习慢查询、配额和成本边界。\n\n## 记录模板\n\n```text\n演练目标\n开始前状态\n执行操作\n观察结果\n证据\n是否恢复\n恢复时间\n学到什么\n改进事项\n```\n\n## 失败模式\n\n- 只看备份文件存在，不验证恢复。\n- 只回滚代码，不验证数据。\n- 没有记录恢复时间和失败步骤。\n- 演练结果没有进入发布和运维改进。\n\n## 验证证据\n\n- 演练记录。\n- 恢复前后对比。\n- 改进任务和关闭证据。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`（依赖）：演练前必须先具备备份、回滚和发布门禁。\n- `MTH-QUALITY-001`（引用）：演练结论会回头修正项目的必选门禁。\n\n## 包内原始元数据\n\n```yaml\nid: PLAYBOOK-INCIDENT-001\ntitle: 生产故障演练\nasset_type: playbook\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p2\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/learning/engineering-readiness.md（演练一到七的计划；其中\"配置错误时安全关闭\"已由真实事故间接验证，其余尚未执行）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - operate\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - docs/learning/engineering-readiness.md\n  - docs/operations/release-rollback.md\nrelated_assets:\n  - PLAYBOOK-RELEASE-001\n  - MTH-QUALITY-001\nversion: 0.2.0\nlast_reviewed: 2026-09-21\n```",
+      "content": "# 生产故障演练\n\n## 核心结论\n\n恢复能力不能只靠文档证明。应在隔离环境中制造可控故障，记录发现、恢复时间\n和真实改进项。\n\n## 使用条件\n\n- 项目具备备份、回滚和基础监控后。\n- 每个大版本至少一次。\n- 关键架构、权限、数据或部署方式变化后。\n\n## 不适用场景\n\n- 不在唯一生产数据上直接制造故障。\n- 没有备份、恢复路径和负责人时不执行破坏性演练。\n\n## 首批演练\n\n1. 使用错误环境变量验证系统安全关闭。\n2. 导出测试数据，修改后完成恢复。\n3. 回滚到上一个正常部署并完成基础验收。\n4. 检查 Preview 不包含生产密钥。\n5. 使用测试数据学习慢查询、配额和成本边界。\n\n## 记录模板\n\n```text\n演练目标\n开始前状态\n执行操作\n观察结果\n证据\n是否恢复\n恢复时间\n学到什么\n改进事项\n```\n\n## 失败模式\n\n- 只看备份文件存在，不验证恢复。\n- 只回滚代码，不验证数据。\n- 没有记录恢复时间和失败步骤。\n- 演练结果没有进入发布和运维改进。\n\n## 验证证据\n\n- 演练记录。\n- 恢复前后对比。\n- 改进任务和关闭证据。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`（依赖）：演练前必须先具备备份、回滚和发布门禁。\n- `MTH-QUALITY-001`（引用）：演练结论会回头修正项目的必选门禁。\n\n## 包内原始元数据\n\n```yaml\nid: PLAYBOOK-INCIDENT-001\ntitle: 生产故障演练\nasset_type: playbook\npurpose: release\nlayer: project\ntech_context:\n  - generic\npriority: p2\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/learning/engineering-readiness.md（演练一到七的计划）\n  - docs/acceptance/v2.11.0.md（2026-09-24 实做：用真实数据副本跑回滚演练与备份往返演练、云端只读复核，演练发现三处问题并直接修进代码与运维文档）\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - operate\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - docs/learning/engineering-readiness.md\n  - docs/operations/release-rollback.md\nrelated_assets:\n  - PLAYBOOK-RELEASE-001\n  - MTH-QUALITY-001\nversion: 0.5.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "process",
         "scope": "project",
@@ -577,16 +577,16 @@
         "stage": "release",
         "priority": "may",
         "overrideScope": "project",
-        "evidence": "- docs/learning/engineering-readiness.md（演练一到七的计划；其中\"配置错误时安全关闭\"已由真实事故间接验证，其余尚未执行）\n- docs/learning/engineering-readiness.md\n- docs/operations/release-rollback.md",
+        "evidence": "- docs/learning/engineering-readiness.md（演练一到七的计划）\n- docs/acceptance/v2.11.0.md（2026-09-24 实做：用真实数据副本跑回滚演练与备份往返演练、云端只读复核，演练发现三处问题并直接修进代码与运维文档）\n- docs/learning/engineering-readiness.md\n- docs/operations/release-rollback.md",
         "verification": "人工核对",
-        "confidence": "hypothesis",
+        "confidence": "provisional",
         "compileTarget": [
           "agents"
         ],
         "pack": {
           "packId": "rule-pack-engineering-foundations",
           "packItemId": "PLAYBOOK-INCIDENT-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.5.0",
           "packAssetType": "playbook",
           "projectScale": [
             "medium",
@@ -1189,6 +1189,60 @@
           },
           {
             "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-reference-001",
+      "assetType": "rule",
+      "title": "引用优先于复制",
+      "summary": "同一份内容需要出现在多个地方时，**留一个来源，其他位置只引用它**；复制只在\"这份要脱钩、 之后自己改\"时才做，而且要明确记下是什么时候脱的钩。复制一次就是两个真相，两边迟早不一致， 而维护者永远不知道该信哪一份——这和 `MTH-EVI",
+      "content": "# 引用优先于复制\n\n## 核心结论\n\n同一份内容需要出现在多个地方时，**留一个来源，其他位置只引用它**；复制只在\"这份要脱钩、\n之后自己改\"时才做，而且要明确记下是什么时候脱的钩。复制一次就是两个真相，两边迟早不一致，\n而维护者永远不知道该信哪一份——这和 `MTH-EVIDENCE-001`「证据只记一处」是同一条道理的另一面。\n\n## 使用条件\n\n- 公共方法库（规则、模板、清单）与多个项目之间。\n- 同一份清单要被多个版本、多个环境引用时。\n\n## 不适用场景\n\n- **需要按项目改写**的内容：先复制再改是合理的，但要在复制的那一刻就把「这份是项目专属」记下来\n  （去掉来源标记），别让它继续挂着\"来自公共库\"的名头。\n- 一次性产物（编译结果、导出文件）：它们是快照，本来就该独立存在。\n- 无法建立引用关系的场合（纸质清单、外部系统里的字段）：复制可以接受，但要写清唯一的正本在哪。\n\n## 判断步骤\n\n1. 问一句：这份内容**换项目还成立吗**？\n   - 成立 → 它属于公共层，项目里只放引用（见 `MTH-ASSET-LAYER-001`）。\n   - 只对这一次成立 → 它是项目实例，本来就不用跨项目复用。\n2. 再问：这个项目**需要改它吗**？\n   - 不需要 → 引用，公共层改一处，所有引用它的地方跟着变。\n   - 需要 → 复制一份并脱钩，同时写清\"为什么这个项目和公共那份不一样\"。\n3. 最后确认：有没有第三条路——**向上修改**（把公共那份改成大家都要的样子）？\n   大多数\"想复制\"的冲动，其实是公共那份该更新了。\n\n## 失败模式\n\n- 复制之后两边各自被人改，出现两个版本，谁也不知道哪个是当前有效的。\n- 复制了一大堆，公共那份更新了没有人拉取，项目里继续用旧口径。\n- 复制时保留了\"来自公共库\"的来源标记，看的人以为改公共库就能生效。\n- 用复制来规避\"改公共库会影响别人\"的顾虑，结果问题被复制了 N 份。\n\n## 验证证据\n\n- 公共资产库里点名某个项目的条目数量（越接近 0 越好）。\n- 项目里那份副本与公共库正本是否重复显示（重复说明引用没打通）。\n- 公共库改一处之后，引用它的项目是否立刻看到变化。\n\n## 相关资产\n\n- `MTH-ASSET-LAYER-001`（引用）：先分层，再决定哪层是正本。\n- `MTH-SINK-001`（引用）：沉淀往哪边去，决定谁是正本。\n- `MTH-EVIDENCE-001`（引用）：同一条纪律在文档上的说法。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-REFERENCE-001\ntitle: 引用优先于复制\nasset_type: method\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - design\n  - build\n  - operate\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/acceptance/v2.18.0.md（本项目把 4 条复制来的规则改成 28 条引用：改公共库一处，所有引用它的项目跟着变）\n  - docs/superpowers/specs/2026-09-24-v2.18.0-rule-reference-design.md\nsource_references:\n  - docs/project-lifecycle-gaps.md\n  - docs/pending-items.md\nrelated_assets:\n  - MTH-ASSET-LAYER-001\n  - MTH-SINK-001\n  - MTH-EVIDENCE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/v2.18.0.md（本项目把 4 条复制来的规则改成 28 条引用：改公共库一处，所有引用它的项目跟着变）\n- docs/superpowers/specs/2026-09-24-v2.18.0-rule-reference-design.md\n- docs/project-lifecycle-gaps.md\n- docs/pending-items.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-REFERENCE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 复制之后两边各自被人改，出现两个版本，谁也不知道哪个是当前有效的。 - 复制了一大堆，公共那份更新了没有人拉取，项目里继续用旧口径。 - 复制时保留了\"来自公共库\"的来源标记，看的人以为改公共库就能生效。 - 用复制来规避\"改公共库会影响别人\"的顾虑，结果问题被复制了 N 份。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-asset-layer-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
             "relationType": "reference",
             "note": "包内关联"
           }

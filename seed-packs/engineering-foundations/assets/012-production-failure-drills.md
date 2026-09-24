@@ -12,7 +12,8 @@ compile_target:
   - agents
 verification: manual
 evidence:
-  - docs/learning/engineering-readiness.md（演练一到七的计划；其中"配置错误时安全关闭"已由真实事故间接验证，其余尚未执行）
+  - docs/learning/engineering-readiness.md（演练一到七的计划）
+  - docs/acceptance/v2.11.0.md（2026-09-24 实做：用真实数据副本跑回滚演练与备份往返演练、云端只读复核，演练发现三处问题并直接修进代码与运维文档）
 scope: project
 project_scale:
   - medium
@@ -21,15 +22,15 @@ project_scale:
 lifecycle_phase:
   - operate
 status: candidate
-confidence: hypothesis
+confidence: provisional
 source_references:
   - docs/learning/engineering-readiness.md
   - docs/operations/release-rollback.md
 related_assets:
   - PLAYBOOK-RELEASE-001
   - MTH-QUALITY-001
-version: 0.2.0
-last_reviewed: 2026-09-21
+version: 0.5.0
+last_reviewed: 2026-09-24
 ---
 
 # 生产故障演练

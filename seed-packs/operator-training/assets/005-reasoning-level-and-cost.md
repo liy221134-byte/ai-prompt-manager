@@ -22,15 +22,16 @@ compile_target:
 verification: manual
 evidence:
   - docs/acceptance/v2.11.0.md（加固与验收这类"攻坚"任务用高档跑，日常实现用低档）
+  - docs/acceptance/v2.17.0.md（连续两版按"低档打底、攻坚才开高档"执行，没有因此返工）
 status: candidate
-confidence: hypothesis
+confidence: provisional
 source_references:
   - 本项目两轮开发的真实账单经验：全程高档跑，两天多花约 50 元
   - 12-Factor Agents：Small, Focused Agents（任务小，就不需要一直开高档）
 related_assets:
   - OPS-SESSION-001
   - OPS-SINK-001
-version: 0.1.0
+version: 0.2.0
 last_reviewed: 2026-09-24
 ---
 

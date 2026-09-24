@@ -307,7 +307,7 @@ test("打包产物与源文件一致", () => {
   });
 
   assert.equal(pack.title, "操作者训练包");
-  assert.equal(pack.metadata.packVersion, "0.1.0");
+  assert.equal(pack.metadata.packVersion, "0.2.0");
   assert.equal(members.length, assets.length);
 
   const committed = readFileSync(

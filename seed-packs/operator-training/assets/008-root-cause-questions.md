@@ -30,7 +30,7 @@ source_references:
 related_assets:
   - OPS-ACCEPT-002
   - OPS-SINK-001
-version: 0.1.0
+version: 0.2.0
 last_reviewed: 2026-09-24
 ---
 

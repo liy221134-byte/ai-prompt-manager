@@ -22,6 +22,8 @@
 
 # local prompt database
 /.data/
+# 同步用的本机全量备份（含个人数据，不进版本库）
+/sync-push-*.json
 
 # misc
 .DS_Store
