@@ -2,13 +2,16 @@
 // 走应用自己的写入路径（本机资产库层），每次新增都带一条版本记录；重复执行安全：
 // 按标识或同名跳过，只新增不覆盖，不做任何删除。
 //
-// 六个步骤：
+// 八个步骤：
 //   1. 公共资产库 ← 两个种子资产包（工程方法 0.4.0、操作者训练 0.1.0）
 //   2. 公共资产库 ← 工程文档模板（templates/engineering，10 份）
 //   3. 公共资产库 ← 提示词（开发规范提示词包 5 条 + 立项提示词 4 条）
 //   4. 项目文档   ← 七份英文标题改成中文并补文档类型（只改标题和类型，内容不动）
 //   5. 项目文档   ← 补四段链路缺的文档（需求 / 规格与计划 / 交付 / 验收与发布）
+//                    含验收清单：交付这 13 条需求的那几版，逐份装进库
 //   6. 项目图谱   ← 建「需求 + 模块」节点并挂上对应文档；代码扫描出来的节点归档
+//   7. 验收覆盖   ← 每份验收清单挂到它覆盖的需求节点上（只在缺关系时补）
+//   8. 复核       ← 用工程基线同一份口径数一遍每条需求有几条验收记录
 //
 // 用法：
 //   node scripts/import-local-content.mjs --dry-run   只列清单，不写库
@@ -21,6 +24,7 @@ import { join, resolve } from "node:path";
 import {
   createInitialAssetVersionId,
   isAssetData,
+  readAssetRelations,
   type AssetRelation,
   type AssetData,
   type DocumentAssetData,
@@ -29,6 +33,8 @@ import {
   type PromptAssetData,
 } from "../src/data/assets.ts";
 import { DEFAULT_PROJECT_ID } from "../src/data/projects.ts";
+import { summarizeNodeEvidence } from "../src/lib/acceptance-evidence.ts";
+import { listProjectGraphNodes } from "../src/lib/graph-node.ts";
 import { planRulePackImport } from "../src/lib/rule-pack.ts";
 import { parseRulePackFile } from "../src/lib/seed-pack-import.ts";
 import {
@@ -49,6 +55,7 @@ const totals = {
   提示词: 0,
   文档: 0,
   图谱节点: 0,
+  关系: 0,
   改名: 0,
   归档: 0,
   跳过: 0,
@@ -365,7 +372,7 @@ const documentRenames = [
 ];
 
 // 补四段链路缺的文档：需求 → 规格与计划 → 交付 → 验收与发布
-const projectDocuments = [
+const projectDocuments: { file: string; id: string; documentType: string }[] = [
   { file: "docs/product-brief.md", id: "document-product-brief", documentType: "PRD" },
   { file: "docs/user-stories.md", id: "document-user-stories", documentType: "PRD" },
   { file: "docs/roadmap.md", id: "document-roadmap", documentType: "参考资料" },
@@ -397,22 +404,67 @@ const projectDocuments = [
     id: "document-database-migrations",
     documentType: "数据库说明",
   },
-  {
-    file: "docs/acceptance/v2.16.0.md",
-    id: "document-acceptance-v2-16-0",
-    documentType: "验收记录",
-  },
-  {
-    file: "docs/acceptance/v2.15.0.md",
-    id: "document-acceptance-v2-15-0",
-    documentType: "验收记录",
-  },
-  {
-    file: "docs/acceptance/v2.11.0.md",
-    id: "document-acceptance-v2-11-0",
-    documentType: "验收记录",
-  },
 ];
+
+// 验收清单：仓库 docs/acceptance 里能作为这 13 条需求验收证据的那些版本，逐份装进库。
+// 只装对得上需求的；week-03（提示词备份）、v2.1.1~v2.1.3、v2.4.0、v2.12.0、v2.13.0、v2.17.0
+// 还留在仓库里，等哪条需求要拿它当证据再加。
+// 标识按文件名生成，和已经入库的那几份一致（v2.16.0 → document-acceptance-v2-16-0）。
+const acceptanceVersions = [
+  "week-01",
+  "week-02",
+  "week-04",
+  "week-05",
+  "week-06",
+  "week-07",
+  "week-08",
+  "week-09",
+  "v1.0.0",
+  "v2.0.0",
+  "v2.1.0",
+  "v2.2.0",
+  "v2.3.0",
+  "v2.5.0",
+  "v2.6.0",
+  "v2.7.0",
+  "v2.8.0",
+  "v2.9.0",
+  "v2.10.0",
+  "v2.11.0",
+  "v2.14.0",
+  "v2.15.0",
+  "v2.16.0",
+  "v2.18.0",
+];
+
+function acceptanceDocumentId(version: string) {
+  return `document-acceptance-${slugify(version)}`;
+}
+
+// 一条需求挂哪几份清单，按「哪一版交付了它」定，一份清单可以挂多条需求
+const acceptanceCoverage = [
+  { requirement: "REQ-001", versions: ["week-01", "week-02", "v1.0.0"] },
+  { requirement: "REQ-002", versions: ["week-02", "v1.0.0"] },
+  { requirement: "REQ-003", versions: ["week-06"] },
+  { requirement: "REQ-004", versions: ["week-08", "week-09", "v2.1.0"] },
+  { requirement: "REQ-005", versions: ["v2.0.0", "v2.1.0", "v2.11.0"] },
+  { requirement: "REQ-006", versions: ["v2.2.0", "v2.3.0", "v2.18.0"] },
+  { requirement: "REQ-007", versions: ["v2.8.0", "v2.9.0", "v2.10.0"] },
+  { requirement: "REQ-008", versions: ["v2.5.0"] },
+  { requirement: "REQ-009", versions: ["v2.6.0"] },
+  { requirement: "REQ-010", versions: ["v2.14.0", "v2.16.0"] },
+  { requirement: "REQ-011", versions: ["v2.15.0"] },
+  { requirement: "REQ-012", versions: ["week-04", "week-05", "week-07", "v1.0.0", "v2.11.0"] },
+  { requirement: "REQ-013", versions: ["v2.7.0", "v2.16.0"] },
+];
+
+for (const version of acceptanceVersions) {
+  projectDocuments.push({
+    file: `docs/acceptance/${version}.md`,
+    id: acceptanceDocumentId(version),
+    documentType: "验收记录",
+  });
+}
 
 function resolveProjectId() {
   const project = database
@@ -871,6 +923,116 @@ function assetIdByCode(nodeIdByCode: Map<string, string>, code: string) {
   );
 }
 
+// 验收覆盖：清单自己指向需求节点（和界面上「批量挂文档」、MCP 建验收记录的方向一致）。
+// 已经有这条关系的跳过，只补缺的，不覆盖别的字段。
+function linkAcceptanceCoverage() {
+  console.log("7. 验收覆盖 ← 验收清单挂到它覆盖的需求节点");
+
+  for (const entry of acceptanceCoverage) {
+    const requirementId = assetIdByCode(new Map(), entry.requirement);
+
+    if (!requirementId) {
+      console.log(`  ! 找不到需求节点「${entry.requirement}」，这组关系先不建`);
+      continue;
+    }
+
+    for (const version of entry.versions) {
+      const record = findAssetById(acceptanceDocumentId(version));
+      const plannedThisRun = acceptanceVersions.includes(version);
+
+      // 空跑时清单还没写进库，按「本次会装」算；真写时找不到就是真出问题
+      if (!record && (!dryRun || !plannedThisRun)) {
+        console.log(`  ! 找不到验收清单「${version}」，这条关系先不建`);
+        continue;
+      }
+
+      if (record && record.assetType !== "document") {
+        console.log(`  ! 资产「${version}」不是文档，这条关系先不建`);
+        continue;
+      }
+
+      const relations = record ? readAssetRelations(record.metadata) : [];
+
+      if (relations.some((relation) => relation.targetAssetId === requirementId)) {
+        totals.跳过 += 1;
+        continue;
+      }
+
+      if (dryRun) {
+        console.log(
+          `  [空跑] 挂需求：${record?.title ?? `${version} 验收清单`} → ${entry.requirement}`,
+        );
+        totals.关系 += 1;
+        continue;
+      }
+
+      if (!record) {
+        console.log(`  ! 找不到验收清单「${version}」，这条关系先不建`);
+        continue;
+      }
+
+      const versionId = `${record.id}-coverage-${Date.now()}`;
+      const updated: DocumentAssetData = {
+        ...record,
+        metadata: {
+          ...record.metadata,
+          relations: [
+            ...relations,
+            {
+              targetAssetId: requirementId,
+              relationType: "reference",
+              note: "这份清单覆盖这条需求",
+            },
+          ],
+        },
+        currentVersionId: versionId,
+        updatedAt: now,
+      };
+
+      database.updateAsset({
+        asset: updated,
+        versionId,
+        changeReason: "验收清单关联到它覆盖的需求节点",
+      });
+      totals.关系 += 1;
+    }
+  }
+}
+
+// 复核用的是产品自己那份口径（`src/lib/acceptance-evidence.ts`，工程基线「验收覆盖」同源），
+// 不另写一套判断；这里只数数量，结论是不是「通过」仍然只能人在界面上点。
+function printAcceptanceCoverage(projectId: string) {
+  console.log("\n8. 复核：每条需求有几条验收记录（和工程基线同一口径）");
+
+  const assets = listAssets();
+  const summary = summarizeNodeEvidence(assets, projectId);
+  const requirements = listProjectGraphNodes(assets, projectId)
+    .filter((node) => node.metadata.nodeType === "requirement")
+    .sort((left, right) =>
+      left.metadata.code.localeCompare(right.metadata.code, "en"),
+    );
+  const withoutRecord = requirements.filter(
+    (node) => (summary.get(node.id)?.total ?? 0) === 0,
+  );
+
+  for (const node of requirements) {
+    const item = summary.get(node.id);
+
+    console.log(
+      `  ${node.metadata.code}：验收记录 ${item?.total ?? 0} 条` +
+        `（通过 ${item?.passed ?? 0}，待确认 ${item?.pending ?? 0}）｜${node.title}`,
+    );
+  }
+
+  console.log(
+    withoutRecord.length === 0
+      ? "  每条需求都有验收记录了。"
+      : `  ! 还没有验收记录的需求：${withoutRecord
+          .map((node) => node.metadata.code)
+          .join("、")}`,
+  );
+}
+
 // ---------- 跑 ----------
 
 const projectId = resolveProjectId();
@@ -885,6 +1047,8 @@ importPrompts();
 renameProjectDocuments(projectId);
 importProjectDocuments(projectId);
 importProjectGraph(projectId);
+linkAcceptanceCoverage();
+printAcceptanceCoverage(projectId);
 
 console.log("\n完成：");
 for (const [label, count] of Object.entries(totals)) {
