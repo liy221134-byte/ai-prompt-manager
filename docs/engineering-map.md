@@ -51,6 +51,7 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `src/components/engineering-import-drawer.tsx` | 导入工程面板：两个来源、预览勾选、确认写库 | 改导入界面时 |
 | `src/lib/mcp-query.ts`、`src/lib/mcp-write.ts` | MCP 的查询整理与写入草稿（纯逻辑） | 改 MCP 工具行为时 |
 | `scripts/mcp-server.ts` | 本机 MCP 服务：九个工具、只读开关、stdio 传输 | 加工具或改工具描述时 |
+| `scripts/import-local-content.ts` | 把仓库内容装进本机库：种子包、工程文档模板、提示词、项目文档、图谱节点（只新增不覆盖，重复执行安全） | 改本机库要装哪些内容时 |
 | `src/lib/quality-level.ts`、`src/components/engineering-baseline-drawer.tsx` | 质量等级到工程文档要求的对照表、缺口判定与面板 | 改等级要求或缺口口径时 |
 | `src/lib/acceptance-evidence.ts` | 验收记录汇总、覆盖缺口与排序（纯逻辑） | 改验收覆盖口径时 |
 | `src/lib/release-record.ts` | 发布门禁预填、完成情况与最近一次发布（纯逻辑） | 改门禁口径时 |

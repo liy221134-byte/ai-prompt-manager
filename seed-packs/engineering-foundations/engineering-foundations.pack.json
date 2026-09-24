@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-23T23:20:59.656Z",
+  "exportedAt": "2026-09-24T13:31:44.552Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.3.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：15 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n   的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n   等一次真实 bug 的复现与回归记录再升。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.4.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：22 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.3.0",
+      "packVersion": "0.4.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -809,6 +809,386 @@
           },
           {
             "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-gates-001",
+      "assetType": "rule",
+      "title": "一个版本的三道门：需求门、设计门、交付门",
+      "summary": "每个版本按三道门走：**需求门**（需求说不清就先谈，不写代码）、**设计门**（会留长期痕迹的改动 先出《设计 + 任务清单》等确认）、**交付门**（先写测试再实现，跑完检查，逐条对照验收标准）。 门的价值不是审批，而是**在\"现在该停",
+      "content": "# 一个版本的三道门：需求门、设计门、交付门\n\n## 核心结论\n\n每个版本按三道门走：**需求门**（需求说不清就先谈，不写代码）、**设计门**（会留长期痕迹的改动\n先出《设计 + 任务清单》等确认）、**交付门**（先写测试再实现，跑完检查，逐条对照验收标准）。\n门的价值不是审批，而是**在\"现在该停下来说话\"的那一刻停住**，把靠脑补的地方补成文字。\n\n## 使用条件\n\n- 由人提需求、AI 执行的开发方式。\n- 任何要合并进主干的功能、修复、数据变更和发布。\n\n## 不适用场景\n\n- 界面、文案、样式的局部调整，以及已有测试覆盖的重构：不必过设计门，动手前用自然语言说清\n  改什么、为什么改、影响哪些文件和功能就够了。\n- 一次性探索脚本：可以跳过设计门，但结论要落回文档，否则下次还得重来一遍。\n\n## 三道门的判定表\n\n| 门 | 什么时候必须停 | 停下来的产物 | 谁拍板 |\n| --- | --- | --- | --- |\n| 需求门 | 需求模糊、涉及新方向、存在多种做法 | 一次对话，把目标、边界、成功标准说清 | 产品负责人 |\n| 设计门 | 数据表／字段／迁移／回滚语义；对外约定（接口输入输出、优化与合并规则、鉴权与数据隔离）；外部依赖、外部服务或持续成本 | 《设计 + 任务清单》四块内容 | 产品负责人 |\n| 交付门 | 每次交付 | 自动化检查结果、逐条验收对照、未完成事项与风险 | 产品负责人 |\n\n写设计文档的边界：**只写决定，不写实现过程**，不写成段 SQL 和代码，不写自检章节和覆盖率\n对照表——正确性由验收保证，不由文档自己声明。\n\n## 失败模式\n\n- 需求还模糊就开始写代码，做完发现方向不对，返工成本最高。\n- 设计文档写成实现说明书：写了一大篇，人还是不知道\"这次到底做什么、不做什么\"。\n- 设计门只在\"数据结构变更\"时才走，忽略了\"改变对外约定\"这一类。\n- 交付时只说\"应该没问题\"，没有真实跑过的检查结果。\n- 交付后不逐条对照验收标准，实现和设计悄悄分叉。\n\n## 验证证据\n\n- 设计文档：每版 `docs/superpowers/specs/` 下的一份《设计 + 任务清单》。\n- 验收清单：`docs/acceptance/` 下逐条签署的记录。\n- 检查记录：交付说明里的实际命令与结果。\n\n## 相关资产\n\n- `MTH-DESIGN-DOC-001`（引用）：设计门具体该写哪四块内容。\n- `MTH-REQ-001`（引用）：需求门里怎么澄清边界与外部依赖。\n- `MTH-QUALITY-001`（引用）：交付门跑哪几档检查由项目质量画像决定。\n- `TPL-ACCEPT-001`（引用）：交付门的证据链结构。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-GATES-001\ntitle: 一个版本的三道门：需求门、设计门、交付门\nasset_type: playbook\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - analysis\n  - design\n  - build\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\n  - start_prompt\nverification: manual\nevidence:\n  - AGENTS.md（三道门是项目唯一的规则来源，日常开发只读它）\n  - docs/acceptance/（v2.12.0 至 v2.16.0 每版都是先出设计文档、再开发、再逐条对照验收）\n  - docs/pending-items.md（规则命中记录：同一条规则被违反两次以上才允许改规则文件）\nsource_references:\n  - docs/development-rules.md\n  - docs/superpowers/specs/2026-09-24-v2.15.0-kickoff-pack-design.md\n  - docs/project-lifecycle-gaps.md\nrelated_assets:\n  - MTH-REQ-001\n  - MTH-QUALITY-001\n  - MTH-DESIGN-DOC-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "process",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- AGENTS.md（三道门是项目唯一的规则来源，日常开发只读它）\n- docs/acceptance/（v2.12.0 至 v2.16.0 每版都是先出设计文档、再开发、再逐条对照验收）\n- docs/pending-items.md（规则命中记录：同一条规则被违反两次以上才允许改规则文件）\n- docs/development-rules.md\n- docs/superpowers/specs/2026-09-24-v2.15.0-kickoff-pack-design.md\n- docs/project-lifecycle-gaps.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "start_prompt"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-GATES-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "playbook",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 需求还模糊就开始写代码，做完发现方向不对，返工成本最高。 - 设计文档写成实现说明书：写了一大篇，人还是不知道\"这次到底做什么、不做什么\"。 - 设计门只在\"数据结构变更\"时才走，忽略了\"改变对外约定\"这一类。 - 交付时只说\"应该没问题\"，没有真实跑过的检查结果。 - 交付后不逐条对照验收标准，实现和设计悄悄分叉。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-req-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-design-doc-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-scope-001",
+      "assetType": "rule",
+      "title": "一个版本只做一个子系统",
+      "summary": "一个版本只解决**一个**子系统的问题，并且能用一句话说清\"这一版解决什么\"。需要同时改数据和 界面、或者一次牵动多条链路时，拆成两次发布。拆版本的成本，远低于一版混装之后无法判断 \"是哪一处改动坏了什么\"的成本。",
+      "content": "# 一个版本只做一个子系统\n\n## 核心结论\n\n一个版本只解决**一个**子系统的问题，并且能用一句话说清\"这一版解决什么\"。需要同时改数据和\n界面、或者一次牵动多条链路时，拆成两次发布。拆版本的成本，远低于一版混装之后无法判断\n\"是哪一处改动坏了什么\"的成本。\n\n## 使用条件\n\n- 单人主导、AI 执行的持续迭代项目。\n- 每版都要给出验收清单、版本号和变更记录的项目。\n\n## 不适用场景\n\n- 修一个 bug 顺带补测试：属于同一个目标，不用拆。\n- 纯文档整理：不产生运行时行为变化，可以合并处理。\n\n## 怎么切版本\n\n1. 先写这一版的一句话主题（写在变更记录开头）。\n2. 把候选改动按\"改的是哪一层\"分组：数据层、服务层、界面层。\n3. 同一版里只留一个主题；次要主题写进待排期清单，不进本版范围。\n4. 一次提交只处理一个清晰目标，提交信息用 `feat:`、`fix:`、`docs:`、`test:`、`chore:` 前缀。\n5. 版本做完先签验收清单，再开下一个版本；有未签项先补验收，不开新功能。\n\n## 失败模式\n\n- 一版里塞三个主题，出问题时只能整版回滚，连带回滚掉已经好的改动。\n- 为了\"顺手\"，把重构和新功能放同一次提交，diff 里看不出真正的行为变化。\n- 上一个版本还没验收就开新版本，未验收的改动在下一版里被当成既有事实。\n\n## 验证证据\n\n- 变更记录里每版的一句话主题。\n- 提交历史里同一版内的提交是否都指向这一个目标。\n- 验收清单的签署记录（签完才开新版本）。\n\n## 相关资产\n\n- `MTH-GATES-001`（引用）：需求门外还需要版本边界。\n- `MTH-ROUTE-001`（引用）：不确定性高时先做最小链路，再谈拆分。\n- `MTH-MODULE-001`（引用）：模块按业务能力拆，版本按子系统拆，两者不要混。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-SCOPE-001\ntitle: 一个版本只做一个子系统\nasset_type: method\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/acceptance/（v2.2.0 至 v2.16.0 每版一个主题，版本号与子系统一一对应）\n  - CHANGELOG.md（每版开头一句话说清这一版解决什么，不混第二个主题）\n  - AGENTS.md（\"一个版本只做一个子系统；需要同时改数据和界面、或涉及多条链路时，拆成两次发布\"）\nsource_references:\n  - docs/v2-plan.md\n  - docs/roadmap.md\nrelated_assets:\n  - MTH-ROUTE-001\n  - MTH-GATES-001\n  - MTH-MODULE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/（v2.2.0 至 v2.16.0 每版一个主题，版本号与子系统一一对应）\n- CHANGELOG.md（每版开头一句话说清这一版解决什么，不混第二个主题）\n- AGENTS.md（\"一个版本只做一个子系统；需要同时改数据和界面、或涉及多条链路时，拆成两次发布\"）\n- docs/v2-plan.md\n- docs/roadmap.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-SCOPE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 一版里塞三个主题，出问题时只能整版回滚，连带回滚掉已经好的改动。 - 为了\"顺手\"，把重构和新功能放同一次提交，diff 里看不出真正的行为变化。 - 上一个版本还没验收就开新版本，未验收的改动在下一版里被当成既有事实。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-route-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-gates-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-module-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-design-doc-001",
+      "assetType": "rule",
+      "title": "设计文档只写决定：四块内容",
+      "summary": "《设计 + 任务清单》只保留四块内容：**做什么／不做什么**、**数据和产品行为影响**、 **验收标准**、**任务顺序与改动文件**。文档的作用是让人在动代码之前能判断\"这件事对不对\"， 不是留一份能证明自己干得好的材料。",
+      "content": "# 设计文档只写决定：四块内容\n\n## 核心结论\n\n《设计 + 任务清单》只保留四块内容：**做什么／不做什么**、**数据和产品行为影响**、\n**验收标准**、**任务顺序与改动文件**。文档的作用是让人在动代码之前能判断\"这件事对不对\"，\n不是留一份能证明自己干得好的材料。\n\n## 使用条件\n\n- 触发设计门时（数据结构、对外约定、外部依赖或持续成本）。\n- 一次改动会跨多个文件、多个链路，需要先说清影响面时。\n\n## 不适用场景\n\n- 界面、文案、样式的局部调整。\n- 已有测试覆盖的重构。\n\n## 四块内容怎么写\n\n| 块 | 写什么 | 不写什么 |\n| --- | --- | --- |\n| 做什么／不做什么 | 本版边界，明确列出本次**不做**的部分 | 分阶段的实施步骤 |\n| 数据和产品行为影响 | 表结构、字段、行为变化、恢复与回滚语义 | 完整建表 SQL |\n| 验收标准 | 每条都能用一次测试或一次手工验证判定 | 自检章节、覆盖率对照表 |\n| 任务顺序与改动文件 | 顺序 + 每个任务改哪些文件 | 成段代码 |\n\n两条附加纪律：\n\n1. **篇幅以把事情说明白为准**：允许为说清而写长，不允许为写短而留下含糊表述——含糊的地方，\n   后续实现会自行脑补。\n2. **交付时逐条对照验收标准**：实现和设计不一致时，单独列「设计偏差」，由人决定改设计还是\n   改实现，不在文档里悄悄改口径。\n\n## 失败模式\n\n- 文档里写自检章节和覆盖率对照表，用自己证明自己，验收时反而没人逐条对照。\n- 只写\"做了什么\"，不写\"不做什么\"，实现范围越做越大。\n- 不写恢复与回滚语义，迁移出问题才知道回不去。\n- 验收标准写成\"功能正常\"这类不可判定的描述。\n\n## 验证证据\n\n- 设计文档的四块内容是否齐全。\n- 交付说明里是否存在逐条对照记录，以及「设计偏差」清单。\n\n## 相关资产\n\n- `MTH-GATES-001`（引用）：设计门什么时候必须走。\n- `TPL-ACCEPT-001`（引用）：验收标准要能进证据链。\n- `MTH-EVIDENCE-001`（引用）：四块内容的结论不重复写第二遍。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-DESIGN-DOC-001\ntitle: 设计文档只写决定：四块内容\nasset_type: method\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - design\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\n  - template\nverification: manual\nevidence:\n  - docs/superpowers/specs/（v2.12.0 至 v2.15.0 的设计文档都按四块内容组织，末尾留\"设计偏差\"）\n  - docs/acceptance/（交付时逐条对照验收标准，实现与设计不一致的单独列出）\n  - AGENTS.md（\"正确性由验收保证，不由文档自己声明\"）\nsource_references:\n  - docs/superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md\n  - templates/engineering/implementation-spec.md\nrelated_assets:\n  - MTH-GATES-001\n  - TPL-ACCEPT-001\n  - MTH-EVIDENCE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/superpowers/specs/（v2.12.0 至 v2.15.0 的设计文档都按四块内容组织，末尾留\"设计偏差\"）\n- docs/acceptance/（交付时逐条对照验收标准，实现与设计不一致的单独列出）\n- AGENTS.md（\"正确性由验收保证，不由文档自己声明\"）\n- docs/superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md\n- templates/engineering/implementation-spec.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents",
+          "template"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-DESIGN-DOC-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 文档里写自检章节和覆盖率对照表，用自己证明自己，验收时反而没人逐条对照。 - 只写\"做了什么\"，不写\"不做什么\"，实现范围越做越大。 - 不写恢复与回滚语义，迁移出问题才知道回不去。 - 验收标准写成\"功能正常\"这类不可判定的描述。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-gates-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-evidence-001",
+      "assetType": "rule",
+      "title": "证据只记一处",
+      "summary": "同一次发现、同一个结论、同一次检查结果，**只在一处记录**，其他地方放链接引用。 复制粘贴会立刻产生两个真相，两边迟早不一致，而维护者永远不知道该信哪一份。",
+      "content": "# 证据只记一处\n\n## 核心结论\n\n同一次发现、同一个结论、同一次检查结果，**只在一处记录**，其他地方放链接引用。\n复制粘贴会立刻产生两个真相，两边迟早不一致，而维护者永远不知道该信哪一份。\n\n## 使用条件\n\n- 一份结论需要在设计文档、变更记录、验收清单、运维手册里同时出现时。\n- 多会话或多人协作，各自在不同文档里补记录时。\n\n## 不适用场景\n\n- 面向不同读者的**摘要**：允许写一句概述加链接，但不复制正文。\n- 验收清单本身就是证据的唯一存放处时，别处不再抄一遍检查结果。\n\n## 怎么落\n\n1. 先问这份信息**归档在哪一类**：决策记录、验收清单、运维手册、变更记录。\n2. 在那**一处**写全：结论、依据、时间。\n3. 其他位置只写一句引用，例如\"依据：`docs/acceptance/v2.11.0.md` 第 3 条\"。\n4. 发现同一结论出现在两处，合并到更接近事实来源的那一处，另一处改成链接。\n\n## 失败模式\n\n- 同一份检查结果在设计文档和验收清单里各写一遍，其中一处忘了更新。\n- 变更记录里重抄验收清单，两边版本号对不上。\n- 为了\"让文档看起来完整\"，每份文档都自成一个世界观。\n\n## 验证证据\n\n- 同一结论在仓库里出现的次数（应当只有一处是正文，其余是链接）。\n- 有没有出现两份互相矛盾的记录。\n\n## 相关资产\n\n- `MTH-DESIGN-DOC-001`（引用）：设计文档不重复写验收证据。\n- `TPL-ACCEPT-001`（引用）：验收记录是证据的默认存放处。\n- `MTH-QUALITY-001`（引用）：门禁结论记在发布记录里，别处引用。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-EVIDENCE-001\ntitle: 证据只记一处\nasset_type: rule\nrule_type: recommended\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - design\n  - build\n  - release\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - AGENTS.md（\"同一次发现只写进验收清单或决策记录中的一处，其他文档放链接引用\"）\n  - docs/acceptance/（每版只在一处记录检查结果，文档之间用链接引用）\n  - docs/decisions/（技术选择的结论记在决策记录里，别处只引用）\nsource_references:\n  - docs/development-rules.md\n  - docs/INDEX.md\nrelated_assets:\n  - MTH-DESIGN-DOC-001\n  - TPL-ACCEPT-001\n  - MTH-QUALITY-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- AGENTS.md（\"同一次发现只写进验收清单或决策记录中的一处，其他文档放链接引用\"）\n- docs/acceptance/（每版只在一处记录检查结果，文档之间用链接引用）\n- docs/decisions/（技术选择的结论记在决策记录里，别处只引用）\n- docs/development-rules.md\n- docs/INDEX.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-EVIDENCE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 同一份检查结果在设计文档和验收清单里各写一遍，其中一处忘了更新。 - 变更记录里重抄验收清单，两边版本号对不上。 - 为了\"让文档看起来完整\"，每份文档都自成一个世界观。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-design-doc-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-asset-layer-001",
+      "assetType": "rule",
+      "title": "资产分三层：方法参考、项目实例、可复用骨架",
+      "summary": "沉淀物必须分清三层，混在一起就会出现\"两份内容在维护同一件事\"：",
+      "content": "# 资产分三层：方法参考、项目实例、可复用骨架\n\n## 核心结论\n\n沉淀物必须分清三层，混在一起就会出现\"两份内容在维护同一件事\"：\n\n1. **方法参考**（跨项目复用）：怎么做、什么条件下适用、失败模式——画像、案例、方法说明。\n2. **项目实例**（只对当前项目成立）：这次的需求、这次的实现规格、这次的验收记录。\n3. **可复用骨架**（换项目还能用，但要填变量）：模板、清单、提示词。\n\n同一份内容只能属于一层。判断口诀：**\"换了项目还成立吗\"**——成立就是方法参考，\"换项目就\n不成立\"是项目实例，\"换个项目还能当起点但要重填\"是可复用骨架。\n\n## 使用条件\n\n- 公共资产库和项目资产库开始出现同名或高度相似内容时。\n- 把项目里的产物\"升\"到公共库之前。\n\n## 不适用场景\n\n- 一次性的临时文件、演练记录：归到项目实例里就行，不用分三层。\n- 只有一份、还没被第二个项目用过的经验：先留在项目里（见 `MTH-SINK-001`）。\n\n## 怎么判断\n\n| 问题 | 答案 | 归到哪一层 |\n| --- | --- | --- |\n| 换项目还成立吗 | 成立 | 方法参考 |\n| 换个项目能当起点、但要重填吗 | 能 | 可复用骨架 |\n| 只对这一次成立吗 | 是 | 项目实例 |\n\n三层同时出现的典型症状：同一个标题在库里有两份，一份在公共库、一份在项目里，改了一处另一处\n不知道——这时应该确定哪一份是正的，另一边改成同源引用。\n\n## 失败模式\n\n- 把项目实例当成通用方法升到公共库，公共库被一次性的细节污染。\n- 把方法参考当成项目文档，改方法等于改这个项目的承诺。\n- 模板里写进某个项目的具体数据，换项目时带着旧事实一起搬走。\n\n## 验证证据\n\n- 公共资产库里是否存在点名某个项目的条目。\n- 项目资产的标题是否和公共库重复且内容雷同。\n\n## 相关资产\n\n- `MTH-SINK-001`（引用）：三层分完之后，往哪边沉淀。\n- `TPL-TECH-001`（引用）：技术档案是典型的项目实例，不是模板正文。\n- `MTH-GATES-001`（引用）：归层判断属于设计门的一部分。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-ASSET-LAYER-001\ntitle: 资产分三层：方法参考、项目实例、可复用骨架\nasset_type: method\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - analysis\n  - build\n  - operate\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/acceptance/v2.13.0.md（把 5 条\"文档类型=模板\"的资产归位成真正的模板，解决\"文档和模板像在维护同一批内容\"）\n  - docs/database-schema.md（参考文档、项目文档、模板在库里是三类资产，不是同一个页签）\n  - docs/user-map.md（\"参考文档\"页签只放方法级参考，项目文档才是\"这次做的事\"）\nsource_references:\n  - docs/requirements-v2.md\n  - docs/operations/database-migrations.md\nrelated_assets:\n  - MTH-SINK-001\n  - MTH-GATES-001\n  - TPL-TECH-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/v2.13.0.md（把 5 条\"文档类型=模板\"的资产归位成真正的模板，解决\"文档和模板像在维护同一批内容\"）\n- docs/database-schema.md（参考文档、项目文档、模板在库里是三类资产，不是同一个页签）\n- docs/user-map.md（\"参考文档\"页签只放方法级参考，项目文档才是\"这次做的事\"）\n- docs/requirements-v2.md\n- docs/operations/database-migrations.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-ASSET-LAYER-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 把项目实例当成通用方法升到公共库，公共库被一次性的细节污染。 - 把方法参考当成项目文档，改方法等于改这个项目的承诺。 - 模板里写进某个项目的具体数据，换项目时带着旧事实一起搬走。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-gates-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-sink-001",
+      "assetType": "rule",
+      "title": "沉淀分流：通用升公共，点名项目留项目",
+      "summary": "项目里攒下来的东西要定期分流：**讲通用约束的升到公共库，点名了本项目/版本号/本机路径的留在 项目里**。分流只给建议和理由，搬不搬要人点一下；提升是**复制**，项目里那份保持不动，两边各记 一条同源关系。",
+      "content": "# 沉淀分流：通用升公共，点名项目留项目\n\n## 核心结论\n\n项目里攒下来的东西要定期分流：**讲通用约束的升到公共库，点名了本项目/版本号/本机路径的留在\n项目里**。分流只给建议和理由，搬不搬要人点一下；提升是**复制**，项目里那份保持不动，两边各记\n一条同源关系。\n\n## 使用条件\n\n- 开新项目之前，先把上一个项目积累的规则、模板、方法升到公共库。\n- 项目里同一条规则在两个项目各自改过一次之后。\n\n## 不适用场景\n\n- 一次性脚本、临时演练记录：不进公共库。\n- 还没被第二个项目验证过的经验：留在项目里，等复用第二次再升。\n- 提示词这类账号级资产：本来就在公共层维护，不参与提升。\n\n## 判断口诀与动作\n\n| 信号 | 判断 | 动作 |\n| --- | --- | --- |\n| 出现\"必须／禁止／一律／统一／任何项目\" | 通用约束 | 建议升公共 |\n| 只有一条规则、换项目还成立 | 方法 | 建议升公共 |\n| 正文点名了本项目名称 | 项目专属 | 留在项目 |\n| 带版本号（v2.x）、带本机绝对路径 | 项目专属 | 留在项目 |\n| 看不出通用性 | 不确定 | 先留项目，复用第二次再升 |\n\n配套动作：升的时候在两边记\"同源\"；公共库那份改过之后，打开项目那份能看到\"上游改过\"的提示，\n拉取是**显式动作**（拉完产生新版本，旧正文留在历史里），不自动覆盖。\n\n## 失败模式\n\n- 项目里改过的规则不升公共，下个项目从旧版本重新踩一遍。\n- 把带着本项目名称和路径的规则升到公共库，别的项目装进去全是噪音。\n- 两边同时改、又想让它们自动合并，最后谁也不知道哪份是对的。\n- 提升时原地改写项目那份，项目里丢了本项目的口径。\n\n## 验证证据\n\n- 公共资产库里凡点名项目的条目数量（应当为 0）。\n- 项目详情里的\"同源\"关系与上游更新时间提示。\n- 提升动作是否只新增、不删除（旧内容仍在版本记录里）。\n\n## 相关资产\n\n- `MTH-ASSET-LAYER-001`（引用）：先分层，再决定往哪边沉淀。\n- `MTH-EVIDENCE-001`（引用）：沉淀后的结论只记一处。\n- `MTH-GATES-001`（引用）：提升属于会改变公共约定的动作，走设计门。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-SINK-001\ntitle: 沉淀分流：通用升公共，点名项目留项目\nasset_type: method\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: provisional\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence:\n  - docs/acceptance/v2.14.0.md（提升为公共资产：公共库多一份副本、两边记\"同源\"、项目那份不动）\n  - docs/acceptance/v2.16.0.md（分流建议：讲通用约束的→建议升，点名项目/带版本号/带本机路径的→建议留）\n  - CHANGELOG.md（v2.14.0 与 v2.16.0 两条沉淀链路的边界说明）\nsource_references:\n  - docs/project-lifecycle-gaps.md\n  - docs/superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md\nrelated_assets:\n  - MTH-ASSET-LAYER-001\n  - MTH-EVIDENCE-001\n  - MTH-GATES-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- docs/acceptance/v2.14.0.md（提升为公共资产：公共库多一份副本、两边记\"同源\"、项目那份不动）\n- docs/acceptance/v2.16.0.md（分流建议：讲通用约束的→建议升，点名项目/带版本号/带本机路径的→建议留）\n- CHANGELOG.md（v2.14.0 与 v2.16.0 两条沉淀链路的边界说明）\n- docs/project-lifecycle-gaps.md\n- docs/superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md",
+        "verification": "人工核对",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-SINK-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 项目里改过的规则不升公共，下个项目从旧版本重新踩一遍。 - 把带着本项目名称和路径的规则升到公共库，别的项目装进去全是噪音。 - 两边同时改、又想让它们自动合并，最后谁也不知道哪份是对的。 - 提升时原地改写项目那份，项目里丢了本项目的口径。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-asset-layer-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-gates-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-ai-write-001",
+      "assetType": "rule",
+      "title": "AI 写入边界：只新增与更新、留版本、不静默覆盖",
+      "summary": "AI 对数据的写入必须满足三条：**只新增或更新，不删除**；**每次写入都留一条历史版本**； **生成、优化、合并的结果先预览，由人确认后再保存**。禁止静默覆盖——人看不见的改动等于没被 同意过。",
+      "content": "# AI 写入边界：只新增与更新、留版本、不静默覆盖\n\n## 核心结论\n\nAI 对数据的写入必须满足三条：**只新增或更新，不删除**；**每次写入都留一条历史版本**；\n**生成、优化、合并的结果先预览，由人确认后再保存**。禁止静默覆盖——人看不见的改动等于没被\n同意过。\n\n## 使用条件\n\n- 任何让 AI 直接读写业务数据的通道（编辑器里的 AI 动作、本地服务、接口工具）。\n- 批量入库、批量关联、批量状态变更这类一次影响多条数据的操作。\n\n## 不适用场景\n\n- 只读查询：不进这条边界，但查询结果会进入对话上下文，要按数据敏感度判断。\n- 人自己在界面上做的删除：走产品的垃圾箱与保留期规则，不在这条约束里。\n\n## 边界清单\n\n| 能力 | 允许 | 不允许 |\n| --- | --- | --- |\n| 新建 | 允许（只新增，重复时跳过并说明原因） | 不许覆盖同名条目的正文 |\n| 修改 | 允许（产生新版本，旧正文可恢复） | 不许只改主表、不留版本 |\n| 状态 | 允许归档、待确认、已废弃 | 不许永久删除、不许清空垃圾箱 |\n| 批量 | 允许先空跑列出会改哪些、再确认执行 | 不许先斩后奏、不许跳过确认 |\n\n还要守住两条数据纪律：**密钥不进入浏览器代码和版本库**；**业务正文不写进日志**。\n\n## 失败模式\n\n- 让 AI 直接改正文又不留版本，改错了回不去。\n- 批量导入时\"看到同名的就覆盖\"，人自己改过的内容被悄悄冲掉。\n- 用\"更自然\"的理由跳过预览，等人发现时已经改了一批数据。\n- 把删除能力也开放给 AI，误删之后连回溯线索都没有。\n\n## 验证证据\n\n- 每次写入是否产生一条版本记录。\n- 批量操作是否支持\"先空跑、后确认\"。\n- 开放给 AI 的能力清单里是否存在删除类动作（应当没有）。\n\n## 相关资产\n\n- `RULE-BOUNDARY-001`（引用）：接口契约与数据所有权，是这条边界在数据层的版本。\n- `MTH-SINK-001`（引用）：沉淀提升同样是\"只新增不覆盖\"。\n- `MTH-QUALITY-001`（引用）：这类边界要靠门禁和测试固定，不能靠自觉。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-AI-WRITE-001\ntitle: AI 写入边界：只新增与更新、留版本、不静默覆盖\nasset_type: rule\nrule_type: forbidden\npurpose: safety\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: provisional\noverride_allowed: false\ncompile_target:\n  - agents\nverification: gate\nevidence:\n  - AGENTS.md（\"AI 不得静默覆盖我的内容；AI 生成、优化、合并的结果必须先预览，由我确认后再保存\"）\n  - docs/operations/mcp-server.md（MCP 开放的能力清单里没有删除类工具，AI 能做的永远只是人在界面上能做的）\n  - docs/acceptance/v2.16.0.md（批量入库只新增、不覆盖：同编号跳过、节点说明必填）\nsource_references:\n  - docs/decisions/0006-ai-provider-abstraction.md\n  - docs/decisions/0007-production-configuration-hardening.md\nrelated_assets:\n  - RULE-BOUNDARY-001\n  - MTH-SINK-001\n  - MTH-QUALITY-001\nversion: 0.1.0\nlast_reviewed: 2026-09-24\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "none",
+        "evidence": "- AGENTS.md（\"AI 不得静默覆盖我的内容；AI 生成、优化、合并的结果必须先预览，由我确认后再保存\"）\n- docs/operations/mcp-server.md（MCP 开放的能力清单里没有删除类工具，AI 能做的永远只是人在界面上能做的）\n- docs/acceptance/v2.16.0.md（批量入库只新增、不覆盖：同编号跳过、节点说明必填）\n- docs/decisions/0006-ai-provider-abstraction.md\n- docs/decisions/0007-production-configuration-hardening.md",
+        "verification": "门禁检查",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-AI-WRITE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- 让 AI 直接改正文又不留版本，改错了回不去。 - 批量导入时\"看到同名的就覆盖\"，人自己改过的内容被悄悄冲掉。 - 用\"更自然\"的理由跳过预览，等人发现时已经改了一批数据。 - 把删除能力也开放给 AI，误删之后连回溯线索都没有。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-quality-001",
             "relationType": "reference",
             "note": "包内关联"
           }

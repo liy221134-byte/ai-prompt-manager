@@ -79,10 +79,11 @@ try {
           `需求 ${countOf("需求")}、数据 ${countOf("数据")}、测试 ${countOf("测试")}`,
   );
 
-  // 想看某个节点的影响分析：npm run mcp:check -- --node MOD-src/lib/server
+  // 想看某个节点的影响分析：npm run mcp:check -- --node REQ-008
+  // （默认示例用文档型图谱里的需求节点；代码扫描出来的节点默认是归档状态）
   const nodeIndex = process.argv.indexOf("--node");
   const impactNode =
-    nodeIndex >= 0 ? process.argv[nodeIndex + 1] : "API-/api/health/db";
+    nodeIndex >= 0 ? process.argv[nodeIndex + 1] : "REQ-008";
   const impact = readText(
     await client.callTool({
       name: "analyze_impact",

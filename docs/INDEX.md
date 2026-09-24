@@ -87,7 +87,7 @@
 - [工程能力学习计划](learning/engineering-readiness.md)
 - [工程文档模板（九份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线、故障演练记录，用「导入模板」装进项目
 - [操作者训练包（试装）](../seed-packs/operator-training/README.md)：9 条「人怎么指挥 AI」的方法与清单，`npm run pack:operator` 生成可导入文件
-- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：18 条工程方法、规则、模板和案例，`0.3.0`（新增系统化调试一条，来自外部来源采集），可作为文档包导入的样本
+- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：25 条工程方法、规则、模板和案例，`0.4.0`（新增 7 条来自 2.0 开发过程复盘：三道门、版本边界、设计文档四块、证据只记一处、资产三层、沉淀分流、AI 写入边界），可作为文档包导入的样本
 
 ### 验收与测试
 
