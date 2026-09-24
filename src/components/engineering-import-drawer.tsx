@@ -77,6 +77,7 @@ export function EngineeringImportDrawer({
     [],
   );
   const [documentType, setDocumentType] = useState<string>("参考资料");
+  const [documentDirectoryPath, setDocumentDirectoryPath] = useState("");
   // 批次编号在面板打开时生成，一批导入的节点会带上同一个批次
   const [batchId] = useState(
     () => `engineering-import-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -125,6 +126,94 @@ export function EngineeringImportDrawer({
   }
 
   // 项目文档：选一批 Markdown，原样入库，不走 AI
+  function applyDocumentDrafts(files: Array<{ fileName: string; content: string; byteSize: number }>, label: string) {
+    const drafts = buildDocumentImportDrafts({ files, existing: documents });
+
+    if (drafts.length === 0) {
+      setDocumentDrafts([]);
+      setExcludedDocumentNames([]);
+      setErrorMessage("这些文件里没有可导入的文字内容。");
+      return;
+    }
+
+    const duplicates = drafts.filter((draft) => draft.existingAssetId).length;
+
+    setDocumentDrafts(drafts);
+    // 同名文档和超限文件默认不勾选，避免盖掉项目里改过的那份
+    setExcludedDocumentNames(
+      drafts
+        .filter((draft) => draft.existingAssetId || draft.tooLarge)
+        .map((draft) => draft.fileName),
+    );
+    setStatusText(
+      `${label}，共 ${drafts.length} 份文档` +
+        (duplicates > 0
+          ? `，其中 ${duplicates} 份项目里已有同名文档，默认不导入。`
+          : "。"),
+    );
+  }
+
+  // 扫本机目录（本机模式）：把目录里的 Markdown 一次读出来当文档草稿
+  async function handleScanDocumentDirectory() {
+    setErrorMessage(null);
+    setStatusText(null);
+
+    if (dataMode !== "local") {
+      setErrorMessage("云端模式读不到你的本机目录，请在本机运行时再扫。");
+      return;
+    }
+
+    if (!documentDirectoryPath.trim()) {
+      setErrorMessage("先填写要扫描的目录，例如 E:\\codeX项目\\docs。");
+      return;
+    }
+
+    setIsBusy(true);
+    setStatusText("正在扫描文档目录…");
+
+    try {
+      const response = await fetch("/api/document-scan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ path: documentDirectoryPath.trim() }),
+      });
+      const body = (await response.json().catch(() => null)) as
+        | {
+            files?: Array<{
+              fileName: string;
+              relativePath: string;
+              content: string;
+              byteSize: number;
+            }>;
+            error?: string;
+          }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(body?.error ?? "扫描文档目录失败。");
+      }
+
+      const files = body?.files ?? [];
+
+      if (files.length === 0) {
+        setDocumentDrafts([]);
+        setExcludedDocumentNames([]);
+        setStatusText(null);
+        setErrorMessage("这个目录里没有扫到 Markdown 或纯文本文件。");
+        return;
+      }
+
+      applyDocumentDrafts(files, `扫描到 ${files.length} 份文档`);
+    } catch (error) {
+      setDocumentDrafts([]);
+      setExcludedDocumentNames([]);
+      setStatusText(null);
+      setErrorMessage(readErrorMessage(error));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   async function handleDocumentFiles(fileList: FileList | null) {
     setErrorMessage(null);
     setStatusText(null);
@@ -143,31 +232,7 @@ export function EngineeringImportDrawer({
           byteSize: file.size,
         })),
       );
-      const drafts = buildDocumentImportDrafts({
-        files: read,
-        existing: documents,
-      });
-
-      if (drafts.length === 0) {
-        setDocumentDrafts([]);
-        setExcludedDocumentNames([]);
-        setErrorMessage("这些文件里没有可导入的文字内容。");
-        return;
-      }
-
-      const duplicates = drafts.filter((draft) => draft.existingAssetId).length;
-
-      setDocumentDrafts(drafts);
-      // 同名文档默认不勾选，避免把项目里改过的那份盖掉
-      setExcludedDocumentNames(
-        drafts
-          .filter((draft) => draft.existingAssetId || draft.tooLarge)
-          .map((draft) => draft.fileName),
-      );
-      setStatusText(
-        `读到 ${drafts.length} 份文档` +
-          (duplicates > 0 ? `，其中 ${duplicates} 份项目里已经有同名文档，默认不导入。` : "。"),
-      );
+      applyDocumentDrafts(read, "选好了");
     } catch {
       setErrorMessage("读取文件失败，换一批试试。");
     }
@@ -463,6 +528,30 @@ export function EngineeringImportDrawer({
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <input
+                  className={inputClassName}
+                  disabled={dataMode !== "local" || isBusy}
+                  onChange={(event) => {
+                    setDocumentDirectoryPath(event.target.value);
+                  }}
+                  placeholder="E:\\codeX项目\\docs"
+                  value={documentDirectoryPath}
+                />
+                <button
+                  className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-teal-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={dataMode !== "local" || isBusy}
+                  onClick={() => void handleScanDocumentDirectory()}
+                  type="button"
+                >
+                  扫描文档目录
+                </button>
+              </div>
+              {dataMode !== "local" && (
+                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  云端模式读不到你的本机目录；扫目录要跑在本机，云端只能一个个选文件。
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input
                   accept=".sql,text/plain"
                   aria-label="选择 SQL 文件"
                   className="hidden"
@@ -495,7 +584,7 @@ export function EngineeringImportDrawer({
                 )}
               </div>
             </section>
-          ) : (
+          ) : source === "code" ? (
             <section key="code">
               <p className="text-sm text-slate-600">
                 填本机代码目录的绝对路径，扫出「模块」和「接口」节点草稿。
@@ -527,7 +616,7 @@ export function EngineeringImportDrawer({
                 </button>
               </div>
             </section>
-          )}
+          ) : null}
 
           {source === "documents" && (
             <section key="documents">
@@ -598,7 +687,7 @@ export function EngineeringImportDrawer({
             </p>
           )}
 
-          {candidates.length > 0 && (
+          {source !== "documents" && candidates.length > 0 && (
             <section className="mt-5">
               <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-sm font-semibold text-slate-700">
