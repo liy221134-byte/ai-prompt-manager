@@ -38,6 +38,7 @@
 
 ### 设计
 
+- [v2.17.0 项目资产两条链路设计（待确认）](superpowers/specs/2026-09-24-v2.17.0-asset-lanes-design.md)
 - [v2.15.0 立项起步包设计](superpowers/specs/2026-09-24-v2.15.0-kickoff-pack-design.md)
 - [v2.14.0 沉淀回流设计](superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md)
 - [v2.13.0 关联录入与用法引导设计（待确认）](superpowers/specs/2026-09-24-v2.13.0-linking-and-guidance-design.md)
