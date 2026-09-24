@@ -528,30 +528,6 @@ export function EngineeringImportDrawer({
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <input
-                  className={inputClassName}
-                  disabled={dataMode !== "local" || isBusy}
-                  onChange={(event) => {
-                    setDocumentDirectoryPath(event.target.value);
-                  }}
-                  placeholder="E:\\codeX项目\\docs"
-                  value={documentDirectoryPath}
-                />
-                <button
-                  className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-teal-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={dataMode !== "local" || isBusy}
-                  onClick={() => void handleScanDocumentDirectory()}
-                  type="button"
-                >
-                  扫描文档目录
-                </button>
-              </div>
-              {dataMode !== "local" && (
-                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  云端模式读不到你的本机目录；扫目录要跑在本机，云端只能一个个选文件。
-                </p>
-              )}
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <input
                   accept=".sql,text/plain"
                   aria-label="选择 SQL 文件"
                   className="hidden"
@@ -625,6 +601,30 @@ export function EngineeringImportDrawer({
                 <strong className="font-semibold">原样</strong>建成文档资产：标题取文件名，正文就是原文，
                 不经过 AI。同名文档默认不导入，避免盖掉项目里改过的那份。
               </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input
+                  className={inputClassName}
+                  disabled={dataMode !== "local" || isBusy}
+                  onChange={(event) => {
+                    setDocumentDirectoryPath(event.target.value);
+                  }}
+                  placeholder="E:\\codeX项目\\docs"
+                  value={documentDirectoryPath}
+                />
+                <button
+                  className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-teal-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={dataMode !== "local" || isBusy}
+                  onClick={() => void handleScanDocumentDirectory()}
+                  type="button"
+                >
+                  扫描文档目录
+                </button>
+              </div>
+              {dataMode !== "local" && (
+                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  云端模式读不到你的本机目录；扫目录要跑在本机，云端只能一个个选文件。
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <input
                   accept=".md,.markdown,.txt,text/markdown,text/plain"
