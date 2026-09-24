@@ -648,6 +648,92 @@ function isRuleAssetMetadata(value: unknown): value is RuleAssetMetadata {
   );
 }
 
+// 给导入报错用：指出第一个不对的字段。
+// 只报「数据无法识别」的话，手写或外部生成的包根本不知道改哪里。
+export function findAssetDataProblem(value: unknown): string | null {
+  if (isAssetData(value)) {
+    return null;
+  }
+
+  if (!isRecord(value)) {
+    return "资产内容不是对象";
+  }
+
+  if (!isAssetBase(value)) {
+    return "缺少资产的基础字段（标识、项目、类型、标题、正文或时间）";
+  }
+
+  if (!assetTypes.includes(value.assetType as AssetType)) {
+    return `不认识这种资产类型：${String(value.assetType)}`;
+  }
+
+  if (value.assetType === "rule") {
+    return findRuleMetadataProblem(value.metadata);
+  }
+
+  return "资产的元数据不符合当前版本的结构";
+}
+
+function findRuleMetadataProblem(value: unknown): string | null {
+  if (!isRecord(value)) {
+    return "规则元数据不是对象";
+  }
+
+  if (!ruleTypes.includes(value.ruleType as RuleType)) {
+    return `规则类型（ruleType）取值不认识：${String(value.ruleType)}`;
+  }
+
+  if (!ruleScopes.includes(value.scope as RuleScope)) {
+    return `适用范围（scope）取值不认识：${String(value.scope)}`;
+  }
+
+  if (!isOptionalEnum(value.level, ruleLevels)) {
+    return `作用层级（level）取值不认识：${String(value.level)}`;
+  }
+
+  if (!isOptionalEnum(value.stage, ruleStages)) {
+    return `执行阶段（stage）取值不认识：${String(value.stage)}（可选值：${ruleStages.join("、")}）`;
+  }
+
+  if (!isOptionalEnum(value.priority, rulePriorities)) {
+    return `优先级（priority）取值不认识：${String(value.priority)}`;
+  }
+
+  if (!isOptionalEnum(value.lifecycle, ruleLifecycles)) {
+    return `生命周期（lifecycle）取值不认识：${String(value.lifecycle)}`;
+  }
+
+  if (!isOptionalEnum(value.overrideScope, ruleOverrideScopes)) {
+    return `覆盖权限（overrideScope）取值不认识：${String(value.overrideScope)}`;
+  }
+
+  if (!isOptionalEnum(value.confidence, ruleConfidences)) {
+    return `可信度（confidence）取值不认识：${String(value.confidence)}`;
+  }
+
+  if (!isOptionalEnumList(value.compileTarget, compileTargets)) {
+    return "编译去向（compileTarget）里有不认识的取值";
+  }
+
+  if (!isOptionalCompileDecision(value.compileDecision)) {
+    return "编译裁决（compileDecision）结构不正确";
+  }
+
+  if (!isOptionalPackLink(value.pack)) {
+    return "来源包信息（pack）不完整";
+  }
+
+  if (!isOptionalStringList(value.techContext)) {
+    return "技术上下文（techContext）应该是字符串数组";
+  }
+
+  if (!isOptionalRelations(value.relations)) {
+    return "关系（relations）结构不正确";
+  }
+
+  return "规则元数据不符合当前版本的结构";
+}
+
 function isRulePackAssetMetadata(
   value: unknown,
 ): value is RulePackAssetMetadata {

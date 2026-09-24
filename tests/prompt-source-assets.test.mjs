@@ -222,3 +222,22 @@ test("云端资产版本查询会映射版本字段", async () => {
   assert.equal(versions[0].versionReason, "initial");
   assert.deepEqual(versions[0].sourceAssetIds, []);
 });
+
+test("一行读不出来时跳过它，其余资产照常显示", async () => {
+  const brokenRow = {
+    ...createAssetRow(),
+    id: "rule-broken",
+    title: "手写的坏规则",
+    // stage 填了一个产品不认识的取值：以前这一行会让整个列表读不出来
+    metadata_json: { ruleType: "must", scope: "project", stage: "build" },
+  };
+  const fake = createFakeClient({
+    assetRows: [brokenRow, createAssetRow()],
+  });
+  const dataSource = createSupabasePromptDataSource(fake.client);
+
+  const assets = await dataSource.fetchAssets();
+
+  assert.equal(assets.length, 1);
+  assert.equal(assets[0].id, "rule-1");
+});

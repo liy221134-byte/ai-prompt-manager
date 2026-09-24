@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   createRulePackFileFromSelection,
   createSampleRulePackFile,
+  planRulePackImport,
   readAssetPackLink,
 } from "../src/lib/rule-pack.ts";
 import { parseRulePackFile } from "../src/lib/seed-pack-import.ts";
@@ -95,4 +96,38 @@ test("打包选中的资产：编号按勾选顺序补，已有包内编号的�
     links.map((link) => link?.packItemId),
     ["PACK-001", "OLD-007"],
   );
+});
+
+test("成员字段不对时当场报是哪一条、哪个字段，而不是写进库再读不出来", () => {
+  const sample = createSampleRulePackFile("2026-09-24T00:00:00.000Z");
+  const broken = {
+    ...sample,
+    members: sample.members.map((member) => ({
+      ...member,
+      metadata: { ...member.metadata, stage: "build" },
+    })),
+  };
+
+  assert.throws(
+    () =>
+      planRulePackImport({
+        file: broken,
+        existingAssets: [],
+        targetProjectId: "project-1",
+        now: "2026-09-24T00:00:00.000Z",
+      }),
+    /不能装：执行阶段（stage）取值不认识：build/,
+  );
+});
+
+test("示例规则包能通过装载前的资产结构校验", () => {
+  const plan = planRulePackImport({
+    file: createSampleRulePackFile("2026-09-24T00:00:00.000Z"),
+    existingAssets: [],
+    targetProjectId: "project-1",
+    now: "2026-09-24T00:00:00.000Z",
+  });
+
+  assert.equal(plan.assetsToCreate.length, 1);
+  assert.equal(plan.packAsset?.title, "示例规则包");
 });

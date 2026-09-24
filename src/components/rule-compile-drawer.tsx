@@ -198,6 +198,10 @@ export function RuleCompileDrawer({
             <h3 className="text-sm font-semibold text-slate-700">
               参与编译的规则
             </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              这里列出的就是这次会写进产物的规则。不想要的点它右边的「排除这条」，
+              它会挪到下面的「已排除」里，随时能恢复参与。
+            </p>
             {candidates.included.length === 0 ? (
               <p className="mt-2 text-sm text-slate-500">
                 这个项目还没有可以参与编译的活跃规则。
@@ -211,23 +215,11 @@ export function RuleCompileDrawer({
                   <ul className="mt-1 flex flex-col divide-y divide-slate-100">
                     {group.rules.map((rule) => (
                       <li className="flex items-start gap-3 py-2" key={rule.id}>
-                        <input
-                          aria-label={`让「${rule.title}」参与编译`}
-                          checked
-                          className="mt-1 size-4 accent-indigo-600"
-                          disabled={isLocked}
-                          id={`compile-rule-${rule.id}`}
-                          onChange={() => {
-                            void runAction(`rule-${rule.id}`, () =>
-                              onExcludeRule(rule, "在编译面板里排除"),
-                            );
-                          }}
-                          type="checkbox"
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 size-4 shrink-0 rounded border border-emerald-300 bg-emerald-50"
                         />
-                        <label
-                          className="min-w-0 flex-1 cursor-pointer"
-                          htmlFor={`compile-rule-${rule.id}`}
-                        >
+                        <span className="min-w-0 flex-1">
                           <span className="block text-sm font-medium text-slate-800">
                             {rule.title}
                           </span>
@@ -243,7 +235,21 @@ export function RuleCompileDrawer({
                               .filter(Boolean)
                               .join(" · ")}
                           </span>
-                        </label>
+                        </span>
+                        <button
+                          className="shrink-0 rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-rose-300 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={
+                            isBusy || busyKey === `rule-${rule.id}`
+                          }
+                          onClick={() => {
+                            void runAction(`rule-${rule.id}`, () =>
+                              onExcludeRule(rule, "在编译面板里排除"),
+                            );
+                          }}
+                          type="button"
+                        >
+                          排除这条
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -313,6 +319,10 @@ export function RuleCompileDrawer({
               选模板后，主产物按模板结构生成：项目名、项目说明和技术栈自动填，
               <code className="mx-1 rounded bg-slate-100 px-1">{"{{规则集}}"}</code>
               位置插入规则段落；START_PROMPT.md 保持内置结构。
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              下拉里的模板来自「公共资产 → 更多 → 导入模板」：先把 Markdown 模板导进库，
+              这里就能选；不选就是内置结构。
             </p>
             {rulesAppended && (
               <p className="mt-2 text-xs leading-5 text-amber-700">

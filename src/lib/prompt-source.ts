@@ -429,7 +429,21 @@ export function createSupabasePromptDataSource(
       throw new Error("读取云端资产失败。");
     }
 
-    return (data as SupabaseAssetRow[]).map(rowToAsset);
+    // 一行读不出来不能让整库都打不开：跳过它并留下告警，其余资产照常显示。
+    // （2026-09-24 实测：一条字段不合法的手工规则把整个资产列表拖挂了）
+    return (data as SupabaseAssetRow[])
+      .map((row) => {
+        try {
+          return rowToAsset(row);
+        } catch (rowError) {
+          console.warn(
+            `跳过读不出来的资产：${row.id}（类型 ${row.asset_type}）`,
+            rowError,
+          );
+          return null;
+        }
+      })
+      .filter((asset): asset is AssetData => asset !== null);
   }
 
   // 提示词现在存在统一资产里，读取时按类型过滤再翻译回提示词结构。

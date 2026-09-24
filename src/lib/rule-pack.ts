@@ -3,6 +3,7 @@
 
 import {
   createInitialAssetVersionId,
+  findAssetDataProblem,
   isAssetRelationList,
   type AssetData,
   type AssetPackLink,
@@ -279,8 +280,8 @@ export function createSampleRulePackFile(now: string): RulePackFile {
         scope: "project",
         purpose: "协作",
         techContext: ["generic"],
-        stage: "build",
-        priority: "p1",
+        stage: "implement",
+        priority: "should",
         overrideScope: "project",
         evidence: "示例包，没有证据。",
         verification: "人工核对",
@@ -406,6 +407,18 @@ export function planRulePackInstall(input: {
       updatedAt: input.now,
     } as AssetData;
   });
+
+  // 装之前先按产品自己的资产结构过一遍：外部生成或手写的包字段不对时，
+  // 当场说明是哪一条、哪个字段，而不是先写进库再读不出来。
+  for (const asset of assetsToCreate) {
+    const problem = findAssetDataProblem(asset);
+
+    if (problem) {
+      throw new Error(
+        `规则包里的「${asset.title}」不能装：${problem}。对照《规则包格式说明》补齐后再导入。`,
+      );
+    }
+  }
 
   return { assetsToCreate, skipped };
 }
