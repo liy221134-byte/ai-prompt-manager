@@ -19,6 +19,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  Sparkles,
   ShieldCheck,
   Target,
   Trash2,
@@ -40,6 +41,8 @@ import { AssetCard } from "@/components/asset-card";
 import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
+import { SedimentCheckupDrawer } from "@/components/sediment-checkup-drawer";
+import { SedimentDiffDialog } from "@/components/sediment-diff-dialog";
 import { PublicAssetPickerDrawer } from "@/components/public-asset-picker-drawer";
 import { RulePackCreateDialog } from "@/components/rule-pack-create-dialog";
 import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
@@ -101,6 +104,7 @@ import type {
   GraphNodeType,
   RuleAssetData,
 } from "@/data/assets";
+import { createInitialAssetVersionId } from "@/data/assets";
 import {
   DEFAULT_PROJECT_ID,
   archiveProject,
@@ -158,6 +162,11 @@ import {
   createAssetVersionId,
 } from "@/lib/asset-versions";
 import { groupDocumentsByStage } from "@/lib/document-flow";
+import {
+  listSedimentCheckup,
+  planPromoteToPublic,
+  readUpstreamState,
+} from "@/lib/sediment-flowback";
 import {
   loadLastBackupAt,
   loadStoredPromptLibrary,
@@ -325,6 +334,12 @@ export function PromptLibrary({
   const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
   const [isRulePackCreateOpen, setIsRulePackCreateOpen] = useState(false);
   const [isPublicAssetPickerOpen, setIsPublicAssetPickerOpen] = useState(false);
+  const [isSedimentCheckupOpen, setIsSedimentCheckupOpen] = useState(false);
+  const [sedimentDiff, setSedimentDiff] = useState<{
+    title: string;
+    currentContent: string;
+    upstreamContent: string;
+  } | null>(null);
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [compileTemplateId, setCompileTemplateId] = useState("");
   const [isGraphViewOpen, setIsGraphViewOpen] = useState(false);
@@ -1699,6 +1714,120 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
   }
 
   // 文档 → 另存为模板：进公共资产库的模板层（正文原样复制，占位符自己改）
+  // 项目资产 → 提升为公共资产：公共库多一份副本，两边都记「同源」，项目那份不动
+  async function handlePromoteAssetToPublic(asset: AssetData) {
+    if (!isEditableAssetData(asset)) {
+      return;
+    }
+
+    const projectName =
+      projects.find((project) => project.id === asset.projectId)?.name ?? "项目";
+    const plan = planPromoteToPublic({
+      asset,
+      projectName,
+      createId: () => createAssetId(asset.assetType as EditableAssetType),
+    });
+
+    if (plan.kind === "skipped") {
+      notify(plan.reason);
+      return;
+    }
+
+    const draft = assetToDraft(asset);
+    const now = new Date().toISOString();
+
+    try {
+      const publicAsset = {
+        ...asset,
+        id: plan.publicAssetId,
+        projectId: DEFAULT_PROJECT_ID,
+        currentVersionId: createInitialAssetVersionId(plan.publicAssetId),
+        metadata: {
+          ...asset.metadata,
+          relations: [
+            ...draft.relations,
+            {
+              key: `relation-${plan.publicAssetId}-${asset.id}`,
+              ...plan.publicRelation,
+            },
+          ],
+        },
+        source: {
+          sourceType: "manual" as const,
+          sourceAssetId: asset.id,
+          importBatchId: null,
+          originalFilename: null,
+        },
+        archivedAt: null,
+        deletedAt: null,
+        deletedReason: null,
+        createdAt: now,
+        updatedAt: now,
+      } as AssetData;
+
+      await dataSource.createAsset({
+        asset: publicAsset,
+        versionId: publicAsset.currentVersionId,
+        changeReason: `提升为公共资产（来自「${projectName}」）`,
+        versionReason: "initial",
+      });
+
+      // 项目这条补一条指向公共那条的同源关系，两边以后能互相找到
+      await dataSource.updateAsset(
+        buildUpdateAssetInput(
+          asset,
+          {
+            ...draft,
+            relations: [
+              ...draft.relations,
+              {
+                key: `relation-${asset.id}-${plan.publicAssetId}`,
+                ...plan.projectRelation,
+                targetAssetId: plan.publicAssetId,
+              },
+            ],
+          },
+          { versionId: createAssetVersionId(), now },
+        ),
+      );
+
+      await reloadAssets();
+      setAssetDetailId(null);
+      notify(`已提升为公共资产：${asset.title}（公共库多了一份副本，这条保持不动）`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "提升失败");
+    }
+  }
+
+  // 拉取公共版本：把公共那份的标题、摘要和正文带过来，产生一条新版本
+  async function handlePullUpstreamVersion(asset: AssetData, upstream: AssetData) {
+    if (!isEditableAssetData(asset)) {
+      return;
+    }
+
+    const draft = assetToDraft(asset);
+
+    try {
+      await dataSource.updateAsset(
+        buildUpdateAssetInput(
+          asset,
+          {
+            ...draft,
+            title: upstream.title,
+            summary: upstream.summary,
+            content: upstream.content,
+          },
+          { versionId: createAssetVersionId(), now: new Date().toISOString() },
+        ),
+      );
+      await reloadAssets();
+      setAssetDetailId(null);
+      notify("已按公共库那份更新；旧正文留在版本记录里，可以恢复");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "拉取失败");
+    }
+  }
+
   // 工程基线缺某类文档时，可以把已有文档标记成那个类型，而不是再建一份
   // 项目图谱里批量挂文档：给选中的节点各加一条「引用」关系，已经挂过的跳过
   async function handleLinkDocumentToNodes(input: {
@@ -2160,6 +2289,40 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       ),
     [listEntries],
   );
+  const projectNameById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project.name])),
+    [projects],
+  );
+  // 沉淀体检（只读）：只在打开面板时才算，避免每次渲染都遍历
+  const sedimentCheckup = useMemo(
+    () =>
+      isSedimentCheckupOpen
+        ? listSedimentCheckup({
+            assets,
+            publicProjectId: DEFAULT_PROJECT_ID,
+            projects: projects.map((project) => ({
+              id: project.id,
+              name: project.name,
+            })),
+            now: new Date().toISOString(),
+          })
+        : null,
+    [assets, isSedimentCheckupOpen, projects],
+  );
+  // 详情抽屉里要显示的「公共库那份更新过」提示
+  const detailUpstream = useMemo(() => {
+    if (!detailAsset) {
+      return null;
+    }
+
+    const state = readUpstreamState({
+      asset: detailAsset,
+      projectName: projectNameById.get(detailAsset.projectId) ?? "",
+      assets,
+    });
+
+    return state.hasUpdate && state.upstream ? state.upstream : null;
+  }, [assets, detailAsset, projectNameById]);
 
   return (
     <main className="min-h-screen">
@@ -2582,6 +2745,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                           disabled:
                             isLoading || Boolean(loadError) || !activeProjectId,
                           onSelect: () => setIsRulePackCreateOpen(true),
+                        },
+                        {
+                          key: "sediment-checkup",
+                          label: "沉淀体检",
+                          icon: (
+                            <Sparkles aria-hidden="true" className="size-4" />
+                          ),
+                          disabled: isLoading || Boolean(loadError),
+                          onSelect: () => setIsSedimentCheckupOpen(true),
                         },
                         {
                           key: "trash",
@@ -3078,6 +3250,28 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
         />
       )}
 
+      {isSedimentCheckupOpen && sedimentCheckup && (
+        <SedimentCheckupDrawer
+          checkup={sedimentCheckup}
+          onClose={() => setIsSedimentCheckupOpen(false)}
+          onOpenAsset={(assetId) => {
+            setIsSedimentCheckupOpen(false);
+            setAssetDetailId(assetId);
+          }}
+          onPromote={(asset) => void handlePromoteAssetToPublic(asset)}
+          projectNameById={projectNameById}
+        />
+      )}
+
+      {sedimentDiff && (
+        <SedimentDiffDialog
+          currentContent={sedimentDiff.currentContent}
+          onClose={() => setSedimentDiff(null)}
+          title={sedimentDiff.title}
+          upstreamContent={sedimentDiff.upstreamContent}
+        />
+      )}
+
       {compileOpenedAt && compileCandidates && compileResult && (
         <RuleCompileDrawer
           candidates={compileCandidates}
@@ -3228,11 +3422,35 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           }}
           onNotify={notify}
           onCreateDocumentFromTemplate={handleCreateDocumentFromTemplate}
+          onPromoteToPublic={(asset) => void handlePromoteAssetToPublic(asset)}
           onSaveDocumentAsTemplate={(asset) =>
             void handleSaveDocumentAsTemplate(asset)
           }
           onRestore={handleAssetRestore}
           onUpdateStatus={handleAssetStatusChange}
+          upstreamNotice={
+            detailUpstream
+              ? {
+                  updatedAt: detailUpstream.updatedAt,
+                  onViewDiff: () => {
+                    if (!detailAsset) {
+                      return;
+                    }
+
+                    setSedimentDiff({
+                      title: detailAsset.title,
+                      currentContent: detailAsset.content,
+                      upstreamContent: detailUpstream.content,
+                    });
+                  },
+                  onPull: () => {
+                    if (detailAsset) {
+                      void handlePullUpstreamVersion(detailAsset, detailUpstream);
+                    }
+                  },
+                }
+              : null
+          }
         />
       )}
 

@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  ArrowUpToLine,
   CopyPlus,
   ChevronDown,
   ChevronUp,
@@ -60,6 +61,14 @@ type AssetDetailDrawerProps = {
   onCreateDocumentFromTemplate?: (asset: AssetData) => void;
   // 文档 → 另存为模板（进公共资产库的模板层）
   onSaveDocumentAsTemplate?: (asset: AssetData) => void;
+  // 项目资产 → 提升为公共资产
+  onPromoteToPublic?: (asset: AssetData) => void;
+  // 公共库那份更新过时的提示与两个动作
+  upstreamNotice?: {
+    updatedAt: string;
+    onViewDiff: () => void;
+    onPull: () => void;
+  } | null;
   onRestore: (
     asset: EditableAssetData,
     version: AssetVersionData,
@@ -212,6 +221,8 @@ export function AssetDetailDrawer({
   onEdit,
   onCreateDocumentFromTemplate,
   onSaveDocumentAsTemplate,
+  onPromoteToPublic,
+  upstreamNotice,
   onRestore,
   onUpdateStatus,
   onNotify,
@@ -387,6 +398,18 @@ export function AssetDetailDrawer({
                 <CopyPlus aria-hidden="true" className="size-5" />
               </button>
             )}
+            {onPromoteToPublic && (
+              <button
+                aria-label="提升为公共资产"
+                className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isBusy}
+                onClick={() => onPromoteToPublic(asset)}
+                title="提升为公共资产（复制一份进公共资产库）"
+                type="button"
+              >
+                <ArrowUpToLine aria-hidden="true" className="size-5" />
+              </button>
+            )}
             <button
               aria-label={`编辑${typeLabel}`}
               className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
@@ -432,6 +455,34 @@ export function AssetDetailDrawer({
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-6">
+          {upstreamNotice && (
+            <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm font-semibold text-amber-900">
+                公共库那份在这之后改过
+              </p>
+              <p className="mt-1 text-xs leading-5 text-amber-900/80">
+                公共库更新时间：
+                {new Date(upstreamNotice.updatedAt).toLocaleString("zh-CN")}。
+                这里不会自动改你的内容，要看差异或拉过来，点下面两个按钮。
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  className="rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+                  onClick={upstreamNotice.onViewDiff}
+                  type="button"
+                >
+                  看差异
+                </button>
+                <button
+                  className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
+                  onClick={upstreamNotice.onPull}
+                  type="button"
+                >
+                  拉取公共版本
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${statusStyles[asset.status]}`}
