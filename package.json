@@ -14,6 +14,7 @@
     "lint": "eslint --cache --cache-strategy content",
     "typecheck": "tsc --noEmit",
     "mcp": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/mcp-server.ts",
+    "mcp:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/check-mcp.mjs",
     "pack:seed": "node scripts/build-seed-pack.mjs",
     "pack:operator": "node scripts/build-seed-pack.mjs operator-training",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test \"tests/*.test.mjs\"",

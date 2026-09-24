@@ -183,6 +183,14 @@ npm run dev:local
 - **MCP 服务**：另开一个终端跑 `npm run mcp`（要只读就加 `MCP_READ_ONLY=1`），
   读写的是同一个 `.data/prompts.sqlite`。
 
+想确认 MCP 通不通，不用接客户端，跑一条自检就行：
+
+```powershell
+npm run mcp:check
+```
+
+它会把本机 MCP 服务真的拉起来，列出工具、项目和图谱节点，再对一个节点做一次影响分析。
+
 本机模式的数据在 `.data/prompts.sqlite`，和线上那份是两套，不会互相影响；
 `npm run dev`（不加 `:local`）则是用 `.env.local` 里的云端模式，数据和线上同一份。
 
