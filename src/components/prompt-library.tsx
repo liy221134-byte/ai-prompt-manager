@@ -140,6 +140,7 @@ import {
   matchesPromptLibraryFilters,
   matchesAssetTypeFilter,
   matchesWorkspaceViewAsset,
+  readGraphNodeLane,
   readTypeFilterDescription,
   readTypeFilterLabel,
   resetMissingFilter,
@@ -154,6 +155,7 @@ import {
   buildCreateAssetInput,
   buildUpdateAssetInput,
   createAssetId,
+  createEmptyDocumentDraft,
   isEditableAssetData,
   type AssetDraft,
   type EditableAssetData,
@@ -238,6 +240,9 @@ type AssetEditorState =
       initialDocumentType?: string;
       initialTitle?: string;
       initialNodeId?: string;
+      // 从工程基线进来时预挂的关系：验收记录先指向对应的需求节点
+      initialRelationTargetId?: string;
+      initialRelationNote?: string;
       initialGates?: Array<{
         key: string;
         label: string;
@@ -358,6 +363,10 @@ export function PromptLibrary({
   const [isEngineeringBaselineOpen, setIsEngineeringBaselineOpen] =
     useState(false);
   const [isEngineeringImportOpen, setIsEngineeringImportOpen] = useState(false);
+  // 导入入口分两个：代码（Schema／代码目录）和文档，抽屉里只露出对应的来源
+  const [engineeringImportSource, setEngineeringImportSource] = useState<
+    "code" | "documents"
+  >("code");
   const templateFileInputRef = useRef<HTMLInputElement>(null);
   const [isAiMergeOpen, setIsAiMergeOpen] = useState(false);
   const [optimizePromptId, setOptimizePromptId] = useState<string | null>(null);
@@ -711,7 +720,7 @@ export function PromptLibrary({
     return visibleAssets.filter(
       (asset) =>
         asset.assetType !== "prompt" &&
-        matchesWorkspaceViewAsset(workspaceView, asset.assetType),
+        matchesWorkspaceViewAsset(workspaceView, asset),
     );
   }, [
     activeProjectId,
@@ -795,6 +804,14 @@ export function PromptLibrary({
     () => (activeProjectId ? listProjectGraphNodes(assets, activeProjectId) : []),
     [activeProjectId, assets],
   );
+  // 图谱节点分两条链路：需求节点留在文档视图，模块／数据／接口／测试进代码视图
+  const graphNodesInView = useMemo(() => {
+    const lane = workspaceView === "code" ? "code" : "document";
+
+    return graphNodes.filter(
+      (node) => readGraphNodeLane(node.metadata.nodeType) === lane,
+    );
+  }, [graphNodes, workspaceView]);
   const graphNodeOptions = useMemo(
     () =>
       graphNodes.map((node) => ({
@@ -1290,6 +1307,12 @@ export function PromptLibrary({
     notify(`质量等级已改为「${projectRiskLevelLabels[level]}」`);
   }
 
+  // 导入入口拆成两个：代码（Schema／代码目录）和文档，各自只露出对应的来源
+  function handleOpenEngineeringImport(source: "code" | "documents") {
+    setEngineeringImportSource(source);
+    setIsEngineeringImportOpen(true);
+  }
+
   // 缺哪份基线文档就从这里进编辑器，标题和文档类型已经填好
   function handleCreateBaselineDocument(input: {
     title: string;
@@ -1304,7 +1327,8 @@ export function PromptLibrary({
     });
   }
 
-  // 缺口里的「新建验收记录」：进编辑器时已经选好对应的需求节点
+  // 缺口里的「新建验收记录」：现在是一份文档（文档类型＝验收记录），
+  // 进编辑器时已经预挂好对应的需求节点——覆盖口径就是看这条关系
   function handleCreateRequirementEvidence(input: {
     nodeId: string;
     title: string;
@@ -1312,13 +1336,16 @@ export function PromptLibrary({
     setIsEngineeringBaselineOpen(false);
     setAssetEditorState({
       mode: "create",
-      assetType: "evidence",
+      assetType: "document",
       initialTitle: input.title,
-      initialNodeId: input.nodeId,
+      initialDocumentType: "验收记录",
+      initialRelationTargetId: input.nodeId,
+      initialRelationNote: "这份验收记录覆盖这条需求",
     });
   }
 
-  // 工程基线里的「新建发布记录」：门禁清单按当前项目的质量等级带出来
+  // 工程基线里的「新建发布记录」：也是一份文档（文档类型＝发布记录），
+  // 门禁清单按当前项目的质量等级带出来
   function handleCreateReleaseRecord() {
     if (!activeProject) {
       return;
@@ -1327,7 +1354,8 @@ export function PromptLibrary({
     setIsEngineeringBaselineOpen(false);
     setAssetEditorState({
       mode: "create",
-      assetType: "release_record",
+      assetType: "document",
+      initialDocumentType: "发布记录",
       initialGates: buildGateItemsFromLevel(activeProject.riskLevel),
     });
   }
@@ -1664,6 +1692,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       id: assetId,
       projectId: activeProjectId,
       draft: {
+        ...createEmptyDocumentDraft(),
         assetType: "document",
         title: draft.fileName,
         summary: `编译结果 · 参与编译 ${draft.ruleCount} 条规则`,
@@ -1671,14 +1700,6 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
         status: "active",
         documentType: draft.fileName,
         role: "compiled",
-        authority: false,
-        module: "",
-        effectiveVersion: "",
-        sourceLocation: "",
-        updateTrigger: "",
-        freshness: "",
-        lastVerifiedAt: "",
-        relations: [],
       },
       now,
     });
@@ -2385,7 +2406,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       return {
         title: "这个项目还没有资产",
         description:
-          "三条来源：从公共资产库挑、装一个规则包、导入工程；也可以自己新建。",
+          "三条来源：从公共资产库挑、装一个规则包、导入文档；也可以自己新建。",
         actionLabel: "从公共资产库挑资产",
         action: "pick-public-assets" as const,
       };
@@ -2407,7 +2428,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       : `搜索${assetTypeFilterLabels[assetTypeFilter]}`;
   const isPromptTabVisible =
     assetTypeFilter === "prompt" || assetTypeFilter === "all";
-  // 项目视图的「文档」标签按链路分组显示（需求 / 规格与计划 / 交付 / 验收与发布）
+  // 文档视图的「文档」标签按链路分组显示（需求 / 规格与计划 / 交付 / 验收 / 发布）
   const isDocumentFlowView =
     workspaceView === "project" && assetTypeFilter === "document";
   const documentFlowGroups = useMemo(
@@ -2575,29 +2596,41 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       <section className="mx-auto w-full max-w-[1280px] px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-12">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold text-blue-700">
-            {workspaceView === "public" ? "账号公共资产" : "项目工作区"}
+            {workspaceView === "public"
+              ? "账号公共资产"
+              : workspaceView === "code"
+                ? "项目代码"
+                : "项目文档"}
           </p>
           <h1 className="mt-3 text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
             {workspaceView === "public"
               ? "公共资产库"
               : hasProjectInView
-                ? (activeProject?.name ?? "项目资产库")
+                ? `${activeProject?.name ?? "项目"}${workspaceView === "code" ? " · 代码" : ""}`
                 : "项目资产库"}
           </h1>
           <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">
             {workspaceView === "public"
               ? "所有项目共用的提示词、规则和模板，在这里积累一次、多项目复用。"
-              : hasProjectInView
-                ? activeProject?.description || "这个项目自己的资产"
-                : "先新建一个项目，再从公共资产库里挑资产带过去。"}
+              : !hasProjectInView
+                ? "先新建一个项目，再从公共资产库里挑资产带过去。"
+                : workspaceView === "code"
+                  ? "这个项目的代码和数据结构：模块、数据表、接口、测试；想知道改动会波及谁，从这里看。"
+                  : activeProject?.description || "这个项目自己的资产"}
           </p>
-          {activeProject && workspaceView === "project" && hasProjectInView && (
+          {activeProject && workspaceView !== "public" && hasProjectInView && (
             <p className="mt-3 text-sm text-slate-500">
               {projectStageLabels[activeProject.stage]}
               {activeProject.status === "archived" &&
                 ` · ${projectStatusLabels.archived}`}
               {" · "}
               {assetTypeCounts.all} 项资产
+            </p>
+          )}
+          {workspaceView === "code" && hasProjectInView && (
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              代码目录扫描出来的节点默认是「已归档」，在「筛选 → 状态」里选「已归档」能看到，
+              把状态改回「活跃」就恢复了。
             </p>
           )}
           {workspaceView === "public" && (
@@ -2856,6 +2889,51 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 </button>
               )}
 
+              {workspaceView === "code" && (
+                <>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    disabled={
+                      isLoading || Boolean(loadError) || !hasProjectInView
+                    }
+                    onClick={() => setIsGraphViewOpen(true)}
+                    type="button"
+                  >
+                    <GitBranch aria-hidden="true" className="size-4" />
+                    代码图谱
+                  </button>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-300 hover:text-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    disabled={
+                      isLoading || Boolean(loadError) || !activeProjectId
+                    }
+                    onClick={() => handleOpenEngineeringImport("code")}
+                    type="button"
+                  >
+                    <FolderTree aria-hidden="true" className="size-4" />
+                    导入代码
+                  </button>
+                  {(assetTypeFilter === "all" ||
+                    assetTypeFilter === "graph_node") && (
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-5 text-sm font-semibold text-teal-700 transition-colors hover:border-teal-300 hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || Boolean(loadError)}
+                      onClick={() =>
+                        setAssetEditorState({
+                          mode: "create",
+                          assetType: "graph_node",
+                          initialNodeType: "module",
+                        })
+                      }
+                      type="button"
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                      新建代码节点
+                    </button>
+                  )}
+                </>
+              )}
+
               <ToolbarMoreMenu
                 items={
                   workspaceView === "public"
@@ -2946,16 +3024,45 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                           onSelect: () => void handleOpenBackupManager(),
                         },
                       ]
-                    : [
+                    : workspaceView === "code"
+                      ? [
+                          {
+                            key: "import-code",
+                            label: "导入代码",
+                            icon: (
+                              <FolderTree aria-hidden="true" className="size-4" />
+                            ),
+                            disabled:
+                              isLoading ||
+                              Boolean(loadError) ||
+                              !activeProjectId,
+                            onSelect: () =>
+                              handleOpenEngineeringImport("code"),
+                          },
+                          {
+                            key: "backup",
+                            label: "数据管理",
+                            icon: (
+                              <DatabaseBackup
+                                aria-hidden="true"
+                                className="size-4"
+                              />
+                            ),
+                            disabled: isLoading || Boolean(loadError),
+                            onSelect: () => void handleOpenBackupManager(),
+                          },
+                        ]
+                      : [
                         {
                           key: "import-code",
-                          label: "导入工程",
+                          label: "导入文档",
                           icon: (
                             <FolderTree aria-hidden="true" className="size-4" />
                           ),
                           disabled:
                             isLoading || Boolean(loadError) || !activeProjectId,
-                          onSelect: () => setIsEngineeringImportOpen(true),
+                          onSelect: () =>
+                            handleOpenEngineeringImport("documents"),
                         },
                         {
                           key: "kickoff",
@@ -3178,7 +3285,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             </button>
           </div>
         ) : isDocumentFlowView ? (
-          // 项目文档按链路分组：需求 → 规格与计划 → 交付 → 验收与发布
+          // 项目文档按链路分组：需求 → 规格与计划 → 交付 → 验收 → 发布
           <div className="mt-8 flex flex-col gap-7">
             {documentFlowGroups.map((group) => (
               <section key={group.stage}>
@@ -3501,7 +3608,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 asset.status === "active",
             )
             .map((asset) => ({ id: asset.id, title: asset.title }))}
-          nodes={graphNodes}
+          nodes={graphNodesInView}
           onClose={() => setIsGraphViewOpen(false)}
           onLinkDocuments={handleLinkDocumentToNodes}
           onCreateNode={(nodeType) =>
@@ -3541,6 +3648,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           }}
           projectId={activeProjectId}
           projectName={activeProject?.name ?? "当前项目"}
+          source={engineeringImportSource}
         />
       )}
 
@@ -3664,7 +3772,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           key={
             assetEditorState.mode === "edit"
               ? `asset-editor-${assetEditorState.assetId}`
-              : `asset-editor-new-${assetEditorState.assetType}-${assetEditorState.initialNodeType ?? ""}-${assetEditorState.initialDocumentType ?? ""}`
+              : `asset-editor-new-${assetEditorState.assetType}-${assetEditorState.initialNodeType ?? ""}-${assetEditorState.initialDocumentType ?? ""}-${assetEditorState.initialRelationTargetId ?? ""}`
           }
           adrOptions={adrOptions}
           graphNodeOptions={graphNodeOptions}
@@ -3681,6 +3789,16 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           initialNodeId={
             assetEditorState.mode === "create"
               ? assetEditorState.initialNodeId
+              : undefined
+          }
+          initialRelationTargetId={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialRelationTargetId
+              : undefined
+          }
+          initialRelationNote={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialRelationNote
               : undefined
           }
           initialGates={

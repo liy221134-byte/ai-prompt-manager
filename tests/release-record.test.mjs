@@ -3,29 +3,33 @@ import test from "node:test";
 
 import {
   buildGateItemsFromLevel,
-  findLatestReleaseRecord,
-  listProjectReleaseRecords,
+  findLatestProjectRelease,
+  listProjectReleases,
   summarizeGates,
 } from "../src/lib/release-record.ts";
 
 const now = "2026-09-23T12:00:00.000Z";
 
+// 发布记录是「文档类型 = 发布记录」的项目文档，版本和门禁在元数据里
 function createRelease(overrides = {}) {
   const { metadata, ...rest } = overrides;
 
   return {
     id: "release-1",
     projectId: "project-a",
-    assetType: "release_record",
+    assetType: "document",
     title: "v2.10.0 发布记录",
     summary: "",
     content: "这次改了……",
     metadata: {
-      version: "v2.10.0",
-      releasedAt: "2026-09-23",
-      result: "released",
-      rollbackTarget: "v2.9.0",
-      gates: [],
+      documentType: "发布记录",
+      release: {
+        version: "v2.10.0",
+        releasedAt: "2026-09-23",
+        result: "released",
+        rollbackTarget: "v2.9.0",
+        gates: [],
+      },
       ...metadata,
     },
     source: {
@@ -42,6 +46,19 @@ function createRelease(overrides = {}) {
     createdAt: now,
     updatedAt: now,
     ...rest,
+  };
+}
+
+function releaseMetadata(overrides = {}) {
+  return {
+    release: {
+      version: "v2.10.0",
+      releasedAt: "2026-09-23",
+      result: "released",
+      rollbackTarget: "v2.9.0",
+      gates: [],
+      ...overrides,
+    },
   };
 }
 
@@ -81,32 +98,51 @@ test("只有活跃、没进垃圾箱、同项目的发布记录参与比较", ()
     createRelease({ id: "release-draft", status: "draft" }),
     createRelease({ id: "release-trashed", deletedAt: now }),
     createRelease({ id: "release-other", projectId: "project-b" }),
+    // 别的文档类型不算发布记录
+    createRelease({
+      id: "document-other",
+      metadata: { documentType: "发布手册" },
+    }),
   ];
 
   assert.deepEqual(
-    listProjectReleaseRecords(assets, "project-a").map((record) => record.id),
+    listProjectReleases(assets, "project-a").map((record) => record.assetId),
     ["release-1"],
   );
 });
 
 test("最近一次发布按发布日期算，没写日期时用更新时间兜底", () => {
   const assets = [
-    createRelease({ id: "release-old", metadata: { releasedAt: "2026-09-20" } }),
-    createRelease({ id: "release-new", metadata: { releasedAt: "2026-09-23" } }),
+    createRelease({
+      id: "release-old",
+      metadata: releaseMetadata({ releasedAt: "2026-09-20" }),
+    }),
+    createRelease({
+      id: "release-new",
+      metadata: releaseMetadata({ releasedAt: "2026-09-23" }),
+    }),
     createRelease({
       id: "release-undated",
-      metadata: { releasedAt: "" },
+      metadata: releaseMetadata({ releasedAt: "" }),
       updatedAt: "2026-09-22T00:00:00.000Z",
     }),
   ];
 
-  assert.equal(findLatestReleaseRecord(assets, "project-a").id, "release-new");
-  assert.equal(findLatestReleaseRecord([], "project-a"), null);
   assert.equal(
-    findLatestReleaseRecord(
-      [createRelease({ id: "only-dated", metadata: { releasedAt: "" } })],
+    findLatestProjectRelease(assets, "project-a").assetId,
+    "release-new",
+  );
+  assert.equal(findLatestProjectRelease([], "project-a"), null);
+  assert.equal(
+    findLatestProjectRelease(
+      [
+        createRelease({
+          id: "only-dated",
+          metadata: releaseMetadata({ releasedAt: "" }),
+        }),
+      ],
       "project-a",
-    ).id,
+    ).assetId,
     "only-dated",
   );
 });

@@ -64,14 +64,17 @@ export const assetTypeFilterOptions = [
 ] as const;
 export type AssetTypeFilter = (typeof assetTypeFilterOptions)[number];
 
-// 首屏分成两个视图：公共资产（账号共享的方法库，也就是原来的默认项目）和单个项目。
-// 视图决定列表里出现哪些资产类型——提示词只属于公共资产，图谱节点只属于项目。
-export const workspaceViews = ["public", "project"] as const;
+// 首屏分成三个视图：公共资产（账号共享的方法库，也就是原来的默认项目）、
+// 项目文档（这个项目要做什么、怎么定、验过没有）和代码（代码和数据结构长什么样）。
+// 视图决定列表里出现哪些资产类型——提示词只属于公共资产；
+// 图谱节点按节点类型分两条链路，见 readGraphNodeLane。
+export const workspaceViews = ["public", "project", "code"] as const;
 export type WorkspaceView = (typeof workspaceViews)[number];
 
 export const workspaceViewLabels: Record<WorkspaceView, string> = {
   public: "公共资产",
-  project: "项目",
+  project: "文档",
+  code: "代码",
 };
 
 // 每个视图里的类型标签，顺序就是界面顺序
@@ -80,19 +83,14 @@ export const workspaceViewTypeOptions: Record<
   AssetTypeFilter[]
 > = {
   public: ["all", "prompt", "rule", "document", "template", "rule_pack"],
-  project: [
-    "all",
-    "rule",
-    "document",
-    "template",
-    "graph_node",
-    "evidence",
-    "release_record",
-  ],
+  project: ["all", "rule", "document", "template", "graph_node"],
+  code: ["all", "graph_node"],
 };
 
 // 视图里能出现的资产类型。技术档案两个视图都不列：一个项目只有一份，
 // 它是项目属性，入口放在「项目设置」里。
+// 验收记录和发布记录这两种老类型仍然列在文档视图里，只为了让老数据还能看到；
+// 界面上不再提供新建入口，它们已经归位成文档类型。
 export const workspaceViewAssetTypes: Record<WorkspaceView, AssetType[]> = {
   public: ["prompt", "rule", "document", "template", "rule_pack"],
   project: [
@@ -103,6 +101,7 @@ export const workspaceViewAssetTypes: Record<WorkspaceView, AssetType[]> = {
     "evidence",
     "release_record",
   ],
+  code: ["graph_node"],
 };
 
 // 每类资产回答什么问题。界面上直接用这句话消除「这到底是什么」的疑问。
@@ -119,11 +118,25 @@ export const assetTypeDescriptions: Record<AssetType, string> = {
   source_package: "导入时保留的原始文件",
 };
 
+// 图谱节点分两条链路：需求节点跟着文档走（需求树），
+// 模块／数据／接口／测试节点是代码那一侧的东西。
+export type GraphNodeLane = "document" | "code";
+
+export function readGraphNodeLane(nodeType: GraphNodeType): GraphNodeLane {
+  return nodeType === "requirement" ? "document" : "code";
+}
+
 export function matchesWorkspaceViewAsset(
   view: WorkspaceView,
-  assetType: AssetType,
+  asset: AssetData,
 ) {
-  return workspaceViewAssetTypes[view].includes(assetType);
+  if (asset.assetType === "graph_node") {
+    const lane = readGraphNodeLane(asset.metadata.nodeType);
+
+    return view === (lane === "document" ? "project" : "code");
+  }
+
+  return workspaceViewAssetTypes[view].includes(asset.assetType);
 }
 
 // 同一个类型在两个视图里叫法不同：公共库里的「文档」是方法级参考，
@@ -136,6 +149,10 @@ export function readTypeFilterLabel(
     return "参考文档";
   }
 
+  if (option === "graph_node") {
+    return view === "code" ? "代码节点" : "需求节点";
+  }
+
   return assetTypeFilterLabels[option];
 }
 
@@ -146,7 +163,13 @@ export function readTypeFilterDescription(
   if (option === "document") {
     return view === "public"
       ? "方法级参考资料：项目画像、案例、方法说明。项目自己的文档放项目里，别往这里堆。"
-      : "这个项目这次做的事：需求、规格、交付说明、验收与发布";
+      : "这个项目这次做的事：需求、规格、交付说明、验收、发布";
+  }
+
+  if (option === "graph_node") {
+    return view === "code"
+      ? "代码和数据结构那一侧的节点：模块、数据、接口、测试。看改动会波及谁。"
+      : "需求节点：这个项目要做的事，按编号串成树。模块和数据表在代码视图里。";
   }
 
   return option === "all" ? "" : assetTypeDescriptions[option];
@@ -230,20 +253,23 @@ export const ruleScopeLabels: Record<RuleScope, string> = {
   task: "任务临时",
 };
 
+// 文档类型的顺序就是链路顺序：需求 → 规格与计划 → 交付 → 验收 → 发布 → 其他。
+// 新建文档时下拉里按这个顺序排，和项目文档页签的分组对得上。
 export const documentTypeOptions = [
   "PRD",
   "实现规格",
   "ADR",
-  "验收记录",
-  "数据库说明",
-  "发布手册",
   "架构说明",
   "数据流说明",
+  "数据库说明",
   "环境变量清单",
   "备份说明",
   "安全检查",
   "故障手册",
   "成本与性能",
+  "验收记录",
+  "发布记录",
+  "发布手册",
   "参考资料",
   "其他",
 ] as const;

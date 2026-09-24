@@ -232,8 +232,26 @@ export type DocumentAssetMetadata = {
   updateTrigger?: string;
   freshness?: string;
   lastVerifiedAt?: string;
+  // 验收记录文档：结论与提交版本；覆盖哪些需求看它指向的需求节点（关系）。
+  // 正文写验收条件、步骤、结果，元数据只留能用来算覆盖口径的部分。
+  evidence?: DocumentEvidenceMetadata;
+  // 发布记录文档：一次上线留一份，版本、结果和回滚目标在这里，门禁清单由人勾。
+  release?: DocumentReleaseMetadata;
   pack?: AssetPackLink;
   relations?: AssetRelation[];
+};
+
+export type DocumentEvidenceMetadata = {
+  conclusion: EvidenceConclusion;
+  commitRef: string;
+};
+
+export type DocumentReleaseMetadata = {
+  version: string;
+  releasedAt: string;
+  result: ReleaseRecordResult;
+  rollbackTarget: string;
+  gates: ReleaseGateItem[];
 };
 
 // 技术档案：一个项目一份，记录技术栈清单；选型说明写在资产正文里。
@@ -846,8 +864,32 @@ function isDocumentAssetMetadata(
     isOptionalString(value.updateTrigger) &&
     isOptionalString(value.freshness) &&
     isOptionalString(value.lastVerifiedAt) &&
+    (value.evidence === undefined || isDocumentEvidence(value.evidence)) &&
+    (value.release === undefined || isDocumentRelease(value.release)) &&
     isOptionalPackLink(value.pack) &&
     isOptionalRelations(value.relations)
+  );
+}
+
+// 验收记录文档的元数据块：结论只能取固定几种，提交版本可以留空
+function isDocumentEvidence(value: unknown): value is DocumentEvidenceMetadata {
+  return (
+    isRecord(value) &&
+    evidenceConclusions.includes(value.conclusion as EvidenceConclusion) &&
+    typeof value.commitRef === "string"
+  );
+}
+
+// 发布记录文档的元数据块：版本号必填，门禁清单可以为空数组
+function isDocumentRelease(value: unknown): value is DocumentReleaseMetadata {
+  return (
+    isRecord(value) &&
+    typeof value.version === "string" &&
+    typeof value.releasedAt === "string" &&
+    releaseRecordResults.includes(value.result as ReleaseRecordResult) &&
+    typeof value.rollbackTarget === "string" &&
+    Array.isArray(value.gates) &&
+    value.gates.every((item) => isReleaseGateItem(item))
   );
 }
 
@@ -1165,6 +1207,21 @@ export type DocumentMetadataForm = {
   lastVerifiedAt: string;
 };
 
+// 文档里的验收记录块（文档类型为「验收记录」时用）
+export type DocumentEvidenceForm = {
+  conclusion: EvidenceConclusion;
+  commitRef: string;
+};
+
+// 文档里的发布记录块（文档类型为「发布记录」时用）
+export type DocumentReleaseForm = {
+  version: string;
+  releasedAt: string;
+  result: ReleaseRecordResult;
+  rollbackTarget: string;
+  gates: ReleaseGateItem[];
+};
+
 function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | "" {
   return typeof value === "string" && allowed.includes(value as T)
     ? (value as T)
@@ -1314,6 +1371,60 @@ export function normalizeDocumentMetadata(value: unknown): DocumentMetadataForm 
     freshness: readString(source.freshness),
     lastVerifiedAt: readString(source.lastVerifiedAt),
   };
+}
+
+// 文档里的验收记录块：没写过的按默认值兜底，界面上不用自己判空
+export function normalizeDocumentEvidenceMetadata(
+  value: unknown,
+): DocumentEvidenceForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    conclusion: evidenceConclusions.includes(
+      source.conclusion as EvidenceConclusion,
+    )
+      ? (source.conclusion as EvidenceConclusion)
+      : "pending",
+    commitRef: readString(source.commitRef),
+  };
+}
+
+export function normalizeDocumentReleaseMetadata(
+  value: unknown,
+): DocumentReleaseForm {
+  const source = isRecord(value) ? value : {};
+
+  return {
+    version: readString(source.version),
+    releasedAt: readString(source.releasedAt),
+    result: releaseRecordResults.includes(source.result as ReleaseRecordResult)
+      ? (source.result as ReleaseRecordResult)
+      : "in_progress",
+    rollbackTarget: readString(source.rollbackTarget),
+    gates: Array.isArray(source.gates)
+      ? source.gates
+          .filter((item) => isReleaseGateItem(item))
+          .map((item) => ({ ...item }))
+      : [],
+  };
+}
+
+// 读文档元数据里的验收／发布块：只有对应文档类型才认，别的类型返回 null，
+// 免得「参考资料」这种文档带着半截字段进统计口径
+export function readDocumentEvidenceMetadata(metadata: unknown) {
+  if (!isDocumentAssetMetadata(metadata) || !metadata.evidence) {
+    return null;
+  }
+
+  return normalizeDocumentEvidenceMetadata(metadata.evidence);
+}
+
+export function readDocumentReleaseMetadata(metadata: unknown) {
+  if (!isDocumentAssetMetadata(metadata) || !metadata.release) {
+    return null;
+  }
+
+  return normalizeDocumentReleaseMetadata(metadata.release);
 }
 
 export function normalizeAssetRelations(value: unknown): AssetRelation[] {

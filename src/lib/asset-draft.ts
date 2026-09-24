@@ -30,6 +30,8 @@ import {
   normalizeDocumentMetadata,
   normalizeEvidenceMetadata,
   normalizeReleaseRecordMetadata,
+  readDocumentEvidenceMetadata,
+  readDocumentReleaseMetadata,
   normalizeGraphNodeMetadata,
   normalizeRuleMetadata,
   normalizeTemplateMetadata,
@@ -54,6 +56,16 @@ export const editableAssetTypes = [
   "release_record",
 ] as const;
 export type EditableAssetType = (typeof editableAssetTypes)[number];
+
+// 新建时能选的类型：验收记录和发布记录已经归位成文档的两种类型，
+// 不再单独新建（老资产还能打开和编辑，所以它们仍留在 editableAssetTypes 里）。
+export const creatableAssetTypes = [
+  "rule",
+  "document",
+  "tech_profile",
+  "template",
+  "graph_node",
+] as const satisfies readonly EditableAssetType[];
 export type EditableAssetData =
   | RuleAssetData
   | DocumentAssetData
@@ -120,6 +132,15 @@ export type DocumentAssetDraft = {
   updateTrigger: string;
   freshness: string;
   lastVerifiedAt: string;
+  // 文档类型是「验收记录」时用：结论与提交版本（覆盖哪些需求看关系）
+  conclusion: EvidenceConclusion;
+  commitRef: string;
+  // 文档类型是「发布记录」时用：版本、日期、结果、回滚目标和人工门禁
+  version: string;
+  releasedAt: string;
+  result: ReleaseRecordResult;
+  rollbackTarget: string;
+  gates: ReleaseGateItem[];
   relations: AssetRelationDraft[];
 };
 
@@ -219,7 +240,14 @@ export type AssetDraft =
 // 从「工程基线」缺口点进来时用，让用户少填两个字段。
 export function withInitialFields(
   draft: AssetDraft,
-  input: { title?: string; documentType?: string; content?: string },
+  input: {
+    title?: string;
+    documentType?: string;
+    content?: string;
+    // 从工程基线缺口进来时预挂一条关系：验收记录先指向对应的需求节点
+    relationTargetId?: string;
+    relationNote?: string;
+  },
 ): AssetDraft {
   const title = input.title?.trim();
   const documentType = input.documentType?.trim();
@@ -231,10 +259,33 @@ export function withInitialFields(
   };
 
   if (titled.assetType === "document" && documentType) {
-    return { ...titled, documentType };
+    return linkInitialRelation({ ...titled, documentType }, input);
   }
 
-  return titled;
+  return linkInitialRelation(titled, input);
+}
+
+// 预挂一条「引用」关系。关系是通用字段，各类资产都有，所以在这里统一加。
+function linkInitialRelation(
+  draft: AssetDraft,
+  input: { relationTargetId?: string; relationNote?: string },
+): AssetDraft {
+  if (!input.relationTargetId) {
+    return draft;
+  }
+
+  return {
+    ...draft,
+    relations: [
+      ...draft.relations,
+      {
+        key: `relation-initial-${input.relationTargetId}`,
+        targetAssetId: input.relationTargetId,
+        relationType: "reference",
+        note: input.relationNote ?? "",
+      },
+    ],
+  };
 }
 
 // 有编辑入口的资产类型：规则、文档和技术档案；提示词继续走既有流程，
@@ -365,6 +416,14 @@ export function createEmptyAssetDraft(
     };
   }
 
+  return createEmptyDocumentDraft({ gates: options.gates });
+}
+
+// 文档草稿：验收记录和发布记录现在是它的两种文档类型，
+// 所以这两个块的结构化字段也挂在文档草稿上，保存时按文档类型决定写不写。
+export function createEmptyDocumentDraft(options: {
+  gates?: ReleaseGateItem[];
+} = {}): DocumentAssetDraft {
   return {
     assetType: "document",
     title: "",
@@ -380,6 +439,14 @@ export function createEmptyAssetDraft(
     updateTrigger: "",
     freshness: "",
     lastVerifiedAt: "",
+    // 结论默认待确认：改成「通过」由人在界面上操作
+    conclusion: "pending",
+    commitRef: "",
+    version: "",
+    releasedAt: "",
+    result: "in_progress",
+    rollbackTarget: "",
+    gates: (options.gates ?? []).map((gate) => ({ ...gate })),
     relations: [],
   };
 }
@@ -510,6 +577,8 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
   }
 
   const metadata = normalizeDocumentMetadata(asset.metadata);
+  const evidence = readDocumentEvidenceMetadata(asset.metadata);
+  const release = readDocumentReleaseMetadata(asset.metadata);
 
   return {
     assetType: "document",
@@ -526,6 +595,13 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
     updateTrigger: metadata.updateTrigger,
     freshness: metadata.freshness,
     lastVerifiedAt: metadata.lastVerifiedAt,
+    conclusion: evidence?.conclusion ?? "pending",
+    commitRef: evidence?.commitRef ?? "",
+    version: release?.version ?? "",
+    releasedAt: release?.releasedAt ?? "",
+    result: release?.result ?? "in_progress",
+    rollbackTarget: release?.rollbackTarget ?? "",
+    gates: release?.gates ?? [],
     relations: relationsToDraft(readAssetRelations(asset.metadata)),
   };
 }
@@ -603,6 +679,15 @@ export function validateAssetDraft(draft: AssetDraft) {
 
   if (draft.assetType === "document" && !draft.documentType.trim()) {
     return "请填写文档类型。";
+  }
+
+  // 发布记录文档的版本号对应一次真实发布，没有它没法回退到具体版本
+  if (
+    draft.assetType === "document" &&
+    draft.documentType.trim() === "发布记录" &&
+    !draft.version.trim()
+  ) {
+    return "请填写版本号或标签，例如 v2.17.0。";
   }
 
   if (draft.assetType === "tech_profile") {
@@ -808,13 +893,16 @@ function buildAsset(
     };
   }
 
+  // 文档类型决定要不要带上验收／发布这两个结构化块：
+  // 换了文档类型就自然丢掉，避免「参考资料」带着半截字段进统计口径
+  const documentType = draft.documentType.trim() || defaultDocumentType;
   const documentMetadata: DocumentAssetMetadata = {
     ...keepDocumentMetadata(
       base.previousMetadata && "documentType" in base.previousMetadata
         ? (base.previousMetadata as DocumentAssetMetadata)
         : null,
     ),
-    documentType: draft.documentType.trim() || defaultDocumentType,
+    documentType,
     ...(draft.role ? { role: draft.role } : {}),
     authority: draft.authority,
     module: draft.module.trim(),
@@ -823,6 +911,32 @@ function buildAsset(
     updateTrigger: draft.updateTrigger.trim(),
     freshness: draft.freshness.trim(),
     lastVerifiedAt: draft.lastVerifiedAt.trim(),
+    ...(documentType === "验收记录"
+      ? {
+          evidence: {
+            conclusion: draft.conclusion,
+            commitRef: draft.commitRef.trim(),
+          },
+        }
+      : {}),
+    ...(documentType === "发布记录"
+      ? {
+          release: {
+            version: draft.version.trim(),
+            releasedAt: draft.releasedAt.trim(),
+            result: draft.result,
+            rollbackTarget: draft.rollbackTarget.trim(),
+            gates: draft.gates
+              .map((gate) => ({
+                key: gate.key,
+                label: gate.label.trim(),
+                done: gate.done,
+                note: gate.note.trim(),
+              }))
+              .filter((gate) => gate.label),
+          },
+        }
+      : {}),
     ...(draft.relations.length
       ? { relations: draftRelationsToMetadata(draft.relations) }
       : {}),

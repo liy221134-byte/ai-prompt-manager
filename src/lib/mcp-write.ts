@@ -20,6 +20,7 @@ import {
   assetToDraft,
   buildCreateAssetInput,
   buildUpdateAssetInput,
+  createEmptyDocumentDraft,
   validateAssetDraft,
 } from "./asset-draft.ts";
 import { findNodeWithSameCode, listProjectGraphNodes } from "./graph-node.ts";
@@ -31,7 +32,6 @@ export const mcpWritableAssetTypes = [
   "rule",
   "document",
   "graph_node",
-  "evidence",
   "template",
 ] as const;
 export type McpWritableAssetType = (typeof mcpWritableAssetTypes)[number];
@@ -210,27 +210,6 @@ function buildPromptAsset(
 }
 
 function createDraft(input: McpAssetCreateInput): AssetDraft {
-  if (input.assetType === "evidence") {
-    return {
-      assetType: "evidence",
-      title: input.title ?? "",
-      summary: input.summary ?? "",
-      content: input.content ?? "",
-      status: input.status ?? "active",
-      // nodeId 由调用方解析出来后传进来，这里先用空串，稍后覆盖
-      nodeId: "",
-      // AI 写进来的记录一律先待确认：通过与否由人说了算
-      conclusion: "pending",
-      commitRef: input.commitRef ?? "",
-      evidenceItems: (input.evidenceItems ?? []).map((item, index) => ({
-        key: `evidence-item-${index + 1}`,
-        label: item.label ?? "",
-        reference: item.reference ?? "",
-      })),
-      relations: [],
-    };
-  }
-
   if (input.assetType === "rule") {
     return {
       assetType: "rule",
@@ -285,6 +264,7 @@ function createDraft(input: McpAssetCreateInput): AssetDraft {
 
   if (input.assetType === "document") {
     return {
+      ...createEmptyDocumentDraft(),
       assetType: "document",
       title: input.title ?? "",
       summary: input.summary ?? "",
@@ -292,14 +272,8 @@ function createDraft(input: McpAssetCreateInput): AssetDraft {
       status: input.status ?? "active",
       documentType: input.documentType ?? "参考资料",
       role: input.role ?? "",
-      authority: false,
-      module: "",
-      effectiveVersion: "",
-      sourceLocation: "",
-      updateTrigger: "",
-      freshness: "",
-      lastVerifiedAt: "",
-      relations: [],
+      // 验收记录文档的提交版本由调用方给；别的文档类型用不到这个字段
+      commitRef: input.commitRef ?? "",
     };
   }
 
@@ -436,6 +410,13 @@ export function buildMcpCreateAsset(
 
   const draft = createDraft(input);
 
+  // 发布记录的门禁是「人工可验证证据」：让 AI 写等于自己给自己发证，仍然只在界面上建
+  if (draft.assetType === "document" && draft.documentType === "发布记录") {
+    throw new Error(
+      "发布记录要在界面上建：版本号、发布日期和门禁都要人自己填；AI 可以帮你写正文。",
+    );
+  }
+
   // 先把「按编号找目标」这类解析做完，再校验：
   // 验收记录的需求节点、图谱节点的父节点都是校验的前置条件
   if (draft.assetType === "graph_node") {
@@ -460,6 +441,30 @@ export function buildMcpCreateAsset(
       input.projectId,
       input.requirementCode,
     );
+  }
+
+  // 验收记录现在是一份文档（文档类型＝验收记录）：
+  // 「挂了哪条需求」用关系记，编号解析完再挂上去
+  if (
+    draft.assetType === "document" &&
+    draft.documentType === "验收记录" &&
+    input.requirementCode
+  ) {
+    const requirementId = resolveRequirementId(
+      options.assets,
+      input.projectId,
+      input.requirementCode,
+    );
+
+    draft.relations = [
+      ...draft.relations,
+      {
+        key: `relation-initial-${requirementId}`,
+        targetAssetId: requirementId,
+        relationType: "reference",
+        note: "这份验收记录覆盖这条需求",
+      },
+    ];
   }
 
   const error = validateAssetDraft(draft);

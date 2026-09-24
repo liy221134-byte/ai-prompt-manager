@@ -400,9 +400,10 @@ export function createMcpServer(options: McpServerOptions) {
     "create_asset",
     {
       description:
-        "新建资产（提示词／规则／文档／图谱节点／模板／验收记录）。只新增，不覆盖任何已有内容。" +
-        "验收记录的结论一律先是「待确认」，AI 不能把它标成通过。" +
-        "发布记录不在可写范围：门禁是人工可验证证据，只能在界面上填。",
+        "新建资产（提示词／规则／文档／图谱节点／模板）。只新增，不覆盖任何已有内容。" +
+        "验收记录是一份文档（documentType 填「验收记录」），结论一律先是「待确认」，" +
+        "用 requirementCode 挂上它覆盖的需求。" +
+        "发布记录不在可写范围：版本号、发布日期和门禁都是人工可验证的证据，只能在界面上填。",
       inputSchema: z.object({
         assetType: z.enum(mcpWritableAssetTypes).describe("资产类型"),
         project: z.string().optional().describe("项目名称或项目标识，省略则用默认项目"),
@@ -428,11 +429,13 @@ export function createMcpServer(options: McpServerOptions) {
         requirementCode: z
           .string()
           .optional()
-          .describe("验收记录挂在哪个需求上，填需求编号，例如 REQ-001"),
+          .describe(
+            "验收记录文档覆盖哪条需求，填需求编号（例如 REQ-001）；不加就只留一份清单",
+          ),
         commitRef: z
           .string()
           .optional()
-          .describe("验收记录对应的提交号或版本标签"),
+          .describe("验收记录文档对应的提交号或版本标签"),
         evidenceItems: z
           .array(
             z.object({
@@ -441,7 +444,7 @@ export function createMcpServer(options: McpServerOptions) {
             }),
           )
           .optional()
-          .describe("验收记录的证据清单"),
+          .describe("验收记录的证据清单（写进正文更清楚，这里是兼容字段）"),
       }),
     },
     async (input) => {
@@ -460,7 +463,8 @@ export function createMcpServer(options: McpServerOptions) {
 
         return text(
           `已新建${readAssetTypeLabel(saveInput.asset.assetType)}「${saveInput.asset.title}」，项目「${project.name}」，标识 ${saveInput.asset.id}。` +
-            (saveInput.asset.assetType === "evidence"
+            (saveInput.asset.assetType === "document" &&
+            saveInput.asset.metadata.documentType === "验收记录"
               ? "结论是「待确认」，要让它在覆盖统计里算通过，得由人在界面上确认。"
               : ""),
         );

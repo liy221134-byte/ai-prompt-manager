@@ -1,14 +1,16 @@
-// 项目文档按「链路阶段」分组：需求 → 规格与计划 → 交付 → 验收与发布。
+// 项目文档按「链路阶段」分组：需求 → 规格与计划 → 交付 → 验收 → 发布。
 // 这条链来自一次真实讨论（2026-09-24）：PRD 讲做什么，Spec 讲这次具体怎么改，
 // 中间缺了 Spec 就会「PRD → 直接写代码」，产品里要能一眼看出缺哪一环。
+// 2026-09-24 再次拆分：验收按需求走、发布按版本走，合成一段看不出缺哪一环。
 
-import type { AssetData } from "../data/assets.ts";
+import type { AssetData, DocumentAssetData } from "../data/assets.ts";
 
 export const documentFlowStages = [
   "requirement",
   "spec",
   "delivery",
   "acceptance",
+  "release",
   "other",
 ] as const;
 export type DocumentFlowStage = (typeof documentFlowStages)[number];
@@ -17,7 +19,8 @@ export const documentFlowStageLabels: Record<DocumentFlowStage, string> = {
   requirement: "需求",
   spec: "规格与计划",
   delivery: "交付",
-  acceptance: "验收与发布",
+  acceptance: "验收",
+  release: "发布",
   other: "其他",
 };
 
@@ -26,7 +29,8 @@ export const documentFlowStageHints: Record<DocumentFlowStage, string> = {
   requirement: "为什么做、做什么、成功标准——你拍板的那份",
   spec: "这次具体怎么改：动哪些文件、数据怎么变、边界在哪——AI 起草、你确认",
   delivery: "架构、数据流、接口、环境变量、安全与故障处理",
-  acceptance: "验收条件与证据、发布门禁与回滚",
+  acceptance: "每条需求怎么验、看到什么算对；一版一份清单也行",
+  release: "这次上的什么版本、门禁过了没、回退到哪一版",
   other: "参考资料和其他没归类的文档",
 };
 
@@ -43,13 +47,50 @@ const stageByDocumentType: Record<string, DocumentFlowStage> = {
   ADR: "delivery",
   成本与性能: "delivery",
   验收记录: "acceptance",
-  发布手册: "acceptance",
+  发布记录: "release",
+  发布手册: "release",
   参考资料: "other",
   其他: "other",
 };
 
 export function readDocumentStage(documentType: string): DocumentFlowStage {
   return stageByDocumentType[documentType.trim()] ?? "other";
+}
+
+// 项目里活跃、没进垃圾箱的文档；给了文档类型就只看这几种。
+// 验收记录与发布记录的统计都从这里取，口径只维护一处。
+export function listProjectDocuments(
+  assets: AssetData[],
+  projectId: string,
+  documentTypes?: string[],
+) {
+  return assets.filter(
+    (asset): asset is DocumentAssetData =>
+      asset.assetType === "document" &&
+      asset.projectId === projectId &&
+      asset.status === "active" &&
+      asset.deletedAt === null &&
+      (documentTypes === undefined ||
+        documentTypes.includes(asset.metadata.documentType)),
+  );
+}
+
+// 项目文档里的验收记录／发布记录：现在这两类就是文档的两种类型
+export const acceptanceDocumentTypes = ["验收记录"];
+export const releaseDocumentTypes = ["发布记录"];
+
+export function listProjectAcceptanceDocuments(
+  assets: AssetData[],
+  projectId: string,
+) {
+  return listProjectDocuments(assets, projectId, acceptanceDocumentTypes);
+}
+
+export function listProjectReleaseDocuments(
+  assets: AssetData[],
+  projectId: string,
+) {
+  return listProjectDocuments(assets, projectId, releaseDocumentTypes);
 }
 
 export type DocumentFlowGroup = {
@@ -83,6 +124,7 @@ export type ChainCheck = {
 };
 
 // 链路完整性：这个项目有没有 需求(PRD) → 规格(Spec) → 验收 → 发布 这四环。
+// 四环都从「文档」里认：验收看文档类型「验收记录」，发布看「发布记录」。
 // 缺哪一环，界面上就给哪一环的入口。
 export function readProjectChain(input: {
   assets: AssetData[];
@@ -94,19 +136,17 @@ export function readProjectChain(input: {
       asset.deletedAt === null &&
       asset.status === "active",
   );
-  const findDocument = (documentType: string) =>
+  const findDocument = (documentTypes: string[]) =>
     live.find(
       (asset) =>
         asset.assetType === "document" &&
-        asset.metadata.documentType === documentType,
+        documentTypes.includes(asset.metadata.documentType),
     ) ?? null;
-  const findFirst = (assetType: AssetData["assetType"]) =>
-    live.find((asset) => asset.assetType === assetType) ?? null;
 
-  const prd = findDocument("PRD");
-  const spec = findDocument("实现规格");
-  const evidence = findFirst("evidence");
-  const release = findFirst("release_record");
+  const prd = findDocument(["PRD"]);
+  const spec = findDocument(["实现规格"]);
+  const evidence = findDocument(acceptanceDocumentTypes);
+  const release = findDocument(releaseDocumentTypes);
 
   return [
     {

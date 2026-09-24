@@ -10,10 +10,7 @@ import {
 } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { rankRequirementsByEvidence } from "@/lib/acceptance-evidence";
-import { findLatestReleaseRecord, summarizeReleaseGates } from "@/lib/release-record";
-import {
-  normalizeReleaseRecordMetadata,
-} from "@/data/assets";
+import { findLatestProjectRelease, summarizeGates } from "@/lib/release-record";
 import { releaseRecordResultLabels } from "@/lib/asset-list";
 import {
   listDocumentGaps,
@@ -71,12 +68,10 @@ export function EngineeringBaselineDrawer({
   const unverifiedCount = requirementEvidence.filter(
     (item) => item.summary.passed === 0,
   ).length;
-  const latestRelease = findLatestReleaseRecord(assets, project.id);
+  // 发布记录就是「文档类型 = 发布记录」的项目文档，版本和门禁从它的元数据里读
+  const latestRelease = findLatestProjectRelease(assets, project.id);
   const latestReleaseGates = latestRelease
-    ? summarizeReleaseGates(latestRelease)
-    : null;
-  const latestReleaseMetadata = latestRelease
-    ? normalizeReleaseRecordMetadata(latestRelease.metadata)
+    ? summarizeGates(latestRelease.gates)
     : null;
 
   // 已经被缺口认领过的文档不重复出现；剩下这些是「游离文档」，
@@ -505,7 +500,7 @@ export function EngineeringBaselineDrawer({
               </button>
             </div>
 
-            {!latestRelease || !latestReleaseGates || !latestReleaseMetadata ? (
+            {!latestRelease || !latestReleaseGates ? (
               <p className="mt-2 text-sm text-slate-500">
                 还没有发布记录。下次上线前建一条，把「迁移跑过没有、备份做了没有、
                 回滚退到哪个版本」这些逐项勾上，出事时不用现场回忆。
@@ -514,14 +509,14 @@ export function EngineeringBaselineDrawer({
               <>
                 <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-700">
                   <span className="font-semibold">
-                    {latestReleaseMetadata.version}
+                    {latestRelease.version || latestRelease.title}
                   </span>
                   <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
-                    {releaseRecordResultLabels[latestReleaseMetadata.result]}
+                    {releaseRecordResultLabels[latestRelease.result]}
                   </span>
-                  {latestReleaseMetadata.releasedAt && (
+                  {latestRelease.releasedAt && (
                     <span className="text-xs text-slate-500">
-                      {latestReleaseMetadata.releasedAt}
+                      {latestRelease.releasedAt}
                     </span>
                   )}
                   <span className="text-xs text-slate-500">
@@ -529,7 +524,7 @@ export function EngineeringBaselineDrawer({
                   </span>
                   <button
                     className="text-xs font-semibold text-sky-700 hover:underline"
-                    onClick={() => onOpenAsset(latestRelease.id)}
+                    onClick={() => onOpenAsset(latestRelease.assetId)}
                     type="button"
                   >
                     打开记录
@@ -541,7 +536,7 @@ export function EngineeringBaselineDrawer({
                   </p>
                 )}
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  回滚目标：{latestReleaseMetadata.rollbackTarget || "还没定"}
+                  回滚目标：{latestRelease.rollbackTarget || "还没定"}
                 </p>
               </>
             )}

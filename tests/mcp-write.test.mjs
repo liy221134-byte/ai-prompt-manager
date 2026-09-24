@@ -293,14 +293,15 @@ test("技术档案这类不开放的资产类型会被拒绝", () => {
   );
 });
 
-test("MCP 写验收记录：必须挂需求，结论一律先待确认", () => {
+test("MCP 写验收记录：写成文档，挂上需求，结论一律先待确认", () => {
   const node = createNodeAsset();
   const input = buildMcpCreateAsset(
     {
-      assetType: "evidence",
+      assetType: "document",
       projectId: "project-a",
       title: "REQ-001 验收记录",
       content: "验收条件：入库后能在图谱里看到。\n实际结果：看到了。",
+      documentType: "验收记录",
       requirementCode: "req-001",
       commitRef: "v2.9.0",
       evidenceItems: [{ label: "跑了一遍导入", reference: "docs/acceptance" }],
@@ -308,44 +309,67 @@ test("MCP 写验收记录：必须挂需求，结论一律先待确认", () => {
     { now, assets: [node] },
   );
 
-  assert.equal(input.asset.assetType, "evidence");
-  assert.equal(input.asset.metadata.nodeId, "node-1");
-  assert.equal(input.asset.metadata.conclusion, "pending");
-  assert.equal(input.asset.metadata.commitRef, "v2.9.0");
-  assert.deepEqual(input.asset.metadata.evidenceItems, [
-    { label: "跑了一遍导入", reference: "docs/acceptance" },
-  ]);
+  assert.equal(input.asset.assetType, "document");
+  assert.equal(input.asset.metadata.documentType, "验收记录");
+  assert.deepEqual(input.asset.metadata.evidence, {
+    conclusion: "pending",
+    commitRef: "v2.9.0",
+  });
+  // 覆盖哪条需求用关系记：验收覆盖就是按这条关系算的
+  assert.deepEqual(
+    input.asset.metadata.relations.map((relation) => [
+      relation.targetAssetId,
+      relation.relationType,
+    ]),
+    [["node-1", "reference"]],
+  );
   assert.equal(input.asset.source.sourceType, "ai");
 
-  // 没给需求编号时报错，不写出一条挂不上的记录
-  assert.throws(
-    () =>
-      buildMcpCreateAsset(
-        {
-          assetType: "evidence",
-          projectId: "project-a",
-          title: "没挂需求的记录",
-          content: "正文",
-        },
-        { now, assets: [node] },
-      ),
-    /要挂在一个需求节点上/,
+  // 不给需求编号也能建：一版一份清单可以先不挂具体需求，之后再挂
+  const withoutRequirement = buildMcpCreateAsset(
+    {
+      assetType: "document",
+      projectId: "project-a",
+      title: "v2.17.0 验收清单",
+      content: "正文",
+      documentType: "验收记录",
+    },
+    { now, assets: [node] },
   );
+
+  assert.deepEqual(withoutRequirement.asset.metadata.relations ?? [], []);
 
   // 需求编号写错也报错，并提示先查清单
   assert.throws(
     () =>
       buildMcpCreateAsset(
         {
-          assetType: "evidence",
+          assetType: "document",
           projectId: "project-a",
           title: "编号写错了",
           content: "正文",
+          documentType: "验收记录",
           requirementCode: "REQ-999",
         },
         { now, assets: [node] },
       ),
     /没有编号为「REQ-999」的需求节点/,
+  );
+
+  // 发布记录不让 AI 建：门禁是人工可验证证据
+  assert.throws(
+    () =>
+      buildMcpCreateAsset(
+        {
+          assetType: "document",
+          projectId: "project-a",
+          title: "v2.17.0 发布记录",
+          content: "正文",
+          documentType: "发布记录",
+        },
+        { now, assets: [node] },
+      ),
+    /发布记录要在界面上建/,
   );
 });
 

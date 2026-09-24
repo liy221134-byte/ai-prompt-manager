@@ -28,6 +28,8 @@ type EngineeringImportDrawerProps = {
   projectName: string;
   projectId: string;
   dataMode: "local" | "supabase";
+  // 从哪个入口进来的：代码（Schema／代码目录）还是文档
+  source?: "code" | "documents";
   nodes: GraphNodeAssetData[];
   // 项目里已有的文档（标题 + 标识），用来判断同名文档
   documents: Array<{ id: string; title: string }>;
@@ -51,14 +53,24 @@ export function EngineeringImportDrawer({
   projectName,
   projectId,
   dataMode,
+  source: initialSource = "code",
   nodes,
   documents,
   onCreateAsset,
   onImported,
   onClose,
 }: EngineeringImportDrawerProps) {
+  // 导入入口分成两个：代码（Schema／代码目录）和文档。
+  // 从一个入口进来时，另外那一类不露出，避免代码和文档又混在一起。
+  const sourceOptions: ReadonlyArray<"schema" | "code" | "documents"> = useMemo(
+    () =>
+      initialSource === "documents"
+        ? ["documents"]
+        : ["schema", "code"],
+    [initialSource],
+  );
   const [source, setSource] = useState<"schema" | "code" | "documents">(
-    "schema",
+    initialSource === "documents" ? "documents" : "schema",
   );
   const [sqlText, setSqlText] = useState("");
   const [sqlFileName, setSqlFileName] = useState("");
@@ -416,7 +428,8 @@ export function EngineeringImportDrawer({
           await onCreateAsset({
             asset,
             versionId: asset.currentVersionId,
-            changeReason: "导入工程",
+            changeReason:
+              initialSource === "documents" ? "导入文档" : "导入代码",
             versionReason: "initial",
           });
           created += 1;
@@ -441,7 +454,7 @@ export function EngineeringImportDrawer({
     // 外层固定覆盖层不能省：只写内层 absolute 会相对页面原点定位，页面一滚动浮层就跑到可视区外
     <div className="fixed inset-0 z-50">
       <button
-        aria-label="关闭导入工程"
+        aria-label={`关闭${initialSource === "documents" ? "导入文档" : "导入代码"}`}
         className="absolute inset-0 cursor-default bg-slate-950/35 backdrop-blur-[2px]"
         onClick={isBusy ? undefined : onClose}
         type="button"
@@ -458,7 +471,9 @@ export function EngineeringImportDrawer({
               <FolderTree aria-hidden="true" className="size-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs text-slate-500">导入工程</p>
+              <p className="text-xs text-slate-500">
+                {initialSource === "documents" ? "导入文档" : "导入代码"}
+              </p>
               <h2
                 className="mt-1 break-words text-lg font-semibold text-slate-950"
                 id="engineering-import-title"
@@ -486,7 +501,9 @@ export function EngineeringImportDrawer({
               { key: "code", label: "代码目录", icon: FolderTree },
               { key: "documents", label: "项目文档", icon: FileText },
             ] as const
-          ).map((tab) => (
+          )
+            .filter((tab) => sourceOptions.includes(tab.key))
+            .map((tab) => (
             <button
               aria-pressed={source === tab.key}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${

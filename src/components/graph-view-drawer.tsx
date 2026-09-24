@@ -306,7 +306,8 @@ export function GraphViewDrawer({
               </p>
             ) : nodes.length === 0 ? (
               <p className="mt-2 text-sm text-slate-500">
-                还没有图谱节点。先用「导入工程」扫代码目录或建表语句。
+                还没有图谱节点。需求节点用右上角「新建需求节点」；模块和数据表用代码视图的
+                「导入代码」（建表语句或代码目录）。
               </p>
             ) : (
               <>

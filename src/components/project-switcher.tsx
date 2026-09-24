@@ -110,7 +110,7 @@ export function ProjectSwitcher({
       )}
 
       <div className="flex shrink-0 gap-3">
-        {view === "project" && (
+        {view !== "public" && (
           <button
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             disabled={disabled || !activeProjectId}

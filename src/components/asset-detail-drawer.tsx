@@ -25,6 +25,10 @@ import type {
   GraphNodeAssetData,
 } from "@/data/assets";
 import { readAssetRelations } from "@/data/assets";
+import {
+  readDocumentEvidenceMetadata,
+  readDocumentReleaseMetadata,
+} from "@/data/assets";
 import { assetRelationLabels } from "@/lib/asset-list";
 import { describeNodeEvidence } from "@/lib/acceptance-evidence";
 import { summarizeGates } from "@/lib/release-record";
@@ -210,7 +214,28 @@ function describeAssetMetadata(
     ];
   }
 
-  return [`文档类型：${asset.metadata.documentType}`];
+  const documentType = asset.metadata.documentType;
+  const evidence = readDocumentEvidenceMetadata(asset.metadata);
+  const release = readDocumentReleaseMetadata(asset.metadata);
+
+  return [
+    `文档类型：${documentType}`,
+    ...(evidence
+      ? [
+          `结论：${evidenceConclusionLabels[evidence.conclusion]}`,
+          ...(evidence.commitRef ? [`提交版本：${evidence.commitRef}`] : []),
+        ]
+      : []),
+    ...(release
+      ? [
+          `版本：${release.version}`,
+          `结果：${releaseRecordResultLabels[release.result]}`,
+          ...(release.releasedAt ? [`发布日期：${release.releasedAt}`] : []),
+          `回滚目标：${release.rollbackTarget || "还没定"}`,
+          `门禁：${summarizeGates(release.gates).done}／${summarizeGates(release.gates).total} 项完成`,
+        ]
+      : []),
+  ];
 }
 
 export function AssetDetailDrawer({
