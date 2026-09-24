@@ -3,18 +3,22 @@ import test from "node:test";
 
 import { isAssetData } from "../src/data/assets.ts";
 import {
+  buildPickedRuleReferenceAsset,
   createRulePackFileFromAssets,
   listPackMembers,
   listPackMembersForInstall,
   listProjectPacks,
   planRulePackImport,
   planRulePackInstall,
+  readReferencedAssetIds,
   readAssetPackLink,
+  readExcludedItemIds,
 } from "../src/lib/rule-pack.ts";
 import {
   parseRulePackFile,
   seedPackFilesToRulePack,
 } from "../src/lib/seed-pack-import.ts";
+import { listProjectRulesForUse } from "../src/lib/rule-reference.ts";
 
 const packId = "rule-pack-sample";
 const now = "2026-09-23T06:00:00.000Z";
@@ -371,6 +375,140 @@ test("装到第三个项目时按包内编号去重，跳过数不重复计算",
 
   assert.equal(again.assetsToCreate.length, 0);
   assert.equal(again.skipped.length, 2);
+});
+
+test("引用记录带上排除清单：重复项去掉，空值忽略", () => {
+  const plan = planRulePackImport({
+    file: createSamplePack(),
+    existingAssets: [],
+    targetProjectId: "project-a",
+    now,
+    ruleMode: "reference",
+    excludedItemIds: ["SAMPLE-002", "SAMPLE-002", "", "SAMPLE-002"],
+  });
+
+  assert.ok(plan.packAsset, "引用模式要先建一条引用记录");
+  assert.deepEqual(readExcludedItemIds(plan.packAsset.metadata), [
+    "SAMPLE-002",
+  ]);
+});
+
+test("一条都没排除时，引用记录里不写这个字段，老数据形态不变", () => {
+  const plan = planRulePackImport({
+    file: createSamplePack(),
+    existingAssets: [],
+    targetProjectId: "project-a",
+    now,
+    ruleMode: "reference",
+  });
+
+  assert.ok(plan.packAsset);
+  assert.equal("excludedItemIds" in plan.packAsset.metadata, false);
+});
+
+test("readExcludedItemIds 对脏数据返回空清单，不抛错", () => {
+  assert.deepEqual(readExcludedItemIds(null), []);
+  assert.deepEqual(readExcludedItemIds("SAMPLE-001"), []);
+  assert.deepEqual(readExcludedItemIds({}), []);
+  assert.deepEqual(readExcludedItemIds({ excludedItemIds: "SAMPLE-001" }), []);
+  assert.deepEqual(
+    readExcludedItemIds({ excludedItemIds: [1, "SAMPLE-001", null, ""] }),
+    ["SAMPLE-001"],
+  );
+});
+
+test("引用记录必须是活跃的：包本身还待确认时，也不能把项目里的引用藏起来", () => {
+  // 从公共库挑资产时产品现攒一个包，这种包的状态是 pending
+  const file = {
+    ...createSamplePack(),
+    pack: { ...createSamplePack().pack, status: "pending" },
+  };
+  const plan = planRulePackImport({
+    file,
+    existingAssets: [],
+    targetProjectId: "project-a",
+    now,
+    ruleMode: "reference",
+  });
+
+  assert.ok(plan.packAsset, "引用模式要先建一条引用记录");
+  assert.equal(
+    plan.packAsset.status,
+    "active",
+    "引用记录抄了包的 pending 状态，项目读规则时会当成没引用",
+  );
+});
+
+test("挑进项目的规则真的能在项目里看到（端到端走一遍引用）", () => {
+  const parsed = createSamplePack();
+  const pack = createPackAsset(parsed);
+  // 1. 先把包和成员装进公共资产库，作为正本
+  const publicPlan = planRulePackInstall({
+    pack,
+    members: parsed.members,
+    existingAssets: [pack],
+    targetProjectId: "default-project",
+    now,
+  });
+  const publicAssets = [pack, ...publicPlan.assetsToCreate];
+  // 2. 再挑进普通项目：只记引用，规则正文留在公共库
+  const referenceFile = {
+    ...createRulePackFileFromAssets({ pack, members: [], exportedAt: now }),
+    members: parsed.members,
+  };
+  const projectPlan = planRulePackImport({
+    file: referenceFile,
+    existingAssets: publicAssets,
+    targetProjectId: "project-a",
+    now,
+    ruleMode: "reference",
+  });
+  const assets = [
+    ...publicAssets,
+    ...(projectPlan.packAsset ? [projectPlan.packAsset] : []),
+    ...projectPlan.assetsToCreate,
+  ];
+
+  assert.deepEqual(
+    listProjectRulesForUse(assets, {
+      projectId: "project-a",
+      publicProjectId: "default-project",
+    })
+      .map((entry) => [entry.rule.id, entry.fromPublic])
+      .sort(),
+    [
+      ["rule-sample-001", true],
+      ["rule-sample-002", true],
+    ],
+  );
+});
+
+test("挑规则进项目：只记引用，不建包、不复制正文", () => {
+  const asset = buildPickedRuleReferenceAsset({
+    projectId: "project-a",
+    assetIds: ["rule-public-1", "rule-public-2", "rule-public-1"],
+    now,
+  });
+
+  assert.equal(asset.assetType, "rule_pack");
+  assert.equal(asset.projectId, "project-a");
+  assert.equal(asset.status, "active");
+  assert.deepEqual(readReferencedAssetIds(asset.metadata), [
+    "rule-public-1",
+    "rule-public-2",
+  ]);
+  // 不再是「引用某个现攒的包」，所以不写 packId
+  assert.equal("packId" in asset.metadata, false);
+});
+
+test("readReferencedAssetIds 对脏数据返回空清单，不抛错", () => {
+  assert.deepEqual(readReferencedAssetIds(null), []);
+  assert.deepEqual(readReferencedAssetIds({}), []);
+  assert.deepEqual(readReferencedAssetIds({ referencedAssetIds: "rule-1" }), []);
+  assert.deepEqual(
+    readReferencedAssetIds({ referencedAssetIds: [1, "rule-1", null, ""] }),
+    ["rule-1"],
+  );
 });
 
 test("导入包文件：空库里先建包资产，再把成员装进目标项目", () => {

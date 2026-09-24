@@ -9,15 +9,29 @@ import { assetTypeLabels, projectScaleLabels, ruleConfidenceLabels } from "@/lib
 import { readAssetPackLink } from "@/lib/rule-pack";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 
+// 这个包被某个项目引用时，那条引用记录带的排除清单
+export type PackProjectReference = {
+  projectId: string;
+  excludedItemIds: string[];
+};
+
 type RulePackDetailDrawerProps = {
   pack: RulePackAssetData;
   // 包的全部成员（装到多个项目时会有多份，清单里标注所在项目）
   members: AssetData[];
   projects: ProjectData[];
   activeProjectId: string | null;
+  // 公共资产库的项目标识：装到这里是复制正本，没有「挑规则」这回事
+  publicProjectId: string;
+  // 这个包已经装进了哪些项目、各自排除了什么
+  references: PackProjectReference[];
   onClose: () => void;
   onExport: () => void;
-  onInstall: (projectId: string) => Promise<void>;
+  onInstall: (projectId: string, excludedItemIds: string[]) => Promise<void>;
+  onSaveExclusions: (
+    projectId: string,
+    excludedItemIds: string[],
+  ) => Promise<void>;
   onOpenMember: (asset: AssetData) => void;
 };
 
@@ -26,15 +40,24 @@ export function RulePackDetailDrawer({
   members,
   projects,
   activeProjectId,
+  publicProjectId,
+  references,
   onClose,
   onExport,
   onInstall,
+  onSaveExclusions,
   onOpenMember,
 }: RulePackDetailDrawerProps) {
   const [targetProjectId, setTargetProjectId] = useState(
     activeProjectId ?? projects[0]?.id ?? "",
   );
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isSavingExclusions, setIsSavingExclusions] = useState(false);
+  // 勾选草稿：换项目就按那个项目的引用记录重新算，null 表示还没手改过
+  const [selection, setSelection] = useState<{
+    projectId: string;
+    itemIds: string[];
+  } | null>(null);
 
   useModalBehavior(onClose);
 
@@ -42,6 +65,54 @@ export function RulePackDetailDrawer({
     return (
       projects.find((project) => project.id === projectId)?.name ?? projectId
     );
+  }
+
+  // 同一份成员在多个项目里各有一份，挑规则按包内编号去重
+  const ruleMembers = (() => {
+    const byItemId = new Map<string, { itemId: string; title: string }>();
+
+    for (const member of members) {
+      if (member.assetType !== "rule") {
+        continue;
+      }
+
+      const link = readAssetPackLink(member.metadata);
+      const itemId = link?.packItemId ?? member.id;
+
+      if (!byItemId.has(itemId)) {
+        byItemId.set(itemId, { itemId, title: member.title });
+      }
+    }
+
+    return [...byItemId.values()];
+  })();
+  const currentReference =
+    references.find((reference) => reference.projectId === targetProjectId) ??
+    null;
+  const baselineItemIds = ruleMembers
+    .map((member) => member.itemId)
+    .filter((itemId) => !currentReference?.excludedItemIds.includes(itemId));
+  const selectedItemIds =
+    selection?.projectId === targetProjectId
+      ? selection.itemIds
+      : baselineItemIds;
+  const pickedItemIds = new Set(selectedItemIds);
+  const excludedItemIds = ruleMembers
+    .map((member) => member.itemId)
+    .filter((itemId) => !pickedItemIds.has(itemId));
+  const isPickingEnabled =
+    ruleMembers.length > 0 && targetProjectId !== publicProjectId;
+  const isSelectionDirty =
+    isPickingEnabled &&
+    (selectedItemIds.length !== baselineItemIds.length ||
+      selectedItemIds.some((itemId) => !baselineItemIds.includes(itemId)));
+
+  function toggleItem(itemId: string) {
+    const next = pickedItemIds.has(itemId)
+      ? selectedItemIds.filter((item) => item !== itemId)
+      : [...selectedItemIds, itemId];
+
+    setSelection({ projectId: targetProjectId, itemIds: next });
   }
 
   async function handleInstall() {
@@ -52,9 +123,24 @@ export function RulePackDetailDrawer({
     setIsInstalling(true);
 
     try {
-      await onInstall(targetProjectId);
+      await onInstall(targetProjectId, isPickingEnabled ? excludedItemIds : []);
     } finally {
       setIsInstalling(false);
+    }
+  }
+
+  async function handleSaveExclusions() {
+    if (!currentReference) {
+      return;
+    }
+
+    setIsSavingExclusions(true);
+
+    try {
+      await onSaveExclusions(targetProjectId, excludedItemIds);
+      setSelection({ projectId: targetProjectId, itemIds: selectedItemIds });
+    } finally {
+      setIsSavingExclusions(false);
     }
   }
 
@@ -171,6 +257,68 @@ export function RulePackDetailDrawer({
               </button>
             </div>
           </section>
+
+          {isPickingEnabled && (
+            <section className="mt-5 rounded-xl border border-slate-200 px-4 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  要用这个包的哪些规则
+                </h3>
+                <span className="text-xs text-slate-500">
+                  给「{readProjectName(targetProjectId)}」挑：选中{" "}
+                  {selectedItemIds.length} / 共 {ruleMembers.length} 条
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                没选的不参与这个项目（列表里不出现，规则编译也不带上）。
+                公共库以后往这个包里加规则，默认会进项目，不用回来重挑。
+                {currentReference
+                  ? "改完点「保存这个项目要用的规则」。"
+                  : "装的时候按这份勾选记下来。"}
+              </p>
+              <ul className="mt-3 flex flex-col divide-y divide-slate-100">
+                {ruleMembers.map((member) => (
+                  <li key={member.itemId}>
+                    <label className="flex cursor-pointer items-center gap-3 py-2.5">
+                      <input
+                        checked={pickedItemIds.has(member.itemId)}
+                        className="size-4 shrink-0 accent-indigo-600"
+                        onChange={() => toggleItem(member.itemId)}
+                        type="checkbox"
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm text-slate-800">
+                        {member.title}
+                      </span>
+                      <span className="shrink-0 text-xs text-slate-400">
+                        {member.itemId}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              {currentReference && (
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    disabled={isSavingExclusions || !isSelectionDirty}
+                    onClick={() => void handleSaveExclusions()}
+                    type="button"
+                  >
+                    {isSavingExclusions && (
+                      <LoaderCircle
+                        aria-hidden="true"
+                        className="size-4 animate-spin"
+                      />
+                    )}
+                    保存这个项目要用的规则
+                  </button>
+                  <span className="text-xs text-slate-500">
+                    {isSelectionDirty ? "有改动还没保存" : "和已保存的一致"}
+                  </span>
+                </div>
+              )}
+            </section>
+          )}
 
           {pack.content && (
             <section className="mt-5 rounded-xl border border-slate-200 px-4 py-3">

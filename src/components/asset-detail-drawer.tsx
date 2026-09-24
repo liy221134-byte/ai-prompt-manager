@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   Pencil,
   RotateCcw,
+  Scissors,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -65,6 +66,9 @@ type AssetDetailDrawerProps = {
   onCreateDocumentFromTemplate?: (asset: AssetData) => void;
   // 文档 → 另存为模板（进公共资产库的模板层）
   onSaveDocumentAsTemplate?: (asset: AssetData) => void;
+  // 引用来的规则 → 另存为项目规则（脱钩一份，改它不影响公共库）
+  canSaveAsProjectRule?: boolean;
+  onSaveAsProjectRule?: (asset: AssetData) => void;
   // 项目资产 → 提升为公共资产
   onPromoteToPublic?: (asset: AssetData) => void;
   // 公共库那份更新过时的提示与两个动作
@@ -248,6 +252,8 @@ export function AssetDetailDrawer({
   onEdit,
   onCreateDocumentFromTemplate,
   onSaveDocumentAsTemplate,
+  canSaveAsProjectRule,
+  onSaveAsProjectRule,
   onPromoteToPublic,
   upstreamNotice,
   sourceNotice,
@@ -426,6 +432,20 @@ export function AssetDetailDrawer({
                 <CopyPlus aria-hidden="true" className="size-5" />
               </button>
             )}
+            {asset.assetType === "rule" &&
+              canSaveAsProjectRule &&
+              onSaveAsProjectRule && (
+                <button
+                  aria-label="另存为项目规则"
+                  className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isBusy}
+                  onClick={() => onSaveAsProjectRule(asset)}
+                  title="另存为项目规则（脱钩一份，之后改它不影响公共库）"
+                  type="button"
+                >
+                  <Scissors aria-hidden="true" className="size-5" />
+                </button>
+              )}
             {onPromoteToPublic && (
               <button
                 aria-label="提升为公共资产"

@@ -9,7 +9,10 @@ import {
 
 const now = "2026-09-24T00:00:00.000Z";
 
-function createRule(id, { projectId = "project-a", pack = null, ...rest } = {}) {
+function createRule(
+  id,
+  { projectId = "project-a", pack = null, detachedFrom = null, ...rest } = {},
+) {
   return {
     id,
     projectId,
@@ -21,6 +24,7 @@ function createRule(id, { projectId = "project-a", pack = null, ...rest } = {}) 
       ruleType: "recommended",
       scope: "project",
       ...(pack ? { pack } : {}),
+      ...(detachedFrom ? { detachedFrom } : {}),
     },
     source: {
       sourceType: "import",
@@ -38,7 +42,17 @@ function createRule(id, { projectId = "project-a", pack = null, ...rest } = {}) 
   };
 }
 
-function createPack(id, { projectId = "project-a", title = "工程方法种子资产包" } = {}) {
+function createPack(
+  id,
+  {
+    projectId = "project-a",
+    title = "工程方法种子资产包",
+    excludedItemIds = [],
+    // 引用记录用 packId 指向公共库那份包；不传时就是自己的标识
+    packId = id,
+    referencedAssetIds = [],
+  } = {},
+) {
   return {
     id,
     projectId,
@@ -51,6 +65,9 @@ function createPack(id, { projectId = "project-a", title = "工程方法种子�
       packConfidence: "provisional",
       projectScale: ["personal"],
       sourceNote: "",
+      ...(packId ? { packId } : {}),
+      ...(referencedAssetIds.length > 0 ? { referencedAssetIds } : {}),
+      ...(excludedItemIds.length > 0 ? { excludedItemIds } : {}),
     },
     source: {
       sourceType: "import",
@@ -179,5 +196,178 @@ test("归档的包不算引用，项目专属规则也不含包成员", () => {
   assert.deepEqual(
     listProjectOnlyRules(assets, "project-a").map((rule) => rule.id),
     ["rule-own"],
+  );
+});
+
+test("引用记录里的排除清单：被排除的规则不进项目列表", () => {
+  const assets = [
+    createPack("rule-pack-a", { excludedItemIds: ["MTH-002"] }),
+    createRule("rule-m1", {
+      projectId: "default-project",
+      pack: packLink("MTH-001"),
+    }),
+    createRule("rule-m2", {
+      projectId: "default-project",
+      pack: packLink("MTH-002"),
+    }),
+  ];
+  const entries = listProjectRulesForUse(assets, {
+    projectId: "project-a",
+    publicProjectId: "default-project",
+  });
+
+  assert.deepEqual(
+    entries.map((entry) => entry.rule.id),
+    ["rule-m1"],
+  );
+});
+
+test("排除清单只作用于本项目的引用记录，别的项目不受影响", () => {
+  const assets = [
+    createPack("rule-pack-a", {
+      projectId: "project-a",
+      excludedItemIds: ["MTH-001"],
+    }),
+    // 同一个包，另一个项目的引用记录：没有排除清单
+    createPack("rule-pack-a-ref-project-b", {
+      projectId: "project-b",
+      packId: "rule-pack-a",
+    }),
+    createRule("rule-m1", {
+      projectId: "default-project",
+      pack: packLink("MTH-001"),
+    }),
+  ];
+
+  assert.deepEqual(
+    listProjectRulesForUse(assets, {
+      projectId: "project-a",
+      publicProjectId: "default-project",
+    }).map((entry) => entry.rule.id),
+    [],
+  );
+  assert.deepEqual(
+    listProjectRulesForUse(assets, {
+      projectId: "project-b",
+      publicProjectId: "default-project",
+    }).map((entry) => entry.rule.id),
+    ["rule-m1"],
+  );
+});
+
+test("脱钩副本顶掉公共库同一个包内编号的正本", () => {
+  const assets = [
+    createPack("rule-pack-a"),
+    createRule("rule-detached", {
+      pack: packLink("MTH-001"),
+      detachedFrom: { packId: "rule-pack-a", packItemId: "MTH-001" },
+    }),
+    createRule("rule-m1", {
+      projectId: "default-project",
+      pack: packLink("MTH-001"),
+    }),
+  ];
+  const entries = listProjectRulesForUse(assets, {
+    projectId: "project-a",
+    publicProjectId: "default-project",
+  });
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.rule.id, entry.fromPublic]),
+    [["rule-detached", false]],
+  );
+});
+
+test("脱钩副本算项目专属规则，进沉淀体检的口径", () => {
+  const assets = [
+    createPack("rule-pack-a"),
+    createRule("rule-detached", {
+      pack: packLink("MTH-001"),
+      detachedFrom: { packId: "rule-pack-a", packItemId: "MTH-001" },
+    }),
+    createRule("rule-own"),
+    // 没脱钩的老副本仍然不算项目专属
+    createRule("rule-copy", { pack: packLink("MTH-002") }),
+  ];
+
+  assert.deepEqual(
+    listProjectOnlyRules(assets, "project-a").map((rule) => rule.id),
+    ["rule-detached", "rule-own"],
+  );
+});
+
+test("引用记录点名的公共规则出现在项目列表里，角标不带包名", () => {
+  const assets = [
+    createPack("rule-pack-public-library-ref-project-a", {
+      projectId: "project-a",
+      title: "公共资产库挑入",
+      packId: "",
+      referencedAssetIds: ["rule-picked-1", "rule-picked-2"],
+    }),
+    createRule("rule-picked-1", { projectId: "default-project" }),
+    createRule("rule-picked-2", { projectId: "default-project" }),
+    // 没被点名的公共规则不进来
+    createRule("rule-not-picked", { projectId: "default-project" }),
+  ];
+  const entries = listProjectRulesForUse(assets, {
+    projectId: "project-a",
+    publicProjectId: "default-project",
+  });
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.rule.id, entry.fromPublic, entry.packTitle]),
+    [
+      ["rule-picked-1", true, ""],
+      ["rule-picked-2", true, ""],
+    ],
+  );
+});
+
+test("同一条既在包成员里又被点名时只出现一次", () => {
+  const assets = [
+    createPack("rule-pack-a"),
+    createPack("rule-pack-public-library-ref-project-a", {
+      projectId: "project-a",
+      title: "公共资产库挑入",
+      packId: "",
+      referencedAssetIds: ["rule-m1"],
+    }),
+    createRule("rule-m1", {
+      projectId: "default-project",
+      pack: packLink("MTH-001"),
+    }),
+  ];
+  const entries = listProjectRulesForUse(assets, {
+    projectId: "project-a",
+    publicProjectId: "default-project",
+  });
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.rule.id, entry.packTitle]),
+    [["rule-m1", "工程方法种子资产包"]],
+  );
+});
+
+test("点名引用的规则脱钩之后，让位给项目里那份副本", () => {
+  const assets = [
+    createPack("rule-pack-public-library-ref-project-a", {
+      projectId: "project-a",
+      title: "公共资产库挑入",
+      packId: "",
+      referencedAssetIds: ["rule-picked-1"],
+    }),
+    createRule("rule-picked-1", { projectId: "default-project" }),
+    createRule("rule-detached", {
+      detachedFrom: { sourceAssetId: "rule-picked-1" },
+    }),
+  ];
+  const entries = listProjectRulesForUse(assets, {
+    projectId: "project-a",
+    publicProjectId: "default-project",
+  });
+
+  assert.deepEqual(
+    entries.map((entry) => [entry.rule.id, entry.fromPublic]),
+    [["rule-detached", false]],
   );
 });

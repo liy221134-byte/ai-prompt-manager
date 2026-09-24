@@ -60,12 +60,17 @@ import {
   listAdrCandidates,
 } from "@/lib/tech-profile";
 import {
+  buildPickedRuleReferenceAsset,
   createRulePackFileFromAssets,
   createRulePackFileFromSelection,
   listPackMembers,
   listPackMembersForInstall,
   listProjectPacks,
+  pickedRuleReferencePackId,
   planRulePackImport,
+  buildPackReferenceId,
+  readExcludedItemIds,
+  readReferencedAssetIds,
 } from "@/lib/rule-pack";
 import type { RulePackFile } from "@/lib/seed-pack-import";
 import {
@@ -103,6 +108,7 @@ import type {
   AssetVersionData,
   GraphNodeType,
   RuleAssetData,
+  RulePackAssetData,
 } from "@/data/assets";
 import { createInitialAssetVersionId } from "@/data/assets";
 import {
@@ -164,7 +170,10 @@ import {
   createAssetVersionId,
 } from "@/lib/asset-versions";
 import { groupDocumentsByStage } from "@/lib/document-flow";
-import { listProjectRulesForUse } from "@/lib/rule-reference";
+import {
+  listProjectRulesForUse,
+  planDetachToProject,
+} from "@/lib/rule-reference";
 import {
   listSedimentCheckup,
   planPromoteToPublic,
@@ -1118,6 +1127,24 @@ export function PromptLibrary({
       ? match
       : null;
   }, [assetDetailId, assets]);
+  // 引用包详情用：这个包被哪些项目引用过、各自排除了哪些编号
+  const detailPackReferences = useMemo(() => {
+    if (detailAsset?.assetType !== "rule_pack") {
+      return [];
+    }
+
+    return assets
+      .filter(
+        (asset): asset is RulePackAssetData =>
+          asset.assetType === "rule_pack" &&
+          asset.deletedAt === null &&
+          (asset.metadata.packId ?? asset.id) === detailAsset.id,
+      )
+      .map((asset) => ({
+        projectId: asset.projectId,
+        excludedItemIds: readExcludedItemIds(asset.metadata),
+      }));
+  }, [assets, detailAsset]);
   const editingAsset = useMemo(() => {
     if (assetEditorState?.mode !== "edit") {
       return null;
@@ -1536,9 +1563,67 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     await reloadAssets();
   }
 
+  // 改这个项目的引用记录的排除清单；没有引用记录（还没装）时什么都不做。
+  // 已经一致就不写，避免每次点安装都白写一条版本。
+  async function savePackExclusions(
+    packId: string,
+    projectId: string,
+    excludedItemIds: string[],
+  ) {
+    const referenceId = buildPackReferenceId(packId, projectId);
+    const reference = assets.find(
+      (asset): asset is RulePackAssetData =>
+        asset.assetType === "rule_pack" && asset.id === referenceId,
+    );
+
+    if (!reference) {
+      return false;
+    }
+
+    const current = readExcludedItemIds(reference.metadata);
+
+    if (
+      current.length === excludedItemIds.length &&
+      current.every((itemId) => excludedItemIds.includes(itemId))
+    ) {
+      return false;
+    }
+
+    const now = new Date().toISOString();
+    const versionId = createAssetVersionId();
+    const metadata: RulePackAssetData["metadata"] = {
+      ...reference.metadata,
+    };
+
+    if (excludedItemIds.length > 0) {
+      metadata.excludedItemIds = excludedItemIds;
+    } else {
+      delete metadata.excludedItemIds;
+    }
+
+    await dataSource.updateAsset({
+      asset: {
+        ...reference,
+        metadata,
+        currentVersionId: versionId,
+        updatedAt: now,
+      },
+      versionId,
+      changeReason: "调整这个项目要用的规则",
+      versionReason: "save",
+    });
+    await reloadAssets();
+
+    return true;
+  }
+
   // 安装规则包：装进公共资产库时复制成员（正本落在这里）；
   // 装进普通项目时只装「引用」——规则正文留在公共库，读的时候合并进来。
-  async function handleInstallRulePack(projectId: string) {
+  // excludedItemIds 是装包时挑掉的那些（不填＝整包都要）。
+  async function handleInstallRulePack(
+    projectId: string,
+    excludedItemIds: string[] = [],
+  ) {
     if (detailAsset?.assetType !== "rule_pack") {
       return;
     }
@@ -1557,9 +1642,78 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     });
 
     try {
-      await handleInstallRulePackFile(file, projectId);
+      await handleInstallRulePackFile(
+        file,
+        projectId,
+        excludedItemIds.length > 0 ? { excludedItemIds } : {},
+      );
+      // 已经引用过这个包时，装这一步只补文档和模板，引用记录不动；
+      // 把刚勾的结果补上去（没引用记录时上一步已经按勾选建好了）
+      if (projectId !== DEFAULT_PROJECT_ID) {
+        await savePackExclusions(packAsset.id, projectId, excludedItemIds);
+      }
     } catch (error) {
       notify(error instanceof Error ? error.message : "安装规则包失败");
+    }
+  }
+
+  // 引用包详情里改「这个项目要用的规则」：只动引用记录，不碰公共库
+  async function handleSavePackExclusions(
+    projectId: string,
+    excludedItemIds: string[],
+  ) {
+    if (detailAsset?.assetType !== "rule_pack") {
+      return;
+    }
+
+    try {
+      const changed = await savePackExclusions(
+        detailAsset.id,
+        projectId,
+        excludedItemIds,
+      );
+
+      notify(
+        changed
+          ? `已保存「${projects.find((project) => project.id === projectId)?.name ?? projectId}」要用的规则`
+          : "引用记录没找到，没有改动",
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "保存失败");
+    }
+  }
+
+  // 引用来的规则 → 另存为项目规则：复制一份脱钩副本，改它不影响公共库和别的项目
+  async function handleSaveAsProjectRule(asset: AssetData) {
+    if (asset.assetType !== "rule" || !activeProjectId) {
+      return;
+    }
+
+    const plan = planDetachToProject({
+      rule: asset,
+      projectId: activeProjectId,
+      createId: () => createAssetId("rule"),
+      now: new Date().toISOString(),
+    });
+
+    if (plan.kind === "skipped") {
+      notify(plan.reason);
+      return;
+    }
+
+    try {
+      await dataSource.createAsset({
+        asset: plan.asset,
+        versionId: plan.asset.currentVersionId,
+        changeReason: `另存为项目规则（脱钩自公共资产库「${asset.title}」）`,
+        versionReason: "initial",
+      });
+      await reloadAssets();
+      notify(
+        "已另存为项目规则：列表里现在显示这一份，改它不影响公共资产库。",
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "另存为项目规则失败");
     }
   }
 
@@ -1730,6 +1884,8 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     projectId: string,
     options?: {
       changeReason?: string;
+      // 装包时挑掉的包内编号：只在引用模式下有意义（写进引用记录）
+      excludedItemIds?: string[];
       successMessage?: (counts: {
         created: number;
         skipped: number;
@@ -1783,6 +1939,9 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       targetProjectId: projectId,
       now,
       ruleMode,
+      ...(ruleMode === "reference" && options?.excludedItemIds
+        ? { excludedItemIds: options.excludedItemIds }
+        : {}),
     });
     const changeReason = options?.changeReason ?? "安装规则包";
 
@@ -2170,25 +2329,121 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     }
   }
 
+  // 把挑中的规则记成引用：写进这个项目那条「公共资产库挑入」记录，不复制正文、不建包。
+  // 返回这次真正新增了几条（已经引用过的不算）。
+  async function savePickedRuleReferences(
+    projectId: string,
+    ruleIds: string[],
+  ) {
+    const referenceId = buildPackReferenceId(
+      pickedRuleReferencePackId,
+      projectId,
+    );
+    const existing = assets.find(
+      (asset): asset is RulePackAssetData =>
+        asset.assetType === "rule_pack" && asset.id === referenceId,
+    );
+    const current = readReferencedAssetIds(existing?.metadata);
+    const merged = [
+      ...current,
+      ...ruleIds.filter((ruleId) => !current.includes(ruleId)),
+    ];
+
+    if (existing && merged.length === current.length) {
+      return 0;
+    }
+
+    const now = new Date().toISOString();
+
+    if (!existing) {
+      const asset = buildPickedRuleReferenceAsset({
+        projectId,
+        assetIds: merged,
+        now,
+      });
+
+      await dataSource.createAsset({
+        asset,
+        versionId: asset.currentVersionId,
+        changeReason: "从公共资产库挑入（记引用）",
+        versionReason: "initial",
+      });
+    } else {
+      const versionId = createAssetVersionId();
+      // 老记录上可能还留着指向那个「现攒包」的 packId：不动它，只把点名的补上去，
+      // 免得之前挑过的规则因为改写记录而突然看不见。
+      const metadata: RulePackAssetData["metadata"] = {
+        ...existing.metadata,
+        referencedAssetIds: merged,
+      };
+
+      await dataSource.updateAsset({
+        asset: {
+          ...existing,
+          metadata,
+          currentVersionId: versionId,
+          updatedAt: now,
+        },
+        versionId,
+        changeReason: "从公共资产库挑入（记引用）",
+        versionReason: "save",
+      });
+    }
+
+    await reloadAssets();
+
+    return merged.length - current.length;
+  }
+
   async function handlePickPublicAssets(selected: AssetData[]) {
     if (!activeProjectId || selected.length === 0) {
       return;
     }
 
-    const file = createRulePackFileFromSelection({
-      packId: "rule-pack-public-library",
-      title: "公共资产库挑入",
-      summary: "从公共资产库挑进项目的资产，用来记住它是从哪来的。",
-      assets: selected,
-      now: new Date().toISOString(),
-    });
     const projectId = activeProjectId;
+    // 规则只记引用：正文留在公共库那份，公共库改了跟着变，也不在公共库留重复副本。
+    // 文档和模板照旧复制进项目——它们要出现在项目的文档和模板列表里。
+    const pickedRuleIds = selected
+      .filter((asset) => asset.assetType === "rule")
+      .map((asset) => asset.id);
+    const copyAssets = selected.filter((asset) => asset.assetType !== "rule");
 
-    await handleInstallRulePackFile(file, projectId, {
-      changeReason: "从公共资产库挑入",
-      successMessage: ({ created, skipped }) =>
-        `已从公共资产库带进 ${created} 条资产${skipped > 0 ? `，跳过 ${skipped} 条（之前挑过）` : ""}`,
-    });
+    let addedRuleCount = 0;
+
+    try {
+      if (pickedRuleIds.length > 0) {
+        addedRuleCount = await savePickedRuleReferences(projectId, pickedRuleIds);
+      }
+
+      if (copyAssets.length > 0) {
+        const file = createRulePackFileFromSelection({
+          packId: pickedRuleReferencePackId,
+          title: "公共资产库挑入",
+          summary: "从公共资产库挑进项目的资产，用来记住它是从哪来的。",
+          assets: copyAssets,
+          now: new Date().toISOString(),
+        });
+
+        await handleInstallRulePackFile(file, projectId, {
+          changeReason: "从公共资产库挑入",
+          successMessage: ({ created }) =>
+            `已从公共资产库带进 ${created} 条资产${
+              pickedRuleIds.length > 0
+                ? `；另有 ${pickedRuleIds.length} 条规则记成引用（不复制正文）`
+                : ""
+            }`,
+        });
+      } else if (pickedRuleIds.length > 0) {
+        notify(
+          addedRuleCount > 0
+            ? `已引用 ${addedRuleCount} 条公共规则（正文留在公共库，改那边这里跟着变）`
+            : "这几条本来就引用着，没有重复添加",
+        );
+      }
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "从公共资产库挑入失败");
+    }
+
     setIsPublicAssetPickerOpen(false);
   }
 
@@ -3767,8 +4022,11 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onExport={handleExportRulePack}
           onInstall={handleInstallRulePack}
           onOpenMember={(asset) => setAssetDetailId(asset.id)}
+          onSaveExclusions={handleSavePackExclusions}
           pack={detailAsset}
+          publicProjectId={DEFAULT_PROJECT_ID}
           projects={projects}
+          references={detailPackReferences}
         />
       )}
 
@@ -3789,14 +4047,19 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onSaveDocumentAsTemplate={(asset) =>
             void handleSaveDocumentAsTemplate(asset)
           }
+          canSaveAsProjectRule={
+            detailAsset ? referencedRulePacks.has(detailAsset.id) : false
+          }
+          onSaveAsProjectRule={(asset) => void handleSaveAsProjectRule(asset)}
           onRestore={handleAssetRestore}
           onUpdateStatus={handleAssetStatusChange}
           sourceNotice={
-            detailAsset
-              ? referencedRulePacks.has(detailAsset.id)
+            detailAsset && referencedRulePacks.has(detailAsset.id)
+              ? referencedRulePacks.get(detailAsset.id)
                 ? `这条规则来自公共资产库的「${referencedRulePacks.get(detailAsset.id)}」：` +
-                  "改它会同时影响所有引用这个包的项目。只想改这个项目，就在公共资产库里复制一份再改。"
-                : undefined
+                  "改它会同时影响所有引用这个包的项目。只想改这个项目，用右上角的「另存为项目规则」脱钩一份。"
+                : "这条规则是你从公共资产库挑进来的：改它会同时影响所有引用它的地方。" +
+                  "只想改这个项目，用右上角的「另存为项目规则」脱钩一份。"
               : undefined
           }
           upstreamNotice={

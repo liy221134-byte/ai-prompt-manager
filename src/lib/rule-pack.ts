@@ -64,7 +64,114 @@ export function readAssetPackLink(metadata: unknown): AssetPackLink | null {
       ? pack.projectScale.filter((item): item is AssetPackLink["projectScale"][number] =>
           typeof item === "string",
         )
-      : [],
+        : [],
+  };
+}
+
+// 引用记录的排除清单：项目引用一个包时，可以把包里个别规则排除掉。
+//
+// 存「排除」而不是「选中」：公共库以后往包里加规则时，项目默认能拿到新的，
+// 不用回头再挑一遍。空值、重复项和读不出来的脏数据都丢掉，
+// 一条坏值不至于让整条引用读不出来（v2.12.0 那次脏数据拖挂整个列表的教训）。
+export function readExcludedItemIds(metadata: unknown): string[] {
+  if (!isRecord(metadata)) {
+    return [];
+  }
+
+  const raw = metadata.excludedItemIds;
+
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const collected: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    if (typeof item !== "string" || item.length === 0 || seen.has(item)) {
+      continue;
+    }
+
+    seen.add(item);
+    collected.push(item);
+  }
+
+  return collected;
+}
+
+// 项目里那条「公共资产库挑入」引用记录的标识。
+//
+// 挑规则进项目＝记引用，不复制正文，所以这条记录要记「引用了公共库哪几条」。
+// 标识沿用 v2.12.0 起的那个，历史项目里已经存在的那条记录会被就地升级，不会多出一条。
+export const pickedRuleReferencePackId = "rule-pack-public-library";
+
+// 这条引用记录点名引用了公共库的哪些资产（按资产标识）
+export function readReferencedAssetIds(metadata: unknown): string[] {
+  if (!isRecord(metadata)) {
+    return [];
+  }
+
+  const raw = metadata.referencedAssetIds;
+
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const collected: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    if (typeof item !== "string" || item.length === 0 || seen.has(item)) {
+      continue;
+    }
+
+    seen.add(item);
+    collected.push(item);
+  }
+
+  return collected;
+}
+
+// 「从公共资产库挑入」这条引用记录：只记引用了哪几条，不打包、不复制。
+//
+// 复用 rule_pack 这个资产类型（v2.18.0 的决定：引用记录不新增类型、不改表结构），
+// 所以包才有的那几个字段填最小合法值——它本来就不是一个包。
+export function buildPickedRuleReferenceAsset(input: {
+  projectId: string;
+  assetIds: string[];
+  now: string;
+}): RulePackAssetData {
+  const id = buildPackReferenceId(pickedRuleReferencePackId, input.projectId);
+
+  return {
+    id,
+    projectId: input.projectId,
+    assetType: "rule_pack",
+    title: "公共资产库挑入",
+    summary: "从公共资产库挑进项目的规则，只记引用、不复制正文。",
+    content: "",
+    metadata: {
+      packVersion: "0.1.0",
+      packConfidence: "provisional",
+      projectScale: [],
+      sourceNote: "从公共资产库挑进来的规则，改公共库那份会影响所有引用它的地方。",
+      referencedAssetIds: readReferencedAssetIds({
+        referencedAssetIds: input.assetIds,
+      }),
+    },
+    source: {
+      sourceType: "manual",
+      sourceAssetId: null,
+      importBatchId: null,
+      originalFilename: null,
+    },
+    currentVersionId: createInitialAssetVersionId(id),
+    status: "active",
+    archivedAt: null,
+    deletedAt: null,
+    deletedReason: null,
+    createdAt: input.now,
+    updatedAt: input.now,
   };
 }
 
@@ -494,6 +601,8 @@ export function planRulePackImport(input: {
   now: string;
   // 装到项目时用 reference：规则正文留在公共资产库，项目只记引用
   ruleMode?: "copy" | "reference";
+  // 装包时挑掉的包内编号：写进引用记录，读项目规则时按它做减法
+  excludedItemIds?: string[];
 }): RulePackImportPlan {
   // 引用模式：项目里放一条按项目区分的「引用记录」，规则成员不复制。
   // 文档和模板成员照旧复制——它们要进项目的文档/模板列表，体量也小。
@@ -524,6 +633,7 @@ export function planRulePackImport(input: {
             input.targetProjectId,
             input.now,
             referenceId,
+            input.excludedItemIds ?? [],
           ),
       assetsToCreate: install.assetsToCreate,
       skipped: install.skipped,
@@ -566,14 +676,27 @@ function buildPackReferenceAsset(
   targetProjectId: string,
   now: string,
   id: string,
+  excludedItemIds: string[] = [],
 ): RulePackAssetData {
+  const base = buildPackAsset(pack, targetProjectId, now);
+  const excluded = readExcludedItemIds({ excludedItemIds });
+
   return {
-    ...buildPackAsset(pack, targetProjectId, now),
+    ...base,
     id,
+    // 引用记录表达的是「这个项目在用这个包」，状态跟着项目走。
+    //
+    // 不能照抄包自己的状态：包可能还是待确认（例如刚从公共库挑了几条现攒出来的包），
+    // 但用户既然挑了就是要用。抄成 pending 会被读规则那边当成「没引用」过滤掉，
+    // 表现就是「提示已带进项目，项目里却一条规则都没有」（v2.12.0 起的老问题，
+    // 2026-09-25 线上自测发现）。
+    status: "active",
     currentVersionId: createInitialAssetVersionId(id),
     metadata: {
-      ...buildPackAsset(pack, targetProjectId, now).metadata,
+      ...base.metadata,
       packId: pack.id,
+      // 一条都没排除时不写这个字段，老数据的形态保持不变
+      ...(excluded.length > 0 ? { excludedItemIds: excluded } : {}),
     },
   };
 }

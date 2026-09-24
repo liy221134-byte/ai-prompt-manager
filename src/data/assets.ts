@@ -219,6 +219,15 @@ export type RuleAssetMetadata = {
   compileTarget?: CompileTarget[];
   compileDecision?: RuleCompileDecision;
   pack?: AssetPackLink;
+  // 「另存为项目规则」脱钩出来的副本：记它原来是从哪个包的哪条规则来的。
+  // 有它就在项目列表里顶掉公共正本；没它的老副本仍然被正本顶掉。
+  // sourceAssetId 是主判据（从公共库直接挑进来的规则不一定属于某个包）；
+  // packId/packItemId 只有包成员才有。
+  detachedFrom?: {
+    sourceAssetId?: string;
+    packId?: string;
+    packItemId?: string;
+  };
   relations?: AssetRelation[];
 };
 
@@ -330,6 +339,12 @@ export type RulePackAssetMetadata = {
   // 这条是项目里的「引用记录」时，记下引用的是公共库哪个包（包资产标识是全局的，
   // 引用记录按项目各存一条，所以要单独记）
   packId?: string;
+  // 这个项目从这个包里排除掉的包内编号（不填＝整包都要）。
+  // 存「排除」而不是「选中」：公共库以后加规则时，项目默认能拿到新的。
+  excludedItemIds?: string[];
+  // 从公共资产库直接挑进来的规则（不复制正文、不属于某个包）。
+  // 挑资产时写进这条「公共资产库挑入」引用记录。
+  referencedAssetIds?: string[];
   relations?: AssetRelation[];
 };
 

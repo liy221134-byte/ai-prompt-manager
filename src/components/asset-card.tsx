@@ -10,7 +10,9 @@ import {
 type AssetCardProps = {
   asset: AssetData;
   index: number;
-  // 规则引用：这条规则来自公共资产库的哪个包（有值就挂一个「公共库」角标）
+  // 规则引用：这条规则来自公共资产库的哪个包。
+  // 传了值就是引用来的（空串表示「从公共库挑进来、不属于某个包」，角标只写「公共库」）；
+  // 不传（undefined）表示这条本来就在项目里，没有来源角标。
   publicPackTitle?: string;
   onOpen: (asset: AssetData) => void;
 };
@@ -70,12 +72,16 @@ export function AssetCard({
                 {assetStatusLabels[asset.status]}
               </span>
             )}
-            {publicPackTitle && (
+            {publicPackTitle !== undefined && (
               <span
                 className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-200"
-                title={`来自公共资产库的「${publicPackTitle}」：改公共库那份，所有引用它的项目都跟着变`}
+                title={
+                  publicPackTitle
+                    ? `来自公共资产库的「${publicPackTitle}」：改公共库那份，所有引用它的项目都跟着变`
+                    : "从公共资产库挑进来的规则：改公共库那份，所有引用它的地方都跟着变"
+                }
               >
-                公共库 · {publicPackTitle}
+                {publicPackTitle ? `公共库 · ${publicPackTitle}` : "公共库"}
               </span>
             )}
           </div>

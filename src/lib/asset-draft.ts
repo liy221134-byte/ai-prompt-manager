@@ -713,6 +713,9 @@ function keepRuleMetadata(metadata: RuleAssetMetadata | null) {
       ? { compileDecision: metadata.compileDecision }
       : {}),
     ...(metadata.pack ? { pack: metadata.pack } : {}),
+    // 「另存为项目规则」的脱钩标记必须带回来：编辑器改不到它，
+    // 一旦丢掉，这条副本会被当成老数据里的重复副本藏起来，用户改的内容就看不见了
+    ...(metadata.detachedFrom ? { detachedFrom: metadata.detachedFrom } : {}),
   };
 }
 
