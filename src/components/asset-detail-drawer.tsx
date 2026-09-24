@@ -73,6 +73,8 @@ type AssetDetailDrawerProps = {
     onViewDiff: () => void;
     onPull: () => void;
   } | null;
+  // 这条资产来自别处时的说明（例如「来自公共资产库的引用」）
+  sourceNotice?: string;
   onRestore: (
     asset: EditableAssetData,
     version: AssetVersionData,
@@ -248,6 +250,7 @@ export function AssetDetailDrawer({
   onSaveDocumentAsTemplate,
   onPromoteToPublic,
   upstreamNotice,
+  sourceNotice,
   onRestore,
   onUpdateStatus,
   onNotify,
@@ -480,6 +483,11 @@ export function AssetDetailDrawer({
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-6">
+          {sourceNotice && (
+            <div className="mb-5 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+              <p className="text-sm leading-6 text-sky-900">{sourceNotice}</p>
+            </div>
+          )}
           {upstreamNotice && (
             <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-sm font-semibold text-amber-900">

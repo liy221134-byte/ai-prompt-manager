@@ -327,6 +327,9 @@ export type RulePackAssetMetadata = {
   packConfidence: RuleConfidence;
   projectScale: ProjectScale[];
   sourceNote: string;
+  // 这条是项目里的「引用记录」时，记下引用的是公共库哪个包（包资产标识是全局的，
+  // 引用记录按项目各存一条，所以要单独记）
+  packId?: string;
   relations?: AssetRelation[];
 };
 

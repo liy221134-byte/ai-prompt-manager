@@ -10,6 +10,8 @@ import {
 type AssetCardProps = {
   asset: AssetData;
   index: number;
+  // 规则引用：这条规则来自公共资产库的哪个包（有值就挂一个「公共库」角标）
+  publicPackTitle?: string;
   onOpen: (asset: AssetData) => void;
 };
 
@@ -43,7 +45,12 @@ function formatDate(date: string) {
 }
 
 // 规则和文档在 2.0.0 只读展示，编辑入口由后续任务接入。
-export function AssetCard({ asset, index, onOpen }: AssetCardProps) {
+export function AssetCard({
+  asset,
+  index,
+  publicPackTitle,
+  onOpen,
+}: AssetCardProps) {
   const summary = describeAssetSummary(asset);
 
   return (
@@ -61,6 +68,14 @@ export function AssetCard({ asset, index, onOpen }: AssetCardProps) {
                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${statusStyles[asset.status]}`}
               >
                 {assetStatusLabels[asset.status]}
+              </span>
+            )}
+            {publicPackTitle && (
+              <span
+                className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-200"
+                title={`来自公共资产库的「${publicPackTitle}」：改公共库那份，所有引用它的项目都跟着变`}
+              >
+                公共库 · {publicPackTitle}
               </span>
             )}
           </div>

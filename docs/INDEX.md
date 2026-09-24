@@ -38,6 +38,7 @@
 
 ### 设计
 
+- [v2.18.0 规则引用模型设计](superpowers/specs/2026-09-24-v2.18.0-rule-reference-design.md)
 - [v2.17.0 项目资产两条链路设计（待确认）](superpowers/specs/2026-09-24-v2.17.0-asset-lanes-design.md)
 - [v2.15.0 立项起步包设计](superpowers/specs/2026-09-24-v2.15.0-kickoff-pack-design.md)
 - [v2.14.0 沉淀回流设计](superpowers/specs/2026-09-24-v2.14.0-sediment-flowback-design.md)
@@ -125,6 +126,7 @@
 - [v2.15.0 验收清单（立项起步包）](acceptance/v2.15.0.md)
 - [v2.16.0 验收清单（MCP 批量入库与沉淀分流建议）](acceptance/v2.16.0.md)
 - [v2.17.0 验收清单（项目资产两条链路）](acceptance/v2.17.0.md)
+- [v2.18.0 验收清单（规则引用模型）](acceptance/v2.18.0.md)
 
 ### 云端部署
 

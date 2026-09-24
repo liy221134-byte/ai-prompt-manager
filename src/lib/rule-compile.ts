@@ -103,11 +103,14 @@ function readTechContext(rule: RuleAssetData) {
 export function listCompileCandidates(
   assets: AssetData[],
   projectId: string,
+  // 引用来的规则：正文在公共资产库，标识由调用方算好传进来
+  referencedRuleIds: string[] = [],
 ): CompileCandidates {
+  const referenced = new Set(referencedRuleIds);
   const rules = assets.filter(
     (asset): asset is RuleAssetData =>
       asset.assetType === "rule" &&
-      asset.projectId === projectId &&
+      (asset.projectId === projectId || referenced.has(asset.id)) &&
       asset.deletedAt === null,
   );
   const included: CompileCandidate[] = [];

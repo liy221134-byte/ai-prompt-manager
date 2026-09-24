@@ -110,10 +110,20 @@ export function listPackMembersForInstall(
 // 当前项目里装过哪些包，供筛选下拉使用
 export function listProjectPacks(assets: AssetData[], projectId: string) {
   const counts = new Map<string, number>();
+  const referencedPackIds = new Map<string, string>();
 
   for (const asset of assets) {
     if (asset.projectId !== projectId || asset.deletedAt !== null) {
       continue;
+    }
+
+    // 引用记录：项目引用公共库的包时，正文成员不复制进项目，
+    // 所以「装过哪些包」也要把这条引用算上
+    if (asset.assetType === "rule_pack") {
+      const packId = asset.metadata.packId ?? asset.id;
+
+      referencedPackIds.set(packId, asset.title);
+      counts.set(packId, counts.get(packId) ?? 0);
     }
 
     const link = readAssetPackLink(asset.metadata);
@@ -134,9 +144,16 @@ export function listProjectPacks(assets: AssetData[], projectId: string) {
 
     options.push({
       packId,
-      title: pack?.title ?? packId,
+      title: pack?.title ?? referencedPackIds.get(packId) ?? packId,
       memberCount,
     });
+  }
+
+  // 引用记录里计数为 0（规则正文在公共库），但这条包确实在用，至少显示 0 而不是丢掉
+  for (const [packId, title] of referencedPackIds) {
+    if (!counts.has(packId)) {
+      options.push({ packId, title, memberCount: 0 });
+    }
   }
 
   return options.sort((left, right) => left.title.localeCompare(right.title, "zh"));
@@ -310,7 +327,12 @@ export function planRulePackInstall(input: {
   existingAssets: AssetData[];
   targetProjectId: string;
   now: string;
+  // 规则成员的进项目方式：
+  //   copy（默认）＝把正文复制一份进项目，兼容老行为；
+  //   reference＝只装「引用记录」，规则正文留在公共资产库，读的时候合并进来。
+  ruleMode?: "copy" | "reference";
 }): RulePackInstallPlan {
+  const ruleMode = input.ruleMode ?? "copy";
   const installedKeys = new Set(
     input.existingAssets
       .map((asset) => ({
@@ -334,6 +356,12 @@ export function planRulePackInstall(input: {
 
     if (!link) {
       skipped.push({ packItemId: member.id, title: member.title });
+      continue;
+    }
+
+    // 引用模式下规则不复制：项目里只留包这条引用，正文从公共库读
+    if (ruleMode === "reference" && member.assetType === "rule") {
+      skipped.push({ packItemId: link.packItemId, title: member.title });
       continue;
     }
 
@@ -464,7 +492,44 @@ export function planRulePackImport(input: {
   existingAssets: AssetData[];
   targetProjectId: string;
   now: string;
+  // 装到项目时用 reference：规则正文留在公共资产库，项目只记引用
+  ruleMode?: "copy" | "reference";
 }): RulePackImportPlan {
+  // 引用模式：项目里放一条按项目区分的「引用记录」，规则成员不复制。
+  // 文档和模板成员照旧复制——它们要进项目的文档/模板列表，体量也小。
+  if (input.ruleMode === "reference") {
+    const referenceId = buildPackReferenceId(
+      input.file.pack.id,
+      input.targetProjectId,
+    );
+    const existingReference = input.existingAssets.find(
+      (asset): asset is RulePackAssetData =>
+        asset.id === referenceId && asset.assetType === "rule_pack",
+    );
+    const install = planRulePackInstall({
+      // 成员关系里记的是全局包标识，所以这里仍然用包本身来算是非成员
+      pack: buildPackAsset(input.file.pack, input.targetProjectId, input.now),
+      members: input.file.members,
+      existingAssets: input.existingAssets,
+      targetProjectId: input.targetProjectId,
+      now: input.now,
+      ruleMode: "reference",
+    });
+
+    return {
+      packAsset: existingReference
+        ? null
+        : buildPackReferenceAsset(
+            input.file.pack,
+            input.targetProjectId,
+            input.now,
+            referenceId,
+          ),
+      assetsToCreate: install.assetsToCreate,
+      skipped: install.skipped,
+    };
+  }
+
   const existingPack = input.existingAssets.find(
     (asset): asset is RulePackAssetData =>
       asset.id === input.file.pack.id && asset.assetType === "rule_pack",
@@ -480,11 +545,35 @@ export function planRulePackImport(input: {
       : [...input.existingAssets, packAsset],
     targetProjectId: input.targetProjectId,
     now: input.now,
+    ...(input.ruleMode ? { ruleMode: input.ruleMode } : {}),
   });
 
   return {
     packAsset: existingPack ? null : packAsset,
     assetsToCreate: install.assetsToCreate,
     skipped: install.skipped,
+  };
+}
+
+// 引用记录的资产标识：一个项目一条，重复安装时按它判断已经引用过
+export function buildPackReferenceId(packId: string, projectId: string) {
+  return `${packId}-ref-${projectId}`;
+}
+
+// 项目里的引用记录：正文和标题都照抄包，只多记一条「引用的是哪个包」
+function buildPackReferenceAsset(
+  pack: RulePackFilePack,
+  targetProjectId: string,
+  now: string,
+  id: string,
+): RulePackAssetData {
+  return {
+    ...buildPackAsset(pack, targetProjectId, now),
+    id,
+    currentVersionId: createInitialAssetVersionId(id),
+    metadata: {
+      ...buildPackAsset(pack, targetProjectId, now).metadata,
+      packId: pack.id,
+    },
   };
 }

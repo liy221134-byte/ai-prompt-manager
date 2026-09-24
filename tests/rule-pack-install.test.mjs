@@ -142,6 +142,38 @@ test("安装计划把成员复制到目标项目并接上包链接", () => {
   assert.equal(readAssetPackLink(second.metadata).packItemId, "SAMPLE-002");
 });
 
+test("引用模式：只装包这条引用，规则正文留在公共资产库", () => {
+  const parsed = createSamplePack();
+  const pack = createPackAsset(parsed);
+  const plan = planRulePackInstall({
+    pack,
+    members: parsed.members,
+    existingAssets: [pack],
+    targetProjectId: "project-a",
+    now,
+    ruleMode: "reference",
+  });
+
+  // 规则成员不复制进项目；它们由公共资产库那份提供
+  assert.deepEqual(plan.assetsToCreate, []);
+  assert.equal(plan.skipped.length, 2);
+  assert.ok(
+    plan.skipped.every((item) => item.packItemId.length > 0),
+    "跳过的成员仍然按包内编号报出来，界面上要能说清",
+  );
+
+  // 默认（不传 ruleMode）还是复制，兼容老行为和云端
+  const copyPlan = planRulePackInstall({
+    pack,
+    members: parsed.members,
+    existingAssets: [pack],
+    targetProjectId: "project-a",
+    now,
+  });
+
+  assert.equal(copyPlan.assetsToCreate.length, 2);
+});
+
 test("同一个包重复装进同一个项目只跳过不重复建", () => {
   const parsed = createSamplePack();
   const pack = createPackAsset(parsed);

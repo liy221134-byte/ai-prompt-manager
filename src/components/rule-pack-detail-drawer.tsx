@@ -138,7 +138,8 @@ export function RulePackDetailDrawer({
           <section className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-4">
             <h3 className="text-sm font-semibold text-indigo-900">安装到项目</h3>
             <p className="mt-1 text-xs leading-5 text-indigo-900/80">
-              安装会把包里的资产复制进目标项目，并在每条上记下「来自哪个包的哪一条」。
+              装到「公共资产库」＝把包和成员复制过去，作为正本；装到「项目」＝只记一条引用，
+              规则正文留在公共资产库——公共库改一处，所有引用它的项目跟着变。
               已经装过的会跳过，不会重复，也不会覆盖你改过的内容。
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
