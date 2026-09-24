@@ -35,6 +35,7 @@
 
 ### 设计
 
+- [v2.12.0／v2.13.0 交互重构与问题修复设计（待确认）](superpowers/specs/2026-09-24-v2.12.0-workspace-split-and-fixes-design.md)
 - [v2.2.0 规则包与种子资产包导入设计](superpowers/specs/2026-09-23-v2.2.0-rule-pack-and-seed-import-design.md)
 - [v2.3.0 规则编译设计](superpowers/specs/2026-09-23-v2.3.0-rule-compile-design.md)
 - [v2.4.0 模板中心设计](superpowers/specs/2026-09-23-v2.4.0-template-center-design.md)
