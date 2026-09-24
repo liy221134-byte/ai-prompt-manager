@@ -224,12 +224,18 @@ export function listConflictCandidates(
 }
 
 function readStatement(rule: RuleAssetData) {
-  const firstLine = rule.content
+  const title = rule.title.trim();
+  // 规则正文通常是「# 标题 + ## 小节标题 + 正文」。小标题只说明结构，
+  // 不是「做法」，所以跳过所有 # 开头的行，取第一句真正的正文。
+  const statement = rule.content
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .find((line) => line.length > 0);
+    .filter((line) => line.length > 0 && !line.startsWith("#"))
+    .map((line) => line.replace(/^[-*]\s*/, "").trim())
+    .find((line) => line.length > 0 && line !== title);
 
-  return firstLine?.replace(/^#+\s*/, "") || rule.summary || rule.title;
+  // 实在没有正文（只有标题和小标题）就不硬凑，调用方会把「：」省掉
+  return statement ?? "";
 }
 
 function readSourceLabel(
@@ -253,8 +259,10 @@ function buildRuleBlock(
   rule: RuleAssetData,
   packTitles: Record<string, string>,
 ) {
+  const statement = readStatement(rule);
   const lines = [
-    `- **${rule.title}**：${readStatement(rule)}`,
+    // 正文里除了标题没有别的话时，不要把标题再说一遍
+    `- **${rule.title}**${statement ? `：${statement}` : ""}`,
   ];
   const details: string[] = [];
 
@@ -369,7 +377,11 @@ export function compileRuleDrafts(input: {
       `## ${ruleTypeLabels[typed.ruleType]}`,
       "",
       typed.rules
-        .map((rule) => `- **${rule.title}**：${readStatement(rule)}`)
+        .map((rule) => {
+          const statement = readStatement(rule);
+
+          return `- **${rule.title}**${statement ? `：${statement}` : ""}`;
+        })
         .join("\n"),
     ].join("\n"),
   );

@@ -272,3 +272,52 @@ test("裁决结果能读回来，坏数据按没裁决处理", () => {
     null,
   );
 });
+
+test("规则正文只有标题和小标题时，不把标题重复写一遍", () => {
+  const { agents, startPrompt } = compileRuleDrafts({
+    projectName: "示例项目",
+    rules: [
+      createRule({
+        title: "接口契约与数据所有权规则",
+        content:
+          "# 接口契约与数据所有权规则\n\n## 核心结论\n\n接口返回的数据先定归属，再谈复用。\n",
+        metadata: { ruleType: "must", scope: "project" },
+      }),
+    ],
+    packTitles: {},
+    excludedCount: 0,
+    now,
+  });
+
+  assert.match(
+    agents.content,
+    /- \*\*接口契约与数据所有权规则\*\*：接口返回的数据先定归属，再谈复用。/,
+  );
+  assert.match(
+    startPrompt.content,
+    /- \*\*接口契约与数据所有权规则\*\*：接口返回的数据先定归属，再谈复用。/,
+  );
+  assert.doesNotMatch(
+    agents.content,
+    /接口契约与数据所有权规则\*\*：接口契约与数据所有权规则/,
+  );
+});
+
+test("正文里一句实际的话都没有时，标题后面不留空冒号", () => {
+  const { agents } = compileRuleDrafts({
+    projectName: "示例项目",
+    rules: [
+      createRule({
+        title: "只有标题的规则",
+        content: "# 只有标题的规则\n\n## 核心结论\n",
+        metadata: { ruleType: "must", scope: "project" },
+      }),
+    ],
+    packTitles: {},
+    excludedCount: 0,
+    now,
+  });
+
+  assert.match(agents.content, /- \*\*只有标题的规则\*\*\n/);
+  assert.doesNotMatch(agents.content, /只有标题的规则\*\*：/);
+});

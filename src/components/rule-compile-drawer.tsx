@@ -359,6 +359,13 @@ export function RuleCompileDrawer({
                 ))}
               </div>
 
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                两份产物范围不一样：{drafts.agents.fileName} 收全部参与编译的规则
+                （{drafts.agents.ruleCount} 条）；START_PROMPT.md 是给 AI 的启动提示词，
+                只收「必须」和「禁止」两类硬约束（{drafts.startPrompt.ruleCount} 条），
+                所以条数会明显少——想让它多几条，就把对应规则的规则类型改成「必须」或「禁止」。
+              </p>
+
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
