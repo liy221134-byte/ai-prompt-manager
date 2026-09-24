@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -21,7 +21,13 @@ const readToolNames = [
   "list_graph_nodes",
   "analyze_impact",
 ];
-const writeToolNames = ["create_asset", "update_asset", "set_asset_status"];
+const writeToolNames = [
+  "create_asset",
+  "update_asset",
+  "set_asset_status",
+  "import_documents",
+  "import_graph_nodes",
+];
 
 // 每次用一条临时 SQLite 库起一个真服务，客户端走 SDK 自带的内存传输
 async function createHarness(options = {}) {
@@ -306,5 +312,105 @@ test("找不到的项目和资产都返回中文提示，不抛异常", async ()
     assert.match(readText(assetMiss), /没有唯一匹配/);
   } finally {
     await harness.close();
+  }
+});
+
+test("批量灌节点：同类型同编号跳过，其余按编号新建", async () => {
+  const harness = await createHarness();
+
+  try {
+    const result = readText(
+      await harness.client.callTool({
+        name: "import_graph_nodes",
+        arguments: {
+          nodes: [
+            {
+              nodeType: "requirement",
+              code: "REQ-001",
+              title: "需求一",
+              content: "第一条需求的说明。",
+            },
+            {
+              nodeType: "requirement",
+              code: "REQ-002",
+              title: "需求二",
+              content: "第二条需求的说明。",
+            },
+          ],
+        },
+      }),
+    );
+
+    assert.match(result, /新建 2 个节点，跳过 0 个/);
+    assert.match(result, /REQ-001 需求一/);
+
+    const again = readText(
+      await harness.client.callTool({
+        name: "import_graph_nodes",
+        arguments: {
+          nodes: [
+            {
+              nodeType: "requirement",
+              code: "req-001",
+              title: "需求一（重复编号）",
+              content: "重复编号的说明。",
+            },
+            {
+              nodeType: "requirement",
+              code: "REQ-003",
+              title: "需求三",
+              content: "第三条需求的说明。",
+            },
+          ],
+        },
+      }),
+    );
+
+    assert.match(again, /新建 1 个节点，跳过 1 个/);
+    assert.match(again, /已经有「需求一」/);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("按目录批量灌文档：先 dryRun 看不写，再真导，重复的跳过", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "mcp-docs-"));
+  const harness = await createHarness();
+
+  try {
+    writeFileSync(join(directory, "架构说明.md"), "# 架构\n\n正文。", "utf8");
+    writeFileSync(join(directory, "验收清单.md"), "# 验收\n\n步骤。", "utf8");
+
+    const dryRun = readText(
+      await harness.client.callTool({
+        name: "import_documents",
+        arguments: { directoryPath: directory, dryRun: true },
+      }),
+    );
+
+    assert.match(dryRun, /可导入 2 份/);
+    assert.match(dryRun, /这是 dryRun，没有写库/);
+
+    const first = readText(
+      await harness.client.callTool({
+        name: "import_documents",
+        arguments: { directoryPath: directory, documentType: "架构说明" },
+      }),
+    );
+
+    assert.match(first, /已导入 2 份/);
+
+    const second = readText(
+      await harness.client.callTool({
+        name: "import_documents",
+        arguments: { directoryPath: directory },
+      }),
+    );
+
+    assert.match(second, /可导入 0 份，跳过 2 份/);
+    assert.match(second, /项目里已有同名文档/);
+  } finally {
+    await harness.close();
+    rmSync(directory, { recursive: true, force: true });
   }
 });

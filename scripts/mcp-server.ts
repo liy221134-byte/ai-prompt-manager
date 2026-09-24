@@ -22,6 +22,11 @@ import {
   ruleTypeLabels,
 } from "../src/lib/asset-list.ts";
 import { createAssetVersionId } from "../src/lib/asset-versions.ts";
+import type {
+  AssetData,
+  GraphNodeAssetData,
+} from "../src/data/assets.ts";
+import type { ProjectData } from "../src/data/projects.ts";
 import {
   analyzeNodeImpactByReference,
   describeAsset,
@@ -40,6 +45,12 @@ import {
   mcpWritableAssetTypes,
 } from "../src/lib/mcp-write.ts";
 import { PromptDatabase } from "../src/lib/server/prompt-database.ts";
+import {
+  buildDocumentImportDrafts,
+  materializeDocumentAssets,
+} from "../src/lib/document-import.ts";
+import { scanDocumentDirectory } from "../src/lib/server/document-directory-scan.ts";
+import { findNodeWithSameCode } from "../src/lib/graph-node.ts";
 
 // 只用到本地库的这几个读方法，测试里可以换成临时库
 export type McpDatabase = Pick<
@@ -575,7 +586,255 @@ export function createMcpServer(options: McpServerOptions) {
     },
   );
 
+  // 批量入库：先按目录灌文档，再按编号灌节点
+  registerBatchImportTools(server, {
+    database,
+    now,
+    readState,
+    requireProject,
+  });
+
   return server;
+}
+
+// 批量入库的两个工具（阶段二）：
+// 都只新增、不覆盖；同名的文档和同编号的节点默认跳过，并把跳过原因说清楚。
+function registerBatchImportTools(
+  server: McpServer,
+  options: {
+    database: McpDatabase;
+    now: () => string;
+    readState: () => { projects: ProjectData[]; assets: AssetData[] };
+    requireProject: (
+      projects: ProjectData[],
+      reference?: string,
+    ) => ProjectData;
+  },
+) {
+  const { database, now, readState, requireProject } = options;
+
+  server.registerTool(
+    "import_documents",
+    {
+      description:
+        "把一个本机目录里的 Markdown／纯文本按批导入项目文档（原样入库，不改内容）。" +
+        "同名文档默认跳过；先加 dryRun 看会导入哪些，确认后再真导。",
+      inputSchema: z.object({
+        directoryPath: z
+          .string()
+          .describe("本机目录的绝对路径，例如 E:\\codeX项目\\docs"),
+        project: z
+          .string()
+          .optional()
+          .describe("项目名称或项目标识，省略则用默认项目"),
+        documentType: z
+          .string()
+          .optional()
+          .describe("按哪个文档类型入库，默认「参考资料」"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe("只列出会导入哪些、不写库，默认 false"),
+      }),
+    },
+    async (input) => {
+      try {
+        const { projects, assets } = readState();
+        const project = requireProject(projects, input.project);
+        const files = await scanDocumentDirectory({
+          directoryPath: input.directoryPath,
+        });
+        const existingDocuments = assets.filter(
+          (asset) =>
+            asset.projectId === project.id &&
+            asset.assetType === "document" &&
+            asset.deletedAt === null,
+        );
+        const drafts = buildDocumentImportDrafts({
+          files,
+          existing: existingDocuments.map((asset) => ({
+            id: asset.id,
+            title: asset.title,
+          })),
+        });
+        const importable = drafts.filter(
+          (draft) => !draft.existingAssetId && !draft.tooLarge,
+        );
+        const skipped = drafts.filter(
+          (draft) => draft.existingAssetId || draft.tooLarge,
+        );
+        const summary = [
+          `目录：${input.directoryPath}`,
+          `读到 ${files.length} 份文件，可导入 ${importable.length} 份，跳过 ${skipped.length} 份。`,
+        ];
+
+        if (input.dryRun) {
+          return text(
+            [
+              ...summary,
+              "",
+              "会导入：",
+              ...importable.map((draft) => `- ${draft.title}`),
+              ...(skipped.length > 0
+                ? [
+                    "",
+                    "会跳过：",
+                    ...skipped.map(
+                      (draft) =>
+                        `- ${draft.title}（${
+                          draft.existingAssetId ? "项目里已有同名文档" : "超过单份上限"
+                        }）`,
+                    ),
+                  ]
+                : []),
+              "",
+              "这是 dryRun，没有写库。确认后去掉 dryRun 再来一次。",
+            ].join("\n"),
+          );
+        }
+
+        const batchId = `mcp-import-${now()}`;
+        const assetsToCreate = materializeDocumentAssets({
+          drafts: importable,
+          projectId: project.id,
+          documentType: input.documentType?.trim() || "参考资料",
+          batchId,
+          now: now(),
+        });
+        const created: string[] = [];
+
+        for (const asset of assetsToCreate) {
+          const saved = database.createAsset({
+            asset,
+            versionId: asset.currentVersionId,
+            changeReason: "MCP 批量导入文档",
+            versionReason: "initial",
+          });
+
+          if (saved) {
+            created.push(asset.title);
+          }
+        }
+
+        return text(
+          [
+            ...summary,
+            `已导入 ${created.length} 份到项目「${project.name}」：`,
+            ...created.map((title) => `- ${title}`),
+            ...(skipped.length > 0
+              ? [
+                  "",
+                  "跳过的：",
+                  ...skipped.map(
+                    (draft) =>
+                      `- ${draft.title}（${
+                        draft.existingAssetId ? "项目里已有同名文档" : "超过单份上限"
+                      }）`,
+                  ),
+                ]
+              : []),
+            "",
+            "这些文档都是原样入库的，可以在项目视图的「文档」标签下按链路分组查看。",
+          ].join("\n"),
+        );
+      } catch (error) {
+        return failure(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "import_graph_nodes",
+    {
+      description:
+        "按编号批量新建图谱节点（需求／模块／数据／接口／测试）。" +
+        "同类型同编号已存在就跳过，不覆盖已有正文；适合让 AI 把一批节点一次灌进来。",
+      inputSchema: z.object({
+        project: z
+          .string()
+          .optional()
+          .describe("项目名称或项目标识，省略则用默认项目"),
+        nodes: z
+          .array(
+            z.object({
+              nodeType: z.enum(nodeTypes).describe("节点类型"),
+              code: z.string().describe("节点编号，例如 REQ-001"),
+              title: z.string().describe("节点标题"),
+              content: z
+                .string()
+                .describe("节点说明（Markdown）；节点没有说明就等于没内容，所以必填"),
+              note: z.string().optional().describe("备注"),
+              parentCode: z.string().optional().describe("父节点编号"),
+            }),
+          )
+          .describe("要建的节点清单"),
+      }),
+    },
+    async (input) => {
+      try {
+        const { projects, assets } = readState();
+        const project = requireProject(projects, input.project);
+        const existingNodes = assets.filter(
+          (asset): asset is GraphNodeAssetData =>
+            asset.projectId === project.id &&
+            asset.assetType === "graph_node" &&
+            asset.deletedAt === null,
+        );
+        const created: string[] = [];
+        const skipped: string[] = [];
+        let knownNodes = [...existingNodes];
+
+        for (const node of input.nodes) {
+          const duplicated = findNodeWithSameCode(knownNodes, {
+            id: "",
+            nodeType: node.nodeType,
+            code: node.code,
+          });
+
+          if (duplicated) {
+            skipped.push(`${node.code}（已经有「${duplicated.title}」）`);
+            continue;
+          }
+
+          const saveInput = buildMcpCreateAsset(
+            {
+              assetType: "graph_node",
+              projectId: project.id,
+              title: node.title,
+              content: node.content,
+              nodeType: node.nodeType,
+              code: node.code,
+              ...(node.note ? { note: node.note } : {}),
+              ...(node.parentCode ? { parentCode: node.parentCode } : {}),
+            },
+            { now: now(), assets: knownNodes },
+          );
+          const saved = database.createAsset(saveInput);
+
+          if (saved) {
+            created.push(`${node.code} ${node.title}`);
+            knownNodes = [...knownNodes, saveInput.asset as GraphNodeAssetData];
+          }
+        }
+
+        return text(
+          [
+            `项目「${project.name}」：新建 ${created.length} 个节点，跳过 ${skipped.length} 个。`,
+            ...(created.length > 0
+              ? ["", "已新建：", ...created.map((line) => `- ${line}`)]
+              : []),
+            ...(skipped.length > 0
+              ? ["", "已跳过：", ...skipped.map((line) => `- ${line}`)]
+              : []),
+            "",
+            "建完可以打开项目图谱看树和影响分析。",
+          ].join("\n"),
+        );
+      } catch (error) {
+        return failure(error);
+      }
+    },
+  );
 }
 
 export function readWriteMode(env: NodeJS.ProcessEnv = process.env) {

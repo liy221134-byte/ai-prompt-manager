@@ -1838,6 +1838,13 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     }
   }
 
+  // 批量提升（沉淀体检里「建议升公共」的那几条）：逐条走同一个提升动作
+  async function handlePromoteAssetsToPublic(list: AssetData[]) {
+    for (const asset of list) {
+      await handlePromoteAssetToPublic(asset);
+    }
+  }
+
   async function handlePromoteAssetToPublic(asset: AssetData) {
     if (!isEditableAssetData(asset)) {
       return;
@@ -3431,6 +3438,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             setAssetDetailId(assetId);
           }}
           onPromote={(asset) => void handlePromoteAssetToPublic(asset)}
+          onPromoteMany={handlePromoteAssetsToPublic}
           projectNameById={projectNameById}
         />
       )}

@@ -5,12 +5,14 @@ import { CircleDashed, Sparkles, X } from "lucide-react";
 import type { AssetData } from "@/data/assets";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import type { SedimentCheckup } from "@/lib/sediment-flowback";
+import { suggestSedimentScope } from "@/lib/sediment-scope";
 
 type SedimentCheckupDrawerProps = {
   checkup: SedimentCheckup;
   projectNameById: Map<string, string>;
   onOpenAsset: (assetId: string) => void;
   onPromote: (asset: AssetData) => void;
+  onPromoteMany?: (assets: AssetData[]) => Promise<void>;
   onClose: () => void;
 };
 
@@ -20,22 +22,43 @@ export function SedimentCheckupDrawer({
   projectNameById,
   onOpenAsset,
   onPromote,
+  onPromoteMany,
   onClose,
 }: SedimentCheckupDrawerProps) {
   useModalBehavior(onClose);
+
+  // 每条规则顺带给一个「该升公共还是留项目」的建议，随清单一起展示
+  const ruleSuggestions = checkup.projectOnlyRules.map((entry) => ({
+    entry,
+    suggestion: suggestSedimentScope({
+      asset: entry.asset,
+      projectName: projectNameById.get(entry.projectId) ?? "",
+    }),
+  }));
+  const promoteReady = ruleSuggestions.filter(
+    (item) => item.suggestion.scope === "public",
+  );
 
   const sections = [
     {
       key: "rules",
       title: "只在项目里出现的规则",
-      hint: "这些规则还没进公共资产库；值得复用的点「提升为公共」。",
+      hint: "这些规则还没进公共资产库。下面逐条给了「建议升公共／先留项目」和理由；建议升的可以一次全提升。",
       empty: "没有这样的规则，项目里的规则都已经在公共库或已经提升过。",
-      items: checkup.projectOnlyRules.map((entry) => ({
+      items: ruleSuggestions.map(({ entry, suggestion }) => ({
         id: entry.asset.id,
         title: entry.asset.title,
-        meta: projectNameById.get(entry.projectId) ?? entry.projectId,
+        meta: [
+          projectNameById.get(entry.projectId) ?? entry.projectId,
+          suggestion.scope === "public"
+            ? `建议升公共：${suggestion.reason}`
+            : `建议留项目：${suggestion.reason}`,
+        ].join(" · "),
         asset: entry.asset,
-        action: "promote" as const,
+        action:
+          suggestion.scope === "public"
+            ? ("promote" as const)
+            : ("open" as const),
       })),
     },
     {
@@ -128,6 +151,22 @@ export function SedimentCheckupDrawer({
               <p className="mt-1 text-xs leading-5 text-slate-500">
                 {section.hint}
               </p>
+
+              {section.key === "rules" &&
+                onPromoteMany &&
+                promoteReady.length > 0 && (
+                  <button
+                    className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-100"
+                    onClick={() =>
+                      void onPromoteMany(
+                        promoteReady.map((item) => item.entry.asset),
+                      )
+                    }
+                    type="button"
+                  >
+                    把建议升公共的 {promoteReady.length} 条一次提升
+                  </button>
+                )}
 
               {section.items.length === 0 ? (
                 <p className="mt-2 flex items-center gap-2 text-xs text-slate-400">
