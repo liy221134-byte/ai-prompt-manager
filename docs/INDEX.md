@@ -83,6 +83,7 @@
 
 ### 验收与测试
 
+- [用户故事与线上自测清单](user-stories.md)
 - [第 1 周验收](acceptance/week-01.md)
 - [第 2 周验收](acceptance/week-02.md)
 - [第 2 周手动测试](testing/week-02-manual-test-guide.md)
