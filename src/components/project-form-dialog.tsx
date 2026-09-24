@@ -7,9 +7,10 @@ import {
   LoaderCircle,
   RotateCcw,
   Settings2,
+  Upload,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   projectRiskLevelOptions,
@@ -20,6 +21,7 @@ import {
 } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import { assetTypeDescriptions } from "@/lib/asset-list";
+import { draftStackFromPackageJson } from "@/lib/tech-profile-draft";
 
 export type ProjectFormValues = {
   name: string;
@@ -33,6 +35,7 @@ type ProjectFormDialogProps = {
   project: ProjectData | null;
   hasTechProfile?: boolean;
   onClose: () => void;
+  onDraftTechStack?: (stack: Array<{ name: string; version: string }>) => void;
   onSubmit: (values: ProjectFormValues) => Promise<void>;
   onArchive?: () => Promise<void>;
   onReactivate?: () => Promise<void>;
@@ -44,6 +47,7 @@ export function ProjectFormDialog({
   project,
   hasTechProfile = false,
   onClose,
+  onDraftTechStack,
   onSubmit,
   onArchive,
   onReactivate,
@@ -60,6 +64,7 @@ export function ProjectFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const packageFileInputRef = useRef<HTMLInputElement>(null);
 
   useModalBehavior(isSubmitting ? () => undefined : onClose, isSubmitting);
 
@@ -93,6 +98,33 @@ export function ProjectFormDialog({
       () => onSubmit({ name, description, stage, riskLevel }),
       isEdit ? "项目更新失败。" : "项目创建失败。",
     );
+  }
+
+  // 从本机选一个 package.json，读出能认出来的技术栈，交给调用方开技术档案草稿。
+  // 读文件只发生在浏览器里，不上传；草稿仍然要人确认后才保存。
+  async function handlePackageFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file || !onDraftTechStack) {
+      return;
+    }
+
+    try {
+      const stack = draftStackFromPackageJson(await file.text());
+
+      if (stack.length === 0) {
+        setErrorMessage("这个 package.json 里没有认识的技术栈，还是手动填吧。");
+        return;
+      }
+
+      onDraftTechStack(stack);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "读取 package.json 失败。",
+      );
+    }
   }
 
   return (
@@ -254,6 +286,27 @@ export function ProjectFormDialog({
               <Layers3 aria-hidden="true" className="size-4" />
               {hasTechProfile ? "打开技术档案" : "新建技术档案"}
             </button>
+            {!hasTechProfile && onDraftTechStack && (
+              <>
+                <input
+                  accept=".json,application/json"
+                  aria-label="选择 package.json 推断技术栈"
+                  className="hidden"
+                  onChange={(event) => void handlePackageFile(event)}
+                  ref={packageFileInputRef}
+                  type="file"
+                />
+                <button
+                  className="mt-3 ml-2 inline-flex h-10 items-center gap-2 rounded-lg border border-[#dbe7f5] bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isSubmitting}
+                  onClick={() => packageFileInputRef.current?.click()}
+                  type="button"
+                >
+                  <Upload aria-hidden="true" className="size-4" />
+                  从 package.json 推断
+                </button>
+              </>
+            )}
           </section>
         )}
 

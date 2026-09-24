@@ -253,6 +253,8 @@ export function createEmptyAssetDraft(
     nodeId?: string;
     // 发布记录的门禁项：按项目质量等级预填进来
     gates?: ReleaseGateItem[];
+    // 技术档案的技术栈预填（例如从 package.json 推断出来的草稿）
+    stack?: Array<{ name: string; version?: string }>;
   } = {},
 ): AssetDraft {
   if (assetType === "rule") {
@@ -286,7 +288,14 @@ export function createEmptyAssetDraft(
       summary: "",
       content: "",
       status: "active",
-      stack: [],
+      stack: (options.stack ?? []).map((entry, index) => ({
+        key: `stack-${index + 1}`,
+        name: entry.name,
+        version: entry.version ?? "",
+        purpose: "",
+        isDeviation: false,
+        adrAssetId: "",
+      })),
       relations: [],
     };
   }

@@ -11,6 +11,7 @@ import {
   GitBranch,
   GitMerge,
   Layers3,
+  LibraryBig,
   ListChecks,
   LogOut,
   LoaderCircle,
@@ -39,6 +40,7 @@ import { AssetCard } from "@/components/asset-card";
 import { AssetDetailDrawer } from "@/components/asset-detail-drawer";
 import { AssetEditorDrawer } from "@/components/asset-editor-drawer";
 import { RulePackDetailDrawer } from "@/components/rule-pack-detail-drawer";
+import { PublicAssetPickerDrawer } from "@/components/public-asset-picker-drawer";
 import { RulePackCreateDialog } from "@/components/rule-pack-create-dialog";
 import { RulePackImportDialog } from "@/components/rule-pack-import-dialog";
 import { RuleCompileDrawer } from "@/components/rule-compile-drawer";
@@ -220,6 +222,7 @@ type AssetEditorState =
         done: boolean;
         note: string;
       }>;
+      initialStack?: Array<{ name: string; version?: string }>;
     }
   | { mode: "edit"; assetId: string };
 
@@ -318,6 +321,7 @@ export function PromptLibrary({
     useState(false);
   const [isRulePackImportOpen, setIsRulePackImportOpen] = useState(false);
   const [isRulePackCreateOpen, setIsRulePackCreateOpen] = useState(false);
+  const [isPublicAssetPickerOpen, setIsPublicAssetPickerOpen] = useState(false);
   const [compileOpenedAt, setCompileOpenedAt] = useState<string | null>(null);
   const [compileTemplateId, setCompileTemplateId] = useState("");
   const [isGraphViewOpen, setIsGraphViewOpen] = useState(false);
@@ -1622,6 +1626,14 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
   async function handleInstallRulePackFile(
     file: RulePackFile,
     projectId: string,
+    options?: {
+      changeReason?: string;
+      successMessage?: (counts: {
+        created: number;
+        skipped: number;
+        projectName: string;
+      }) => string;
+    },
   ) {
     const now = new Date().toISOString();
     const plan = planRulePackImport({
@@ -1630,6 +1642,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       targetProjectId: projectId,
       now,
     });
+    const changeReason = options?.changeReason ?? "安装规则包";
 
     if (plan.packAsset) {
       await dataSource.createAsset({
@@ -1644,7 +1657,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       await dataSource.createAsset({
         asset,
         versionId: asset.currentVersionId,
-        changeReason: "安装规则包",
+        changeReason,
         versionReason: "initial",
       });
     }
@@ -1654,9 +1667,39 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     const projectName =
       projects.find((project) => project.id === projectId)?.name ?? projectId;
 
+    const counts = {
+      created: plan.assetsToCreate.length,
+      skipped: plan.skipped.length,
+      projectName,
+    };
+
     notify(
-      `规则包已装到「${projectName}」：新增 ${plan.assetsToCreate.length} 条、跳过 ${plan.skipped.length} 条`,
+      options?.successMessage?.(counts) ??
+        `规则包已装到「${projectName}」：新增 ${plan.assetsToCreate.length} 条、跳过 ${plan.skipped.length} 条`,
     );
+  }
+
+  // 从公共资产库挑资产带进项目：走和「安装规则包」同一条复制与去重路径。
+  async function handlePickPublicAssets(selected: AssetData[]) {
+    if (!activeProjectId || selected.length === 0) {
+      return;
+    }
+
+    const file = createRulePackFileFromSelection({
+      packId: "rule-pack-public-library",
+      title: "公共资产库挑入",
+      summary: "从公共资产库挑进项目的资产，用来记住它是从哪来的。",
+      assets: selected,
+      now: new Date().toISOString(),
+    });
+    const projectId = activeProjectId;
+
+    await handleInstallRulePackFile(file, projectId, {
+      changeReason: "从公共资产库挑入",
+      successMessage: ({ created, skipped }) =>
+        `已从公共资产库带进 ${created} 条资产${skipped > 0 ? `，跳过 ${skipped} 条（之前挑过）` : ""}`,
+    });
+    setIsPublicAssetPickerOpen(false);
   }
 
   function handleOpenTrash() {
@@ -1927,9 +1970,10 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     if (workspaceView === "project") {
       return {
         title: "这个项目还没有资产",
-        description: "可以从公共资产库挑资产，或者导入工程、装一个规则包。",
-        actionLabel: "去公共资产库",
-        action: "public-view" as const,
+        description:
+          "三条来源：从公共资产库挑、装一个规则包、导入工程；也可以自己新建。",
+        actionLabel: "从公共资产库挑资产",
+        action: "pick-public-assets" as const,
       };
     }
 
@@ -2406,6 +2450,16 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                           onSelect: () => setIsEngineeringImportOpen(true),
                         },
                         {
+                          key: "pick-public-assets",
+                          label: "从公共资产库挑资产",
+                          icon: (
+                            <LibraryBig aria-hidden="true" className="size-4" />
+                          ),
+                          disabled:
+                            isLoading || Boolean(loadError) || !activeProjectId,
+                          onSelect: () => setIsPublicAssetPickerOpen(true),
+                        },
+                        {
                           key: "create-rule",
                           label: "新增规则",
                           icon: <Plus aria-hidden="true" className="size-4" />,
@@ -2670,8 +2724,8 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                     });
                   } else if (emptyState.action === "create-project") {
                     setProjectDialog({ mode: "create" });
-                  } else if (emptyState.action === "public-view") {
-                    handleChangeWorkspaceView("public");
+                  } else if (emptyState.action === "pick-public-assets") {
+                    setIsPublicAssetPickerOpen(true);
                   } else {
                     setEditorState({ mode: "create" });
                   }
@@ -2813,6 +2867,17 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           )}
           onClose={() => setIsRulePackCreateOpen(false)}
           onDownload={handleDownloadPackedRulePack}
+        />
+      )}
+
+      {isPublicAssetPickerOpen && (
+        <PublicAssetPickerDrawer
+          assets={assets.filter(
+            (asset) => asset.projectId === DEFAULT_PROJECT_ID,
+          )}
+          onClose={() => setIsPublicAssetPickerOpen(false)}
+          onPick={handlePickPublicAssets}
+          projectName={activeProject?.name ?? "当前项目"}
         />
       )}
 
@@ -2991,6 +3056,11 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               ? assetEditorState.initialTitle
               : undefined
           }
+          initialStack={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialStack
+              : undefined
+          }
           relationTargetOptions={relationTargetOptions}
           onClose={() => setAssetEditorState(null)}
           onSave={handleAssetSave}
@@ -3024,6 +3094,14 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 ? { mode: "edit", assetId: projectTechProfile.id }
                 : { mode: "create", assetType: "tech_profile" },
             );
+          }}
+          onDraftTechStack={(stack) => {
+            setProjectDialog(null);
+            setAssetEditorState({
+              mode: "create",
+              assetType: "tech_profile",
+              initialStack: stack,
+            });
           }}
           onSubmit={
             projectDialog.mode === "edit"

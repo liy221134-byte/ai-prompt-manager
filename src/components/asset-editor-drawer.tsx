@@ -80,6 +80,8 @@ type AssetEditorDrawerProps = {
     done: boolean;
     note: string;
   }>;
+  // 新建技术档案时的预填：从 package.json 之类推断出来的技术栈
+  initialStack?: Array<{ name: string; version?: string }>;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -197,6 +199,7 @@ export function AssetEditorDrawer({
   initialTitle,
   initialNodeId,
   initialGates,
+  initialStack,
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -208,6 +211,7 @@ export function AssetEditorDrawer({
             ...(initialNodeType ? { nodeType: initialNodeType } : {}),
             ...(initialNodeId ? { nodeId: initialNodeId } : {}),
             ...(initialGates ? { gates: initialGates } : {}),
+            ...(initialStack ? { stack: initialStack } : {}),
           }),
           { documentType: initialDocumentType, title: initialTitle },
         ),
