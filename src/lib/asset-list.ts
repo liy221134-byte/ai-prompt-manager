@@ -126,6 +126,32 @@ export function matchesWorkspaceViewAsset(
   return workspaceViewAssetTypes[view].includes(assetType);
 }
 
+// 同一个类型在两个视图里叫法不同：公共库里的「文档」是方法级参考，
+// 项目里的「文档」才是这次做的事。类型不变，说法和说明按视图给。
+export function readTypeFilterLabel(
+  view: WorkspaceView,
+  option: AssetTypeFilter,
+) {
+  if (option === "document" && view === "public") {
+    return "参考文档";
+  }
+
+  return assetTypeFilterLabels[option];
+}
+
+export function readTypeFilterDescription(
+  view: WorkspaceView,
+  option: AssetTypeFilter,
+) {
+  if (option === "document") {
+    return view === "public"
+      ? "方法级参考资料：项目画像、案例、方法说明。项目自己的文档放项目里，别往这里堆。"
+      : "这个项目这次做的事：需求、规格、交付说明、验收与发布";
+  }
+
+  return option === "all" ? "" : assetTypeDescriptions[option];
+}
+
 // 提示词是一次性取用的东西：复制给智能体之后，关系对它没有实际用处。
 // 2026-09-24 产品负责人决定在提示词界面隐藏关系区——数据保留，只是不显示；
 // 以后要恢复，把这个开关改回 true 即可。
@@ -206,6 +232,7 @@ export const ruleScopeLabels: Record<RuleScope, string> = {
 
 export const documentTypeOptions = [
   "PRD",
+  "实现规格",
   "ADR",
   "验收记录",
   "数据库说明",

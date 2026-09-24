@@ -2,9 +2,11 @@
 
 import {
   Archive,
+  CopyPlus,
   ChevronDown,
   ChevronUp,
   FileText,
+  FilePlus2,
   History,
   ListChecks,
   LoaderCircle,
@@ -54,6 +56,10 @@ type AssetDetailDrawerProps = {
   dataSource: PromptDataSource;
   onClose: () => void;
   onEdit: (asset: EditableAssetData) => void;
+  // 模板 → 用这个模板新建一份文档实例
+  onCreateDocumentFromTemplate?: (asset: AssetData) => void;
+  // 文档 → 另存为模板（进公共资产库的模板层）
+  onSaveDocumentAsTemplate?: (asset: AssetData) => void;
   onRestore: (
     asset: EditableAssetData,
     version: AssetVersionData,
@@ -204,6 +210,8 @@ export function AssetDetailDrawer({
   dataSource,
   onClose,
   onEdit,
+  onCreateDocumentFromTemplate,
+  onSaveDocumentAsTemplate,
   onRestore,
   onUpdateStatus,
   onNotify,
@@ -355,6 +363,30 @@ export function AssetDetailDrawer({
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
+            {asset.assetType === "template" && onCreateDocumentFromTemplate && (
+              <button
+                aria-label="用这个模板新建文档"
+                className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isBusy}
+                onClick={() => onCreateDocumentFromTemplate(asset)}
+                title="用这个模板新建文档"
+                type="button"
+              >
+                <FilePlus2 aria-hidden="true" className="size-5" />
+              </button>
+            )}
+            {asset.assetType === "document" && onSaveDocumentAsTemplate && (
+              <button
+                aria-label="另存为模板"
+                className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isBusy}
+                onClick={() => onSaveDocumentAsTemplate(asset)}
+                title="另存为模板（放进公共资产库）"
+                type="button"
+              >
+                <CopyPlus aria-hidden="true" className="size-5" />
+              </button>
+            )}
             <button
               aria-label={`编辑${typeLabel}`}
               className="flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"

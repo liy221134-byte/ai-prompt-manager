@@ -82,6 +82,8 @@ type AssetEditorDrawerProps = {
   }>;
   // 新建技术档案时的预填：从 package.json 之类推断出来的技术栈
   initialStack?: Array<{ name: string; version?: string }>;
+  // 用模板新建文档时的预填：把模板正文带进编辑器
+  initialContent?: string;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -200,6 +202,7 @@ export function AssetEditorDrawer({
   initialNodeId,
   initialGates,
   initialStack,
+  initialContent,
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -213,7 +216,11 @@ export function AssetEditorDrawer({
             ...(initialGates ? { gates: initialGates } : {}),
             ...(initialStack ? { stack: initialStack } : {}),
           }),
-          { documentType: initialDocumentType, title: initialTitle },
+          {
+            documentType: initialDocumentType,
+            title: initialTitle,
+            content: initialContent,
+          },
         ),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

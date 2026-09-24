@@ -15,13 +15,14 @@ const expectedTemplates = {
   "incident-runbook.md": "故障处理手册",
   "cost-performance-baseline.md": "成本与性能基线",
   "drill-record.md": "故障演练记录",
+  "implementation-spec.md": "实现规格（Spec）",
 };
 
 function readTemplate(name) {
   return readFileSync(new URL(name, templateDir), "utf8");
 }
 
-test("九份工程文档模板都在", () => {
+test("十份工程文档模板都在", () => {
   const files = readdirSync(templateDir).filter((name) => name.endsWith(".md"));
 
   assert.deepEqual(

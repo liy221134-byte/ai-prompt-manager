@@ -219,11 +219,16 @@ export type AssetDraft =
 // 从「工程基线」缺口点进来时用，让用户少填两个字段。
 export function withInitialFields(
   draft: AssetDraft,
-  input: { title?: string; documentType?: string },
+  input: { title?: string; documentType?: string; content?: string },
 ): AssetDraft {
   const title = input.title?.trim();
   const documentType = input.documentType?.trim();
-  const titled = title ? { ...draft, title } : draft;
+  const content = input.content?.trim();
+  const titled = {
+    ...(title ? { ...draft, title } : draft),
+    // 从模板新建文档时把模板正文带进来，省得重新贴一遍
+    ...(content ? { content } : {}),
+  };
 
   if (titled.assetType === "document" && documentType) {
     return { ...titled, documentType };

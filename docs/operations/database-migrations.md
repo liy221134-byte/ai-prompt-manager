@@ -73,6 +73,16 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-09-24（第三次写入）：**归位模板类资产**（需求 F3，产品负责人确认）。
+  5 条资产的 `documentType` 是「模板」（技术档案模板 ×3、验收证据链 ×2，分布在默认项目、
+  科创平台2.0、CICD自动部署工具、AI提示词资产管理系统），它们本该是「模板」类型，
+  却挂在文档类型下——这就是「文档和模板两个页签看着像在维护同一批内容」的根源。
+  改动：`asset_type: document → template`，`metadata_json` 去掉 `documentType`、
+  补 `outputFileName`（`<标题>.md`）和 `note`；对应的 `asset_versions` 同步改。
+  本机库与云端库各做一次。核对：两边「文档里 documentType=模板」都是 0 条，模板资产都是 9 条。
+  回滚方式：把 `asset_type` 改回 `document`，元数据去掉 outputFileName／note、
+  补回 `documentType: 模板`；本机可用 `scripts/migrate-document-templates.mjs --dry-run`
+  先看会动哪几条。
 - 2026-09-24（第二次写入）：**修正**线上一条字段不合法的资产，经产品负责人确认。
   资产 `rule-sample-001`（项目「CICD自动化部署工具」）是当天测试示例规则包时写进去的，
   `stage` 和 `priority` 取了产品不认识的取值，这一行读不出来，当时还会把整个资产列表拖挂。

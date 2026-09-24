@@ -125,7 +125,6 @@ import {
 import {
   assetStatusFilterOptions,
   assetStatusLabels,
-  assetTypeDescriptions,
   assetTypeFilterLabels,
   buildAssetSearchText,
   filterProjectAssets,
@@ -135,6 +134,8 @@ import {
   matchesPromptLibraryFilters,
   matchesAssetTypeFilter,
   matchesWorkspaceViewAsset,
+  readTypeFilterDescription,
+  readTypeFilterLabel,
   resetMissingFilter,
   resolveWorkspaceTypeFilter,
   workspaceViewTypeOptions,
@@ -156,6 +157,7 @@ import {
   buildRestoreAssetInput,
   createAssetVersionId,
 } from "@/lib/asset-versions";
+import { groupDocumentsByStage } from "@/lib/document-flow";
 import {
   loadLastBackupAt,
   loadStoredPromptLibrary,
@@ -223,6 +225,7 @@ type AssetEditorState =
         note: string;
       }>;
       initialStack?: Array<{ name: string; version?: string }>;
+      initialContent?: string;
     }
   | { mode: "edit"; assetId: string };
 
@@ -1680,6 +1683,57 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
   }
 
   // 从公共资产库挑资产带进项目：走和「安装规则包」同一条复制与去重路径。
+  // 模板 → 用这个模板新建一份文档实例（正文带进编辑器，保存前还能改）
+  function handleCreateDocumentFromTemplate(asset: AssetData) {
+    if (asset.assetType !== "template") {
+      return;
+    }
+
+    setAssetDetailId(null);
+    setAssetEditorState({
+      mode: "create",
+      assetType: "document",
+      initialTitle: asset.title,
+      initialContent: asset.content,
+    });
+  }
+
+  // 文档 → 另存为模板：进公共资产库的模板层（正文原样复制，占位符自己改）
+  async function handleSaveDocumentAsTemplate(asset: AssetData) {
+    if (asset.assetType !== "document") {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const draft = templateFileToDraft({
+      fileName: `${asset.title}.md`,
+      content: asset.content,
+    });
+    const templateAsset = templateDraftToAsset({
+      id: createAssetId("template"),
+      projectId: DEFAULT_PROJECT_ID,
+      draft,
+      originalFilename: `${asset.title}.md`,
+      now,
+    });
+
+    try {
+      await dataSource.createAsset({
+        asset: templateAsset,
+        versionId: templateAsset.currentVersionId,
+        changeReason: "另存为模板",
+        versionReason: "initial",
+      });
+      await reloadAssets();
+      setAssetDetailId(null);
+      notify(
+        "已另存为模板，放进了公共资产库的模板页签（正文原样复制，占位符自己改）",
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "另存为模板失败");
+    }
+  }
+
   async function handlePickPublicAssets(selected: AssetData[]) {
     if (!activeProjectId || selected.length === 0) {
       return;
@@ -1993,6 +2047,18 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       : `搜索${assetTypeFilterLabels[assetTypeFilter]}`;
   const isPromptTabVisible =
     assetTypeFilter === "prompt" || assetTypeFilter === "all";
+  // 项目视图的「文档」标签按链路分组显示（需求 / 规格与计划 / 交付 / 验收与发布）
+  const isDocumentFlowView =
+    workspaceView === "project" && assetTypeFilter === "document";
+  const documentFlowGroups = useMemo(
+    () =>
+      groupDocumentsByStage(
+        listEntries
+          .filter((entry) => entry.kind === "asset")
+          .map((entry) => entry.asset),
+      ),
+    [listEntries],
+  );
 
   return (
     <main className="min-h-screen">
@@ -2121,7 +2187,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               onClick={() => handleChangeAssetTypeFilter(option)}
               type="button"
             >
-              {assetTypeFilterLabels[option]}
+              {readTypeFilterLabel(workspaceView, option)}
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
                   assetTypeFilter === option
@@ -2137,7 +2203,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
 
         {assetTypeFilter !== "all" && (
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            {assetTypeDescriptions[assetTypeFilter]}
+            {readTypeFilterDescription(workspaceView, assetTypeFilter)}
           </p>
         )}
 
@@ -2659,6 +2725,36 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
               重新连接
             </button>
           </div>
+        ) : isDocumentFlowView ? (
+          // 项目文档按链路分组：需求 → 规格与计划 → 交付 → 验收与发布
+          <div className="mt-8 flex flex-col gap-7">
+            {documentFlowGroups.map((group) => (
+              <section key={group.stage}>
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <h2 className="text-base font-semibold text-slate-900">
+                    {group.label}
+                  </h2>
+                  <span className="text-xs text-slate-500">
+                    {group.documents.length > 0
+                      ? `${group.documents.length} 份`
+                      : `还没有。这一格放：${group.hint}`}
+                  </span>
+                </div>
+                {group.documents.length > 0 && (
+                  <div className="mt-3 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {group.documents.map((asset, index) => (
+                      <AssetCard
+                        asset={asset}
+                        index={index}
+                        key={`asset-${asset.id}`}
+                        onOpen={(next) => setAssetDetailId(next.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            ))}
+          </div>
         ) : listEntries.length > 0 ? (
           <div className="mt-8 grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
             {listEntries.map((entry, index) =>
@@ -3019,6 +3115,10 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             setAssetEditorState({ mode: "edit", assetId: asset.id });
           }}
           onNotify={notify}
+          onCreateDocumentFromTemplate={handleCreateDocumentFromTemplate}
+          onSaveDocumentAsTemplate={(asset) =>
+            void handleSaveDocumentAsTemplate(asset)
+          }
           onRestore={handleAssetRestore}
           onUpdateStatus={handleAssetStatusChange}
         />
@@ -3067,6 +3167,11 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           initialStack={
             assetEditorState.mode === "create"
               ? assetEditorState.initialStack
+              : undefined
+          }
+          initialContent={
+            assetEditorState.mode === "create"
+              ? assetEditorState.initialContent
               : undefined
           }
           relationTargetOptions={relationTargetOptions}
