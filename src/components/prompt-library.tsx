@@ -88,6 +88,7 @@ import {
 import {
   findNodeWithSameCode,
   listProjectGraphNodes,
+  planNodeDocumentLink,
 } from "@/lib/graph-node";
 import { MigrationDialog } from "@/components/migration-dialog";
 import { PromptCard } from "@/components/prompt-card";
@@ -2204,26 +2205,17 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
 
     for (const nodeId of input.nodeIds) {
       const node = assets.find((asset) => asset.id === nodeId);
+      // 能不能挂的判定只有一处（planNodeDocumentLink）：
+      // 单节点挂和批量挂都走这里，不会出现两套口径。
+      const plan = planNodeDocumentLink({ node, documentId: input.documentId });
 
-      if (
-        !node ||
-        !isEditableAssetData(node) ||
-        node.assetType !== "graph_node"
-      ) {
+      if (plan.kind !== "link" || !node || !isEditableAssetData(node)) {
         continue;
       }
 
       const draft = assetToDraft(node);
 
       if (draft.assetType !== "graph_node") {
-        continue;
-      }
-
-      if (
-        draft.relations.some(
-          (relation) => relation.targetAssetId === input.documentId,
-        )
-      ) {
         continue;
       }
 
@@ -2235,10 +2227,8 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
             relations: [
               ...draft.relations,
               {
-                key: `relation-${node.id}-${input.documentId}`,
-                targetAssetId: input.documentId,
-                relationType: "reference" as const,
-                note: "从项目图谱挂上",
+                key: `relation-${node.id}-${plan.relation.targetAssetId}`,
+                ...plan.relation,
               },
             ],
           },
@@ -2249,9 +2239,15 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     }
 
     await reloadAssets();
+
+    if (linked > 0) {
+      notify(`已把文档挂到 ${linked} 个节点上`);
+      return;
+    }
+
     notify(
-      linked > 0
-        ? `已把文档挂到 ${linked} 个节点上`
+      input.nodeIds.length === 1
+        ? "这个节点已经挂过这份文档了"
         : "这些节点已经挂过这份文档了",
     );
   }

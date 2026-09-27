@@ -42,6 +42,9 @@ export function GraphViewDrawer({
   const [linkNodeIds, setLinkNodeIds] = useState<string[]>([]);
   const [linkDocumentId, setLinkDocumentId] = useState("");
   const [isLinking, setIsLinking] = useState(false);
+  // 单个节点挂文档：和下面的批量挂文档走同一个回调，只是这里固定一个节点
+  const [nodeDocumentId, setNodeDocumentId] = useState("");
+  const [isLinkingNode, setIsLinkingNode] = useState(false);
 
   useModalBehavior(onClose);
 
@@ -230,6 +233,46 @@ export function GraphViewDrawer({
                           </li>
                         ))}
                       </ul>
+                    )}
+                    <p className="mt-2 text-xs leading-5 text-slate-400">
+                      这里列的就是「资产关系」里这个节点指向谁。指向一份文档之后，
+                      图谱的「谁指向它」和「间接影响」就能顺着这条关系算下去。
+                    </p>
+                    {documents.length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <select
+                          aria-label="选择要挂到这个节点的文档"
+                          className="h-8 max-w-56 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 outline-none"
+                          onChange={(event) =>
+                            setNodeDocumentId(event.target.value)
+                          }
+                          value={nodeDocumentId}
+                        >
+                          <option value="">选一份文档</option>
+                          {documents.map((document) => (
+                            <option key={document.id} value={document.id}>
+                              {document.title}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="inline-flex h-8 items-center rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          disabled={isLinkingNode || !nodeDocumentId}
+                          onClick={() => {
+                            setIsLinkingNode(true);
+                            void onLinkDocuments({
+                              nodeIds: [selected.id],
+                              documentId: nodeDocumentId,
+                            }).finally(() => {
+                              setIsLinkingNode(false);
+                              setNodeDocumentId("");
+                            });
+                          }}
+                          type="button"
+                        >
+                          {isLinkingNode ? "正在挂…" : "挂到这个节点"}
+                        </button>
+                      </div>
                     )}
                   </div>
 

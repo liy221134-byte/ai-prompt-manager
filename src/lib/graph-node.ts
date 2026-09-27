@@ -9,6 +9,60 @@ import {
   type GraphNodeType,
 } from "../data/assets.ts";
 
+// 把一个节点和一份文档挂钩：能挂就给出一条「引用」关系，不能挂就说清原因。
+// 图谱里「从一个节点挂文档」和「批量挂文档」共用这一份口径，判定只有一处。
+export type NodeDocumentLinkPlan =
+  | {
+      kind: "link";
+      relation: {
+        targetAssetId: string;
+        relationType: "reference";
+        note: string;
+      };
+    }
+  | { kind: "skip"; reason: string };
+
+export function planNodeDocumentLink(input: {
+  node: AssetData | null | undefined;
+  documentId: string;
+}): NodeDocumentLinkPlan {
+  const documentId = input.documentId.trim();
+  const node = input.node;
+
+  if (!node) {
+    return { kind: "skip", reason: "找不到这个节点" };
+  }
+
+  if (node.assetType !== "graph_node") {
+    return { kind: "skip", reason: "只能把文档挂到图谱节点上" };
+  }
+
+  if (node.deletedAt !== null) {
+    return { kind: "skip", reason: "这个节点在垃圾箱里" };
+  }
+
+  if (!documentId) {
+    return { kind: "skip", reason: "没有选文档" };
+  }
+
+  const alreadyLinked = readAssetRelations(node.metadata).some(
+    (relation) => relation.targetAssetId === documentId,
+  );
+
+  if (alreadyLinked) {
+    return { kind: "skip", reason: "这个节点已经挂过这份文档" };
+  }
+
+  return {
+    kind: "link",
+    relation: {
+      targetAssetId: documentId,
+      relationType: "reference",
+      note: "从项目图谱挂上",
+    },
+  };
+}
+
 export type GraphNodeTree = {
   roots: GraphNodeAssetData[];
   childrenOf: Map<string, GraphNodeAssetData[]>;

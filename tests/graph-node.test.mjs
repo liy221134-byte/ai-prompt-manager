@@ -7,6 +7,7 @@ import {
   buildNodePath,
   findNodeWithSameCode,
   listProjectGraphNodes,
+  planNodeDocumentLink,
 } from "../src/lib/graph-node.ts";
 
 const now = "2026-09-23T12:00:00.000Z";
@@ -72,6 +73,54 @@ function createRule(overrides = {}) {
     ...rest,
   };
 }
+
+test("从节点挂文档：没挂过就给出引用关系，挂过就跳过", () => {
+  const node = createNode({
+    metadata: {
+      relations: [
+        { targetAssetId: "doc-2", relationType: "reference", note: "之前挂的" },
+      ],
+    },
+  });
+
+  const planned = planNodeDocumentLink({ node, documentId: "doc-1" });
+
+  assert.equal(planned.kind, "link");
+  assert.equal(planned.relation.targetAssetId, "doc-1");
+  assert.equal(planned.relation.relationType, "reference");
+  assert.ok(planned.relation.note.length > 0);
+
+  const duplicate = planNodeDocumentLink({ node, documentId: "doc-2" });
+
+  assert.equal(duplicate.kind, "skip");
+  assert.match(duplicate.reason, /已经挂过/);
+});
+
+test("从节点挂文档：节点不对、没选文档、节点在垃圾箱里都不挂", () => {
+  // 找不到节点
+  assert.equal(
+    planNodeDocumentLink({ node: null, documentId: "doc-1" }).kind,
+    "skip",
+  );
+  // 不是图谱节点（拿一条规则来试）
+  assert.equal(
+    planNodeDocumentLink({ node: createRule(), documentId: "doc-1" }).kind,
+    "skip",
+  );
+  // 没选文档（只有空白）
+  assert.equal(
+    planNodeDocumentLink({ node: createNode(), documentId: "   " }).kind,
+    "skip",
+  );
+  // 节点进垃圾箱了
+  const inTrash = planNodeDocumentLink({
+    node: createNode({ deletedAt: "2026-09-24T00:00:00.000Z" }),
+    documentId: "doc-1",
+  });
+
+  assert.equal(inTrash.kind, "skip");
+  assert.match(inTrash.reason, /垃圾箱/);
+});
 
 test("图谱只列活跃、未删除的节点，按编号排序", () => {
   const assets = [

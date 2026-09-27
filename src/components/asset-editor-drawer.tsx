@@ -1169,6 +1169,14 @@ export function AssetEditorDrawer({
                 </p>
               )}
 
+              {assetType === "graph_node" && (
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  图谱节点这样连文档：在下面加一条「引用」指向文档资产。
+                  项目图谱里「这个节点指向谁」和「间接影响」读的就是这批关系；
+                  也可以在图谱里选中节点直接挂一份文档。
+                </p>
+              )}
+
               {draft.relations.length === 0 ? (
                 <p className="mt-3 text-xs text-slate-500">
                   还没有关系。关系是单向的，这里填的是「这条资产指向谁」。
