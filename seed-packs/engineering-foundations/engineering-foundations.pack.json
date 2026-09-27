@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-27T06:55:45.266Z",
+  "exportedAt": "2026-09-27T11:15:17.699Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.6.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：26 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.7.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：32 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.6.0",
+      "packVersion": "0.7.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -1243,6 +1243,303 @@
           },
           {
             "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-pg-fk-index-001",
+      "assetType": "rule",
+      "title": "外键列必须自己建索引",
+      "summary": "**Postgres 不会自动给外键列建索引。** 主键和唯一约束会自动带索引，外键**只有约束、没有索引**。 没索引的外键会让 JOIN、`ON DELETE CASCADE` 和按外键列过滤的查询退化成全表扫描—— 表小的时候看不出来",
+      "content": "# 外键列必须自己建索引\n\n## 核心结论\n\n**Postgres 不会自动给外键列建索引。** 主键和唯一约束会自动带索引，外键**只有约束、没有索引**。\n没索引的外键会让 JOIN、`ON DELETE CASCADE` 和按外键列过滤的查询退化成全表扫描——\n表小的时候看不出来，数据一长就是十倍到百倍的差距。\n\n## 使用条件\n\n- 建表时写了 `REFERENCES` 的外键。\n- 已经有外键、但从没为它单独建过索引的表。\n\n## 不适用场景\n\n- 外键列上已经有索引，或者它本身就是某个复合索引的**第一列**。\n- 表小到全表扫描比走索引还快——但补一个索引的成本也很低，「省掉」通常不划算。\n\n## 判断步骤\n\n1. 列出所有带外键的列。\n2. 逐个查有没有索引：`\\d 表名`，或查 `pg_indexes`。\n3. 没有的补上：`CREATE INDEX ON 子表 (外键列);`\n4. 复合索引只看第一列——外键列排在复合索引第二位以后的，等于没索引。\n5. 有 `ON DELETE CASCADE` 的尤其要补：没有索引时，删主表一行会全表扫子表。\n\n## 失败模式\n\n- 以为「写了 REFERENCES 就有索引」，等 JOIN 变慢才发现。\n- 只给主表建索引，子表的外键列漏掉。\n- 复合索引 `(a, b)` 里 b 是外键，误以为 b 也被加速了——这个索引只对 a 有用。\n\n## 验证证据\n\n- `pg_indexes` 的查询结果，逐个外键列都能对上一条索引。\n- 迁移文件里能看到对应的 `CREATE INDEX`。\n\n## 相关资产\n\n- `RULE-BOUNDARY-001`（引用）：数据归谁所有；这条讲外键怎么建，两者不同层。\n- `MTH-PG-QUERY-PERF-001`（引用）：查得慢先看有没有索引，这条是其中最常见的一处。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PG-FK-INDEX-001\ntitle: 外键列必须自己建索引\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: data\ntech_context:\n  - postgres\npriority: p1\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 schema-foreign-key-indexes\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-BOUNDARY-001\n  - MTH-PG-QUERY-PERF-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "postgres"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 schema-foreign-key-indexes\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PG-FK-INDEX-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 以为「写了 REFERENCES 就有索引」，等 JOIN 变慢才发现。 - 只给主表建索引，子表的外键列漏掉。 - 复合索引 `(a, b)` 里 b 是外键，误以为 b 也被加速了——这个索引只对 a 有用。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-pg-query-perf-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-pg-migration-001",
+      "assetType": "rule",
+      "title": "加约束要写成幂等迁移",
+      "summary": "**Postgres 不支持 `ALTER TABLE ... ADD CONSTRAINT IF NOT EXISTS`**——这句话看着合理， 写进迁移文件就是语法错误，整个迁移失败。列和索引有 `IF NOT EXISTS`，约束**",
+      "content": "# 加约束要写成幂等迁移\n\n## 核心结论\n\n**Postgres 不支持 `ALTER TABLE ... ADD CONSTRAINT IF NOT EXISTS`**——这句话看着合理，\n写进迁移文件就是语法错误，整个迁移失败。列和索引有 `IF NOT EXISTS`，约束**没有**。\n所以加约束必须自己写成幂等的：先查系统表确认不存在，再加。\n\n## 使用条件\n\n- 任何加约束的迁移：`FOREIGN KEY`、`CHECK`、`UNIQUE`、`PRIMARY KEY`。\n- 迁移可能被重复执行的环境（重跑、回滚后重放、多环境串跑）。\n\n## 不适用场景\n\n- 一次性的手工 SQL，跑完就扔，不进仓库——但那就不是迁移了。\n- 迁移工具能保证「一份迁移只执行一次」且从不需要重放时，风险小；但幂等仍然是更省心的默认。\n\n## 判断步骤\n\n1. 加约束前先写一段存在性检查：查 `pg_constraint` 里有没有同名约束。\n2. 把「检查 + 加约束」包在 `DO $$ ... $$` 块里，或用迁移工具的守卫语法。\n3. 对照着记清楚：**列**用 `ADD COLUMN IF NOT EXISTS`，**索引**用 `CREATE INDEX IF NOT EXISTS`，\n   **约束**只能自己判。\n4. 迁移跑完用 `\\d 表名` 复核约束在不在。\n\n## 失败模式\n\n- 直接写 `ADD CONSTRAINT IF NOT EXISTS`，迁移在第一句就语法报错。\n- 只写了「加」，没写「加之前先确认没有」，重跑时报「约束已存在」。\n- 加约束的同时在同一份迁移里改数据，约束校验失败导致整份回滚（约束和数据要分两步）。\n\n## 验证证据\n\n- 迁移文件本身：能看到存在性检查。\n- 同一份迁移连跑两次都成功，且第二次不产生变化。\n\n## 相关资产\n\n- `PLAYBOOK-RELEASE-001`（引用）：发布顺序与回滚；这条是它「迁移那一步」里最常见的写法陷阱。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PG-MIGRATION-001\ntitle: 加约束要写成幂等迁移\nasset_type: rule\nrule_type: must\npurpose: release\nlayer: data\ntech_context:\n  - postgres\npriority: p1\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - release\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 schema-constraints\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - PLAYBOOK-RELEASE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "发布",
+        "techContext": [
+          "postgres"
+        ],
+        "stage": "release",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 schema-constraints\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PG-MIGRATION-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 直接写 `ADD CONSTRAINT IF NOT EXISTS`，迁移在第一句就语法报错。 - 只写了「加」，没写「加之前先确认没有」，重跑时报「约束已存在」。 - 加约束的同时在同一份迁移里改数据，约束校验失败导致整份回滚（约束和数据要分两步）。",
+        "relations": [
+          {
+            "targetAssetId": "rule-playbook-release-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-pg-rls-001",
+      "assetType": "rule",
+      "title": "隔离放在数据库层：RLS 要开，策略里别对每行调函数",
+      "summary": "两件事必须一起做：",
+      "content": "# 隔离放在数据库层：RLS 要开，策略里别对每行调函数\n\n## 核心结论\n\n两件事必须一起做：\n\n1. **隔离由数据库兜底。** 多账号、多租户的数据，靠应用层「记得加 where user_id = ...」迟早漏一次，\n   漏一次就是数据泄露。开行级安全（RLS），让数据库在任何人绕过应用直接查时也拦得住。\n2. **策略里不要对每一行调函数。** 把 `auth.uid()` 这类调用直接写进策略，Postgres 会对扫描到的\n   **每一行**求值一次；包成子查询 `(select auth.uid())` 才会只算一次。写法不对时查询慢 5～10 倍，\n   策略里用到的列也要有索引。\n\n## 使用条件\n\n- 一张表里存着多个用户／租户的数据。\n- 有客户端直连数据库的通道（例如浏览器用匿名密钥查表）。\n\n## 不适用场景\n\n- 单人使用、库里没有任何别人的数据：开了也不会错，但没有收益。\n- 表里只有公共配置、谁都能读：不需要按行隔离。\n\n## 判断步骤\n\n1. 列出「谁的数据只有谁能看」的表。\n2. 逐张表开启 RLS，并写清四类策略：读、插、改、删。\n3. 策略里的身份判断包成子查询，不要裸调函数。\n4. 策略里用到的列建索引。\n5. 用「另一个账号的令牌」真去查一次，确认查不到——这是唯一算数的验证。\n\n## 失败模式\n\n- 只在应用层过滤，客户端换个查询方式就绕过去了。\n- 开了 RLS 但没写策略：默认全拒，功能莫名其妙不可用。\n- 策略里裸调 `auth.uid()`，小数据量看不出来，数据一多就成瓶颈。\n- 只在测试账号上验过，没试过「用别人的身份去读」。\n\n## 验证证据\n\n- 每张多租户表都显示 RLS 已启用，且四类策略齐全。\n- 一次「拿 A 的登录态去读 B 的数据」的实测记录：读不到。\n- 策略的查询计划里，身份判断只算了一次。\n\n## 相关资产\n\n- `RULE-BOUNDARY-001`（引用）：数据所有权与接口契约；这条是它在行级的落地。\n- `RULE-PG-PRIVILEGE-001`（引用）：RLS 管「能看哪些行」，那条管「能碰哪些表」。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PG-RLS-001\ntitle: 隔离放在数据库层：RLS 要开，策略里别对每行调函数\nasset_type: rule\nrule_type: must\npurpose: safety\nlayer: data\ntech_context:\n  - supabase\npriority: p0\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: gate\nevidence: []\nsource_references:\n  - Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 security-rls-basics\n  - 同来源，规则文件 security-rls-performance\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-BOUNDARY-001\n  - RULE-PG-PRIVILEGE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "安全",
+        "techContext": [
+          "supabase"
+        ],
+        "stage": "plan",
+        "priority": "must",
+        "overrideScope": "none",
+        "evidence": "- Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 security-rls-basics\n- 同来源，规则文件 security-rls-performance\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "门禁检查",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PG-RLS-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 只在应用层过滤，客户端换个查询方式就绕过去了。 - 开了 RLS 但没写策略：默认全拒，功能莫名其妙不可用。 - 策略里裸调 `auth.uid()`，小数据量看不出来，数据一多就成瓶颈。 - 只在测试账号上验过，没试过「用别人的身份去读」。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-pg-privilege-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-pg-privilege-001",
+      "assetType": "rule",
+      "title": "应用连接只用最小权限，绝不用 superuser",
+      "summary": "**跑业务查询的那条数据库连接，只给它需要的权限。** 不用 `superuser`，也不要用能绕过行级安全的 高权限角色（例如服务角色密钥）。那把钥匙只在少数管理动作里用一次，而且只能待在服务端。 理由很直白：应用一旦被注入或写错，攻击面",
+      "content": "# 应用连接只用最小权限，绝不用 superuser\n\n## 核心结论\n\n**跑业务查询的那条数据库连接，只给它需要的权限。** 不用 `superuser`，也不要用能绕过行级安全的\n高权限角色（例如服务角色密钥）。那把钥匙只在少数管理动作里用一次，而且只能待在服务端。\n理由很直白：应用一旦被注入或写错，攻击面就是「它这条连接能碰到的全部」——\n连接是 superuser，那就等于把整库递过去了。\n\n## 使用条件\n\n- 应用连数据库的每一条通道：后端接口、定时任务、脚本、AI 工具。\n- 引入新的数据库账号或密钥时。\n\n## 不适用场景\n\n- 本机一次性排障：临时用高权限登录可以，但不能写进代码、不能进配置。\n- 迁移工具需要 DDL 权限：那是单独的连接，只在发布时用，不跟业务连接共用。\n\n## 判断步骤\n\n1. 列出应用实际要做的事：读哪些表、写哪些表、要不要 DDL。\n2. 按这张清单建一个专用角色，只授这些权限。\n3. 高权限密钥从应用配置里拿掉；确实要用的管理动作单独走一条通道。\n4. 确认客户端代码和预览环境里**没有任何**高权限密钥。\n5. 用应用角色试一次「建表 / 删表 / 读别人的数据」——都该被拒绝。\n\n## 失败模式\n\n- 为了省事，应用直接拿服务角色密钥跑业务查询，行级安全形同虚设。\n- 高权限密钥进了客户端代码或预览环境（预览环境往往没有生产数据那么严的看护）。\n- 业务连接带着 DDL 权限，于是应用代码里任何一处拼错的 SQL 都能改表结构。\n- 权限只写了一次、从没复核：加过几次功能之后，那个角色早就不是「最小」了。\n\n## 验证证据\n\n- 应用角色权限清单，逐项对得上它实际要做的事。\n- 一次「用应用角色去建表 / 删表」的实测：被拒绝。\n- 客户端代码与预览环境配置的检查记录：没有高权限密钥。\n\n## 相关资产\n\n- `RULE-PG-RLS-001`（引用）：RLS 管「能看哪些行」，这条管「能碰哪些表」。\n- `RULE-AI-WRITE-001`（引用）：AI 能做的写入受限；这条把同样的边界落在数据库账号上。\n- `MTH-TECH-001`（引用）：那条讲「预览环境不得持有生产密钥」，这条讲数据库角色本身。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PG-PRIVILEGE-001\ntitle: 应用连接只用最小权限，绝不用 superuser\nasset_type: rule\nrule_type: forbidden\npurpose: safety\nlayer: data\ntech_context:\n  - postgres\n  - supabase\npriority: p0\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: gate\nevidence: []\nsource_references:\n  - Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 security-privileges\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-PG-RLS-001\n  - RULE-AI-WRITE-001\n  - MTH-TECH-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "project",
+        "purpose": "安全",
+        "techContext": [
+          "postgres",
+          "supabase"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "none",
+        "evidence": "- Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 security-privileges\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "门禁检查",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PG-PRIVILEGE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 为了省事，应用直接拿服务角色密钥跑业务查询，行级安全形同虚设。 - 高权限密钥进了客户端代码或预览环境（预览环境往往没有生产数据那么严的看护）。 - 业务连接带着 DDL 权限，于是应用代码里任何一处拼错的 SQL 都能改表结构。 - 权限只写了一次、从没复核：加过几次功能之后，那个角色早就不是「最小」了。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-pg-rls-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-pg-transaction-001",
+      "assetType": "rule",
+      "title": "事务里不放外部调用，保持短",
+      "summary": "**事务一开就持有锁，锁跟着事务一起结束。** 所以事务里只要有耗时不可控的动作—— 调 AI 接口、发通知、读大文件、等外部系统返回、等人工确认——锁就会跟着它一起变长， 别人全在门外排队。规矩很简单：**事务里只做数据库操作，外部调用放",
+      "content": "# 事务里不放外部调用，保持短\n\n## 核心结论\n\n**事务一开就持有锁，锁跟着事务一起结束。** 所以事务里只要有耗时不可控的动作——\n调 AI 接口、发通知、读大文件、等外部系统返回、等人工确认——锁就会跟着它一起变长，\n别人全在门外排队。规矩很简单：**事务里只做数据库操作，外部调用放在它前面或后面。**\n\n## 使用条件\n\n- 任何显式事务（`BEGIN ... COMMIT`）或事务包装函数。\n- 「先查状态 → 调外部服务 → 再写库」这类流程。\n\n## 不适用场景\n\n- 本机单人脚本、没有并发：慢一点没人排队，但习惯还是别养坏。\n- 事务里本来就只做数据库操作的正常情况——这条正是要保住它。\n\n## 判断步骤\n\n1. 把事务块里的每一行读一遍，标出所有非数据库动作。\n2. 能挪到事务外的全部挪出去：外部调用先做完，拿到结果再开事务写库。\n3. 挪不出去的，问一句「它超时了事务怎么办」——答不上来就说明它不该在里面。\n4. 事务里保持「读要用的数据、写该写的行、提交」三件事。\n\n## 失败模式\n\n- 在事务里调 AI 接口：几秒到几十秒，期间相关行一直被锁。\n- 在事务里发通知或写日志到外部服务：外部一慢，事务超时回滚，数据白写。\n- 事务里等人工确认：锁会一直挂到人回来。\n- 把事务当成「一大段代码的包裹」，而不是「一组必须同时成立的数据库操作」。\n\n## 验证证据\n\n- 事务代码块里没有网络调用、文件读写和等待。\n- 一次真实流程的耗时拆分：外部调用占的时间不在事务内。\n\n## 相关资产\n\n- `RULE-PG-RLS-001`（引用）：同为数据库层的边界规则，一个管可见性，一个管持锁时长。\n- `PLAYBOOK-RELEASE-001`（引用）：发布与回滚；长事务是回滚时最容易卡住的环节。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PG-TRANSACTION-001\ntitle: 事务里不放外部调用，保持短\nasset_type: rule\nrule_type: forbidden\npurpose: development\nlayer: data\ntech_context:\n  - postgres\npriority: p1\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 lock-short-transactions\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-PG-RLS-001\n  - PLAYBOOK-RELEASE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "postgres"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 lock-short-transactions\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PG-TRANSACTION-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 在事务里调 AI 接口：几秒到几十秒，期间相关行一直被锁。 - 在事务里发通知或写日志到外部服务：外部一慢，事务超时回滚，数据白写。 - 事务里等人工确认：锁会一直挂到人回来。 - 把事务当成「一大段代码的包裹」，而不是「一组必须同时成立的数据库操作」。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-pg-rls-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-playbook-release-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-pg-query-perf-001",
+      "assetType": "rule",
+      "title": "查得慢先看两处：有没有索引、是不是 N+1",
+      "summary": "数据库查询变慢，绝大多数落在两处：",
+      "content": "# 查得慢先看两处：有没有索引、是不是 N+1\n\n## 核心结论\n\n数据库查询变慢，绝大多数落在两处：\n\n1. **过滤、排序、JOIN 的列没有索引**——退化成全表扫描，数据越长越慢。\n2. **在循环里一条条查（N+1）**——一次请求发出去几十上百条 SQL，每条都不慢，加起来才慢。\n\n先量再改：别凭感觉加缓存。性能问题的第一步永远是拿到真实的执行数据和真实的 SQL 条数。\n\n## 使用条件\n\n- 接口或页面变慢，怀疑在数据库这一层。\n- 刚上线一个新查询，想先确认它不会成为以后的坑。\n\n## 不适用场景\n\n- 数据量还小（几百行以内）时，这两条都不是瓶颈，先别急着建索引。\n- 慢在外部服务或网络时，先看链路的哪一段慢，别一头扎进 SQL。\n\n## 判断步骤\n\n1. 先定位到**具体哪条 SQL** 慢，不是「页面慢」。\n2. 对它跑 `EXPLAIN ANALYZE`，看实际行数、耗时，有没有 `Seq Scan`。\n3. 有全表扫描 → 去看条件里用到的列有没有索引（外键列尤其容易漏，见 `RULE-PG-FK-INDEX-001`）。\n4. 数一下一次请求发了几条 SQL：条数随数据量增长 → 大概率是 N+1，改成一次批量取。\n5. 改完再 `EXPLAIN` 一次，用前后对比说话；没变快就说明改错了地方，回退。\n\n## 失败模式\n\n- 凭印象加缓存或加机器，掩盖了真正的问题。\n- 加了索引但从没看过查询计划，索引根本没被用上。\n- 把 N+1 改写成一条超长 JOIN，结果比原来更慢。\n- 在开发库（几百行）上调优，到真实数据量上结论完全不成立。\n\n## 验证证据\n\n- 同一条 SQL 改动前后的 `EXPLAIN ANALYZE` 对比。\n- 一次请求的 SQL 条数，改动前后对比。\n\n## 相关资产\n\n- `PLAYBOOK-DEBUG-001`（引用）：先复现再定位根因；这条是它在「性能问题」这一类的具体落点。\n- `RULE-PG-FK-INDEX-001`（引用）：这两处里最常见、也最容易漏的一处。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-PG-QUERY-PERF-001\ntitle: 查得慢先看两处：有没有索引、是不是 N+1\nasset_type: method\npurpose: development\nlayer: data\ntech_context:\n  - postgres\npriority: p2\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 query-missing-indexes\n  - 同来源，规则文件 data-n-plus-one\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - PLAYBOOK-DEBUG-001\n  - RULE-PG-FK-INDEX-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "postgres"
+        ],
+        "stage": "implement",
+        "priority": "may",
+        "overrideScope": "project",
+        "evidence": "- Supabase 官方 Agent Skills「supabase-postgres-best-practices」1.3.0，规则文件 query-missing-indexes\n- 同来源，规则文件 data-n-plus-one\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-PG-QUERY-PERF-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 凭印象加缓存或加机器，掩盖了真正的问题。 - 加了索引但从没看过查询计划，索引根本没被用上。 - 把 N+1 改写成一条超长 JOIN，结果比原来更慢。 - 在开发库（几百行）上调优，到真实数据量上结论完全不成立。",
+        "relations": [
+          {
+            "targetAssetId": "rule-playbook-debug-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-pg-fk-index-001",
             "relationType": "reference",
             "note": "包内关联"
           }

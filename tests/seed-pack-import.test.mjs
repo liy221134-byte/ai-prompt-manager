@@ -59,14 +59,14 @@ test("种子包的包信息按 manifest 和 README 落地", () => {
   const { pack, members } = parseRealPack();
 
   assert.equal(pack.title, "工程方法种子资产包");
-  assert.equal(pack.metadata.packVersion, "0.6.0");
+  assert.equal(pack.metadata.packVersion, "0.7.0");
   assert.equal(pack.metadata.packConfidence, "provisional");
   assert.equal(pack.status, "active");
   assert.match(pack.summary, /分析方法/);
-  assert.equal(members.length, 36);
+  assert.equal(members.length, 42);
   assert.equal(
     members.filter((member) => member.assetType === "rule").length,
-    21,
+    27,
   );
   assert.equal(
     members.filter((member) => member.assetType === "document").length,
