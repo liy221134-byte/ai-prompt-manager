@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-27T13:04:45.408Z",
+  "exportedAt": "2026-09-27T13:16:34.089Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.8.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：34 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.9.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：40 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.8.0",
+      "packVersion": "0.9.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -1645,6 +1645,320 @@
           },
           {
             "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-agent-task-001",
+      "assetType": "rule",
+      "title": "给智能体派活要四样给全，且不让它继承你的对话",
+      "summary": "派给一个智能体的任务，**四样缺一不可**：",
+      "content": "# 给智能体派活要四样给全，且不让它继承你的对话\n\n## 核心结论\n\n派给一个智能体的任务，**四样缺一不可**：\n\n1. **具体范围**——一个测试文件、一个子系统。不是「把所有测试修好」。\n2. **清晰目标**——让它做到什么算完。\n3. **约束**——不许改什么（例如「只改测试，别动生产代码」）。\n4. **期望产出**——要它回什么（例如「根因是什么、改了哪些文件」）。\n\n还有一条更根本的：**它的上下文由你精确构造，不让它继承你的会话历史。** 你手上那些\n来回试错的过程对它全是噪音；给它的应该是「这个问题 + 相关的报错 + 边界」。\n\n## 使用条件\n\n- 把任务交给子智能体、或另一个会话的 AI 时。\n- 同一个问题需要多人或多智能体分头处理时。\n\n## 不适用场景\n\n- 单人单会话、任务就在眼前：不需要「构造上下文」这一步。\n- 探索性任务（还不知道坏在哪）：先自己摸清楚再派，否则派出去也是乱撞。\n\n## 判断步骤\n\n1. 写清范围：一句话说清「只碰哪一块」。\n2. 写清目标：做到什么算完，最好带可判定的结果。\n3. 写清约束：明确禁止的动作（改别的模块、顺手重构、加依赖）。\n4. 写清产出：要它回什么形状的东西。\n5. 检查一遍：**只给这些，它能不能独立理解？** 需要你口头补充的，就是没给全。\n\n## 失败模式\n\n- 范围太宽（「修一下测试」），智能体到处乱改。\n- 没给上下文（「修那个竞态」），它不知道你说的是哪一处。\n- 没给约束，它顺手重构了整个模块。\n- 产出要求含糊（「修好就行」），你收回来不知道它到底动了什么。\n- 把整段会话历史丢过去，重要的那三行淹没在几百行里。\n\n## 验证证据\n\n- 派活任务书本身：范围、目标、约束、产出四样都在。\n- 收回来的产出对得上你要求的形状。\n\n## 相关资产\n\n- `RULE-AGENT-VERIFY-001`（引用）：派得清楚，收回来照样要自己验。\n- `RULE-PARALLEL-001`（引用）：派之前先确认这些任务真的可以并行。\n- `CASE-PARALLEL-001`（相关）：不分边界地并行，会重复实现同一件事。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-AGENT-TASK-001\ntitle: 给智能体派活要四样给全，且不让它继承你的对话\nasset_type: rule\nrule_type: must\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 dispatching-parallel-agents 与 subagent-driven-development 技能\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-AGENT-VERIFY-001\n  - RULE-PARALLEL-001\n  - CASE-PARALLEL-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- superpowers（obra/superpowers）的 dispatching-parallel-agents 与 subagent-driven-development 技能\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-AGENT-TASK-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 范围太宽（「修一下测试」），智能体到处乱改。 - 没给上下文（「修那个竞态」），它不知道你说的是哪一处。 - 没给约束，它顺手重构了整个模块。 - 产出要求含糊（「修好就行」），你收回来不知道它到底动了什么。 - 把整段会话历史丢过去，重要的那三行淹没在几百行里。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-agent-verify-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-case-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-agent-verify-001",
+      "assetType": "rule",
+      "title": "收智能体的成果必须自己验，不能信它说成功",
+      "summary": "**智能体的「已完成」是一句话，不是证据。** 它回来之后，四步做完才算收工：",
+      "content": "# 收智能体的成果必须自己验，不能信它说成功\n\n## 核心结论\n\n**智能体的「已完成」是一句话，不是证据。** 它回来之后，四步做完才算收工：\n\n1. **读每份总结**——它说做了什么、根因是什么。\n2. **查冲突**——几路并行时，有没有两路改了同一处。\n3. **跑全量测试**——不是你派给它的那个文件，是**全套**。它自己那份跑绿，不代表合起来是绿的。\n4. **抽查**——智能体会犯**系统性**错误：同一个错误认知会在它改的每一处重复。抽一两处看细节。\n\n## 使用条件\n\n- 子智能体或另一个会话说「已完成」「已修复」「测试通过」时。\n- 多路并行、成果需要合到一起之前。\n\n## 不适用场景\n\n- 只读的调研任务（它只是查了东西、没改代码）：核对事实即可，不需要跑全量。\n- 明确的探索性产出（「列出三种方案」）：属于讨论，不是交付。\n\n## 判断步骤\n\n1. 拿到改动面：它改了哪些文件（看 diff，不看它的描述）。\n2. 查重叠：并行几路有没有碰同一个文件。\n3. 合起来跑全量测试；**红就退回，别挑着跑**。\n4. 抽查一两处实现细节，看它是不是按你给的约束做的。\n5. 全绿且抽查没问题，才对外说这次委派成功。\n\n## 失败模式\n\n- 直接采信「已修复并验证」，把这句话写进交付说明。\n- 只跑它负责的那个测试文件，合起来之后别处坏了不知道。\n- 几路并行各改各的，合的时候冲突才发现。\n- 不抽查：它把同一个错误在十处重复了十遍。\n\n## 验证证据\n\n- 合并后的全量测试结果（不是分片结果）。\n- diff 层面的冲突检查记录。\n- 抽查过的具体位置。\n\n## 相关资产\n\n- `RULE-AGENT-TASK-001`（引用）：派得越清楚，验起来越省事。\n- `RULE-VERIFY-002`（引用）：那条讲「证据必须是这次跑出来的」，这条是它在委派场景的落地。\n- `RULE-PARALLEL-001`（引用）：并行才有的冲突检查，前提是并行本身成立。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-AGENT-VERIFY-001\ntitle: 收智能体的成果必须自己验，不能信它说成功\nasset_type: rule\nrule_type: must\npurpose: testing\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 dispatching-parallel-agents 技能：Review and Integrate 与 Verification\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-AGENT-TASK-001\n  - RULE-VERIFY-002\n  - RULE-PARALLEL-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "测试",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- superpowers（obra/superpowers）的 dispatching-parallel-agents 技能：Review and Integrate 与 Verification\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-AGENT-VERIFY-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 直接采信「已修复并验证」，把这句话写进交付说明。 - 只跑它负责的那个测试文件，合起来之后别处坏了不知道。 - 几路并行各改各的，合的时候冲突才发现。 - 不抽查：它把同一个错误在十处重复了十遍。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-agent-task-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-verify-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-parallel-001",
+      "assetType": "rule",
+      "title": "只有互相独立、没有共享状态的任务才并行",
+      "summary": "并行不是「人多干得快」，它有**硬前提**：这些任务彼此独立、没有共享状态。 判断标准只有两条——**能不能各自独立理解？会不会碰到同一处？** 两条都过，才能并行。",
+      "content": "# 只有互相独立、没有共享状态的任务才并行\n\n## 核心结论\n\n并行不是「人多干得快」，它有**硬前提**：这些任务彼此独立、没有共享状态。\n判断标准只有两条——**能不能各自独立理解？会不会碰到同一处？** 两条都过，才能并行。\n\n可以并行：几个测试文件因不同根因失败、几个互不相干的子系统各自坏了。\n\n**不能并行**（这几种最容易被误判成能）：\n\n- 失败的根因相关：修好一个，另一个可能自己就好了——先一起查。\n- 需要看全局状态才能判断：拆开谁都看不全。\n- 还在探索、不知道坏在哪：先自己定位，别派出去乱撞。\n- 会改同一批文件或用同一份资源：并行就是互相踩。\n\n## 使用条件\n\n- 手上有多个问题，正在决定是自己串着做还是派几路并行。\n\n## 不适用场景\n\n- 只有一件事：没什么可并行的。\n- 任务虽多但串起来更快（依赖链很短）：拆开反而多出协调成本。\n\n## 判断步骤\n\n1. 把它们按**根因**分组，不是按现象分组。\n2. 逐组问：换一个人独立看，能看懂吗？\n3. 再问：它们会改到同一批文件吗？\n4. 两条都过 → 可以并行，并且给每组配一个隔离的工作区。\n5. 有一条不过 → 串行，或先做一次共同的调研。\n\n## 失败模式\n\n- 三个失败其实同一个根因，派了三路，各修一遍，合起来打架。\n- 两路都要改同一个核心文件，合并时冲突一片。\n- 还在「不知道哪儿坏了」的阶段就派活，智能体各自猜一套。\n- 以为「并行总是更快」，忽略协调和合并的成本。\n\n## 验证证据\n\n- 并行前的分组记录：每组的根因、涉及的文件、彼此有没有重叠。\n- 合并时没有冲突，或冲突可解释。\n\n## 相关资产\n\n- `RULE-AGENT-TASK-001`（引用）：确认能并行之后，怎么派活。\n- `RULE-WORKTREE-001`（引用）：并行必须配隔离工作区，否则互相踩。\n- `MTH-SCOPE-001`（引用）：版本按子系统拆，并行也按子系统分。\n- `CASE-PARALLEL-001`（相关）：没有边界的并行，会重复实现同一件事。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PARALLEL-001\ntitle: 只有互相独立、没有共享状态的任务才并行\nasset_type: rule\nrule_type: must\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 dispatching-parallel-agents 技能：When to Use 与 When NOT to Use\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-AGENT-TASK-001\n  - RULE-WORKTREE-001\n  - MTH-SCOPE-001\n  - CASE-PARALLEL-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- superpowers（obra/superpowers）的 dispatching-parallel-agents 技能：When to Use 与 When NOT to Use\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PARALLEL-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 三个失败其实同一个根因，派了三路，各修一遍，合起来打架。 - 两路都要改同一个核心文件，合并时冲突一片。 - 还在「不知道哪儿坏了」的阶段就派活，智能体各自猜一套。 - 以为「并行总是更快」，忽略协调和合并的成本。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-agent-task-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-worktree-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-scope-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-case-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-worktree-001",
+      "assetType": "rule",
+      "title": "隔离工作区的四条硬规则",
+      "summary": "并行开发要隔离工作区，这一步有四个坑，每个都真出过事：",
+      "content": "# 隔离工作区的四条硬规则\n\n## 核心结论\n\n并行开发要隔离工作区，这一步有四个坑，每个都真出过事：\n\n1. **建之前先检测「是不是已经在隔离环境里」。** 对照 `git rev-parse --git-dir` 与\n   `--git-common-dir`：两个路径不同就是已经在链接工作区里，**别再建一个**。\n   注意子模块也会让这两个路径不同——先用 `--show-superproject-working-tree` 排除。\n2. **优先用平台自带的隔离工具。** 平台没有才手工建。有原生工具却手工建，会造出\n   **平台看不见也管不了的幽灵状态**：目录、分支、清理都脱离管理。\n3. **工作区目录必须先被 gitignore。** 建之前确认（`git check-ignore`），没有就先加进\n   `.gitignore` 并提交。漏了这一步，**整棵工作树会被提交进仓库**。\n4. **建完先跑一次基线测试。** 脏基线会让之后每一次失败都说不清：是你改坏的，还是本来就这样。\n\n## 使用条件\n\n- 开功能分支、要和其他会话并行工作时。\n- 执行一份多任务的实施计划之前。\n\n## 不适用场景\n\n- 单人串行、改动很小：就地做，不必为形式建工作区。\n- 已经在隔离环境里：**这条正是要拦「重复建」**。\n\n## 判断步骤\n\n1. 先检测是否已在隔离环境；在的话跳过创建。\n2. 有原生工具就用原生工具；没有才手工建。\n3. 项目内目录先确认被忽略，没忽略就先补 `.gitignore`。\n4. 建完跑基线测试，报告「通过多少条」而不是「应该没问题」。\n5. 基线本来就是红的：报告出来，由人决定继续还是先修。\n\n## 失败模式\n\n- 不检测就建，套了两层工作区，改的东西不知道该提交到哪。\n- 有原生工具却手工建，平台管不到这个工作区，清理时留下垃圾。\n- 目录没进 gitignore，一次提交把整棵工作树塞进仓库。\n- 不跑基线，后来发现「原来就有三个测试是红的」，白排查半天。\n\n## 验证证据\n\n- 检测命令的输出（是不是已经在隔离环境）。\n- `git check-ignore` 的结果。\n- 基线测试的条数与结果。\n\n## 相关资产\n\n- `RULE-PARALLEL-001`（引用）：决定能不能并行之后，才轮到怎么隔离。\n- `CASE-PARALLEL-001`（相关）：并行出过的真实事故。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-WORKTREE-001\ntitle: 隔离工作区的四条硬规则\nasset_type: rule\nrule_type: must\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 using-git-worktrees 技能\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-PARALLEL-001\n  - CASE-PARALLEL-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- superpowers（obra/superpowers）的 using-git-worktrees 技能\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-WORKTREE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 不检测就建，套了两层工作区，改的东西不知道该提交到哪。 - 有原生工具却手工建，平台管不到这个工作区，清理时留下垃圾。 - 目录没进 gitignore，一次提交把整棵工作树塞进仓库。 - 不跑基线，后来发现「原来就有三个测试是红的」，白排查半天。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-case-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-task-boundary-001",
+      "assetType": "rule",
+      "title": "任务边界按「能不能被单独否决」来切",
+      "summary": "切任务只问一句话：**审的人有没有可能批准这个、否决旁边那个？** 可能，就切；不可能，就并。",
+      "content": "# 任务边界按「能不能被单独否决」来切\n\n## 核心结论\n\n切任务只问一句话：**审的人有没有可能批准这个、否决旁边那个？** 可能，就切；不可能，就并。\n\n一个任务是最小的、**自带测试周期**、值得一次**独立审核**的单元。配置、脚手架、文档这类\n「附属动作」，并进需要它们的那个任务里——它们单独审没有任何意义。\n\n顺带一条文件层面的纪律：**改动会一起发生的文件，应该住在一起**；按职责分，不按技术分层分。\n你最容易同时想清楚的是「能一眼看进上下文」的那一小块代码。\n\n## 使用条件\n\n- 写《设计 + 任务清单》里的任务顺序时。\n- 把一份大计划拆给多人或多智能体时。\n\n## 不适用场景\n\n- 一句话能说清的小改动：不用为它编任务表。\n- 改动本来就连在一起、无法独立验证时：硬拆只会得到一堆跑不起来的半成品。\n\n## 判断步骤\n\n1. 每件事问：它能不能单独跑通、单独验？\n2. 不能的，就地并进它依附的那个任务。\n3. 再问一遍：这两块，审的人会不会一个批一个否？\n4. 会，就分开；不会，就合成一个任务。\n5. 最后检查：每个任务做完，系统是不是**可用、可测**的状态。\n\n## 失败模式\n\n- 按「写代码 / 写测试 / 写文档」拆，每个任务做完系统都是半成品。\n- 拆得太碎：一个任务只改一行，审的人看不出它在干什么。\n- 拆得太粗：一个任务混了三件事，出问题整块回退。\n- 配置和脚手架单独成一个任务，做完什么都没法验。\n\n## 验证证据\n\n- 任务清单本身：每个任务都有可判定的完成标准。\n- 抽查一个任务：做完之后系统能不能跑。\n\n## 相关资产\n\n- `MTH-SCOPE-001`（引用）：版本按子系统拆；任务是在子系统内再切一层。\n- `RULE-AGENT-TASK-001`（引用）：切完的任务，正是派给智能体的那个「范围」。\n- `MTH-DESIGN-DOC-001`（引用）：任务顺序与改动文件是设计文档的第四块。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-TASK-BOUNDARY-001\ntitle: 任务边界按「能不能被单独否决」来切\nasset_type: method\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p2\nscope: project\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 writing-plans 技能：Task Right-Sizing 与 File Structure\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-SCOPE-001\n  - RULE-AGENT-TASK-001\n  - MTH-DESIGN-DOC-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "may",
+        "overrideScope": "project",
+        "evidence": "- superpowers（obra/superpowers）的 writing-plans 技能：Task Right-Sizing 与 File Structure\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-TASK-BOUNDARY-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 按「写代码 / 写测试 / 写文档」拆，每个任务做完系统都是半成品。 - 拆得太碎：一个任务只改一行，审的人看不出它在干什么。 - 拆得太粗：一个任务混了三件事，出问题整块回退。 - 配置和脚手架单独成一个任务，做完什么都没法验。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-scope-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-agent-task-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-design-doc-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-plan-ruling-001",
+      "assetType": "rule",
+      "title": "跑计划时「裁决，不卡住」——只有四类事才停下来问",
+      "summary": "一份已经批准的计划在执行时，**不该每遇到一个小岔路就停下来问人**。冲突、歧义、计划本身的 小缺陷——自己裁决，留痕，继续走。",
+      "content": "# 跑计划时「裁决，不卡住」——只有四类事才停下来问\n\n## 核心结论\n\n一份已经批准的计划在执行时，**不该每遇到一个小岔路就停下来问人**。冲突、歧义、计划本身的\n小缺陷——自己裁决，留痕，继续走。\n\n留痕的固定写法：\n\n```text\n决定：<我定了什么> — 为什么：<依据> — 错的话代价：<付什么>\n```\n\n有这一行，人回头能看见你替他做过哪些判断；判断错了，返工是有痕迹、可撤销的。\n而停下来问，代价是他的整段时间。\n\n**只有这四类事必须停下来问：**\n\n1. **不可逆或破坏性操作**（删数据、删历史、强制覆盖）。\n2. **安全敏感动作**（动密钥、动权限、动生产环境）。\n3. **工作区之外的副作用**——合并、推共享分支、发布，这些按惯例要先问。\n4. **计划烂到前面每条路都是猜**：不是有歧义，是整份计划的前提不成立。\n\n## 使用条件\n\n- 执行一份已经批准的多任务计划时。\n- 计划执行中出现计划没写到的岔路时。\n\n## 不适用场景\n\n- 计划还没被批准：那是需求门和设计门的事，不在这一条里。\n- 单人单任务的小改：没有「跑计划」这个语境。\n\n## 判断步骤\n\n1. 先判断眼前这件事属不属于上面四类。属于 → 停，问。\n2. 不属于 → 当场裁决，并写下「决定／为什么／错了代价」。\n3. 继续往下走，不因为「想确认一下」而中断。\n4. 全部跑完后，把决策清单随交付一起给人。\n\n## 失败模式\n\n- 每做完一个任务就问一句「要继续吗」——把人当成每步都要按确认的按钮。\n- 遇到歧义不裁决也不说明，闷头选一条，事后没人知道他替你决定了什么。\n- 把「不可逆操作」也当成可以自己裁决的小事。\n- 计划已经明显不成立，还在硬着头皮往下跑。\n\n## 验证证据\n\n- 执行过程中的决策清单（决定／为什么／错了代价）。\n- 停下来问的那几次，属于四类之一。\n\n## 相关资产\n\n- `RULE-AGENT-VERIFY-001`（引用）：委派出去的任务收回来要验；这条讲的是执行中什么时候中断。\n- `MTH-GATES-001`（引用）：三道门管的是「开不开始」，这条管的是「跑到一半要不要停」。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PLAN-RULING-001\ntitle: 跑计划时「裁决，不卡住」——只有四类事才停下来问\nasset_type: rule\nrule_type: must\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 subagent-driven-development 技能：Rulings, not stalls 与四条停止条件\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-AGENT-VERIFY-001\n  - MTH-GATES-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- superpowers（obra/superpowers）的 subagent-driven-development 技能：Rulings, not stalls 与四条停止条件\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-PLAN-RULING-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 每做完一个任务就问一句「要继续吗」——把人当成每步都要按确认的按钮。 - 遇到歧义不裁决也不说明，闷头选一条，事后没人知道他替你决定了什么。 - 把「不可逆操作」也当成可以自己裁决的小事。 - 计划已经明显不成立，还在硬着头皮往下跑。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-agent-verify-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-gates-001",
             "relationType": "reference",
             "note": "包内关联"
           }
