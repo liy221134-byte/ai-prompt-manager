@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-27T13:16:34.089Z",
+  "exportedAt": "2026-09-27T13:42:13.559Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.9.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：40 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.10.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：44 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.10.0 做了什么\n\n1. 新增 4 条界面设计规则，来源是 product-design 的 get-context、design-qa、audit\n   三个技能（外部来源采集第五批）：设计前先过澄清门、实现要和源设计对比验收、\n   源设计里的图片资产不许用代码近似、说清证据的边界。\n2. 这 4 条标 `generic` + 四档规模，本项目也适用——前提是项目规则里的设计门已经拆出\n   「界面设计线」（本次同步改了 `AGENTS.md`）。\n3. 其中「按源设计对比验收」是条件规则：没有源设计稿的项目改用「能用、好用」验收。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.9.0",
+      "packVersion": "0.10.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -1959,6 +1959,216 @@
           },
           {
             "targetAssetId": "rule-mth-gates-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-design-gate-001",
+      "assetType": "rule",
+      "title": "动手设计前先过一道澄清门",
+      "summary": "开始画界面或搭原型之前，先把三件事问清：",
+      "content": "# 动手设计前先过一道澄清门\n\n## 核心结论\n\n开始画界面或搭原型之前，先把三件事问清：\n\n1. **设计的是什么**——哪个产品、哪个功能、哪个页面或哪一块组件。\n2. **它要帮用户做成什么**——用一句话说清预期结果。\n3. **目标是哪种形态**——网站、桌面应用还是移动应用（从视觉稿或需求里看不出来时才问）。\n\n规则是：**已经答过的不重复问**。三件都清楚时，**把理解复述一遍就往下走**——\n复述是同步认知，**不是求批准**，人可以随时纠正风格、范围或交互。\n\n**硬边界：设计目标和预期结果还缺着的时候，不许动手实现界面、不许搭脚手架、不许起服务。**\n\n## 使用条件\n\n- 要设计、重做、扩展或生成产品界面时。\n- 拿着一个模糊的想法开始动手之前。\n\n## 不适用场景\n\n- 纯实现任务，设计已经定了（例如照着已有 Figma 稿写代码）。\n- 局部的文案、间距、图标调整。\n\n## 判断步骤\n\n1. 先扫一遍：三件事里有几件是明确的？\n2. 缺的才问，一次问完，不挤牙膏。\n3. 都清楚了：用一段话复述「设计什么 + 给谁 + 要做成什么 + 我接下来做什么」。\n4. 复述完继续走，不等确认。\n5. 只有「目标或预期结果还缺着」这一种情况必须停住不动手。\n\n## 失败模式\n\n- 需求还糊着就开画，画完发现画的不是人家要的。\n- 反着来：把已经答过的问题又问一遍，浪费人的时间。\n- 把复述当成请示批准，每轮都停下来等人点头。\n- 「先随便画两版」——没有目标的两版，等于两次返工。\n\n## 验证证据\n\n- 那段复述本身：设计什么、给谁、要做成什么。\n- 设计稿和这段复述对得上。\n\n## 相关资产\n\n- `MTH-REQ-001`（相关）：那条澄清的是业务需求；这条澄清的是界面目标和形态，是它的下游。\n- `RULE-DESIGN-QA-001`（引用）：澄清完之后，实现要按源设计对比验收。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-DESIGN-GATE-001\ntitle: 动手设计前先过一道澄清门\nasset_type: method\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - product-design 的 get-context 技能：设计前的 briefing 门与 playback\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-REQ-001\n  - RULE-DESIGN-QA-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "project",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- product-design 的 get-context 技能：设计前的 briefing 门与 playback\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-DESIGN-GATE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 需求还糊着就开画，画完发现画的不是人家要的。 - 反着来：把已经答过的问题又问一遍，浪费人的时间。 - 把复述当成请示批准，每轮都停下来等人点头。 - 「先随便画两版」——没有目标的两版，等于两次返工。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-req-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-design-qa-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-design-qa-001",
+      "assetType": "rule",
+      "title": "实现要和源设计对比验收，先对齐再判断",
+      "summary": "有了设计稿，实现就不许「凭记忆写、凭印象说对」。四条：",
+      "content": "# 实现要和源设计对比验收，先对齐再判断\n\n## 核心结论\n\n有了设计稿，实现就不许「凭记忆写、凭印象说对」。四条：\n\n1. **两张图放同一个对比输入里。** 分开看两张截图不叫对比，叫两张截图——只有并到一处，\n   差异才看得见。\n2. **先对齐，再判断。** 视口、状态、主题、缩放、设备框都要对得上。不对齐就下结论，\n   报出来的「不一致」可能只是缩放差异——**别把密度差异报成设计漂移**。\n3. **五个面每次都要过**：字体（字族/字重/字号/行高/字距）、间距与节奏、颜色与 token、\n   图片与素材质量、文案。没点名也要查，因为这些正是最容易悄悄走样的地方。\n4. **分级到能卡住交接**：P0 挡住核心用途或严重无障碍问题；P1 用户会注意到的主要不一致；\n   P2 中等视觉漂移或响应式问题；P3 打磨项。**只要还剩 P0/P1/P2，结论就是「未通过」**，\n   不许说「基本一致」。P3 可以留作后续打磨。\n\n全图看不清的细节必须做**局部对比**（具体到字体、对齐、图标、表单、导航这些地方），\n不能只靠一张全图说「没问题」。\n\n## 使用条件\n\n- 按设计稿实现了界面，准备交付或让人验收之前。\n- 改动了已有页面的样式、布局或交互状态之后。\n\n## 不适用场景\n\n- 没有源设计稿、纯自建风格的项目：改用「能用、好用」为主的验收，不做逐像素对比。\n- 纯文案、纯逻辑改动：不需要走这一套。\n\n## 判断步骤\n\n1. 找到两样东西：**源设计**（Figma 节点/图片/截图）和**实现**（本地或线上地址）。\n2. 把两边调到同一状态：同一视口、同一主题、同一数据、同一登录态。\n3. 截图，然后把两张放进同一个对比画面。\n4. 先看全图判整体（构图、层级、密度），再做局部对比判细节。\n5. 逐条记发现：严重级别、位置、差在哪、**证据是哪张图**、为什么重要、具体怎么改。\n6. 有 P0/P1/P2 就标未通过，改完重拍、重比，**保留每一轮的对比记录**。\n7. 剩下只有 P3 时才算通过，并说明还有哪些地方没法从截图判断。\n\n## 失败模式\n\n- 凭记忆写实现，也凭记忆说「对上了」。\n- 分开看两张图，说「差不多」。\n- 没对齐视口就比，把缩放差异报成一堆设计问题。\n- 只比全图，字体、间距的细微漂移全放过。\n- 留着 P1 说「基本一致，可以交付」。\n- 改完不重比，靠「我改了」当作证据。\n\n## 验证证据\n\n- 同一对比画面里的源设计与实现截图。\n- 每条发现对应的截图位置。\n- 每一轮 P0/P1/P2 的对比记录：上轮发现、这次改了什么、改后的图。\n- 最终结论只能是「通过」或「未通过」，未通过要写清卡在哪一条。\n\n## 相关资产\n\n- `MTH-DESIGN-GATE-001`（引用）：澄清门定下目标和形态，这条按它验收。\n- `RULE-DESIGN-ASSET-001`（引用）：五个面里「图片与素材」那一面的硬要求。\n- `TPL-ACCEPT-001`（相关）：验收证据链；这条是它在界面上的具体形态。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESIGN-QA-001\ntitle: 实现要和源设计对比验收，先对齐再判断\nasset_type: rule\nrule_type: must\npurpose: testing\nlayer: file\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - release\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - product-design 的 design-qa 技能：对比输入、归一化、必查面与 P0～P3 分级\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-DESIGN-GATE-001\n  - RULE-DESIGN-ASSET-001\n  - TPL-ACCEPT-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "project",
+        "purpose": "测试",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- product-design 的 design-qa 技能：对比输入、归一化、必查面与 P0～P3 分级\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-DESIGN-QA-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 凭记忆写实现，也凭记忆说「对上了」。 - 分开看两张图，说「差不多」。 - 没对齐视口就比，把缩放差异报成一堆设计问题。 - 只比全图，字体、间距的细微漂移全放过。 - 留着 P1 说「基本一致，可以交付」。 - 改完不重比，靠「我改了」当作证据。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-design-gate-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-design-asset-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-design-asset-001",
+      "assetType": "rule",
+      "title": "源设计里的图片资产不许用代码近似",
+      "summary": "设计稿里出现的 **logo、插画、装饰图形、产品图、非标准图标**，实现时必须**用那份素材本身**。 **不许**用这些替代：",
+      "content": "# 源设计里的图片资产不许用代码近似\n\n## 核心结论\n\n设计稿里出现的 **logo、插画、装饰图形、产品图、非标准图标**，实现时必须**用那份素材本身**。\n**不许**用这些替代：\n\n- 内联 SVG / 手写的 SVG 路径\n- `div`、`span` 拼出来的形状\n- CSS 画的圆角块、渐变、阴影充当图形\n- emoji、文字符号、Unicode 图形\n- 灰块、占位方块、「以后再补」\n\n判断标准很直白：**照设计稿对比时，这一处对不对得上**。对不上就是不合格，不是「风格接近」。\n\n为什么要单独立一条：**AI 最容易在这里偷工**。它能把布局、间距做得像，但遇到图形资产会\n顺手用代码画一个近似品，而这一处的失真在整体上看不出来、在细节上一眼看穿。\n\n## 使用条件\n\n- 照着设计稿实现界面时，稿里有位图或矢量素材。\n- 验收时走「图片与素材质量」那一面。\n\n## 不适用场景\n\n- 项目本来就没有素材，风格是纯代码建的（例如只用系统图标库）——那不算近似，是另一种选择。\n- 设计稿本身就只给了占位稿，明确说了素材后补。\n\n## 判断步骤\n\n1. 过一遍设计稿，**列出所有图片类资产**（logo、插画、装饰、产品图、非标准图标）。\n2. 逐个确认实现里用的是原始素材，不是代码画的替身。\n3. 拿不准的做局部对比：源图裁一块，实现裁同一块，并排看。\n4. 对不上的，要么换成真素材，要么回去问设计：这块能不能简化。\n\n## 失败模式\n\n- logo 用文字 + CSS 变形凑一个「差不多的」。\n- 插画用几个圆角矩形拼出来，远看像、近看全是破绽。\n- 图标库没有对应图标，就自己画一个形状接近的。\n- 图片位置放个灰块写「待补」，然后当成做完了。\n- 交付时说「这些图后面会换真素材」，但没人记得。\n\n## 验证证据\n\n- 素材清单：设计稿里每个图片资产 → 实现里用的是哪个文件。\n- 局部对比图：源图与实现同一区域并排。\n\n## 相关资产\n\n- `RULE-DESIGN-QA-001`（引用）：这条是那个验收里「图片与素材质量」那一面的硬要求。\n- `MTH-TECH-001`（相关）：素材怎么进仓库、走不走 CDN，属于技术选型里的实现方式。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESIGN-ASSET-001\ntitle: 源设计里的图片资产不许用代码近似\nasset_type: rule\nrule_type: forbidden\npurpose: development\nlayer: file\ntech_context:\n  - generic\npriority: p1\nscope: project\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - product-design 的 design-qa 技能：素材保真那一条（不许用代码画替画面资产）\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-DESIGN-QA-001\n  - MTH-TECH-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "project",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- product-design 的 design-qa 技能：素材保真那一条（不许用代码画替画面资产）\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-DESIGN-ASSET-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- logo 用文字 + CSS 变形凑一个「差不多的」。 - 插画用几个圆角矩形拼出来，远看像、近看全是破绽。 - 图标库没有对应图标，就自己画一个形状接近的。 - 图片位置放个灰块写「待补」，然后当成做完了。 - 交付时说「这些图后面会换真素材」，但没人记得。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-design-qa-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-evidence-boundary-001",
+      "assetType": "rule",
+      "title": "说清证据的边界：它能证明什么、不能证明什么",
+      "summary": "每条结论旁边都要有一句话讲**这份证据的边界**：",
+      "content": "# 说清证据的边界：它能证明什么、不能证明什么\n\n## 核心结论\n\n每条结论旁边都要有一句话讲**这份证据的边界**：\n\n> 从这份证据**能**看出什么；还有哪些**必须另外测**。\n\n三句硬话：\n\n1. **不许用「截图上没问题」冒充「功能没问题」。** 截图能证明渲染出来了，证明不了点击有效、\n   数据写对了、接口通了。看到界面没毛病 ≠ 这个功能能用。\n2. **不许从截图下无障碍结论。** 能看出的（对比度、字号、是否只靠颜色传信息）和必须实测的\n   （键盘走一遍、读屏、焦点顺序）要分开写。\n3. **间接证据是调研，不是验收。** 帮助文档、搜索结果、别人说的话、之前的产物——\n   能拿来定位方向，不能拿来当「验过了」。\n\n## 使用条件\n\n- 交付说明、验收记录里写「通过」的时候。\n- 用截图、导出文件、日志这类二手材料下结论的时候。\n\n## 不适用场景\n\n- 口头讨论、还没到验收阶段。\n- 证据本身就是最终产物（例如交付的就是那份文档）：那时验的是内容，不是它反映的运行状态。\n\n## 判断步骤\n\n1. 写下结论之前先问：**这份证据是怎么来的？** 直接跑出来的，还是间接听来的。\n2. 间接来的：只用来定位，不当结论。\n3. 直接来的但不是最终产物（截图、导出文件）：**先打开看过再当证据**——\n   空白、还在加载、被裁过、状态不对，一律重做。\n4. 给每条结论补半句边界：「这条只能说明 X，Y 还需要另行验证」。\n5. 补不出来的，说明这条结论还下不了。\n\n## 失败模式\n\n- 截图上页面正常，就写「功能验证通过」。\n- 用一张截图声称「无障碍没问题」。\n- 拿之前跑过的一次结果、或别人说的「已经改好了」当本次验收依据。\n- 拍完直接存进证据目录，从没打开看过是不是空白或加载中。\n- 用帮助文档和搜索结果凑出一次「审计」。\n\n## 验证证据\n\n- 每条结论都带一句边界说明。\n- 抽查一条：按它说的「必须另外测」的项去测一遍，确实还没验过。\n\n## 相关资产\n\n- `RULE-VERIFY-002`（引用）：那条讲「证据必须是这次跑出来的」，这条讲「这次跑出来的证据能证明到哪」。\n- `TPL-ACCEPT-001`（引用）：验收证据链的结构；边界说明写在它的「实际的运行结果」旁边。\n- `RULE-DESIGN-QA-001`（相关）：界面验收里「还有哪些没法从截图判断」就是这条的用法。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-EVIDENCE-BOUNDARY-001\ntitle: 说清证据的边界：它能证明什么、不能证明什么\nasset_type: rule\nrule_type: must\npurpose: testing\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - release\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - product-design 的 audit 技能：证据规则、验收检查与「不许用截图冒充无障碍合规」\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-VERIFY-002\n  - TPL-ACCEPT-001\n  - RULE-DESIGN-QA-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "测试",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "release",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- product-design 的 audit 技能：证据规则、验收检查与「不许用截图冒充无障碍合规」\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-EVIDENCE-BOUNDARY-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 截图上页面正常，就写「功能验证通过」。 - 用一张截图声称「无障碍没问题」。 - 拿之前跑过的一次结果、或别人说的「已经改好了」当本次验收依据。 - 拍完直接存进证据目录，从没打开看过是不是空白或加载中。 - 用帮助文档和搜索结果凑出一次「审计」。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-verify-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-design-qa-001",
             "relationType": "reference",
             "note": "包内关联"
           }
