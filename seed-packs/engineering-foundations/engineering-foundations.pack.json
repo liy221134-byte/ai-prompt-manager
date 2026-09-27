@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-27T11:15:17.699Z",
+  "exportedAt": "2026-09-27T13:04:45.408Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.7.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：32 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.8.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：34 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.7.0",
+      "packVersion": "0.8.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -1540,6 +1540,111 @@
           },
           {
             "targetAssetId": "rule-rule-pg-fk-index-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-verify-001",
+      "assetType": "rule",
+      "title": "回归测试要看到红-绿循环",
+      "summary": "修完 bug 补的那条测试，**必须证明它真的挡得住这个 bug**：把修复回退掉，它得失败。 少了这一步，你只是「写了一个测试」——不知道它是挡住问题的那道闸，还是碰巧通过的路人。",
+      "content": "# 回归测试要看到红-绿循环\n\n## 核心结论\n\n修完 bug 补的那条测试，**必须证明它真的挡得住这个 bug**：把修复回退掉，它得失败。\n少了这一步，你只是「写了一个测试」——不知道它是挡住问题的那道闸，还是碰巧通过的路人。\n\n五步走：\n\n1. 写测试。\n2. 跑一遍：修复还在，**应该通过**。\n3. **把修复回退**（只回退根因那一处）。\n4. 再跑：**必须失败**。不失败，说明这条测试没测到根因。\n5. 恢复修复，再跑：通过。\n\n## 使用条件\n\n- 修完 bug、补回归测试时。\n- 给已有代码补测试，想确认它确实覆盖了某个失败场景时。\n\n## 不适用场景\n\n- 新功能的常规测试：没有「修复」可回退，那条走「先写测试再实现」，第一次本来就是红的。\n- 一行笔误这类改动：补一条检查的意义大于证明它会失败。\n\n## 判断步骤\n\n1. 先确认这条测试盯的是**哪个根因**——一条测试对一个根因。\n2. 跑通过（绿）。\n3. 只回退根因那一处，别顺手回退别的改动。\n4. 跑，看到失败（红）。**看不到红就回去改测试**，不是改断言去迁就。\n5. 恢复，跑通过。这三步的结果都写进交付说明。\n\n## 失败模式\n\n- 写完测试跑一次通过，就宣布「回归测试加好了」——那条测试可能根本没覆盖到 bug。\n- 回退修复时把无关改动一起退了，看到的红不是这条 bug 的红。\n- 看到的红其实是别的测试挂了，没细看是谁挂的。\n- 让 AI 补回归测试，它说「已加测试」，但没人验证过它会失败。\n\n## 验证证据\n\n- 三次运行的结果：绿（修复在）→ 红（修复回退）→ 绿（恢复）。\n- 交付说明里写明回退的是哪一处根因。\n\n## 相关资产\n\n- `PLAYBOOK-DEBUG-001`（引用）：那条讲「先复现再定位根因」，这条讲最后的回归怎么才算数。\n- `RULE-VERIFY-002`（相关）：说「测过了」之前，得先有这次跑出来的证据。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-VERIFY-001\ntitle: 回归测试要看到红-绿循环\nasset_type: rule\nrule_type: must\npurpose: testing\nlayer: file\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 verification-before-completion 技能，回归测试那一段要求红-绿循环\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - PLAYBOOK-DEBUG-001\n  - RULE-VERIFY-002\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "测试",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- superpowers（obra/superpowers）的 verification-before-completion 技能，回归测试那一段要求红-绿循环\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-VERIFY-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 写完测试跑一次通过，就宣布「回归测试加好了」——那条测试可能根本没覆盖到 bug。 - 回退修复时把无关改动一起退了，看到的红不是这条 bug 的红。 - 看到的红其实是别的测试挂了，没细看是谁挂的。 - 让 AI 补回归测试，它说「已加测试」，但没人验证过它会失败。",
+        "relations": [
+          {
+            "targetAssetId": "rule-playbook-debug-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-verify-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-verify-002",
+      "assetType": "rule",
+      "title": "声明完成前，证据必须是这次跑出来的",
+      "summary": "**没有这次跑出来的证据，就不许说「完成 / 修好了 / 通过了」。** 三句硬话：",
+      "content": "# 声明完成前，证据必须是这次跑出来的\n\n## 核心结论\n\n**没有这次跑出来的证据，就不许说「完成 / 修好了 / 通过了」。** 三句硬话：\n\n1. **先说清是哪条命令能证明这个结论，再去跑它。** 不是「我检查过了」，是「跑了\n   `npm run check`，0 失败」。\n2. **不能引用上一次的结果。** 这条消息里没跑过，就不能拿昨天的绿灯说今天的事——\n   哪怕这次只改了一行。\n3. **部分验证不算数。** 跑了一个文件 ≠ 全部通过；代码检查过了 ≠ 编译过了；\n   日志看着对 ≠ 真的跑过。\n\n## 使用条件\n\n- 任何要说出「完成了」「修好了」「通过」的时候。\n- 提交、交付、进入下一个任务之前。\n- 让 AI 汇报结果时——它的「已完成」和你的证据是两回事。\n\n## 不适用场景\n\n- 只读的排查、看文件：没有「完成」可声明，不适用。\n- 纯讨论、没产生产物时：不适用。\n\n## 判断步骤\n\n1. **认出结论**：接下来这句话是哪类断言——测试通过／构建成功／bug 修好／需求满足？\n2. **定位命令**：哪条命令能证明它？找不到，就说明这个结论还不该说。\n3. **跑完整命令**：不截断、不换小范围。\n4. **读完整输出**：看退出码、数失败数，不看「看起来没问题」。\n5. **对得上才说**；对不上就照实说当前状态。\n\n## 失败模式\n\n- 「应该没问题」「应该能过」——这几个字一出现，基本等于没跑。\n- 拿上一次的检查结果说这次的事。\n- 跑了类型检查就说「检查通过」，落地时没跑构建。\n- 只跑了一个测试文件，说「测试全过」。\n- 让 AI 汇报，它说「已修复并验证」，直接照抄进交付说明。\n- 「就这一次不跑了吧」「我有信心」。\n\n## 验证证据\n\n- 交付说明里每条结论后面都能找到对应的命令和输出。\n- 抽查一条：把命令重跑一遍，结果对得上。\n\n## 相关资产\n\n- `RULE-VERIFY-001`（相关）：回归测试那条，是这条在「修 bug」场景里的具体化。\n- `MTH-QUALITY-001`（引用）：该跑哪几档检查由项目质量画像决定。\n- `TPL-ACCEPT-001`（引用）：验收证据链是这些证据的归档位置。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-VERIFY-002\ntitle: 声明完成前，证据必须是这次跑出来的\nasset_type: rule\nrule_type: must\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - release\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: false\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - superpowers（obra/superpowers）的 verification-before-completion 技能：Iron Law、Gate Function 五步与 Rationalization Prevention 表\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-VERIFY-001\n  - MTH-QUALITY-001\n  - TPL-ACCEPT-001\nversion: 0.1.0\nlast_reviewed: 2026-09-27\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "none",
+        "evidence": "- superpowers（obra/superpowers）的 verification-before-completion 技能：Iron Law、Gate Function 五步与 Rationalization Prevention 表\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-VERIFY-002",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 「应该没问题」「应该能过」——这几个字一出现，基本等于没跑。 - 拿上一次的检查结果说这次的事。 - 跑了类型检查就说「检查通过」，落地时没跑构建。 - 只跑了一个测试文件，说「测试全过」。 - 让 AI 汇报，它说「已修复并验证」，直接照抄进交付说明。 - 「就这一次不跑了吧」「我有信心」。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-verify-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-accept-001",
             "relationType": "reference",
             "note": "包内关联"
           }
