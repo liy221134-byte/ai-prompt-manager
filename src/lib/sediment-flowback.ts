@@ -2,6 +2,7 @@
 // 只做纯逻辑，不碰数据库：写库、拉版本由界面按计划执行。
 
 import type { AssetData, AssetRelation } from "../data/assets.ts";
+import { isLive } from "./rule-reference.ts";
 
 // 「同源」标记写在关系备注里，靠它认出公共那条和项目那条是一对
 export function buildOriginNote(projectName: string) {
@@ -126,7 +127,9 @@ export function listSedimentCheckup(input: {
   staleDays?: number;
 }): SedimentCheckup {
   const staleDays = input.staleDays ?? 90;
-  const alive = input.assets.filter((asset) => asset.deletedAt === null);
+  // 三条线索都只认真实生效的资产：归档表示不再维护，草稿和待确认还没定稿。
+  // 这里用 isLive，和项目专属规则的口径是同一个函数——别再各写一套。
+  const alive = input.assets.filter(isLive);
   const publicAssets = alive.filter(
     (asset) => asset.projectId === input.publicProjectId,
   );

@@ -32,7 +32,10 @@ export type ProjectRuleEntry = {
   packTitle: string;
 };
 
-function isLive(asset: AssetData) {
+// 一条资产是否「当前生效」：没进垃圾箱，而且是活跃状态。
+// 归档表示不再维护，草稿和待确认还没定稿，都不算。
+// 沉淀体检和项目专属规则都读这一个口径——以前各写了一套，结果沉淀体检漏了状态过滤。
+export function isLive(asset: AssetData) {
   return asset.deletedAt === null && asset.status === "active";
 }
 

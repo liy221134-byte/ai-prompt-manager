@@ -178,3 +178,61 @@ test("已经提升过的规则不再出现在「只在项目里」清单里", ()
 
   assert.equal(checkup.projectOnlyRules.length, 0);
 });
+
+test("沉淀体检：归档和待确认的规则不算「只在项目里」", () => {
+  const archived = createAsset({
+    id: "rule-archived",
+    title: "已归档的旧副本",
+    status: "archived",
+  });
+  const pending = createAsset({
+    id: "rule-pending",
+    title: "还没定稿的规则",
+    status: "pending",
+  });
+  const active = createAsset({ id: "rule-active", title: "活跃的项目规则" });
+  const checkup = listSedimentCheckup({
+    assets: [archived, pending, active],
+    publicProjectId: "default-project",
+    projects: [
+      { id: "default-project", name: "公共资产库" },
+      { id: "project-a", name: projectName },
+    ],
+    now: "2026-09-24T00:00:00.000Z",
+  });
+
+  assert.deepEqual(
+    checkup.projectOnlyRules.map((entry) => entry.asset.id),
+    ["rule-active"],
+  );
+});
+
+test("沉淀体检：归档的资产不算重复，也不算公共库里长期没更新", () => {
+  const archivedPublicRule = createAsset({
+    id: "rule-public-archived",
+    projectId: "default-project",
+    title: "公共那边已归档的规则",
+    status: "archived",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  });
+  const archivedProjectCopy = createAsset({
+    id: "document-p-archived",
+    assetType: "document",
+    title: "公共那边已归档的规则",
+    metadata: { documentType: "参考资料" },
+    status: "archived",
+  });
+  const checkup = listSedimentCheckup({
+    assets: [archivedPublicRule, archivedProjectCopy],
+    publicProjectId: "default-project",
+    projects: [
+      { id: "default-project", name: "公共资产库" },
+      { id: "project-a", name: projectName },
+    ],
+    now: "2026-09-24T00:00:00.000Z",
+  });
+
+  assert.equal(checkup.projectOnlyRules.length, 0);
+  assert.equal(checkup.duplicateTitles.length, 0);
+  assert.equal(checkup.stalePublicAssets.length, 0);
+});
