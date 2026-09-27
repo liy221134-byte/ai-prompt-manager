@@ -3,14 +3,106 @@ import test from "node:test";
 
 import {
   describeNodeEvidence,
+  listCoveredRequirementIds,
   listEvidenceForNode,
   listProjectEvidence,
   listUnverifiedRequirements,
   rankRequirementsByEvidence,
+  setRequirementCovered,
   summarizeNodeEvidence,
 } from "../src/lib/acceptance-evidence.ts";
 
 const now = "2026-09-23T12:00:00.000Z";
+
+test("验收记录覆盖哪些需求：从关系里读出需求节点，指向文档的不算", () => {
+  const relations = [
+    { targetAssetId: "node-2", relationType: "reference", note: "覆盖" },
+    { targetAssetId: "doc-1", relationType: "reference", note: "相关的文档" },
+    { targetAssetId: "node-1", relationType: "reference", note: "覆盖" },
+  ];
+
+  assert.deepEqual(
+    listCoveredRequirementIds({ relations, requirementIds: ["node-1", "node-2"] }),
+    ["node-1", "node-2"],
+  );
+  assert.equal(
+    listCoveredRequirementIds({
+      relations,
+      requirementIds: ["node-1", "node-2"],
+    }).includes("doc-1"),
+    false,
+  );
+});
+
+test("验收记录覆盖需求：能勾一条也能勾多条，取消只摘掉指向那条需求的关系", () => {
+  const requirementIds = ["node-1", "node-2", "node-3"];
+  const otherRelation = {
+    targetAssetId: "doc-1",
+    relationType: "reference",
+    note: "相关的文档",
+  };
+
+  // 勾第一条
+  const one = setRequirementCovered({
+    relations: [otherRelation],
+    requirementIds,
+    nodeId: "node-1",
+    covered: true,
+  });
+  assert.deepEqual(
+    listCoveredRequirementIds({ relations: one, requirementIds }),
+    ["node-1"],
+  );
+
+  // 再勾一条：一份清单覆盖多条需求
+  const two = setRequirementCovered({
+    relations: one,
+    requirementIds,
+    nodeId: "node-3",
+    covered: true,
+  });
+  assert.deepEqual(
+    listCoveredRequirementIds({ relations: two, requirementIds }),
+    ["node-1", "node-3"],
+  );
+
+  // 重复勾同一条不会长出第二份关系
+  const again = setRequirementCovered({
+    relations: two,
+    requirementIds,
+    nodeId: "node-1",
+    covered: true,
+  });
+  assert.equal(again.length, two.length);
+
+  // 取消一条：只摘掉它，别的覆盖和别的用途的关系都留着
+  const removed = setRequirementCovered({
+    relations: two,
+    requirementIds,
+    nodeId: "node-1",
+    covered: false,
+  });
+  assert.deepEqual(
+    listCoveredRequirementIds({ relations: removed, requirementIds }),
+    ["node-3"],
+  );
+  assert.equal(
+    removed.some((relation) => relation.targetAssetId === "doc-1"),
+    true,
+  );
+});
+
+test("验收记录覆盖需求：传进来的不是需求节点，原样返回", () => {
+  assert.deepEqual(
+    setRequirementCovered({
+      relations: [],
+      requirementIds: ["node-1"],
+      nodeId: "node-9",
+      covered: true,
+    }),
+    [],
+  );
+});
 
 function createNode(overrides = {}) {
   const { metadata, ...rest } = overrides;

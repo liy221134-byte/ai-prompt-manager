@@ -55,6 +55,10 @@ import {
   ruleScopeLabels,
   ruleTypeLabels,
 } from "@/lib/asset-list";
+import {
+  listCoveredRequirementIds,
+  setRequirementCovered,
+} from "@/lib/acceptance-evidence";
 
 type AssetEditorDrawerProps = {
   assetType: EditableAssetType;
@@ -499,6 +503,33 @@ export function AssetEditorDrawer({
     }) as AssetDraft);
   }
 
+  // 验收记录「覆盖哪些需求」：勾选直接改关系里的那一批，口径和覆盖统计共用
+  // （都在 acceptance-evidence.ts 里）。勾一条、勾多条都行。
+  const requirementNodes = graphNodeOptions.filter(
+    (node) => node.nodeType === "requirement",
+  );
+  const coveredRequirementIds = listCoveredRequirementIds({
+    relations: draft.relations,
+    requirementIds: requirementNodes.map((node) => node.id),
+  });
+
+  function toggleRequirementCovered(nodeId: string, covered: boolean) {
+    const next = setRequirementCovered({
+      relations: draft.relations,
+      requirementIds: requirementNodes.map((node) => node.id),
+      nodeId,
+      covered,
+    });
+
+    // 关系行在草稿里带 key，重建时补上；内容以纯函数算出来的为准
+    updateDraft({
+      relations: next.map((relation, index) => ({
+        key: `relation-${index}-${relation.targetAssetId}`,
+        ...relation,
+      })),
+    });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -702,10 +733,45 @@ export function AssetEditorDrawer({
                           value={draft.commitRef}
                         />
                       </div>
-                      <p className="text-xs leading-5 text-slate-500">
-                        这份验收记录覆盖哪些需求看下面的「关系」：加一条「引用」指向需求节点，
-                        工程基线的验收覆盖就按它算。一版一份清单也行，一份文档指向多条需求。
-                      </p>
+                      <div className="flex flex-col gap-2">
+                        <span className={labelClassName}>覆盖哪些需求</span>
+                        {requirementNodes.length === 0 ? (
+                          <p className="text-xs leading-5 text-slate-500">
+                            项目里还没有需求节点。先在项目图谱里建一条需求，再回来勾。
+                          </p>
+                        ) : (
+                          <div className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-lg border border-slate-200 px-3 py-2">
+                            {requirementNodes.map((node) => (
+                              <label
+                                className="flex cursor-pointer items-start gap-2 text-xs text-slate-700"
+                                key={node.id}
+                              >
+                                <input
+                                  checked={coveredRequirementIds.includes(
+                                    node.id,
+                                  )}
+                                  className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                  onChange={(event) =>
+                                    toggleRequirementCovered(
+                                      node.id,
+                                      event.target.checked,
+                                    )
+                                  }
+                                  type="checkbox"
+                                />
+                                <span className="truncate">
+                                  {node.code ? `${node.code} ` : ""}
+                                  {node.title}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        <span className="text-xs leading-5 text-slate-500">
+                          勾一条、勾多条都行；工程基线的验收覆盖按它算。
+                          取消勾选只摘掉指向那条需求的关系，指向文档的关系不受影响。
+                        </span>
+                      </div>
                     </>
                   )}
 

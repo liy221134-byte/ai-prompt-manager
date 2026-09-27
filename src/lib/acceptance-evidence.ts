@@ -8,6 +8,7 @@
 
 import {
   type AssetData,
+  type AssetRelation,
   type DocumentAssetData,
   type GraphNodeAssetData,
   readAssetRelations,
@@ -71,6 +72,58 @@ function readCoveredRequirementIds(
   }
 
   return [...covered];
+}
+
+// 界面上「这份验收记录覆盖哪些需求」的勾选状态：从关系里读。
+// 口径和上面的覆盖统计一致——只要有一条关系指向需求节点就算覆盖。
+// 一条都不选、选一条、选多条都行。
+export function listCoveredRequirementIds(input: {
+  relations: AssetRelation[];
+  requirementIds: string[];
+}): string[] {
+  const covered = new Set(
+    input.relations.map((relation) => relation.targetAssetId),
+  );
+
+  return input.requirementIds.filter((id) => covered.has(id));
+}
+
+// 勾选动作写进关系时用的说明，界面和存储都认这一份
+export const evidenceCoverageNote = "这条验收覆盖的需求";
+
+// 勾上或取消一条需求，返回新的关系列表。
+// 取消只摘掉指向那条需求的关系；指向文档的关系原样留着。
+// 传来的节点不在需求列表里就原样返回，不改任何东西。
+export function setRequirementCovered(input: {
+  relations: AssetRelation[];
+  requirementIds: string[];
+  nodeId: string;
+  covered: boolean;
+}): AssetRelation[] {
+  if (!input.requirementIds.includes(input.nodeId)) {
+    return input.relations;
+  }
+
+  if (!input.covered) {
+    return input.relations.filter(
+      (relation) => relation.targetAssetId !== input.nodeId,
+    );
+  }
+
+  if (
+    input.relations.some((relation) => relation.targetAssetId === input.nodeId)
+  ) {
+    return input.relations;
+  }
+
+  return [
+    ...input.relations,
+    {
+      targetAssetId: input.nodeId,
+      relationType: "reference",
+      note: evidenceCoverageNote,
+    },
+  ];
 }
 
 // 按需求节点汇总：这个需求验收了几次、几条通过
