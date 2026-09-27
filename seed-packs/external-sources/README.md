@@ -215,11 +215,24 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 | Snyk MCP | MCP | 暂缓 | — | — | 生产加固阶段 |
 | Postgres MCP | MCP | 暂缓 | — | — | 自建/国产库阶段 |
 | 豆包「AI Coding 每日速递」9/23–9/27（5 条） | 资讯流 | 已核对，未采纳 | — | 2026-09-27 | 结论见第三节；已覆盖的多，未采纳 1 条（Chrome DevTools MCP） |
+| **S4 Supabase 官方 Skills**（`supabase`、`supabase-postgres-best-practices`） | Skills | 未采集 | — | — | **下一批优先采**：8 类 Postgres 规则，按影响从 critical 到 incremental 排序，每条带错误/正确 SQL 对照和性能指标；与本库现有 46 条规则无重叠 |
+| **S5 superpowers 全套**（本机 12 个技能） | Skills | 部分采集 1／12 | `PLAYBOOK-DEBUG-001` | 2026-09-23 | 已采 systematic-debugging。**`verification-before-completion` 有真增量**：「本次消息里没跑过那条命令就不许说通过」「回归测试要看到红-绿循环」——本库交付门只写了「不能只说应该没问题」 |
+| **S6 product-design**（`audit`、`design-qa`、`ideate`、`research` 等 9 个） | Skills | 未采集 | — | — | `audit` 的「先截图再下结论」「报告里必须写明光看截图查不到什么」值得提炼；`design-qa` 的「源设计和实现放同一张对比图里」我们没有源设计，用不上 |
+| Figma 官方 Skills（12 个） | Skills | 暂缓 | — | — | 本项目不做设计稿，暂时用不上 |
+| Notion 官方 Skills（4 个） | Skills | 暂缓 | — | — | 不用 Notion |
+| OpenAI 运行时技能（`documents`／`pdf`／`presentations`／`spreadsheets`／`template-creator`） | Skills | 暂缓 | — | — | 办公文档类能力，和这个库的关系要另判 |
+| `computer-use`／`visualize` | Skills | 暂缓 | — | — | 能力型，不是规则型 |
+| 产品经理方法技能 19 个（`create-prd`、`pre-mortem`、`strategy-red-team`、`user-stories`、`wwas`…） | Skills | 未采集 | — | — | 面向「人怎么带队」，多半该进操作者训练包而不是工程包 |
+| Next.js 能力技能 5 个（`next-dev-loop`、`next-cache-components-*`、`next-partial-prefetching-*`）与 `ui-ux-pro-max` | Skills | 部分采集 | `AGENTS.md` 的「界面改动的验证」 | 2026-09-27 | `next-dev-loop` 的用法已写进 `AGENTS.md`；其余是框架特定能力，等技术上下文筛选生效后再按需采 |
 
 > 状态取值：未采集 / 已采集待确认 / 已入库 / 已安装 / 暂缓 / 放弃。
 
 ## 版本
 
+- `0.1.3`（2026-09-27）：台账对齐现实。本机实际装着 5 个技能来源目录，台账原来只登记了 4 个来源；
+  补登 Supabase 官方 Skills（下一批优先采）、superpowers 全套的真实进度（1／12）、
+  product-design、Figma、Notion、OpenAI 运行时技能、计算机操作／可视化、
+  产品经理方法技能 19 个、Next.js 能力技能等，并逐条写了「采不采、为什么」。
 - `0.1.2`（2026-09-27）：新增「资讯流」一类来源和采集口径，登记 9 月下旬 5 条速递的
   核对结果；原三、四、五节顺延为四、五、六节。
 - `0.1.1`（2026-09-24）：台账对齐现实——superpowers 记成「部分采集」（系统化调试已成资产），
