@@ -58,6 +58,7 @@ import { SourcePackageImportDialog } from "@/components/source-package-import-di
 import {
   findProjectTechProfile,
   listAdrCandidates,
+  listProjectTechContexts,
 } from "@/lib/tech-profile";
 import {
   buildPickedRuleReferenceAsset,
@@ -882,6 +883,13 @@ export function PromptLibrary({
         ].join(" / ")
       : "";
   }, [activeProjectId, assets]);
+  // 这个项目的技术上下文（来自技术档案的技术栈清单）。空数组表示「不知道」，
+  // 编译时就不按技术栈筛——见 listCompileCandidates 的第 4 个参数。
+  const projectTechContexts = useMemo(
+    () =>
+      activeProjectId ? listProjectTechContexts(assets, activeProjectId) : [],
+    [activeProjectId, assets],
+  );
   const compileCandidates = useMemo(
     () =>
       activeProjectId
@@ -889,9 +897,10 @@ export function PromptLibrary({
             assets,
             activeProjectId,
             referencedRules.map((entry) => entry.rule.id),
+            projectTechContexts,
           )
         : null,
-    [activeProjectId, assets, referencedRules],
+    [activeProjectId, assets, referencedRules, projectTechContexts],
   );
   const compileConflicts = useMemo(
     () =>
@@ -3900,6 +3909,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           rulesAppended={compileResult.rulesAppended}
           selectedTemplateId={compileTemplateId}
           templates={templatesInProject}
+          techContexts={projectTechContexts}
         />
       )}
 

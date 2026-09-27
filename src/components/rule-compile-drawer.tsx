@@ -32,6 +32,8 @@ type RuleCompileDrawerProps = {
   pendingVariables: string[];
   rulesAppended: boolean;
   packTitles: Record<string, string>;
+  // 这个项目的技术上下文（来自技术档案）。空数组表示不知道，那就不按技术栈筛。
+  techContexts: string[];
   isBusy: boolean;
   onSelectTemplate: (templateId: string) => void;
   onExcludeRule: (rule: RuleAssetData, note: string) => Promise<void>;
@@ -53,6 +55,7 @@ export function RuleCompileDrawer({
   pendingVariables,
   rulesAppended,
   packTitles,
+  techContexts,
   isBusy,
   onSelectTemplate,
   onExcludeRule,
@@ -146,6 +149,12 @@ export function RuleCompileDrawer({
               </span>
             ))}
           </div>
+
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            {techContexts.length > 0
+              ? `按技术栈筛：通用规则照收，标了具体技术的规则，只有和 ${techContexts.join("、")} 对得上才收。`
+              : "这个项目还没有技术档案，或者档案里没有能对上技术上下文的技术栈——本次不按技术栈筛。"}
+          </p>
 
           {conflicts.length > 0 && (
             <section className="mt-5 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3">

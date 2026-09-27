@@ -11,6 +11,7 @@ import {
 import {
   findProjectTechProfile,
   listAdrCandidates,
+  listProjectTechContexts,
   validateTechStack,
 } from "../src/lib/tech-profile.ts";
 import {
@@ -51,6 +52,55 @@ const entry = (overrides = {}) => ({
   isDeviation: false,
   adrAssetId: null,
   ...overrides,
+});
+
+test("技术栈名字能读出技术上下文：归一化加别名，认不出来的忽略", () => {
+  function entry(name) {
+    return {
+      name,
+      version: "",
+      purpose: "",
+      isDeviation: false,
+      adrAssetId: null,
+    };
+  }
+
+  const profile = createTechProfile({
+    stack: [
+      entry("Next.js"),
+      entry("next.js"),
+      entry("next"),
+      entry("PostgreSQL"),
+      entry("pg"),
+      entry("Vercel"),
+      entry("Lodash"),
+      entry(""),
+    ],
+  });
+
+  assert.deepEqual(listProjectTechContexts([profile], "default-project").sort(), [
+    "nextjs",
+    "postgres",
+    "vercel",
+  ]);
+});
+
+test("没有技术档案、或档案里全是认不出的名字时，技术上下文是空的", () => {
+  assert.deepEqual(listProjectTechContexts([], "default-project"), []);
+
+  const profile = createTechProfile({
+    stack: [
+      {
+        name: "React",
+        version: "",
+        purpose: "",
+        isDeviation: false,
+        adrAssetId: null,
+      },
+    ],
+  });
+
+  assert.deepEqual(listProjectTechContexts([profile], "default-project"), []);
 });
 
 test("技术档案元数据合法时通过校验", () => {

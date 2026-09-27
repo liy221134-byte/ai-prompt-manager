@@ -105,6 +105,8 @@ export function listCompileCandidates(
   projectId: string,
   // 引用来的规则：正文在公共资产库，标识由调用方算好传进来
   referencedRuleIds: string[] = [],
+  // 这个项目用到的技术上下文（来自技术档案）。传空数组表示「不知道」——那就按技术栈不筛。
+  projectTechContexts: string[] = [],
 ): CompileCandidates {
   const referenced = new Set(referencedRuleIds);
   const rules = assets.filter(
@@ -133,6 +135,25 @@ export function listCompileCandidates(
     if (decision?.decision === "excluded") {
       excluded.push({ rule, reason: "你已裁决不参与编译" });
       continue;
+    }
+
+    // 技术上下文筛选：只要有一项对得上就收，一项都对不上才排除。
+    // generic 不算「专用技术」，不参与这个判定。
+    if (projectTechContexts.length > 0) {
+      const ruleContexts = readTechContext(rule).filter(
+        (item) => item !== "generic",
+      );
+
+      if (
+        ruleContexts.length > 0 &&
+        !ruleContexts.some((item) => projectTechContexts.includes(item))
+      ) {
+        excluded.push({
+          rule,
+          reason: `技术上下文对不上：这条规则是 ${ruleContexts.join("、")}，这个项目的技术栈是 ${projectTechContexts.join("、")}`,
+        });
+        continue;
+      }
     }
 
     included.push({ rule, targets });

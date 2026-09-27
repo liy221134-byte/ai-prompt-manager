@@ -91,6 +91,76 @@ test("候选集按活跃状态和裁决结果分流，并给出排除原因", ()
   );
 });
 
+test("技术上下文参与筛选：有交集就收，一项都对不上才排除", () => {
+  const assets = [
+    createRule({
+      id: "rule-next",
+      title: "Next 专用",
+      metadata: { ruleType: "must", scope: "project", techContext: ["nextjs"] },
+    }),
+    createRule({
+      id: "rule-db",
+      title: "库专用",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        techContext: ["supabase"],
+      },
+    }),
+    createRule({
+      id: "rule-both",
+      title: "两项技术",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        techContext: ["nextjs", "supabase"],
+      },
+    }),
+    createRule({
+      id: "rule-generic",
+      title: "通用",
+      metadata: { ruleType: "must", scope: "project", techContext: ["generic"] },
+    }),
+    createRule({ id: "rule-none", title: "没标技术" }),
+  ];
+
+  const filtered = listCompileCandidates(assets, "project-a", [], ["nextjs"]);
+
+  assert.deepEqual(
+    filtered.included.map((candidate) => candidate.rule.id).sort(),
+    ["rule-both", "rule-generic", "rule-next", "rule-none"],
+  );
+  assert.deepEqual(
+    filtered.excluded.map((item) => [item.rule.id, item.reason]),
+    [
+      [
+        "rule-db",
+        "技术上下文对不上：这条规则是 supabase，这个项目的技术栈是 nextjs",
+      ],
+    ],
+  );
+});
+
+test("项目技术上下文为空时不筛：所有活跃规则照旧进候选", () => {
+  const assets = [
+    createRule({
+      id: "rule-db",
+      title: "库专用",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        techContext: ["supabase"],
+      },
+    }),
+  ];
+
+  assert.equal(listCompileCandidates(assets, "project-a").included.length, 1);
+  assert.equal(
+    listCompileCandidates(assets, "project-a", [], []).included.length,
+    1,
+  );
+});
+
 test("候选集按作用层级分组，未填层级排在最后", () => {
   const assets = [
     createRule({
