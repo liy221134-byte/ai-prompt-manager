@@ -40,6 +40,7 @@
 
 ### 设计
 
+- [v2.24.0 项目规模参与编译筛选设计（待确认）](superpowers/specs/2026-09-27-v2.24.0-project-scale-filter-design.md)
 - [v2.23.0 本机 MCP 自动接入设计（待确认）](superpowers/specs/2026-09-27-v2.23.0-local-mcp-setup-design.md)
 - [v2.22.0 技术上下文参与编译筛选设计（待确认）](superpowers/specs/2026-09-27-v2.22.0-tech-context-filter-design.md)
 - [v2.20.0 规则引用模型收尾设计（待确认）](superpowers/specs/2026-09-25-v2.20.0-rule-reference-closeout-design.md)
