@@ -216,7 +216,7 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 | Postgres MCP | MCP | 暂缓 | — | — | 自建/国产库阶段 |
 | 豆包「AI Coding 每日速递」9/23–9/27（5 条） | 资讯流 | 已核对，未采纳 | — | 2026-09-27 | 结论见第三节；已覆盖的多，未采纳 1 条（Chrome DevTools MCP） |
 | **S4 Supabase 官方 Skills**（`supabase`、`supabase-postgres-best-practices`） | Skills | 已入库 6 条 | `RULE-PG-FK-INDEX-001`、`RULE-PG-MIGRATION-001`、`RULE-PG-RLS-001`、`RULE-PG-PRIVILEGE-001`、`RULE-PG-TRANSACTION-001`、`MTH-PG-QUERY-PERF-001` | 2026-09-27 | 源文件 31 条规则，按「宁精勿多」挑出 6 条；连接管理（托管环境已管）、分区、锁、监控、高级特性、表设计常识按暂缓处理，理由记在包 README 的 0.7.0。全部 `confidence: hypothesis`，等技术上下文筛选生效并在真实项目用过再升 |
-| **S5 superpowers 全套**（本机 12 个技能） | Skills | 部分采集 1／12 | `PLAYBOOK-DEBUG-001` | 2026-09-23 | 已采 systematic-debugging。**`verification-before-completion` 有真增量**：「本次消息里没跑过那条命令就不许说通过」「回归测试要看到红-绿循环」——本库交付门只写了「不能只说应该没问题」 |
+| **S5 superpowers 全套**（本机 12 个技能） | Skills | **已采集完毕**（1 条 + 2 条） | `PLAYBOOK-DEBUG-001`、`RULE-VERIFY-001`、`RULE-VERIFY-002` | 2026-09-27 | 2026-09-23 采系统化调试；2026-09-27 采 verification-before-completion 的 2 条（红-绿循环、新鲜证据）。**剩下的技能不是遗漏**：计划与执行、子代理、worktree、代码评审，都是本项目已明确「默认不使用」或「已有替代」的 |
 | **S6 product-design**（`audit`、`design-qa`、`ideate`、`research` 等 9 个） | Skills | 未采集 | — | — | `audit` 的「先截图再下结论」「报告里必须写明光看截图查不到什么」值得提炼；`design-qa` 的「源设计和实现放同一张对比图里」我们没有源设计，用不上 |
 | Figma 官方 Skills（12 个） | Skills | 暂缓 | — | — | 本项目不做设计稿，暂时用不上 |
 | Notion 官方 Skills（4 个） | Skills | 暂缓 | — | — | 不用 Notion |
@@ -229,6 +229,8 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 
 ## 版本
 
+- `0.1.5`（2026-09-27）：S5 superpowers 采集完毕——verification-before-completion 提炼出 2 条
+  验证纪律进工程方法种子资产包 0.8.0；并在台账里写明剩下的技能为何不再采。
 - `0.1.4`（2026-09-27）：S4 Supabase 官方 Skills 采集完成——31 条里挑出 6 条入库，
   进工程方法种子资产包 0.7.0（技术上下文标 `postgres`／`supabase`，主要面向中大型项目）；
   台账补上资产编号与暂缓理由。
