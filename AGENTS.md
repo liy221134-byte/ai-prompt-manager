@@ -137,8 +137,9 @@ AI 默认会多写：加抽象、装依赖、顺手重构。动手写代码前�
 
 - `writing-plans`、`executing-plans`：由《设计 + 任务清单》替代。
 - `subagent-driven-development` 和并行子代理：个人项目默认不启用，除非我明确要求。
-- `using-git-worktrees`：串行开发默认在项目目录内建功能分支；多个会话并行时必须用独立
-  工作区隔离，否则会出现提交落到别人分支上的情况。
+- `using-git-worktrees`：串行开发时，**新功能**在项目目录内建功能分支；**修 bug 不用单开
+  分支**，直接在主分支上用 `fix:` 提交。多个会话并行时必须用独立工作区隔离，
+  否则会出现提交落到别人分支上的情况。
 - `requesting-code-review`、`receiving-code-review`：合并为交付门里的那一轮自查。
 - `finishing-a-development-branch`：只在整个版本合并时使用。
 - `using-superpowers`：不再作为每次对话的固定开场。
