@@ -16,6 +16,7 @@ import {
   LogOut,
   LoaderCircle,
   PackageOpen,
+  PlugZap,
   Plus,
   RefreshCcw,
   Rocket,
@@ -54,6 +55,7 @@ import { EngineeringBaselineDrawer } from "@/components/engineering-baseline-dra
 import { buildGateItemsFromLevel } from "@/lib/release-record";
 import { AiMergeDrawer } from "@/components/ai-merge-drawer";
 import { BackupManagerDialog } from "@/components/backup-manager-dialog";
+import { McpSetupDialog } from "@/components/mcp-setup-dialog";
 import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
 import {
   findProjectTechProfile,
@@ -361,6 +363,8 @@ export function PromptLibrary({
   const [isRulePackCreateOpen, setIsRulePackCreateOpen] = useState(false);
   const [isPublicAssetPickerOpen, setIsPublicAssetPickerOpen] = useState(false);
   const [isSedimentCheckupOpen, setIsSedimentCheckupOpen] = useState(false);
+  // 本机 MCP 接入面板：只在本机模式出现（云端碰不到用户本机的配置文件）
+  const [isMcpSetupOpen, setIsMcpSetupOpen] = useState(false);
   const [isKickoffOpen, setIsKickoffOpen] = useState(false);
   const [sedimentDiff, setSedimentDiff] = useState<{
     title: string;
@@ -3308,6 +3312,22 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                             isLoading || Boolean(loadError) || !activeProjectId,
                           onSelect: () => setIsRulePackCreateOpen(true),
                         },
+                        ...(dataMode === "local"
+                          ? [
+                              {
+                                key: "mcp-setup",
+                                label: "接入本机 MCP",
+                                icon: (
+                                  <PlugZap
+                                    aria-hidden="true"
+                                    className="size-4"
+                                  />
+                                ),
+                                disabled: false,
+                                onSelect: () => setIsMcpSetupOpen(true),
+                              },
+                            ]
+                          : []),
                         {
                           key: "sediment-checkup",
                           label: "沉淀体检",
@@ -3849,6 +3869,13 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           onClose={() => setIsPublicAssetPickerOpen(false)}
           onPick={handlePickPublicAssets}
           projectName={activeProject?.name ?? "当前项目"}
+        />
+      )}
+
+      {isMcpSetupOpen && (
+        <McpSetupDialog
+          onClose={() => setIsMcpSetupOpen(false)}
+          onNotify={notify}
         />
       )}
 
