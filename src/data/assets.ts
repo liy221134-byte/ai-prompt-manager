@@ -275,6 +275,9 @@ export type TechStackEntry = {
 
 export type TechProfileAssetMetadata = {
   stack: TechStackEntry[];
+  // 项目规模：技术档案模板里本来就有这一项，这一版把它变成能读的字段。
+  // 老档案没有这个字段时按「没填」处理，所以是可选的。
+  projectScale?: ProjectScale[];
   relations?: AssetRelation[];
 };
 
@@ -596,7 +599,13 @@ function isTechProfileAssetMetadata(
     isRecord(value) &&
     Array.isArray(value.stack) &&
     value.stack.every((entry) => isTechStackEntry(entry)) &&
-    isOptionalRelations(value.relations)
+    isOptionalRelations(value.relations) &&
+    // 项目规模可以缺（老档案就是这样），但写了就必须是这四档
+    (value.projectScale === undefined ||
+      (Array.isArray(value.projectScale) &&
+        value.projectScale.every((item) =>
+          projectScales.includes(item as ProjectScale),
+        )))
   );
 }
 
@@ -1464,6 +1473,7 @@ export function isAssetRelationList(value: unknown) {
 
 export type TechProfileMetadataForm = {
   stack: TechStackEntry[];
+  projectScale: ProjectScale[];
   relations: AssetRelation[];
 };
 
@@ -1478,6 +1488,7 @@ export function normalizeTechProfileMetadata(
           .filter((entry) => isTechStackEntry(entry))
           .map((entry) => ({ ...entry }))
       : [],
+    projectScale: readEnumList(source.projectScale, projectScales),
     relations: normalizeAssetRelations(source.relations),
   };
 }

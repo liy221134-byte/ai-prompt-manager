@@ -12,6 +12,17 @@ import {
 
 const now = "2026-09-23T08:30:00.000Z";
 
+// 规则适用的项目规模存在 pack 链接里——那是这条规则自己声明的规模，同一个包里每条可以不一样
+function packWithScale(scales) {
+  return {
+    packId: "pack-a",
+    packItemId: "item-1",
+    packVersion: "0.1.0",
+    packAssetType: "method",
+    projectScale: scales,
+  };
+}
+
 function createRule(overrides = {}) {
   return {
     id: "rule-1",
@@ -158,6 +169,95 @@ test("项目技术上下文为空时不筛：所有活跃规则照旧进候选",
   assert.equal(
     listCompileCandidates(assets, "project-a", [], []).included.length,
     1,
+  );
+});
+
+test("项目规模参与筛选：有交集就收，一项都对不上才排除", () => {
+  const assets = [
+    createRule({
+      id: "rule-large",
+      title: "只给大型平台",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        pack: packWithScale(["large"]),
+      },
+    }),
+    createRule({
+      id: "rule-medium",
+      title: "给中型产品",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        pack: packWithScale(["medium"]),
+      },
+    }),
+    createRule({ id: "rule-any", title: "没标规模" }),
+  ];
+
+  const filtered = listCompileCandidates(
+    assets,
+    "project-a",
+    [],
+    [],
+    ["personal"],
+  );
+
+  assert.deepEqual(
+    filtered.included.map((candidate) => candidate.rule.id).sort(),
+    ["rule-any"],
+  );
+  assert.deepEqual(
+    filtered.excluded.map((item) => [item.rule.id, item.reason]),
+    [
+      [
+        "rule-large",
+        "项目规模对不上：这条规则适用于 大型平台，这个项目是 个人工具",
+      ],
+      [
+        "rule-medium",
+        "项目规模对不上：这条规则适用于 中型云端产品，这个项目是 个人工具",
+      ],
+    ],
+  );
+});
+
+test("项目规模为空时不筛；规则标了多项规模时有一项对上就收", () => {
+  const assets = [
+    createRule({
+      id: "rule-both",
+      title: "个人和中型都适用",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        pack: packWithScale(["personal", "medium"]),
+      },
+    }),
+    createRule({
+      id: "rule-large",
+      title: "只给大型平台",
+      metadata: {
+        ruleType: "must",
+        scope: "project",
+        pack: packWithScale(["large"]),
+      },
+    }),
+  ];
+
+  // 不传规模 = 不筛
+  assert.equal(listCompileCandidates(assets, "project-a").included.length, 2);
+
+  const filtered = listCompileCandidates(
+    assets,
+    "project-a",
+    [],
+    [],
+    ["personal"],
+  );
+
+  assert.deepEqual(
+    filtered.included.map((candidate) => candidate.rule.id),
+    ["rule-both"],
   );
 });
 

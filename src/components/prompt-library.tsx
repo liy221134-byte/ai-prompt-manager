@@ -61,6 +61,7 @@ import {
   findProjectTechProfile,
   listAdrCandidates,
   listProjectTechContexts,
+  listProjectScales,
 } from "@/lib/tech-profile";
 import {
   buildPickedRuleReferenceAsset,
@@ -894,6 +895,11 @@ export function PromptLibrary({
       activeProjectId ? listProjectTechContexts(assets, activeProjectId) : [],
     [activeProjectId, assets],
   );
+  // 这个项目的规模（也来自技术档案）。空数组表示「没填」，编译时就不按规模筛。
+  const projectScales = useMemo(
+    () => (activeProjectId ? listProjectScales(assets, activeProjectId) : []),
+    [activeProjectId, assets],
+  );
   const compileCandidates = useMemo(
     () =>
       activeProjectId
@@ -902,9 +908,16 @@ export function PromptLibrary({
             activeProjectId,
             referencedRules.map((entry) => entry.rule.id),
             projectTechContexts,
+            projectScales,
           )
         : null,
-    [activeProjectId, assets, referencedRules, projectTechContexts],
+    [
+      activeProjectId,
+      assets,
+      referencedRules,
+      projectTechContexts,
+      projectScales,
+    ],
   );
   const compileConflicts = useMemo(
     () =>
@@ -3937,6 +3950,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           selectedTemplateId={compileTemplateId}
           templates={templatesInProject}
           techContexts={projectTechContexts}
+          projectScales={projectScales}
         />
       )}
 

@@ -1,6 +1,11 @@
 // 技术档案的项目级规则：一个项目一份，偏离默认选型必须挂 ADR。
 
-import type { AssetData, TechStackEntry } from "../data/assets.ts";
+import {
+  projectScales,
+  type AssetData,
+  type ProjectScale,
+  type TechStackEntry,
+} from "../data/assets.ts";
 
 export const ADR_DOCUMENT_TYPE = "ADR";
 
@@ -106,4 +111,23 @@ export function listProjectTechContexts(
   }
 
   return [...contexts];
+}
+
+// 这个项目的规模：从技术档案里读，和技术上下文同一个来源。
+// 没填、或者没有档案就返回空数组——调用方据此决定不筛。
+export function listProjectScales(
+  assets: AssetData[],
+  projectId: string,
+): ProjectScale[] {
+  const profile = findProjectTechProfile(assets, projectId);
+  const scale =
+    profile && profile.assetType === "tech_profile"
+      ? profile.metadata.projectScale
+      : undefined;
+
+  return Array.isArray(scale)
+    ? scale.filter((item): item is ProjectScale =>
+        projectScales.includes(item),
+      )
+    : [];
 }

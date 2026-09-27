@@ -13,6 +13,7 @@ import {
   ruleOverrideScopes,
   documentRoles,
   evidenceConclusions,
+  projectScales,
   releaseRecordResults,
   assetRelationTypes,
   type AssetStatus,
@@ -51,6 +52,7 @@ import {
   documentTypeOptions,
   evidenceConclusionLabels,
   graphNodeTypeLabels,
+  projectScaleLabels,
   releaseRecordResultLabels,
   ruleScopeLabels,
   ruleTypeLabels,
@@ -1036,9 +1038,39 @@ export function AssetEditorDrawer({
                   />
                 </div>
               ) : (
-                <p className="text-sm leading-6 text-slate-500 sm:col-span-2">
-                  技术档案的基础字段在下面的「技术栈清单」里填，选型说明写在正文。
-                </p>
+                <div className="flex flex-col gap-2 sm:col-span-2">
+                  <span className={labelClassName}>项目规模</span>
+                  <div className="flex flex-wrap gap-4">
+                    {projectScales.map((scale) => (
+                      <label
+                        className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                        key={scale}
+                      >
+                        <input
+                          checked={draft.projectScale.includes(scale)}
+                          className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          onChange={(event) =>
+                            updateDraft({
+                              projectScale: event.target.checked
+                                ? [...draft.projectScale, scale]
+                                : draft.projectScale.filter(
+                                    (item) => item !== scale,
+                                  ),
+                            })
+                          }
+                          type="checkbox"
+                        />
+                        {projectScaleLabels[scale]}
+                      </label>
+                    ))}
+                  </div>
+                  <span className="text-xs leading-5 text-slate-500">
+                    规则编译按它筛：规则标的规模里有一项对上，才会收进产物。留空就是不按规模筛。
+                  </span>
+                  <p className="text-sm leading-6 text-slate-500">
+                    技术栈清单在下面填，选型说明写在正文。
+                  </p>
+                </div>
               )}
 
               <label className="flex flex-col gap-2">

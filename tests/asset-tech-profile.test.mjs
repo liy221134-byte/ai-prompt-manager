@@ -15,6 +15,7 @@ import {
   validateTechStack,
 } from "../src/lib/tech-profile.ts";
 import {
+  assetToDraft,
   buildCreateAssetInput,
   createEmptyAssetDraft,
 } from "../src/lib/asset-draft.ts";
@@ -124,6 +125,75 @@ test("技术档案元数据不合法时被拒绝", () => {
   assert.equal(isAssetData(createTechProfile({ stack: [entry({ name: "" })] })), false);
 });
 
+test("技术档案里的项目规模：合法值通过校验，非法值被拒", () => {
+  assert.equal(
+    isAssetData(
+      createTechProfile({
+        stack: [entry()],
+        projectScale: ["personal", "large"],
+      }),
+    ),
+    true,
+  );
+  // 不是这四档之一
+  assert.equal(
+    isAssetData(
+      createTechProfile({ stack: [entry()], projectScale: ["personal", "huge"] }),
+    ),
+    false,
+  );
+  // 不是数组
+  assert.equal(
+    isAssetData(createTechProfile({ stack: [entry()], projectScale: "personal" })),
+    false,
+  );
+});
+
+test("技术档案没填项目规模时补成空数组，非法值在归一化时被丢掉", () => {
+  assert.deepEqual(
+    normalizeTechProfileMetadata({ stack: [] }).projectScale,
+    [],
+  );
+  assert.deepEqual(
+    normalizeTechProfileMetadata({
+      stack: [],
+      projectScale: ["personal", "huge"],
+    }).projectScale,
+    ["personal"],
+  );
+});
+
+test("项目规模能写进草稿再存回元数据；没填就不写这个字段", () => {
+  const profile = createTechProfile({
+    stack: [entry()],
+    projectScale: ["personal", "large"],
+  });
+  const draft = assetToDraft(profile);
+
+  assert.deepEqual(draft.projectScale, ["personal", "large"]);
+  assert.deepEqual(
+    buildCreateAssetInput({
+      id: "tech_profile-new",
+      projectId: "default-project",
+      draft,
+      now: "2026-09-27T00:00:00.000Z",
+    }).asset.metadata.projectScale,
+    ["personal", "large"],
+  );
+
+  // 没填规模时不写这个字段，元数据保持干净
+  const empty = buildCreateAssetInput(
+    {
+      id: "tech_profile-new",
+      projectId: "default-project",
+      draft: assetToDraft(createTechProfile({ stack: [entry()] })),
+      now: "2026-09-27T00:00:00.000Z",
+    },
+  );
+
+  assert.equal("projectScale" in empty.asset.metadata, false);
+});
+
 test("规则和文档也可以带关系，关系类型不合法会被拒绝", () => {
   const document = {
     id: "document-a",
@@ -182,7 +252,7 @@ test("技术档案元数据缺字段时补成空值，不完整的条目会被�
   );
 
   const empty = normalizeTechProfileMetadata(null);
-  assert.deepEqual(empty, { stack: [], relations: [] });
+  assert.deepEqual(empty, { stack: [], projectScale: [], relations: [] });
 });
 
 test("认不出来的关系会被丢掉", () => {

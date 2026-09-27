@@ -22,6 +22,7 @@ import {
   type RuleLifecycle,
   type RuleOverrideScope,
   type RulePriority,
+  type ProjectScale,
   type RuleScope,
   type RuleStage,
   type RuleType,
@@ -161,6 +162,7 @@ export type TechProfileAssetDraft = {
   content: string;
   status: AssetStatus;
   stack: TechStackEntryDraft[];
+  projectScale: ProjectScale[];
   relations: AssetRelationDraft[];
 };
 
@@ -352,6 +354,7 @@ export function createEmptyAssetDraft(
         isDeviation: false,
         adrAssetId: "",
       })),
+      projectScale: [],
       relations: [],
     };
   }
@@ -625,6 +628,7 @@ export function techProfileToDraft(
       isDeviation: entry.isDeviation,
       adrAssetId: entry.adrAssetId ?? "",
     })),
+    projectScale: metadata.projectScale,
     relations: relationsToDraft(readAssetRelations(asset.metadata)),
   };
 }
@@ -797,6 +801,9 @@ function buildAsset(
   if (draft.assetType === "tech_profile") {
     const techMetadata: TechProfileAssetMetadata = {
       stack: normalizeDraftStack(draft.stack).filter((entry) => entry.name),
+      ...(draft.projectScale.length
+        ? { projectScale: draft.projectScale }
+        : {}),
       ...(draft.relations.length
         ? { relations: draftRelationsToMetadata(draft.relations) }
         : {}),

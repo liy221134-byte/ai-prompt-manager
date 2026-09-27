@@ -4,6 +4,7 @@
 import type {
   AssetData,
   CompileTarget,
+  ProjectScale,
   RuleAssetData,
   RuleCompileDecision,
   RuleConfidence,
@@ -12,10 +13,12 @@ import type {
   RuleType,
 } from "../data/assets.ts";
 import {
+  projectScaleLabels,
   ruleConfidenceLabels,
   ruleScopeLabels,
   ruleTypeLabels,
 } from "./asset-list.ts";
+import { projectScales } from "../data/assets.ts";
 import { readAssetPackLink } from "./rule-pack.ts";
 
 export const COMPILE_GENERATOR_VERSION = "v2.3.0";
@@ -99,6 +102,22 @@ function readTechContext(rule: RuleAssetData) {
   return [...(rule.metadata.techContext ?? [])];
 }
 
+// 规则适用的项目规模。
+//
+// 注意这个值存在哪儿：它在 pack 链接里（`metadata.pack.projectScale`）。那是**这条规则自己**
+// 在前言里声明的规模，同一个包里每条可以不一样，不是整包的规模（整包的规模取并集，在包资产上）。
+// 没进过包的规则（项目里手工建的）没有这个值，按「没标规模」处理——任何项目都收。
+// 以后这个字段若挪到规则元数据的顶层，这里一并改成优先读顶层。
+function readRuleProjectScale(rule: RuleAssetData): ProjectScale[] {
+  const scale = rule.metadata.pack?.projectScale;
+
+  return Array.isArray(scale)
+    ? scale.filter((item): item is ProjectScale =>
+        projectScales.includes(item),
+      )
+    : [];
+}
+
 // 编译候选集：只要活跃、没被裁决排除、没标成「不编译」的规则
 export function listCompileCandidates(
   assets: AssetData[],
@@ -107,6 +126,8 @@ export function listCompileCandidates(
   referencedRuleIds: string[] = [],
   // 这个项目用到的技术上下文（来自技术档案）。传空数组表示「不知道」——那就按技术栈不筛。
   projectTechContexts: string[] = [],
+  // 这个项目的规模（也来自技术档案）。传空数组表示「没填」——那就按规模不筛。
+  projectScales: string[] = [],
 ): CompileCandidates {
   const referenced = new Set(referencedRuleIds);
   const rules = assets.filter(
@@ -151,6 +172,27 @@ export function listCompileCandidates(
         excluded.push({
           rule,
           reason: `技术上下文对不上：这条规则是 ${ruleContexts.join("、")}，这个项目的技术栈是 ${projectTechContexts.join("、")}`,
+        });
+        continue;
+      }
+    }
+
+    // 项目规模筛选：口径和上面完全一致——有交集就收，一项都对不上才排除。
+    // 规则没标规模的，任何项目都收。
+    if (projectScales.length > 0) {
+      const ruleScales = readRuleProjectScale(rule);
+
+      if (
+        ruleScales.length > 0 &&
+        !ruleScales.some((item) => projectScales.includes(item))
+      ) {
+        excluded.push({
+          rule,
+          reason: `项目规模对不上：这条规则适用于 ${ruleScales
+            .map((item) => projectScaleLabels[item] ?? item)
+            .join("、")}，这个项目是 ${projectScales
+            .map((item) => projectScaleLabels[item as ProjectScale] ?? item)
+            .join("、")}`,
         });
         continue;
       }

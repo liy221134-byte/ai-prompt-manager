@@ -13,7 +13,10 @@ import { useState } from "react";
 
 import type { RuleAssetData } from "@/data/assets";
 import type { TemplateAssetData } from "@/data/assets";
-import { ruleConfidenceLabels } from "@/lib/asset-list";
+import {
+  projectScaleLabels,
+  ruleConfidenceLabels,
+} from "@/lib/asset-list";
 import { downloadCompiledDraft } from "@/lib/backup-download";
 import type {
   CompileCandidates,
@@ -34,6 +37,8 @@ type RuleCompileDrawerProps = {
   packTitles: Record<string, string>;
   // 这个项目的技术上下文（来自技术档案）。空数组表示不知道，那就不按技术栈筛。
   techContexts: string[];
+  // 这个项目的规模（也来自技术档案）。空数组表示没填，那就不按规模筛。
+  projectScales: string[];
   isBusy: boolean;
   onSelectTemplate: (templateId: string) => void;
   onExcludeRule: (rule: RuleAssetData, note: string) => Promise<void>;
@@ -56,6 +61,7 @@ export function RuleCompileDrawer({
   rulesAppended,
   packTitles,
   techContexts,
+  projectScales,
   isBusy,
   onSelectTemplate,
   onExcludeRule,
@@ -154,6 +160,18 @@ export function RuleCompileDrawer({
             {techContexts.length > 0
               ? `按技术栈筛：通用规则照收，标了具体技术的规则，只有和 ${techContexts.join("、")} 对得上才收。`
               : "这个项目还没有技术档案，或者档案里没有能对上技术上下文的技术栈——本次不按技术栈筛。"}
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {projectScales.length > 0
+              ? `按项目规模筛：规则标的规模里有一项对得上才收，当前是 ${projectScales
+                  .map(
+                    (scale) =>
+                      (projectScaleLabels as Record<string, string>)[scale] ??
+                      scale,
+                  )
+                  .join("、")}。`
+              : "这个项目还没填项目规模——本次不按规模筛。"}
           </p>
 
           {conflicts.length > 0 && (
