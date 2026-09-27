@@ -75,7 +75,7 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
    写走 `src/lib/mcp-write.ts` 加同一套 `createAsset`／`updateAsset`；
    库文件按脚本所在仓库定位，`MCP_READ_ONLY=1` 时只注册查询工具。
 
-## 测试分布（63 个文件，428 项，约 15 秒）
+## 测试分布（78 个文件，525 项，约 15 秒）
 
 | 文件前缀 | 覆盖内容 |
 | --- | --- |
