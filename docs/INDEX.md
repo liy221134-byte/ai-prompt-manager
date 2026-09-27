@@ -40,6 +40,7 @@
 
 ### 设计
 
+- [v2.22.0 技术上下文参与编译筛选设计（待确认）](superpowers/specs/2026-09-27-v2.22.0-tech-context-filter-design.md)
 - [v2.20.0 规则引用模型收尾设计（待确认）](superpowers/specs/2026-09-25-v2.20.0-rule-reference-closeout-design.md)
 - [v2.20.0 挑资产引用模型设计](superpowers/specs/2026-09-25-v2.20.0-picked-rule-reference-design.md)
 - [v2.19.0 本地与云端定期同步设计](superpowers/specs/2026-09-24-v2.19.0-cloud-sync-design.md)
