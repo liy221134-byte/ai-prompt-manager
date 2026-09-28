@@ -222,13 +222,15 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 | Notion 官方 Skills（4 个） | Skills | 暂缓 | — | — | 不用 Notion |
 | OpenAI 运行时技能（`documents`／`pdf`／`presentations`／`spreadsheets`／`template-creator`） | Skills | 暂缓 | — | — | 办公文档类能力，和这个库的关系要另判 |
 | `computer-use`／`visualize` | Skills | 暂缓 | — | — | 能力型，不是规则型 |
-| 产品经理方法技能 19 个（`create-prd`、`pre-mortem`、`strategy-red-team`、`user-stories`、`wwas`…） | Skills | 未采集 | — | — | 面向「人怎么带队」，多半该进操作者训练包而不是工程包 |
+| **S7 产品经理方法技能 19 个**（`create-prd`、`pre-mortem`、`strategy-red-team`、`frontend-design`、`user-stories`、`wwas`…） | Skills | **已采 4 条** | `RULE-PREMORTEM-001`、`RULE-REDTEAM-001`、`RULE-DESIGN-TEMPLATE-LOOK-001`、`RULE-DESIGN-COPY-001` | 2026-09-28 | 深读 4 个技能，各提炼 1 条进种子资产包 0.11.0：`pre-mortem`（事前验尸）、`strategy-red-team`（只打承重假设）、`frontend-design`（反模板味 + 界面文案）。**其余 15 个的处置**：`test-scenarios`／`create-prd` 已有替代不采；`job-stories`／`user-stories`／`wwas` 是需求表达格式，该进模板层；`prioritization-frameworks`／`ui-ux-pro-max` 是会腐化的清单，该进参考文档层；`canvas-design` 与本产品无关；`dummy-dataset` 暂缓；7 个团队管理方法（OKR／路线图／排期／复盘／干系人／会议纪要／发布说明）建议单独立一片，暂不混进工程包 |
 | Next.js 能力技能 5 个（`next-dev-loop`、`next-cache-components-*`、`next-partial-prefetching-*`）与 `ui-ux-pro-max` | Skills | 部分采集 | `AGENTS.md` 的「界面改动的验证」 | 2026-09-27 | `next-dev-loop` 的用法已写进 `AGENTS.md`；其余是框架特定能力，等技术上下文筛选生效后再按需采 |
 
 > 状态取值：未采集 / 已采集待确认 / 已入库 / 已安装 / 暂缓 / 放弃。
 
 ## 版本
 
+- `0.1.8`（2026-09-28）：S7 产品经理方法技能采完 4 条进种子资产包 0.11.0（事前验尸、
+  只打承重假设、反模板味、界面文案）；台账写明另外 15 个技能为什么不采、改道去哪一层。
 - `0.1.7`（2026-09-27）：S6 product-design 采完 4 条设计规则进种子资产包 0.10.0；
   修正上一版「不用 Figma」的错误判断——当时把「工序排在后面」读成了「不用这个工具」。
 - `0.1.6`（2026-09-27）：S5 superpowers 按适用规模采完——再采 6 条多智能体协作规则进
