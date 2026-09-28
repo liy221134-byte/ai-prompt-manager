@@ -27,6 +27,7 @@ import {
   Trash2,
   WandSparkles,
   X,
+  GraduationCap,
 } from "lucide-react";
 import {
   type ChangeEvent,
@@ -230,6 +231,7 @@ import {
   type PromptMergeSelection,
 } from "@/lib/prompt-merge-selection";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useRouter } from "next/navigation";
 
 type EditorState =
   | {
@@ -317,6 +319,7 @@ export function PromptLibrary({
   onSignOut,
   userEmail,
 }: PromptLibraryProps) {
+  const router = useRouter();
   const dataSource = useMemo<PromptDataSource>(() => {
     if (dataMode === "supabase") {
       return createSupabasePromptDataSource(getSupabaseBrowserClient());
@@ -3270,6 +3273,21 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 items={
                   workspaceView === "public"
                     ? [
+                        ...(dataMode === "supabase"
+                          ? [
+                              {
+                                key: "practice",
+                                label: "练习题库",
+                                icon: (
+                                  <GraduationCap
+                                    aria-hidden="true"
+                                    className="size-4"
+                                  />
+                                ),
+                                onSelect: () => router.push("/practice"),
+                              },
+                            ]
+                          : []),
                         {
                           key: "import-source-package",
                           label: "导入文档包",
