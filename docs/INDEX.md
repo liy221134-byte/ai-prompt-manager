@@ -96,6 +96,9 @@
 
 - [工程能力学习计划](learning/engineering-readiness.md)
 - [工程文档模板（九份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线、故障演练记录，用「导入模板」装进项目
+- [方法模板（六份）](../templates/methods/design-plan.md)：设计计划、事前验尸记录、红队结论、用户故事、Job Story、WWA，和上面的工程文档模板一样用「导入模板」装进项目（已在公共资产库）
+- [参考清单](reference/prioritization-frameworks.md)：优先级框架对照（9 种）、界面检查清单（8 类，按影响排序）——方法级参考，不编译进 `AGENTS.md`
+- [产品方法提示词包（五条）](../prompt-packs/product-methods.md)：事前验尸、红队攻击承重假设、设计计划与复查、界面文案检查、需求改写成三种格式
 - [操作者训练包（试装）](../seed-packs/operator-training/README.md)：9 条「人怎么指挥 AI」的方法与清单，`npm run pack:operator` 生成可导入文件
 - [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：48 条工程方法、规则、模板和案例（含 3 条案例），`0.11.0`（0.11.0 新增 4 条动手前的风险与视觉纪律、0.10.0 新增 4 条界面设计规则、0.9.0 新增 6 条多智能体协作规则、0.8.0 验证纪律、0.7.0 Postgres 规则，均来自外部来源采集），可作为文档包导入的样本
 - [交付就绪包（M0）](../seed-packs/delivery-readiness/README.md)：3 条（交付前环境适配体检、交付环境档案模板、客户环境部署手册模板），`0.1.0`，`npm run pack:delivery` 生成导入文件。换环境交付那条「配置解决不了」的缝，第一条真项目跑完前是**假设**
