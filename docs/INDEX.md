@@ -31,6 +31,7 @@
 
 - [用户地图（功能在哪、点哪里）](user-map.md)
 - [从沉淀到立项：链路断点评估](project-lifecycle-gaps.md)
+- [两条线索的立项需求草案（生态采集沉淀 / 内网基础能力练习，待确认）](leads-3-4-requirements-draft.md)
 - [文档与资产口径收口需求草案（v2.25.0 暂定名，待确认）](v2.25.0-requirements-draft.md)
 - [零代码交付线需求草案（v3 暂定名，待确认）](v3-requirements-draft.md)
 - [需求收敛：文档／模板边界、Spec 层与交互流程（待确认）](requirements-v2.md)
