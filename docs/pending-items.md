@@ -297,6 +297,63 @@ REQ-010 2 条、REQ-011 1 条、REQ-012 5 条、REQ-013 2 条）。
 「多个会话并行必须用独立工作区」那条，建议它用 `git worktree` 另开一个目录，而不是共用
 这一个。串行使用（我做完它再做）才共用目录。
 
+## 2026-09-28 起步模板拆重与同步（记录）
+
+起因：产品负责人要求检查新项目启动模板是否遵循、是否简洁科学。检查出**漂移的根因是重复**——
+`START_PROMPT.md` 与 `AGENTS.md` 各自抄了一份交互／开发／数据／Git 规则（12 条重复），
+同一条规则两处写，漂移必然复发。
+
+**过程中发现一件必须先纠正的事**：本工作区（`workbuddy/main-772ff71b`）滞后 `main` 3 个提交，
+而 `main` 在 12:32 已经由另一会话把 `AGENTS.md` 从 84 行回灌到 191 行（三道门、界面三档判档、
+浏览器验证、修 bug 四步、检查分两档、「本次规则命中」全部补齐）。**基于滞后工作区做出的
+「模板缺哪些规则」结论是过时的**，已作废。教训：并行会话下，动手前先确认工作区是不是最新。
+
+本轮实际改动（只做重复那一半，补骨架那半 main 上已做完）：
+
+| 文件 | 改了什么 |
+| --- | --- |
+| `templates/new-project/START_PROMPT.md` | 删掉四段重复规则（84 → 61 行），改成一句「规则以 `AGENTS.md` 为准」；初始化任务补 `docs/INDEX.md`；第 2 条改成「复制起步模板那份 AGENTS.md 再填产品规则」 |
+| `templates/new-project/AGENTS.md` | 数据与安全补第 6 条「AI 结果必须先预览」——这条原本只在 START_PROMPT 里，删之前先给它找好落点 |
+| `templates/new-project/README.md` | 删掉 `docs/testing/`（验收清单已在 `docs/acceptance/`，不开第二处）；三节原则前加一句「冲突以 `AGENTS.md` 为准」 |
+| `scripts/sync-new-project-templates.ts` | 新增。按 id 精确同步四份起步模板到公共库（导入脚本只新增不覆盖，改模板必须靠它） |
+
+同步到**本机库**（不是云端生产库）：`template-agents` 1588 → 4862 字符、
+`template-readme` 1534 → 1642、`template-start-prompt` 1723 → 1265；`DOCUMENT_SYSTEM` 无变化
+所以没多写版本记录。四份来源都标「腾讯 WorkBuddy；正本在 `templates/new-project/`」。
+写库前快照：`.data/backups/prompts-2026-09-28T13-14-09.sqlite`。
+
+**没做**：`README.md` 模板的三节原则仍与 `AGENTS.md` 有重叠（约 38 行）。它是给人读的门面，
+选择保留内容、标死主次，没有彻底拆。要彻底拆可以再删一轮，README 会降到约 55 行。
+也没有提交本轮改动——本工作区与 `main` 上另一会话并行，提交与合并等你定。
+
+## 2026-09-28 技能定义反向同步入库（记录）
+
+产品负责人指示「反向同步也做了」，于是把 AI 资产市场仓库（`E:\AI资产市场`）做好的 5 个技能
+同步进**本机库**（只写本机，没有碰云端生产库）。写库前做了快照：
+`.data/backups/prompts-2026-09-28T15-08-01.sqlite`。
+
+| 资产 id | 标题 | 库内字符 |
+| --- | --- | --- |
+| `template-skill-premortem-cn` | 技能：事前验尸 | 2030 |
+| `template-skill-redteam-cn` | 技能：红队（只打承重假设） | 1582 |
+| `template-skill-design-plan-cn` | 技能：设计计划（含对照简报复查） | 1291 |
+| `template-skill-requirement-rewrite-cn` | 技能：需求改写成三种格式 | 1338 |
+| `template-skill-acceptance-checklist-cn` | 技能：验收清单 | 1023 |
+
+五份都与 `E:\AI资产市场\skills\<名>\SKILL.md` 逐字一致，各带 1 条版本记录。
+来源统一标「腾讯 WorkBuddy；正本在 `E:\AI资产市场\skills\`」。
+
+**只同步 SKILL.md（技能定义）**，`references/` 没重复入库——里面的模板多数已经在库里
+（`template-premortem-md`、`template-redteam-md`、`template-design-plan-md`、
+`template-user-story-md`、`template-job-story-md`、`template-wwa-md`），再进一次就是第二份正本。
+
+新增 `scripts/sync-market-skills.ts`：按 id 精确更新，可重复执行（改完技能再跑一次即可）。
+和 `scripts/sync-new-project-templates.ts` 同构——后者同步起步模板，前者同步技能定义，
+两者都是因为 `import-local-content.ts` 只新增不覆盖，改了内容必须靠它们。
+
+**方向要说清**：这次是「市场仓库 → 资产库」的副本同步。正本始终是
+`E:\AI资产市场\skills\`，**库里这份改了不会自动回去**，要回写请改正本再跑脚本。
+
 ## 规则命中记录
 
 **什么叫一次命中**：`AGENTS.md` 里已经写过的规则，AI 没照做、被指出来的情况。你临时
