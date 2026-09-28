@@ -156,12 +156,12 @@
 | 半边 | 形态 | 技术栈 | 落点 | 状态 |
 | --- | --- | --- | --- | --- |
 | 实操（本仓库） | 本机练数据库／证书／文件存储／邮件四块自建能力，模拟内网、不连公网 | Postgres 16 / Nginx(SSL) / MinIO / MailHog / Python 标准库 | `E:\intranet-drill`（本仓库） | T1~T6 已写文件，T7 真验收待 Docker |
-| 题库（复用现有系统） | 系统提供的题目云端可访问，且与现有系统共享账号与域名 | **复用现有 AI 开发资产管理系统**（Supabase+Vercel+Next.js）内部模块，**不新建独立项目/域名** | 现有系统的仓库内（feature 分支），**不进本仓库** | 待提供现有系统仓库位置后立项 |
+| 题库（复用现有系统） | 系统提供的题目云端可访问，且与现有系统共享账号与域名 | **复用现有 AI 开发资产管理系统（即本仓库 codeX）**（Next.js 16 + Supabase Auth + Vercel 域名）内部模块，**不新建独立项目/域名** | **本仓库（codeX）内开 feature 分支**；与实操半边 `E:\intranet-drill` 是两回事 | 设计稿见 `docs/leads-4-cloud-practice-design.md`（待产品负责人确认设计门） |
 
 要点：
 - 两半暂不强耦合：题库管题目与知识，实操管环境动手能力；后续若要「实操题从题库拉取并回传结果」，再定义接口。
 - 题库半边的公网依赖是设计使然（云端访问），与实操半边「不连公网」不矛盾——两个独立组件。
-- 题库半边不在这版 M0 范围内；且其正确落点是**现有 AI 开发资产管理系统内部模块**（共享 Auth + 域名 + 既有功能），不是新建独立 Supabase 项目——见第十一节。现有系统仓库位置待产品负责人提供。
+- 题库半边不在这版 M0 范围内；其正确落点是**本仓库 codeX 内部模块**（共享 Auth + 域名 + 既有功能），不是新建独立 Supabase 项目——见第十一、十二节。2026-09-28 晚已核实：本仓库 `package.json`（name: ai-prompt-manager）即该 AI 开发资产管理系统（Next.js 16.3.5 + @supabase/ssr + @supabase/supabase-js + vercel.json + supabase/migrations + 登录页）。
 
 ## 十一、共享账号与域名（新需求 2026-09-28 晚）
 
@@ -175,29 +175,32 @@
 - **同一访问域名**：题库挂在现有系统的 Vercel 域名下（如 `/practice` 路由），无需新域名、无需额外 HTTPS 证书。
 - **复用现有功能**：题目/知识的数据模型、UI 组件、API 模式、存储桶等直接复用，不重写。
 
-### ⚠️ 关键阻塞：现有系统仓库在哪？
+### 核实结论（2026-09-28 晚更正）："AI 开发资产管理系统" 就是本仓库 codeX
 
-我在这台机器上**没找到**这个"AI 开发资产管理系统"的代码仓库。`E:\AI资产市场` 是另一个东西——它是「技能市场」Git 仓库（给 Codex/Claude/Cursor/WorkBuddy 挂载 Agent Skills，README 明确"不做网页版市场、不部署"），**没有 Supabase 账号体系、没有对外域名、不是 Web 应用**。
+产品负责人指明仓库路径为 `E:\Codex 项目`（本会话主分支）。核实后确认：**本仓库就是那个已实现的 AI 开发资产管理系统**，并非另一样东西。证据（本 worktree 与 `E:\Codex 项目` 为同一仓库）：
 
-所以云端题库半边**无法在本机动手**——需要产品负责人提供该系统的仓库路径或远端权限，我才能在它里面开 feature 分支、把题库模块做进去、定期合并推送。
+- `package.json`：`name: "ai-prompt-manager"`；依赖 `next@16.3.5`、`react@19`、`@supabase/ssr`、`@supabase/supabase-js`；脚本 `dev`/`build`/`start` 即 `next dev/build/start`。
+- `vercel.json`：Vercel 部署配置（buildCommand + 健康检查 cron）——已有对外域名。
+- `supabase/migrations/`：9 个迁移，使用 `auth.uid()` 行级鉴权与 `security invoker` 函数——已有账号体系与按用户隔离的数据库。
+- `src/app/login`、`src/app/auth/*`、`src/components/password-auth-gate.tsx`、`cloud-auth-gate.tsx`、`src/lib/auth-routing.ts`：完整邮箱+密码登录、OAuth 回调、改密、路由保护。
 
-### 关于"走分支目录开发、定期合并至 Codex 并推送"这个 fallback
+**因此，之前说的"本机找不到仓库 / codeX 没有账号体系 / 走 codeX 分支 fallback 不成立"是错误的**——根因是误查了 `E:\AI资产市场`（那是技能市场仓库，非 Web 应用），且此前只看了 `seed-packs/docs/templates` 资产库半边，没看根目录 `src/` 应用。在此更正。
 
-**不成立**，原因：codeX 是「方法库/资产工具」，它**没有** Supabase 账号体系、没有对外域名、不是部署的 Web 应用。把练习系统的产品代码塞进 codeX 分支，**无法满足**"账号一致/同域名/复用功能"——反而南辕北辙。
+### 关于"走分支目录开发、定期合并至 Codex 并推送"
 
-正确的"分支 + 定期合并推送"模式应分别用在：
+**成立，且正是正确做法。** 因为 codeX 本身即带账号体系与域名的 Web 应用，云端题库半边直接做成本仓库内的 feature 分支（如 `feat/leads-4-practice`），复用现有 `getSupabaseServerClient()` / `password-auth-gate` / Supabase RLS，挂到现有 Vercel 域名下的 `/practice` 路由即可。无需新仓库、新域名、新账号体系。
 
-- **云端题库半边** → 进**现有 AI 开发资产管理系统**的仓库（feature 分支，定期合并推送）。
-- **本地实操半边** → 已在 `E:\intranet-drill` 独立仓库（产品负责人已采纳独立目录），本机-only，不需要共享账号/域名；T7 仍卡产品负责人装 Docker。
+注意与实操半边分清：实操半边（`E:\intranet-drill` 独立仓库）本就要求"本机模拟内网、不连公网"，保持独立仓库；题库半边要求"云端可访问 + 共享账号"，放进 codeX。两者各自走各自的分支/仓库策略，不混。
 
 ### 当前状态
 
-- 实操半边：T1~T6 已写文件，T7 真验收待 Docker（产品负责人不在电脑旁、沙箱拦 WSL，我装不了）。
-- 题库半边：**待提供现有系统仓库位置**后，再出《题库模块设计+任务清单》（先设计门后动文件）。
+- 实操半边：`E:\intranet-drill` T1~T6 已写文件，T7 真验收待产品负责人装 Docker（不在电脑旁、沙箱拦 WSL，我装不了）。
+- 题库半边：落点确认为**本仓库 codeX 内部模块**；设计稿见 `docs/leads-4-cloud-practice-design.md`（待产品负责人确认设计门后开 feature 分支动文件）。
 
 ## 版本
 
-- `0.4.0`（2026-09-28 晚）：新需求——云端题库半边改为**复用现有 AI 开发资产管理系统内部模块**（共享 Auth+域名+功能），不新建独立项目；记录阻塞（现有系统仓库本机未找到）与"走 codeX 分支"fallback 不成立的原因。
+- `0.5.0`（2026-09-28 晚）：**更正 0.4.0**——核实 `E:\Codex 项目`（本会话主分支）即 AI 开发资产管理系统（Next.js+Supabase+Vercel+Auth），"走 codex 分支开发合并"成立；撤销 0.4.0 中"找不到仓库 / fallback 不成立"的错误结论。题库半边设计见 `docs/leads-4-cloud-practice-design.md`。
+- `0.4.0`（2026-09-28 晚）：新需求——云端题库半边改为复用现有系统内部模块；记录"现有系统仓库本机未找到"与 fallback 不成立（**该结论已被 0.5.0 更正**）。
 - `0.3.0`（2026-09-28）：架构补充——练习系统拆为云端题库（Supabase+Vercel+Next.js，独立云组件）＋本地实操（本仓库），题库不在本版 M0 范围。
 - `0.2.0`（2026-09-28）：设计门关闭，记录五条拍板决定；状态改为已确认。
 - `0.1.0`（2026-09-28）：首版设计，待确认。含本机无 Docker 这个先决阻断。
