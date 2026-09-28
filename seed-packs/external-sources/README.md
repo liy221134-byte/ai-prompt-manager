@@ -224,11 +224,14 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 | `computer-use`／`visualize` | Skills | 暂缓 | — | — | 能力型，不是规则型 |
 | **S7 产品经理方法技能 19 个**（`create-prd`、`pre-mortem`、`strategy-red-team`、`frontend-design`、`user-stories`、`wwas`…） | Skills | **已采 4 条** | `RULE-PREMORTEM-001`、`RULE-REDTEAM-001`、`RULE-DESIGN-TEMPLATE-LOOK-001`、`RULE-DESIGN-COPY-001` | 2026-09-28 | 深读 4 个技能，各提炼 1 条进种子资产包 0.11.0：`pre-mortem`（事前验尸）、`strategy-red-team`（只打承重假设）、`frontend-design`（反模板味 + 界面文案）。**其余 15 个的处置**：`test-scenarios`／`create-prd` 已有替代不采；`job-stories`／`user-stories`／`wwas` 是需求表达格式，该进模板层；`prioritization-frameworks`／`ui-ux-pro-max` 是会腐化的清单，该进参考文档层；`canvas-design` 与本产品无关；`dummy-dataset` 暂缓；7 个团队管理方法（OKR／路线图／排期／复盘／干系人／会议纪要／发布说明）建议单独立一片，暂不混进工程包 |
 | Next.js 能力技能 5 个（`next-dev-loop`、`next-cache-components-*`、`next-partial-prefetching-*`）与 `ui-ux-pro-max` | Skills | 部分采集 | `AGENTS.md` 的「界面改动的验证」 | 2026-09-27 | `next-dev-loop` 的用法已写进 `AGENTS.md`；其余是框架特定能力，等技术上下文筛选生效后再按需采 |
+| **S8 WorkBuddy 生态**（本机 WorkBuddy 对我们的外部评审 + 它的 `DEV-SYSTEM.md`／`MEMORY.md`） | 评审 + Skills | **已采 3 条** | `RULE-EVIDENCE-SCOPE-001`、`RULE-CONFIDENCE-COMPILE-001`、`MTH-ASSET-RETIRE-001` | 2026-09-28 | 进种子资产包 0.12.0；逐条裁决见 `docs/reviews/2026-09-28-外部评审与裁决.md`。**它提的「Cursor 不支持 skills」经复核不成立**——Cursor 支持 Agent Skills，且 `.agents/skills/` 与 Codex 共用；**成本与额度纪律**两边都没有，记为包内「已知缺口」不硬写规则 |
 
 > 状态取值：未采集 / 已采集待确认 / 已入库 / 已安装 / 暂缓 / 放弃。
 
 ## 版本
 
+- `0.1.9`（2026-09-28）：新增 S8 WorkBuddy 生态——它对我们的外部评审采出 3 条进种子资产包 0.12.0
+  （外推边界、未验证规则不参与编译、资产退役三问）；同时修正它的「Cursor 不支持 skills」误判。
 - `0.1.8`（2026-09-28）：S7 产品经理方法技能采完 4 条进种子资产包 0.11.0（事前验尸、
   只打承重假设、反模板味、界面文案）；台账写明另外 15 个技能为什么不采、改道去哪一层。
 - `0.1.7`（2026-09-27）：S6 product-design 采完 4 条设计规则进种子资产包 0.10.0；
