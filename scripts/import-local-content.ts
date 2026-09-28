@@ -2,23 +2,24 @@
 // 走应用自己的写入路径（本机资产库层），每次新增都带一条版本记录；重复执行安全：
 // 按标识或同名跳过，只新增不覆盖，不做任何删除。
 //
-// 八个步骤：
+// 九个步骤：
 //   1. 公共资产库 ← 两个种子资产包（工程方法 0.4.0、操作者训练 0.1.0）
-//   2. 公共资产库 ← 工程文档模板（templates/engineering，10 份）
-//   3. 公共资产库 ← 提示词（开发规范提示词包 5 条 + 立项提示词 4 条）
-//   4. 项目文档   ← 七份英文标题改成中文并补文档类型（只改标题和类型，内容不动）
-//   5. 项目文档   ← 补四段链路缺的文档（需求 / 规格与计划 / 交付 / 验收与发布）
+//   2. 公共资产库 ← 模板（templates/engineering 工程文档模板 + templates/methods 方法模板）
+//   3. 公共资产库 ← 提示词（开发规范 5 条 + 产品方法 5 条 + 立项 4 条）
+//   4. 公共资产库 ← 参考文档（docs/reference，方法级清单与对照表）
+//   5. 项目文档   ← 七份英文标题改成中文并补文档类型（只改标题和类型，内容不动）
+//   6. 项目文档   ← 补四段链路缺的文档（需求 / 规格与计划 / 交付 / 验收与发布）
 //                    含验收清单：交付这 13 条需求的那几版，逐份装进库
-//   6. 项目图谱   ← 建「需求 + 模块」节点并挂上对应文档；代码扫描出来的节点归档
-//   7. 验收覆盖   ← 每份验收清单挂到它覆盖的需求节点上（只在缺关系时补）
-//   8. 复核       ← 用工程基线同一份口径数一遍每条需求有几条验收记录
+//   7. 项目图谱   ← 建「需求 + 模块」节点并挂上对应文档；代码扫描出来的节点归档
+//   8. 验收覆盖   ← 每份验收清单挂到它覆盖的需求节点上（只在缺关系时补）
+//   9. 复核       ← 用工程基线同一份口径数一遍每条需求有几条验收记录
 //
 // 用法：
 //   node scripts/import-local-content.mjs --dry-run   只列清单，不写库
 //   node scripts/import-local-content.mjs             真写
 // 可选：PROMPT_DB_PATH 指向别的库文件；--project 指定目标项目（默认按名字找）。
 
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import {
@@ -183,55 +184,66 @@ function importSeedPacks() {
   }
 }
 
-// ---------- 2. 公共资产库 ← 工程文档模板 ----------
+// ---------- 2. 公共资产库 ← 模板 ----------
 
-function importEngineeringTemplates() {
-  console.log("2. 公共资产库 ← 工程文档模板");
+// 两处模板来源：工程文档模板（templates/engineering）和方法模板（templates/methods）
+const templateSources = [
+  { directory: "engineering", label: "工程文档模板" },
+  { directory: "methods", label: "方法模板" },
+];
 
-  const templateDirectory = join(projectRoot, "templates", "engineering");
-  const fileNames = readdirSync(templateDirectory)
-    .filter((name) => name.endsWith(".md"))
-    .sort();
+function importPublicTemplates() {
+  console.log("2. 公共资产库 ← 模板（工程文档模板 + 方法模板）");
 
-  for (const fileName of fileNames) {
-    const content = readFileSync(join(templateDirectory, fileName), "utf8");
-    const draft = templateFileToDraft({ fileName, content });
-    // 标题取正文的一级标题（中文），文件名留在产物文件名里
-    draft.title = readHeading(content) || draft.title;
-    // 同一份模板只认一份：按标题去重，避免同名两份在库里打架
-    if (assetIdByTitle(DEFAULT_PROJECT_ID, draft.title)) {
-      totals.跳过 += 1;
+  for (const source of templateSources) {
+    const templateDirectory = join(projectRoot, "templates", source.directory);
+
+    if (!existsSync(templateDirectory)) {
       continue;
     }
 
-    const id = `template-${slugify(fileName)}`;
+    const fileNames = readdirSync(templateDirectory)
+      .filter((name) => name.endsWith(".md"))
+      .sort();
 
-    if (findAssetById(id)) {
-      totals.跳过 += 1;
-      continue;
+    for (const fileName of fileNames) {
+      const content = readFileSync(join(templateDirectory, fileName), "utf8");
+      const draft = templateFileToDraft({ fileName, content });
+      // 标题取正文的一级标题（中文），文件名留在产物文件名里
+      draft.title = readHeading(content) || draft.title;
+      draft.metadata.note = `从模板库导入（templates/${source.directory}）`;
+      // 同一份模板只认一份：按标题去重，避免同名两份在库里打架
+      if (assetIdByTitle(DEFAULT_PROJECT_ID, draft.title)) {
+        totals.跳过 += 1;
+        continue;
+      }
+
+      const id = `template-${slugify(fileName)}`;
+
+      if (findAssetById(id)) {
+        totals.跳过 += 1;
+        continue;
+      }
+
+      const asset = templateDraftToAsset({
+        id,
+        projectId: DEFAULT_PROJECT_ID,
+        draft,
+        originalFilename: `${source.directory}/${fileName}`,
+        now,
+      });
+
+      writeAsset(asset, "导入模板", "模板");
+      createdThisRun.set(`${DEFAULT_PROJECT_ID}|${asset.title.trim()}`, asset.id);
     }
-
-    const asset = templateDraftToAsset({
-      id,
-      projectId: DEFAULT_PROJECT_ID,
-      draft,
-      originalFilename: fileName,
-      now,
-    });
-
-    writeAsset(asset, "导入模板", "模板");
-    createdThisRun.set(`${DEFAULT_PROJECT_ID}|${asset.title.trim()}`, asset.id);
   }
 }
 
 // ---------- 3. 公共资产库 ← 提示词 ----------
 
-// 开发规范提示词包的正文结构固定：`## N. 标题` + `分类：` + `标签：` + 一个围栏代码块
-function parseDevelopmentRulePrompts() {
-  const content = readFileSync(
-    join(projectRoot, "prompt-packs", "development-rules.md"),
-    "utf8",
-  );
+// 提示词包的正文结构固定：`## N. 标题` + `分类：` + `标签：` + 一个围栏代码块
+function parsePromptPack(fileName: string, keyPrefix: string) {
+  const content = readFileSync(join(projectRoot, "prompt-packs", fileName), "utf8");
 
   return content
     .split(/^##\s+\d+\.\s+/m)
@@ -245,7 +257,7 @@ function parseDevelopmentRulePrompts() {
         .filter(Boolean);
       const prompt = section.match(/```markdown\r?\n([\s\S]*?)```/)?.[1]?.trim() ?? "";
 
-      return { key: `dev-rule-${index + 1}`, title, category, tags, prompt };
+      return { key: `${keyPrefix}-${index + 1}`, title, category, tags, prompt };
     })
     .filter((entry) => entry.prompt);
 }
@@ -294,14 +306,19 @@ function buildKickoffPrompts() {
 }
 
 function importPrompts() {
-  console.log("3. 公共资产库 ← 提示词");
+  console.log("3. 公共资产库 ← 提示词（开发规范 + 产品方法 + 立项）");
 
   const entries = [
-    ...parseDevelopmentRulePrompts().map((entry) => ({
+    ...parsePromptPack("development-rules.md", "dev-rule").map((entry) => ({
       ...entry,
       category: entry.category,
       useCase: `开发规范提示词包：${entry.title}`,
       sourceFile: "prompt-packs/development-rules.md",
+    })),
+    ...parsePromptPack("product-methods.md", "method-prompt").map((entry) => ({
+      ...entry,
+      useCase: `产品方法提示词包：${entry.title}`,
+      sourceFile: "prompt-packs/product-methods.md",
     })),
     ...buildKickoffPrompts().map((entry) => ({
       ...entry,
@@ -358,7 +375,73 @@ function importPrompts() {
   }
 }
 
-// ---------- 4~6. 项目：文档、图谱 ----------
+// ---------- 4. 公共资产库 ← 参考文档 ----------
+
+// 方法级参考（清单、对照表）：docs/reference 下每份 Markdown 装成一份「参考资料」。
+// 和规则的区别：清单会随实践变，所以放参考文档层，不编译进 AGENTS.md。
+function importReferenceDocuments() {
+  console.log("4. 公共资产库 ← 参考文档（docs/reference）");
+
+  const directory = join(projectRoot, "docs", "reference");
+
+  if (!existsSync(directory)) {
+    return;
+  }
+
+  const fileNames = readdirSync(directory)
+    .filter((name) => name.endsWith(".md"))
+    .sort();
+
+  for (const fileName of fileNames) {
+    const file = `docs/reference/${fileName}`;
+    const content = readFileSync(join(directory, fileName), "utf8");
+    const title = readHeading(content) || fileName;
+    const id = `document-reference-${slugify(fileName)}`;
+
+    if (findAssetById(id) || findAssetByTitle(DEFAULT_PROJECT_ID, title)) {
+      totals.跳过 += 1;
+      continue;
+    }
+
+    const asset: DocumentAssetData = {
+      id,
+      projectId: DEFAULT_PROJECT_ID,
+      assetType: "document",
+      title,
+      summary: `参考资料 · 从 ${file} 导入`,
+      content,
+      metadata: {
+        documentType: "参考资料",
+        authority: false,
+        module: "",
+        effectiveVersion: "",
+        sourceLocation: file,
+        updateTrigger: "",
+        freshness: "",
+        lastVerifiedAt: "",
+        relations: [],
+      },
+      source: {
+        sourceType: "import",
+        sourceAssetId: null,
+        importBatchId: null,
+        originalFilename: file,
+      },
+      currentVersionId: createInitialAssetVersionId(id),
+      status: "active",
+      archivedAt: null,
+      deletedAt: null,
+      deletedReason: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    writeAsset(asset, "导入参考文档", "文档");
+    createdThisRun.set(`${DEFAULT_PROJECT_ID}|${asset.title.trim()}`, asset.id);
+  }
+}
+
+// ---------- 5~7. 项目：文档、图谱 ----------
 
 // 七份早先导入的文档标题是英文文件名，改中文标题并补上文档类型（只改标题和类型）
 const documentRenames = [
@@ -479,7 +562,7 @@ function resolveProjectId() {
 }
 
 function renameProjectDocuments(projectId: string) {
-  console.log("4. 项目文档 ← 改成中文标题");
+  console.log("5. 项目文档 ← 改成中文标题");
 
   for (const entry of documentRenames) {
     const existing = findAssetByTitle(projectId, entry.from);
@@ -520,7 +603,7 @@ function renameProjectDocuments(projectId: string) {
 }
 
 function importProjectDocuments(projectId: string) {
-  console.log("5. 项目文档 ← 补四段链路缺的文档");
+  console.log("6. 项目文档 ← 补四段链路缺的文档");
 
   for (const entry of projectDocuments) {
     const content = readFileSync(join(projectRoot, entry.file), "utf8");
@@ -797,7 +880,7 @@ const graphSeed: GraphSeed[] = [
 const archivedBatchPrefix = "engineering-import-";
 
 function importProjectGraph(projectId: string) {
-  console.log("6. 项目图谱 ← 需求与模块节点，并归档代码扫描节点");
+  console.log("7. 项目图谱 ← 需求与模块节点，并归档代码扫描节点");
 
   const nodeIdByCode = new Map<string, string>();
 
@@ -926,7 +1009,7 @@ function assetIdByCode(nodeIdByCode: Map<string, string>, code: string) {
 // 验收覆盖：清单自己指向需求节点（和界面上「批量挂文档」、MCP 建验收记录的方向一致）。
 // 已经有这条关系的跳过，只补缺的，不覆盖别的字段。
 function linkAcceptanceCoverage() {
-  console.log("7. 验收覆盖 ← 验收清单挂到它覆盖的需求节点");
+  console.log("8. 验收覆盖 ← 验收清单挂到它覆盖的需求节点");
 
   for (const entry of acceptanceCoverage) {
     const requirementId = assetIdByCode(new Map(), entry.requirement);
@@ -1002,7 +1085,7 @@ function linkAcceptanceCoverage() {
 // 复核用的是产品自己那份口径（`src/lib/acceptance-evidence.ts`，工程基线「验收覆盖」同源），
 // 不另写一套判断；这里只数数量，结论是不是「通过」仍然只能人在界面上点。
 function printAcceptanceCoverage(projectId: string) {
-  console.log("\n8. 复核：每条需求有几条验收记录（和工程基线同一口径）");
+  console.log("\n9. 复核：每条需求有几条验收记录（和工程基线同一口径）");
 
   const assets = listAssets();
   const summary = summarizeNodeEvidence(assets, projectId);
@@ -1042,8 +1125,9 @@ console.log(
 );
 
 importSeedPacks();
-importEngineeringTemplates();
+importPublicTemplates();
 importPrompts();
+importReferenceDocuments();
 renameProjectDocuments(projectId);
 importProjectDocuments(projectId);
 importProjectGraph(projectId);
