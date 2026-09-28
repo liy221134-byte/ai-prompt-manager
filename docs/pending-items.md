@@ -420,7 +420,7 @@ dangling 引用且正向引用已存在；② 提示词包在库非单一文档�
 | 索引补三处：`v2.25.0` 验收清单、外部来源采集台账、WorkBuddy／CodeBuddy 上手手册；种子包条数订正 `51` → `52`（含新增的 `050`） | `docs/INDEX.md` |
 | 未跟踪的 `workbuddy-onboarding.md` 纳入版本管理 | `seed-packs/external-sources/workbuddy-onboarding.md` |
 | 补打标签 `v2.21.0`～`v2.25.0`（事后补打，指向各版本在 `main` 上的收尾提交） | Git 标签 |
-| 推送 `main` 与这些标签到远端 | `origin/main` |
+| 推送 `main` 与这些标签到远端 | **没成**：`git push origin main` 被 GitHub 拒绝，报 `403 Permission to liy221134-byte/ai-prompt-manager.git denied`。本机 `gh` 登录的还是 `liy221134-byte`，但那个令牌只够读（`git ls-remote` 正常），写权限要么被撤了、要么换了只读令牌——**等你恢复后我再推** |
 
 **没做（各有原因）**：
 
