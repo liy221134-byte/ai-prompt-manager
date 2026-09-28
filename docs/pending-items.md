@@ -291,8 +291,8 @@ REQ-010 2 条、REQ-011 1 条、REQ-012 5 条、REQ-013 2 条）。
 | --- | --- | --- | --- |
 | 1 | ~~**起步模板漂移**~~ | **已修（2026-09-28）**：`templates/new-project/AGENTS.md` 从 84 行重写为 191 行的通用版，三道门／设计门两条线／界面判档三档／交付门六条／界面改动验证／技能使用规则／版本与提交／数据与安全全部到位；本项目专有的产品规则换成 `{{占位符}}` | 已完成 |
 | 2 | CHANGELOG／README 停更 | `CHANGELOG.md` 顶部是 `v2.20.0`；`README.md` 当前阶段讲 `v2.20.0`；`package.json` 也是 2.20.0；实际已到 v2.24.0 | 补 v2.21.0～v2.24.0 的变更记录，更新 README 当前阶段与版本号 |
-| 3 | `docs/product-brief.md` 停在 v1 口径 | 全文没有「项目」「图谱」「规则编译」「质量等级」这些 2.0 才有的东西 | 按现在的产品范围重写这份（它在 `INDEX.md` 的阅读顺序里排第 4，会直接误导新会话） |
-| 4 | 同一件事三份载体 | 事前验尸同时写在 `assets/045`（规则）、`templates/methods/premortem.md`（模板）、`prompt-packs/product-methods.md`（提示词）三处，术语各写一遍 | 定一条口径：术语与定义只留资产那一处，模板和提示词改成引用（对应资产 `MTH-REFERENCE-001`） |
+| 3 | ~~`docs/product-brief.md` 停在 v1 口径~~ | **已完成（2026-09-28，WorkBuddy）**：`docs/product-brief.md` 与 `docs/roadmap.md` 重写到 2.0 统一资产底座口径（含「项目／规则编译／质量等级／发布门禁／图谱」）；验收见 `docs/acceptance/v2.25.0.md` | 已完成 |
+| 4 | ~~同一件事三份载体~~ | **已完成（2026-09-28，WorkBuddy）**：定义只留 `assets/045`~`048` 正本，模板删定义留骨架并补「对应规矩」行，提示词压成短语并补资产 id；新增 `050`（`MTH-REQ-FORMAT-001`）补「需求改写成三种格式」定义正本；新增复发检查 `tests/asset-single-source.test.mjs`；`npm run check:fast` 549 全过 | T6 跨仓库（技能仓库 `references/` 去副本）等 token 后单独做 |
 
 另外两条**不修，只记**：成本与额度纪律、对照样本缺口——两边都没有，等有真实经验再写成资产
 （已写进种子包的「已知缺口」）。
@@ -375,6 +375,37 @@ REQ-010 2 条、REQ-011 1 条、REQ-012 5 条、REQ-013 2 条）。
 
 **方向要说清**：这次是「市场仓库 → 资产库」的副本同步。正本始终是
 `E:\AI资产市场\skills\`，**库里这份改了不会自动回去**，要回写请改正本再跑脚本。
+
+## 2026-09-28 文档与资产口径收口（v2.25.0）（记录）
+
+产品负责人把外部评审第 3、4 条派给 WorkBuddy 执行（Codex 出草案、WorkBuddy 跑、Codex 复验）。
+需求草案：[v2.25.0 需求草案](v2.25.0-requirements-draft.md)；验收：[v2.25.0 验收清单](acceptance/v2.25.0.md)。
+
+**改动文件**（全在仓库，未碰 `src/` 与界面）：
+
+| 文件 | 改了什么 |
+| --- | --- |
+| `docs/product-brief.md`、`docs/roadmap.md` | 从 v1（纯提示词库）重写到 2.0 统一资产底座口径 |
+| `seed-packs/engineering-foundations/assets/050-requirement-rewrite-formats.md` | 新增，需求改写成三种格式的定义正本（`MTH-REQ-FORMAT-001`），补草案指出的缺口 |
+| `seed-packs/engineering-foundations/assets/045`~`048` | frontmatter 仅补 `last_reviewed`，判据内容未动 |
+| `templates/methods/`（6 份） | 删定义、留填空骨架、补「对应规矩 + 资产 id」行 |
+| `prompt-packs/product-methods.md` | 定义压成一句话短语，5 段各补资产 id |
+| `scripts/sync-method-assets.ts` | 新增，按 id 精确同步方法模板与提示词进本机库 |
+| `tests/asset-single-source.test.mjs` | 新增，复发检查：定义句只许在资产里，模板/提示词零命中 |
+| `engineering-foundations.pack.json`、`manifest.md`、`tests/seed-pack-import.test.mjs` | 纳入 050 后重生成包、资产数量 51→52、测试计数同步 |
+| `docs/acceptance/v2.25.0.md` | 验收清单 |
+
+**本机库同步**（只写本机，没碰云端）：6 个方法模板已同步（`--dry-run` 0 差异）；写库前快照
+`.data/backups/prompts-pre-v2.25.0-sync-<时间戳>.sqlite`。提示词包在库里是 5 条独立提示词
+（2026-09-28 导入拆分），单一文档同步入口暂无目标，无害跳过。
+
+**两条设计偏差**（见验收清单，等裁决）：① 资产→模板/提示词的反向引用未加，因种子包要求零
+dangling 引用且正向引用已存在；② 提示词包在库非单一文档形态。
+
+**未做（明确留口）**：T6 技能仓库 `E:\AI资产市场\skills\*\references\` 去规则副本——跨仓库、
+且是 WorkBuddy 工作区，需产品负责人点头 + 新 token 授权后再做。
+
+**规则命中**：本版无（未违反 `AGENTS.md` 已写规则；具体偏离是设计偏差，已在验收清单标注）。
 
 ## 规则命中记录
 

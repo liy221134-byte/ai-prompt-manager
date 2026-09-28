@@ -28,9 +28,6 @@ source_references:
   - Claude Skills 的 frontend-design 技能「More on writing in design」一节：从用户视角命名、按钮说清结果、同一动作同名、错误与空状态的处理
   - seed-packs/external-sources/README.md（采集台账与来源说明）
 related_assets:
-  - RULE-DESIGN-TEMPLATE-LOOK-001
-  - MTH-DESIGN-GATE-001
-  - RULE-EVIDENCE-BOUNDARY-001
 version: 0.1.0
 last_reviewed: 2026-09-28
 ---

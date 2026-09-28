@@ -28,9 +28,6 @@ source_references:
   - Claude Skills 的 strategy-red-team 技能：只攻击承重假设、先钢人再攻击、失败模式写成 Fails if、按影响×可能性×测试便宜度排序
   - seed-packs/external-sources/README.md（采集台账与来源说明）
 related_assets:
-  - RULE-PREMORTEM-001
-  - MTH-DESIGN-DOC-001
-  - MTH-REQ-001
 version: 0.1.0
 last_reviewed: 2026-09-28
 ---
