@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-28T00:55:16.492Z",
+  "exportedAt": "2026-09-28T04:23:08.227Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.11.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：48 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.11.0 做了什么\n\n1. 新增 4 条「动手之前」的纪律，来源是 Claude Skills 的 pre-mortem、strategy-red-team、\n   frontend-design 三个技能（外部来源采集第六批）：事前验尸、只打承重假设、\n   别做出模板味的默认样式、界面文案也是设计。\n2. 这 4 条补的是两个真实缺口：设计文档四块里缺「风险」那一块（前两条补在设计门之前）；\n   项目规则只说了「文案用中文」，没说怎么写（后两条把风格和文案变成能执行的检查）。\n3. 同批 19 个产品经理方法技能里其余 15 个的处置理由写在 `manifest.md` 的 0.11.0 一节，\n   不重复叙述。\n\n## 0.10.0 做了什么\n\n1. 新增 4 条界面设计规则，来源是 product-design 的 get-context、design-qa、audit\n   三个技能（外部来源采集第五批）：设计前先过澄清门、实现要和源设计对比验收、\n   源设计里的图片资产不许用代码近似、说清证据的边界。\n2. 这 4 条标 `generic` + 四档规模，本项目也适用——前提是项目规则里的设计门已经拆出\n   「界面设计线」（本次同步改了 `AGENTS.md`）。\n3. 其中「按源设计对比验收」是条件规则：没有源设计稿的项目改用「能用、好用」验收。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.12.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：51 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.12.0 做了什么\n\n1. 新增 3 条，来源是 WorkBuddy 对本资产库的外部评审：结论要标外推边界、\n   没验证过的规则默认不参与编译、资产退役三问（外部来源采集第六批）。\n2. 这 3 条按新规自己执行：`hypothesis` + `compile_target: none`，不进 `AGENTS.md`。\n3. 评审原文与逐条裁决放在 `docs/reviews/2026-09-28-外部评审与裁决.md`，这里不重复叙述。\n\n## 0.11.0 做了什么\n\n1. 新增 4 条「动手之前」的纪律，来源是 Claude Skills 的 pre-mortem、strategy-red-team、\n   frontend-design 三个技能（外部来源采集第六批）：事前验尸、只打承重假设、\n   别做出模板味的默认样式、界面文案也是设计。\n2. 这 4 条补的是两个真实缺口：设计文档四块里缺「风险」那一块（前两条补在设计门之前）；\n   项目规则只说了「文案用中文」，没说怎么写（后两条把风格和文案变成能执行的检查）。\n3. 同批 19 个产品经理方法技能里其余 15 个的处置理由写在 `manifest.md` 的 0.11.0 一节，\n   不重复叙述。\n\n## 0.10.0 做了什么\n\n1. 新增 4 条界面设计规则，来源是 product-design 的 get-context、design-qa、audit\n   三个技能（外部来源采集第五批）：设计前先过澄清门、实现要和源设计对比验收、\n   源设计里的图片资产不许用代码近似、说清证据的边界。\n2. 这 4 条标 `generic` + 四档规模，本项目也适用——前提是项目规则里的设计门已经拆出\n   「界面设计线」（本次同步改了 `AGENTS.md`）。\n3. 其中「按源设计对比验收」是条件规则：没有源设计稿的项目改用「能用、好用」验收。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.11.0",
+      "packVersion": "0.12.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -2389,6 +2389,171 @@
           },
           {
             "targetAssetId": "rule-rule-evidence-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-evidence-scope-001",
+      "assetType": "rule",
+      "title": "结论要标外推边界：它只在什么语境验证过",
+      "summary": "每条「这条方法有效」的结论旁边，都要写清**它是在什么语境里验证出来的**，以及**换语境时要重新验什么**：",
+      "content": "# 结论要标外推边界：它只在什么语境验证过\n\n## 核心结论\n\n每条「这条方法有效」的结论旁边，都要写清**它是在什么语境里验证出来的**，以及**换语境时要重新验什么**：\n\n> 外推边界：本结论仅在〔规模 + 技术栈 + 运行环境〕的语境验证过；换语境需重新验证。\n\n不写边界会踩两个坑：\n\n1. **循环论证**。用「本项目照这几条做，所以这几条是对的」去证明这几条——而本项目之所以产出这些证据，\n   恰恰是因为遵守了它们。互为因果，等于没验证。\n2. **假通用**。在单人 + 全托管的语境里成立的做法，被当成任何项目都成立，搬到内网或多团队项目直接失效。\n\n## 使用条件\n\n- 给一条规则、方法或结论标注可信度的时候。\n- 说出「这条已经验证过了」之前。\n- 把某个项目的经验往公共资产里搬之前。\n\n## 不适用场景\n\n- 一次性的、只服务当前任务的判断（不用标边界，用完即弃）。\n- 项目专属事实（「这个表叫什么」），它本来就不打算外推。\n\n## 判断步骤\n\n1. 写结论时顺手补一行：这条是在哪个语境里得到的（规模 / 技术栈 / 运行环境 / 团队人数）。\n2. 问一句：换个语境，这条还成立吗？哪些前提是它依赖的？\n3. 依赖的前提写进「外推边界」，而不是省略。\n4. 升级可信度之前先确认：证据来自**几个不同语境**？只有一个，就升不了级。\n5. 结论被引用到别处时，边界跟着一起走。\n\n## 失败模式\n\n- 拿单一项目的经验当通用规律，且不说明语境。\n- 证据全部来自同一个项目，却按「已验证」处理。\n- 只写「本项目跑通过」，不写这个项目为什么不能代表别的项目。\n- 边界写在正文里，复制到别处时被丢掉。\n\n## 验证证据\n\n- 结论本身带一行外推边界。\n- 抽查一条：按它写的边界换一个语境推演，能说清哪里会失效。\n- 可信度升级时，证据清单里能数出至少两个不同语境。\n\n## 相关资产\n\n- `RULE-EVIDENCE-BOUNDARY-001`（区别）：那条讲「这份证据能证明什么」，这条讲「这个结论能外推到哪」。\n- `RULE-VERIFY-002`（上游）：证据必须是这次跑出来的；这条接着说，跑出来的也只能代表这个语境。\n- `MTH-ASSET-RETIRE-001`（相关）：长期不外推、也无人再用的资产，走退役流程。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-EVIDENCE-SCOPE-001\ntitle: 结论要标外推边界：它只在什么语境验证过\nasset_type: rule\nrule_type: must\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - release\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - WorkBuddy 对本资产库的外部评审（2026-09-28）：指出证据几乎全部来自同一个项目，存在循环论证\n  - docs/reviews/2026-09-28-外部评审与裁决.md（评审结论与处置）\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-VERIFY-002\n  - RULE-EVIDENCE-BOUNDARY-001\n  - MTH-ASSET-RETIRE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- WorkBuddy 对本资产库的外部评审（2026-09-28）：指出证据几乎全部来自同一个项目，存在循环论证\n- docs/reviews/2026-09-28-外部评审与裁决.md（评审结论与处置）\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-EVIDENCE-SCOPE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 拿单一项目的经验当通用规律，且不说明语境。 - 证据全部来自同一个项目，却按「已验证」处理。 - 只写「本项目跑通过」，不写这个项目为什么不能代表别的项目。 - 边界写在正文里，复制到别处时被丢掉。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-verify-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-evidence-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-asset-retire-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-confidence-compile-001",
+      "assetType": "rule",
+      "title": "没验证过的规则默认不参与编译",
+      "summary": "**可信度是 `hypothesis`（只有推导、没在真实项目用过）的资产，默认 `compile_target: none`—— 不进 AGENTS.md，不参与项目编译。**",
+      "content": "# 没验证过的规则默认不参与编译\n\n## 核心结论\n\n**可信度是 `hypothesis`（只有推导、没在真实项目用过）的资产，默认 `compile_target: none`——\n不进 AGENTS.md，不参与项目编译。**\n\n想让它进，必须满足下面任意一条，并在资产里写明：\n\n1. **标清受益人**：它是给哪个语境、哪类项目用的（例如只给大型项目），由筛选规则决定进不进；\n2. **本项目就是它的第一个验证者**：明确写下「本项目用来验证它」，并在这一版结束时回填证据；\n3. **它是硬边界**：属于安全、数据不丢、密钥不外泄这类「宁可多一条」的红线。\n\n## 使用条件\n\n- 往资产包里新增外部来源提炼的规则时。\n- 跑规则编译、决定哪些规则进 `AGENTS.md` 时。\n- 给资产升级可信度时（升到 `provisional` 才按普通规则对待）。\n\n## 不适用场景\n\n- 已经在真实项目里用过、有 `evidence` 支撑的资产（它们按正常口径参与编译）。\n- 项目专属的规则：那些本来就写在项目自己的 `AGENTS.md` 里，不经这套筛选。\n\n## 判断步骤\n\n1. 新增资产时先问：它在真实项目里用过吗？没有 → `confidence: hypothesis`。\n2. 是 hypothesis 就默认 `compile_target: none`。\n3. 想让它进编译，三条里挑一条：标受益人 / 指定第一个验证者 / 认定它是硬边界——三选一，写进资产。\n4. 编译产物生成后自查一遍：进 `AGENTS.md` 的每一条，是不是都能说出它凭什么进来。\n5. 版本收尾时回填证据，够条件的升 `provisional`，把 `compile_target` 改回来。\n\n## 失败模式\n\n- 同一条口径两种做法：有的 hypothesis 标了大规模被筛掉，有的标了本项目规模直接进了规则文件。\n- 外部来源刚提炼的规则当天就进 `AGENTS.md`，谁也没用过。\n- 把「我们认真讨论过」当成验证。\n- 编译产物里混进一堆没验证的规则，模型只遵守一部分（规则太长时它本来就只守一部分）。\n\n## 验证证据\n\n- 资产清单里，`confidence: hypothesis` 与 `compile_target: none` 成对出现（硬边界除外，且写明理由）。\n- 编译产物里逐条能回答「凭什么进来」。\n- 版本收尾记录里，有从 hypothesis 升到 provisional 的条目和对应证据。\n\n## 相关资产\n\n- `RULE-EVIDENCE-SCOPE-001`（配套）：那条讲结论的边界，这条讲没边界的结论先别进规则文件。\n- `MTH-QUALITY-001`（相关）：质量等级决定门禁密度；这条决定未验证知识进不进规则文件。\n- `MTH-SINK-001`（上游）：沉淀分流的下一道闸口。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-CONFIDENCE-COMPILE-001\ntitle: 没验证过的规则默认不参与编译\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - WorkBuddy 对本资产库的外部评审（2026-09-28）：指出 hypothesis 规则却标了本项目规模、会直接进 AGENTS.md\n  - docs/reviews/2026-09-28-外部评审与裁决.md（评审结论与处置）\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-QUALITY-001\n  - RULE-EVIDENCE-SCOPE-001\n  - MTH-SINK-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- WorkBuddy 对本资产库的外部评审（2026-09-28）：指出 hypothesis 规则却标了本项目规模、会直接进 AGENTS.md\n- docs/reviews/2026-09-28-外部评审与裁决.md（评审结论与处置）\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-CONFIDENCE-COMPILE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 同一条口径两种做法：有的 hypothesis 标了大规模被筛掉，有的标了本项目规模直接进了规则文件。 - 外部来源刚提炼的规则当天就进 `AGENTS.md`，谁也没用过。 - 把「我们认真讨论过」当成验证。 - 编译产物里混进一堆没验证的规则，模型只遵守一部分（规则太长时它本来就只守一部分）。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-evidence-scope-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-asset-retire-001",
+      "assetType": "rule",
+      "title": "资产也要退役：每季用三问清一次",
+      "summary": "资产库只增不减，会从「方法库」退化成「没人读完的文档堆」。**每季清一次，每条资产问三句：**",
+      "content": "# 资产也要退役：每季用三问清一次\n\n## 核心结论\n\n资产库只增不减，会从「方法库」退化成「没人读完的文档堆」。**每季清一次，每条资产问三句：**\n\n1. **还有人读吗？**——最近一季有没有被引用、被编译进产物、被真正用过。\n2. **能被另一份替代吗？**——和另一条重叠，且那条更准、更短。\n3. **有对应证据吗？**——写下的结论有没有支撑，还是当初拍脑袋写的。\n\n三条全否 → **归档（`deprecated`），不删除**；有一条成立 → 留下，并更新 `last_reviewed`。\n\n配套一条超时线：**`last_reviewed` 超过 180 天的资产自动进体检清单**，不必等人想起来。\n\n## 使用条件\n\n- 每季度一次资产体检。\n- 资产数量翻倍之前（增长快于淘汰时，先做一次清理再继续堆）。\n- 发现两条资产在讲同一件事时。\n\n## 不适用场景\n\n- 刚建立、还没用过的资产（它需要的是被用一次，不是被退役）。\n- 安全、数据完整性这类红线资产：宁可冗余，也不退役。\n- 验收记录、发布记录这类**证据类**资产：它们记录发生过的事实，不参与退役。\n\n## 判断步骤\n\n1. 拉出资产清单，按 `last_reviewed` 排序，先看超期的。\n2. 对超期或可疑的，逐条走三问。\n3. 三问全否：状态改 `deprecated`，在备注里写清「为什么退、被谁替代」，保留正文；\n   从编译清单里摘出去。\n4. 有替代关系的，在两条资产的 `related_assets` 里互指，写明方向。\n5. 体检结果记一处（一张季度清单），别散落在多个文档里。\n\n## 失败模式\n\n- `deprecated` 这个状态存在，但从来没用过——说明退役机制等于不存在。\n- 只增不减，直到没人愿意读完全部规则。\n- 用「删掉」代替「归档」，把历史判断也一并丢了。\n- 退役时不写为什么，过一阵又有人把它加回来。\n\n## 验证证据\n\n- 最近一次季度体检的清单：每条超期资产有「留 / 退」的结论和一句话理由。\n- 资产清单里至少出现过 `deprecated` 记录，且被替代关系写得清。\n- 编译产物里不再包含已退役资产。\n\n## 相关资产\n\n- `MTH-SINK-001`（对称）：那条管「什么该升成公共资产」，这条管「什么该退出去」。\n- `RULE-EVIDENCE-SCOPE-001`（相关）：外推边界长期不成立的资产，是退役的优先候选。\n- `MTH-EVIDENCE-001`（相关）：退役结论也只记一处。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-ASSET-RETIRE-001\ntitle: 资产也要退役：每季用三问清一次\nasset_type: method\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p2\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - WorkBuddy 对本资产库的外部评审（2026-09-28）：指出 48 条资产零退役，deprecated 取值一次没用过\n  - docs/reviews/2026-09-28-外部评审与裁决.md（评审结论与处置）\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-SINK-001\n  - RULE-EVIDENCE-SCOPE-001\n  - MTH-EVIDENCE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "release",
+        "priority": "may",
+        "overrideScope": "project",
+        "evidence": "- WorkBuddy 对本资产库的外部评审（2026-09-28）：指出 48 条资产零退役，deprecated 取值一次没用过\n- docs/reviews/2026-09-28-外部评审与裁决.md（评审结论与处置）\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-ASSET-RETIRE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- `deprecated` 这个状态存在，但从来没用过——说明退役机制等于不存在。 - 只增不减，直到没人愿意读完全部规则。 - 用「删掉」代替「归档」，把历史判断也一并丢了。 - 退役时不写为什么，过一阵又有人把它加回来。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-evidence-scope-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
             "relationType": "reference",
             "note": "包内关联"
           }
