@@ -43,6 +43,9 @@
 
 ### 设计
 
+- [线索 3 M1 采集台账设计与任务清单（已实现）](leads-3-m1-design-and-tasks.md)
+- [线索 3 生态采集沉淀设计与任务清单（M0，已完成）](leads-3-design-and-tasks.md)
+- [线索 4 内网练习项目设计与任务清单](leads-4-design-and-tasks.md)
 - [v2.24.0 项目规模参与编译筛选设计（待确认）](superpowers/specs/2026-09-27-v2.24.0-project-scale-filter-design.md)
 - [v2.23.0 本机 MCP 自动接入设计（待确认）](superpowers/specs/2026-09-27-v2.23.0-local-mcp-setup-design.md)
 - [v2.22.0 技术上下文参与编译筛选设计（待确认）](superpowers/specs/2026-09-27-v2.22.0-tech-context-filter-design.md)
@@ -151,6 +154,9 @@
 - [v2.23.0 验收清单（本机 MCP 自动接入，只支持 Codex）](acceptance/v2.23.0.md)
 - [v2.24.0 验收清单（项目规模参与编译筛选）](acceptance/v2.24.0.md)
 - [v2.25.0 验收清单（文档与资产口径收口）](acceptance/v2.25.0.md)
+- [v2.26.0 验收清单（线索 3 M1 采集台账，已签核 8/8）](acceptance/leads-3-m1.md)
+- [线索 3 M0 验收清单（生态采集沉淀，已签核）](acceptance/leads-3-m0.md)
+- [练习题库 M0 验收清单](acceptance/practice-m0.md)
 
 ### 云端部署
 
