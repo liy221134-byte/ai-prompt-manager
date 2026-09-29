@@ -57,9 +57,9 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `src/lib/release-record.ts` | 发布门禁预填、完成情况与最近一次发布（纯逻辑） | 改门禁口径时 |
 | `src/lib/prompt-backup.ts` | 备份导出与导入预览 | 改备份范围时 |
 | `src/lib/server/runtime-config.ts` | 运行模式判定与配置失败关闭 | 改环境变量规则时 |
-| `scripts/generate-external-sources-ledger.ts`、`src/lib/external-sources-ledger.ts` | 线索 3 M1：把外部来源台账（`seed-packs/external-sources/README.md` 第六节）解析成只读快照 `src/data/external-sources-ledger.json`；生成期用「库内资产 sourceLocation → 源文件 frontmatter id」把台账落点匹配到库内资产 | 改台账解析或落点匹配规则时 |
-| `scripts/check-external-sources-compliance.ts`、`src/lib/external-sources-compliance.ts` | 线索 3 M1：外部来源资产按 SOP 四硬约束做只读合规检查（文档类走 role/authority 口径，规则类走 candidate/hypothesis 口径） | 改合规口径时 |
-| `src/app/external-sources/page.tsx`、`src/components/external-sources-ledger-view.tsx` | 线索 3 M1：采集台账只读视图（独立路由页，仿 `/practice`）与来源详情抽屉 | 改台账界面时 |
+| `src/lib/external-sources-ledger.ts`、`scripts/import-external-source-records.ts` | 线索 3 M2：采集记录（资产库里 `documentType: 采集记录` 的文档）的解析与派生——挑记录、按生态分组、六档「是否编译」推导；迁移脚本把 README 第六节的历史台账搬进产品（幂等，支持 `--dry-run`） | 改台账解析、档位推导或落点匹配规则时 |
+| `src/lib/external-sources-compliance.ts`、`scripts/check-external-sources-compliance.ts` | 线索 3：外部来源资产按 SOP 四硬约束做只读合规检查（文档类走 role/authority 口径，规则类走可信度与确认记录口径） | 改合规口径时 |
+| `src/app/external-sources/page.tsx`、`src/components/external-sources-ledger-view.tsx`、`src/components/external-source-record-dialog.tsx` | 线索 3 M2：采集台账视图（读库、按生态筛、来源详情抽屉）与采集记录的新建／编辑表单 | 改台账界面时 |
 | `supabase/migrations/*.sql` | 云端表结构、行级安全策略、RPC，每个迁移可重复执行 | 改云端结构时 |
 
 ## 数据流要点
@@ -110,7 +110,7 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `npm run build` | 生产构建 | 约 90 秒 |
 | `npm run check:fast` | 类型检查加测试 | 约 35 秒 |
 | `npm run check` | 类型、测试、代码检查、构建 | 约 3 分钟 |
-| `npm run generate:leads3-ledger` | 重生成采集台账 JSON 快照（改 README 第六节后跑） | 约 1 秒 |
+| `npm run import:leads3-records` | 把 README 第六节的采集台账搬进产品（幂等；加 `--dry-run` 只列清单不写库） | 约 1 秒 |
 | `npm run check:leads3-compliance` | 外部来源资产合规检查（只读） | 约 1 秒 |
 
 ## 阅读建议

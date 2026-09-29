@@ -7,6 +7,20 @@
 
 状态：**设计门已确认（2026-09-29 拍板，见第九节）；M1 已实现，验收见 docs/acceptance/leads-3-m1.md**。触发技术设计线 + 界面设计线。
 
+> **后续演进（2026-09-29，M2.0 落地后回填）**：本稿的 A 方案（读构建期 JSON 快照）是过渡形态，
+> 当时就预留了升级路径。M2.0 已按那条路径升级为「采集记录进库」，因此：
+> - `scripts/generate-external-sources-ledger.ts` 与 `src/data/external-sources-ledger.json` **已退役删除**，
+>   `npm run generate:leads3-ledger` 命令已移除；视图改读库（`/api/assets` 与 Supabase 两条通道）。
+> - `src/lib/external-sources-ledger.ts` 的**派生逻辑保留并沿用**（六档「是否编译」推导、
+>   规范 ID 抽取），只是判据来源从「落点文本 + 源文件 frontmatter」换成
+>   「采集记录里的 `collectedAssetIds`」，另外新增按生态筛选与落点资产解析。
+> - 第五档 `compiled_candidate` 的标签由「已编译候选（待你确认）」改为「已进编译候选（待确认发布）」
+>   —— 原措辞与事实不符（那时还没编译，只是够格进候选）。
+> - 合规第四约束判据已演进，见 `src/lib/external-sources-compliance.ts` 头部注释与
+>   `docs/leads-3-m2-design-and-tasks.md` 第七节。
+>
+> 本稿其余内容（交互路径、验收标准的设计意图）仍是对 M1 那一版的准确记录，不改写。
+
 ## 这份文档回答什么
 
 1. M1（只读视图 + 采集合规检查）具体做成什么、不做什么。
