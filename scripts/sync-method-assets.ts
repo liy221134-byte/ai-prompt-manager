@@ -20,6 +20,17 @@ import { DEFAULT_PROJECT_ID } from "../src/data/projects.ts";
 import { templateFileToDraft } from "../src/lib/template-asset.ts";
 import { getPromptDatabase } from "../src/lib/server/prompt-database.ts";
 
+// 读不到正文就返回 null（文件不存在等情况）。单独收成函数，是为了让「只赋值一次」的
+// 变量能用 const 声明——原来在循环里写 `let content` + try 赋值，会被 ESLint 的
+// prefer-const 判为可改 const，是 main 上既有的那条 lint error。
+function readTextOrNull(filePath: string): string | null {
+  try {
+    return readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
 const projectRoot = resolve(import.meta.dirname, "..");
 const dryRun = process.argv.includes("--dry-run");
 const database = getPromptDatabase();
@@ -39,16 +50,16 @@ const entries = [
 ];
 
 let updated = 0;
-let created = 0;
+// 本脚本只按 id 更新已存在的资产，库里没有的一律跳过（见下面的 [空跑] 分支），
+// 所以「新增」恒为 0；保留在汇总里是为了和输出口径对齐，别当真。
+const created = 0;
 let unchanged = 0;
 let skipped = 0;
 
 for (const entry of entries) {
   const filePath = join(projectRoot, entry.file);
-  let content: string;
-  try {
-    content = readFileSync(filePath, "utf8");
-  } catch {
+  const content = readTextOrNull(filePath);
+  if (content === null) {
     console.log(`  跳过：文件不存在 ${entry.file}`);
     skipped += 1;
     continue;
