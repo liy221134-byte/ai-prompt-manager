@@ -170,16 +170,16 @@ function isEmptyLanding(text: string) {
 /**
  * 按设计稿第三节的简化规则推导「是否已编译进 AGENTS.md」。
  *
- * 规则（M1 阶段，不解析 AGENTS.md 正文做精确比对——那是更后面的事）：
- *  1. 落点为空 → empty
- *  2. 落点写了资产 ID 且在库内：规则类看状态（active→已编译候选，否则未编译／候选）；
- *     文档类归 knowledge（知识库资产，不编译进 AGENTS.md）
- *  3. 落点写了资产 ID 但库内找不到 → not_imported（例如种子包里的规则不在本机库）
- *  4. 落点不是资产 ID 而是文件路径或 AGENTS.md 章节 → template（已进模板/规则层）
+ * 规则（M1 阶段，不解析 AGENTS.md 正文做精确比对——那是更后面的事），共五档：
+ *  1. 落点为空 → empty「—（未提炼资产）」
+ *  2. 落点在库内且是规则类：active → compiled_candidate「已编译候选」，否则 not_compiled
+ *  3. 落点在库内且是文档类 → knowledge「知识库资产（不编译进 AGENTS.md）」
+ *  4. 落点是资产 ID 形态但库内找不到 → not_imported（例如种子包里的规则不在本机库）
+ *  5. 落点不是资产 ID 而是文件路径或 AGENTS.md 章节 → template「已进模板/规则层」
  *
- * 说明：第 4 档是对设计稿四档的补充。台账里「templates/new-project/AGENTS.md」
- * 「AGENTS.md『界面改动的验证』」这类落点其实是已经编译进模板/规则层的，
- * 若统一按第 3 档标成「未导入库」，会让人误判成「没编译」。
+ * 说明：五档对应设计稿第三节（docs/leads-3-m1-design-and-tasks.md）的判定规则。
+ * template 档是为台账里「templates/new-project/AGENTS.md」「AGENTS.md『界面改动的验证』」
+ * 这类落点设的——它们其实已编译进模板/规则层，若按 not_imported 标会让人误判成「没编译」。
  */
 export function deriveCompileStatus(
   landing: string,

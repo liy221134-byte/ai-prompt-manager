@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T09:36:34.963Z",
+  "generatedAt": "2026-09-29T10:17:58.080Z",
   "sourceFile": "seed-packs/external-sources/README.md",
   "ledgerHeading": "## 六、采集进度台账",
   "libraryAvailable": true,
@@ -332,13 +332,93 @@
       "status": "已采 4 条",
       "sourceUrl": "Claude Skills 的产品经理方法技能",
       "disposition": "已采 4；其余 16 处置见第三节",
-      "landing": "RULE-PREMORTEM-001 等 4 条",
+      "landing": "RULE-PREMORTEM-001 等 4 条规则；进参考文档层 2：REF-PRIORITIZATION-001、REF-UI-CHECKLIST-001；单独立片 7：MTH-TEAM-OKR-001、MTH-TEAM-MEETING-001、MTH-TEAM-RELEASENOTE-001、MTH-TEAM-RETRO-001、MTH-TEAM-ROADMAP-001、MTH-TEAM-SCHEDULE-001、MTH-TEAM-STAKEHOLDER-001",
       "verifiedAt": "2026-09-28",
-      "note": "剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1",
+      "note": "剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1；其中 2 个参考文档 + 7 个团队方法已导入本机库（可点开追溯）",
       "compileStatus": {
-        "level": "not_imported",
-        "label": "未导入库（仅台账记录）",
-        "matchedAssets": []
+        "level": "knowledge",
+        "label": "知识库资产（不编译进 AGENTS.md）",
+        "matchedAssets": [
+          {
+            "libraryAssetId": "document-reference-prioritization-frameworks-md",
+            "canonicalId": "REF-PRIORITIZATION-001",
+            "title": "优先级框架对照（9 种）",
+            "assetType": "document",
+            "status": "active",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-reference-ui-checklist-md",
+            "canonicalId": "REF-UI-CHECKLIST-001",
+            "title": "界面检查清单（8 类，按影响排序）",
+            "assetType": "document",
+            "status": "active",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-okr-md",
+            "canonicalId": "MTH-TEAM-OKR-001",
+            "title": "OKR：目标与关键结果",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-meeting-notes-md",
+            "canonicalId": "MTH-TEAM-MEETING-001",
+            "title": "会议纪要：决策与待办留痕",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-release-notes-md",
+            "canonicalId": "MTH-TEAM-RELEASENOTE-001",
+            "title": "发布说明：对用户说清这次变了什么",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-retrospective-md",
+            "canonicalId": "MTH-TEAM-RETRO-001",
+            "title": "复盘：从已发生的事里学",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-roadmap-md",
+            "canonicalId": "MTH-TEAM-ROADMAP-001",
+            "title": "路线图：把目标排到时间轴上",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-scheduling-md",
+            "canonicalId": "MTH-TEAM-SCHEDULE-001",
+            "title": "排期与估计：把工作拆到可承诺",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          },
+          {
+            "libraryAssetId": "document-team-method-stakeholder-md",
+            "canonicalId": "MTH-TEAM-STAKEHOLDER-001",
+            "title": "干系人地图：谁影响、谁被影响",
+            "assetType": "document",
+            "status": "active",
+            "role": "source",
+            "authority": false
+          }
+        ]
       }
     },
     {

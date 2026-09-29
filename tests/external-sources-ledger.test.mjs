@@ -142,3 +142,27 @@ test("JSON 快照与 README 台账逐字段一致（README 改了要重跑生成
     assert.ok(record.compileStatus, `第 ${entry.seq} 条缺少 compileStatus`);
   });
 });
+
+// 台账「落到哪条资产」里登记的规范 ID，是落点深链的数据前提。
+// 这条挡住「把 M0 落库文档的落点删掉/改错」——删了它，视图里的「打开资产」按钮就没了。
+test("S7 行的落点登记了 M0 落库的 9 个文档资产规范 ID", () => {
+  const s7 = entries.find((entry) => entry.source.includes("S7 产品经理方法技能"));
+  assert.ok(s7, "台账里找不到 S7 行");
+
+  const ids = extractCanonicalIds(s7.landing);
+  const expected = [
+    "REF-PRIORITIZATION-001",
+    "REF-UI-CHECKLIST-001",
+    "MTH-TEAM-OKR-001",
+    "MTH-TEAM-MEETING-001",
+    "MTH-TEAM-RELEASENOTE-001",
+    "MTH-TEAM-RETRO-001",
+    "MTH-TEAM-ROADMAP-001",
+    "MTH-TEAM-SCHEDULE-001",
+    "MTH-TEAM-STAKEHOLDER-001",
+  ];
+
+  for (const id of expected) {
+    assert.ok(ids.includes(id), `S7 行落点缺少 ${id}`);
+  }
+});

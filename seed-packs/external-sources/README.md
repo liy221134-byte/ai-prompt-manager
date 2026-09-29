@@ -224,7 +224,7 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 | Notion 官方 Skills（4 个） | Skills | 暂缓 | — | 暂缓（不用 Notion） | — | — | — |
 | OpenAI 运行时技能（`documents`／`pdf`／`presentations`／`spreadsheets`／`template-creator`） | Skills | 暂缓 | — | 暂缓（办公文档能力，待另判） | — | — | 和本库的关系要另判 |
 | `computer-use`／`visualize` | Skills | 暂缓 | — | 暂缓（能力型非规则型） | — | — | — |
-| **S7 产品经理方法技能**（19 来源：已采 3 / 剩余 16，详见处置表） | Skills | 已采 4 条 | Claude Skills 的产品经理方法技能 | 已采 4；其余 16 处置见第三节 | `RULE-PREMORTEM-001` 等 4 条 | 2026-09-28 | 剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1 |
+| **S7 产品经理方法技能**（19 来源：已采 3 / 剩余 16，详见处置表） | Skills | 已采 4 条 | Claude Skills 的产品经理方法技能 | 已采 4；其余 16 处置见第三节 | `RULE-PREMORTEM-001` 等 4 条规则；进参考文档层 2：`REF-PRIORITIZATION-001`、`REF-UI-CHECKLIST-001`；单独立片 7：`MTH-TEAM-OKR-001`、`MTH-TEAM-MEETING-001`、`MTH-TEAM-RELEASENOTE-001`、`MTH-TEAM-RETRO-001`、`MTH-TEAM-ROADMAP-001`、`MTH-TEAM-SCHEDULE-001`、`MTH-TEAM-STAKEHOLDER-001` | 2026-09-28 | 剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1；其中 2 个参考文档 + 7 个团队方法已导入本机库（可点开追溯） |
 | Next.js 能力技能 5 个 与 `ui-ux-pro-max` | Skills | 部分采集 | Next.js 官方（`next-dev-loop` 等） | 已采（部分，进 `AGENTS.md`） | `AGENTS.md`「界面改动的验证」 | 2026-09-27 | 其余待技术上下文筛选生效再按需采 |
 | **S8 WorkBuddy 生态**（本机 WorkBuddy 外部评审 + `DEV-SYSTEM.md`／`MEMORY.md`） | 评审 + Skills | 已采 3 条 | 本机 WorkBuddy | 已采 3 条 | `RULE-EVIDENCE-SCOPE-001` 等 3 条 | 2026-09-28 | 成本与额度纪律记为已知缺口不硬写 |
 
@@ -232,6 +232,9 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 
 ## 版本
 
+- `0.2.1`（2026-09-29）：第六节 S7 行「落到哪条资产」补全 9 个文档资产规范 ID——进参考文档层的
+  2 个（`REF-PRIORITIZATION-001`、`REF-UI-CHECKLIST-001`）与单独立片的 7 个（`MTH-TEAM-*`）。
+  M0 导入本机库的这批文档此前未登记落点，补上后 M1 采集台账的「落点深链」可用。
 - `0.2.0`（2026-09-29）：M0 收口。第六节采集进度台账补齐四字段——每条来源新增「来源链接」「处置结论」两列，原「采集日期」统一改名为「核实日期」，「落到哪条资产」沿用原「提炼出的资产 ID」；23 条来源全部补齐。M1（进产品只读视图）与 M2（采腾讯生态）不在本版。
 - `0.1.9`（2026-09-28）：新增 S8 WorkBuddy 生态——它对我们的外部评审采出 3 条进种子资产包 0.12.0
   （外推边界、未验证规则不参与编译、资产退役三问）；同时修正它的「Cursor 不支持 skills」误判。
