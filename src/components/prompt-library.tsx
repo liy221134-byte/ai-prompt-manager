@@ -313,6 +313,17 @@ function reconcileMergeSelection(
   };
 }
 
+// 读地址栏上的 ?asset=<库内资产 ID>（采集台账深链过来时带的）。
+// 非浏览器环境返回 null；读的是 window.location，不引 useSearchParams，
+// 免得给首页加构建约束。
+function readDeepLinkAssetId(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return new URLSearchParams(window.location.search).get("asset");
+}
+
 export function PromptLibrary({
   dataMode,
   onSignOut,
@@ -345,10 +356,6 @@ export function PromptLibrary({
   // 标签、状态、关系和规则包四个筛选收进「筛选」面板，默认收起，把位置让给搜索框。
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [assetDetailId, setAssetDetailId] = useState<string | null>(null);
-  // 从采集台账深链过来时带过来的资产 ID（/?asset=...），等资产加载完再打开详情
-  const [pendingDeepLinkAssetId, setPendingDeepLinkAssetId] = useState<
-    string | null
-  >(null);
   const [assetEditorState, setAssetEditorState] =
     useState<AssetEditorState | null>(null);
   const [projectDialog, setProjectDialog] =
@@ -497,6 +504,19 @@ export function PromptLibrary({
       setAssets(assetList);
       setActiveProjectId(nextViewProject?.id ?? null);
 
+      // 从采集台账深链过来时（/?asset=<库内资产 ID>）自动打开对应资产详情。
+      // 放在这个异步加载回调里做，不在 effect 里同步 setState——那样会触发
+      // react-hooks/set-state-in-effect，Vercel 的构建命令（npm run check）会直接拦下来。
+      // 匹配不到就当没带参数，不报错，地址栏上的参数也保持原样。
+      const deepLinkAssetId = readDeepLinkAssetId();
+      if (
+        deepLinkAssetId &&
+        assetList.some((asset) => asset.id === deepLinkAssetId)
+      ) {
+        setAssetDetailId(deepLinkAssetId);
+        window.history.replaceState(null, "", "/");
+      }
+
       setWorkspaceView(nextView);
       setAssetTypeFilter((current) =>
         resolveWorkspaceTypeFilter(nextView, current),
@@ -642,34 +662,6 @@ export function PromptLibrary({
       cancelled = true;
     };
   }, [dataSource, selectedPromptId]);
-
-  // 从采集台账深链过来时（/?asset=<库内资产 ID>）自动打开对应资产详情：
-  // 先取出参数，等资产加载完再匹配；匹配不到就当没带参数，不报错。
-  // 用 window.location 读参数（不引 useSearchParams），不给首页加构建约束。
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const assetId = new URLSearchParams(window.location.search).get("asset");
-    if (assetId) {
-      setPendingDeepLinkAssetId(assetId);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!pendingDeepLinkAssetId) {
-      return;
-    }
-
-    if (!assets.some((asset) => asset.id === pendingDeepLinkAssetId)) {
-      return;
-    }
-
-    setAssetDetailId(pendingDeepLinkAssetId);
-    setPendingDeepLinkAssetId(null);
-    window.history.replaceState(null, "", "/");
-  }, [assets, pendingDeepLinkAssetId]);
 
   const activeProject = useMemo(
     () => projects.find((project) => project.id === activeProjectId) ?? null,
