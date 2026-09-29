@@ -200,36 +200,39 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 
 ## 六、采集进度台账
 
-| 来源 | 类型 | 状态 | 提炼出的资产 ID | 采集日期 | 备注 |
-| --- | --- | --- | --- | --- | --- |
-| Ponytail（7 层防重复造轮子） | Skill/MCP | 已提炼并并入模板 | 已写入 templates/new-project/AGENTS.md | 2026-09 | 首个成功案例 |
-| S1 obra/superpowers | Skills | 部分采集 | `PLAYBOOK-DEBUG-001`（系统化调试） | 2026-09-23 | 已并入工程方法种子资产包并写进 `AGENTS.md` 的修 bug 四步流程；其余技能（验证纪律、计划与执行、评审）待去重后再采 |
-| S2 anthropics/skills | Skills | 未采集 | — | — | 重点看 skill-creator、webapp-testing |
-| S3 karpathy-skills | Skills | 未采集 | — | — | 与 7 层梯子对照去重 |
-| Context7 | MCP | 已安装 | — | 2026-09 | 只读；本机 Codex 配置里已挂 `npx -y @upstash/context7-mcp` |
-| Playwright MCP | MCP | 未安装 | — | — | 黑盒验收用 |
-| Supabase MCP | MCP | 已安装，当前不可用 | — | 2026-09 | 服务器已注册但 OAuth 令牌过期，需要重新授权；注意只读与生产隔离 |
-| GitHub MCP | MCP | 进行中 | — | — | DeepSeek 下 PR 绕行方案 |
-| Serena | MCP | 暂缓 | — | — | 项目变大再装 |
-| Sequential Thinking | MCP | 已安装 | — | 2026-09 | 本机已挂参考实现；官方参考服务器有归档变动，维护版本待确认 |
-| Snyk MCP | MCP | 暂缓 | — | — | 生产加固阶段 |
-| Postgres MCP | MCP | 暂缓 | — | — | 自建/国产库阶段 |
-| 豆包「AI Coding 每日速递」9/23–9/27（5 条） | 资讯流 | 已核对，未采纳 | — | 2026-09-27 | 结论见第三节；已覆盖的多，未采纳 1 条（Chrome DevTools MCP） |
-| **S4 Supabase 官方 Skills**（`supabase`、`supabase-postgres-best-practices`） | Skills | 已入库 6 条 | `RULE-PG-FK-INDEX-001`、`RULE-PG-MIGRATION-001`、`RULE-PG-RLS-001`、`RULE-PG-PRIVILEGE-001`、`RULE-PG-TRANSACTION-001`、`MTH-PG-QUERY-PERF-001` | 2026-09-27 | 源文件 31 条规则，按「宁精勿多」挑出 6 条；连接管理（托管环境已管）、分区、锁、监控、高级特性、表设计常识按暂缓处理，理由记在包 README 的 0.7.0。全部 `confidence: hypothesis`，等技术上下文筛选生效并在真实项目用过再升 |
-| **S5 superpowers 全套**（本机 12 个技能） | Skills | **已按适用规模采完**（1 + 2 + 6 条） | `PLAYBOOK-DEBUG-001`、`RULE-VERIFY-001`、`RULE-VERIFY-002`、`RULE-AGENT-TASK-001`、`RULE-AGENT-VERIFY-001`、`RULE-PARALLEL-001`、`RULE-WORKTREE-001`、`MTH-TASK-BOUNDARY-001`、`RULE-PLAN-RULING-001` | 2026-09-27 | 分三批：0.3.0 系统化调试、0.8.0 验证纪律 2 条、0.9.0 多智能体协作 6 条（标 large／regulated，个人项目用不上，靠规模筛选挡掉）。**主动不采**：TDD 铁律（交付门已覆盖）、brainstorming 三条路径（与三道门重合）、评审时点与合并菜单（本项目已主动简化） |
-| **S6 product-design**（9 个技能） | Skills | **已采集 4 条** | `MTH-DESIGN-GATE-001`、`RULE-DESIGN-QA-001`、`RULE-DESIGN-ASSET-001`、`RULE-EVIDENCE-BOUNDARY-001` | 2026-09-27 | 规则富矿是 `get-context`（设计前澄清门）、`design-qa`（源设计与实现对比）、`audit`（证据边界）。**当时判断"不用 Figma 所以不采"是错的**——产品负责人是设计师，只是把设计工序排在了后面；`AGENTS.md` 的设计门已拆出「界面设计线」。其余 6 个技能（ideate／image-to-code／url-to-code／research／share／user-context）是设计与分享工具，不是规则来源 |
-| Figma 官方 Skills（12 个） | Skills | 暂缓 | — | — | 本项目不做设计稿，暂时用不上 |
-| Notion 官方 Skills（4 个） | Skills | 暂缓 | — | — | 不用 Notion |
-| OpenAI 运行时技能（`documents`／`pdf`／`presentations`／`spreadsheets`／`template-creator`） | Skills | 暂缓 | — | — | 办公文档类能力，和这个库的关系要另判 |
-| `computer-use`／`visualize` | Skills | 暂缓 | — | — | 能力型，不是规则型 |
-| **S7 产品经理方法技能**（19 个来源：已采 3 技能 / 4 资产，剩余 16 待处置，详见处置表） | Skills | **已采 4 条** | `RULE-PREMORTEM-001`、`RULE-REDTEAM-001`、`RULE-DESIGN-TEMPLATE-LOOK-001`、`RULE-DESIGN-COPY-001` | 2026-09-28 | 深读 4 个技能，各提炼 1 条进种子资产包 0.11.0：`pre-mortem`（事前验尸）、`strategy-red-team`（只打承重假设）、`frontend-design`（反模板味 + 界面文案）。**其余 16 个的处置**：`test-scenarios`／`create-prd` 已有替代不采；`job-stories`／`user-stories`／`wwas` 是需求表达格式，该进模板层；`prioritization-frameworks`／`ui-ux-pro-max` 是会腐化的清单，该进参考文档层；`canvas-design` 与本产品无关；`dummy-dataset` 暂缓；7 个团队管理方法（OKR／路线图／排期／复盘／干系人／会议纪要／发布说明）建议单独立一片，暂不混进工程包 |
-| Next.js 能力技能 5 个（`next-dev-loop`、`next-cache-components-*`、`next-partial-prefetching-*`）与 `ui-ux-pro-max` | Skills | 部分采集 | `AGENTS.md` 的「界面改动的验证」 | 2026-09-27 | `next-dev-loop` 的用法已写进 `AGENTS.md`；其余是框架特定能力，等技术上下文筛选生效后再按需采 |
-| **S8 WorkBuddy 生态**（本机 WorkBuddy 对我们的外部评审 + 它的 `DEV-SYSTEM.md`／`MEMORY.md`） | 评审 + Skills | **已采 3 条** | `RULE-EVIDENCE-SCOPE-001`、`RULE-CONFIDENCE-COMPILE-001`、`MTH-ASSET-RETIRE-001` | 2026-09-28 | 进种子资产包 0.12.0；逐条裁决见 `docs/reviews/2026-09-28-外部评审与裁决.md`。**它提的「Cursor 不支持 skills」经复核不成立**——Cursor 支持 Agent Skills，且 `.agents/skills/` 与 Codex 共用；**成本与额度纪律**两边都没有，记为包内「已知缺口」不硬写规则 |
+> M0 起，每条来源补齐四字段：**来源链接**（外部仓库/官方页，本机技能写「本机」）、**处置结论**（已采／不采／暂缓／已安装）、**落到哪条资产**（提炼出的资产 ID，无则填「—」）、**核实日期**（原「采集日期」统一改名）。
+
+| 来源 | 类型 | 状态 | 来源链接 | 处置结论 | 落到哪条资产 | 核实日期 | 备注 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Ponytail（7 层防重复造轮子） | Skill/MCP | 已提炼并并入模板 | Ponytail（X 用户）技能 | 已采（进模板层） | templates/new-project/AGENTS.md | 2026-09 | 首个成功案例 |
+| S1 obra/superpowers | Skills | 部分采集 | https://github.com/obra/superpowers | 已采（部分） | `PLAYBOOK-DEBUG-001` | 2026-09-23 | 其余技能（验证纪律、计划与执行、评审）待去重后再采 |
+| S2 anthropics/skills | Skills | 未采集 | https://github.com/anthropics/skills | 不采（本版） | — | — | 重点看 skill-creator、webapp-testing |
+| S3 karpathy-skills | Skills | 未采集 | https://github.com/multica-ai/andrej-karpathy-skills | 不采（与 7 层梯子对照去重） | — | — | 与已采心法同主题，避免重复资产 |
+| Context7 | MCP | 已安装 | github.com/upstash/context7 | 已安装（只读） | — | 2026-09 | 本机 Codex 已挂 `npx -y @upstash/context7-mcp` |
+| Playwright MCP | MCP | 未安装 | github.com/microsoft/playwright-mcp | 暂缓（黑盒验收用） | — | — | 验收用本地/预览环境，不授权生产提交 |
+| Supabase MCP | MCP | 已安装，当前不可用 | github.com/supabase-community/supabase-mcp | 已安装（OAuth 过期待授权） | — | 2026-09 | 默认只读、与生产隔离 |
+| GitHub MCP | MCP | 进行中 | github.com/github/github-mcp | 进行中（DeepSeek 下 PR 绕行） | — | — | — |
+| Serena | MCP | 暂缓 | — | 暂缓（项目变大再装） | — | — | 语义级代码导航 |
+| Sequential Thinking | MCP | 已安装 | — | 已安装（参考实现） | — | 2026-09 | 官方参考服务器有归档变动，维护版本待确认 |
+| Snyk MCP | MCP | 暂缓 | — | 暂缓（生产加固阶段） | — | — | 依赖漏洞与安全扫描 |
+| Postgres MCP | MCP | 暂缓 | — | 暂缓（自建/国产库阶段） | — | — | 通用数据库访问，规则同只读 |
+| 豆包「AI Coding 每日速递」9/23–9/27（5 条） | 资讯流 | 已核对，未采纳 | 豆包定时任务 | 不采（已覆盖为主） | — | 2026-09-27 | 结论见第三节；未采纳 1 条（Chrome DevTools MCP） |
+| **S4 Supabase 官方 Skills**（`supabase`、`supabase-postgres-best-practices`） | Skills | 已入库 6 条 | Supabase 官方 Skills | 已采（6/31） | `RULE-PG-FK-INDEX-001` 等 6 条 | 2026-09-27 | 其余按暂缓处理，理由记在包 README 的 0.7.0；全部 `confidence: hypothesis` |
+| **S5 superpowers 全套**（本机 12 个技能） | Skills | 已按适用规模采完（9 条） | 本机 12 个技能 | 已采（9 条，主动不采 3 类） | `PLAYBOOK-DEBUG-001` 等 9 条 | 2026-09-27 | 标 large／regulated 靠规模筛选挡掉；TDD 铁律等主动不采 |
+| **S6 product-design**（9 个技能） | Skills | 已采集 4 条 | Claude Skills 的 product-design | 已采（4/9，其余非规则型） | `MTH-DESIGN-GATE-001` 等 4 条 | 2026-09-27 | 其余 6 个为设计与分享工具，非规则来源 |
+| Figma 官方 Skills（12 个） | Skills | 暂缓 | — | 暂缓（本项目不做设计稿） | — | — | 暂时用不上 |
+| Notion 官方 Skills（4 个） | Skills | 暂缓 | — | 暂缓（不用 Notion） | — | — | — |
+| OpenAI 运行时技能（`documents`／`pdf`／`presentations`／`spreadsheets`／`template-creator`） | Skills | 暂缓 | — | 暂缓（办公文档能力，待另判） | — | — | 和本库的关系要另判 |
+| `computer-use`／`visualize` | Skills | 暂缓 | — | 暂缓（能力型非规则型） | — | — | — |
+| **S7 产品经理方法技能**（19 来源：已采 3 / 剩余 16，详见处置表） | Skills | 已采 4 条 | Claude Skills 的产品经理方法技能 | 已采 4；其余 16 处置见第三节 | `RULE-PREMORTEM-001` 等 4 条 | 2026-09-28 | 剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1 |
+| Next.js 能力技能 5 个 与 `ui-ux-pro-max` | Skills | 部分采集 | Next.js 官方（`next-dev-loop` 等） | 已采（部分，进 `AGENTS.md`） | `AGENTS.md`「界面改动的验证」 | 2026-09-27 | 其余待技术上下文筛选生效再按需采 |
+| **S8 WorkBuddy 生态**（本机 WorkBuddy 外部评审 + `DEV-SYSTEM.md`／`MEMORY.md`） | 评审 + Skills | 已采 3 条 | 本机 WorkBuddy | 已采 3 条 | `RULE-EVIDENCE-SCOPE-001` 等 3 条 | 2026-09-28 | 成本与额度纪律记为已知缺口不硬写 |
 
 > 状态取值：未采集 / 已采集待确认 / 已入库 / 已安装 / 暂缓 / 放弃。
 
 ## 版本
 
+- `0.2.0`（2026-09-29）：M0 收口。第六节采集进度台账补齐四字段——每条来源新增「来源链接」「处置结论」两列，原「采集日期」统一改名为「核实日期」，「落到哪条资产」沿用原「提炼出的资产 ID」；23 条来源全部补齐。M1（进产品只读视图）与 M2（采腾讯生态）不在本版。
 - `0.1.9`（2026-09-28）：新增 S8 WorkBuddy 生态——它对我们的外部评审采出 3 条进种子资产包 0.12.0
   （外推边界、未验证规则不参与编译、资产退役三问）；同时修正它的「Cursor 不支持 skills」误判。
 - `0.1.8`（2026-09-28）：S7 产品经理方法技能采完 4 条进种子资产包 0.11.0（事前验尸、

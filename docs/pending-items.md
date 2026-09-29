@@ -479,8 +479,7 @@ dangling 引用且正向引用已存在；② 提示词包在库非单一文档�
 
 **没做（各有原因）**：
 
-- WorkBuddy 的 `feat/leads-3`、`feat/leads-4` 两个分支**没合**——它还在 `feat/leads-3` 上做 M0 的
-  T2，合进来立刻又落后；等它报完成再合。
+- 线索 3 M0（生态采集沉淀）**已完成**（2026-09-29）：在 `feat/leads-3-m0` 分支收口——台账补四字段、2 条参考文档规范化（`docs/reference/`）、7 个团队管理方法资产新建（`docs/team-methods/`）、3 个模板层资产核对对齐，验收见 `docs/acceptance/leads-3-m0.md`（5 条全过）。线索 4 交互优化已签核（见 `docs/acceptance/practice-ui-optimization.md`）。两分支均待合入 `main`。
 - `feat/v2.21.0-*`～`feat/v2.25.0-*` 这些已并入 `main` 的功能分支**没删**——删除要产品负责人确认
   （核对过：相对 `main` 的未合并提交都是 0，删了不丢代码）。
 

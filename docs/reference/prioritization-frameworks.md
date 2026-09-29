@@ -1,3 +1,35 @@
+---
+id: REF-PRIORITIZATION-001
+title: 优先级框架对照（9 种）
+asset_type: method
+purpose: analysis
+layer: project
+scope: global
+project_scale:
+  - personal
+  - medium
+  - large
+  - regulated
+tech_context:
+  - generic
+lifecycle_phase:
+  - analysis
+  - design
+status: candidate
+confidence: hypothesis
+override_allowed: true
+compile_target:
+  - none
+verification: manual
+evidence: []
+source_references:
+  - Claude Skills 的 prioritization-frameworks 技能（外部来源采集 S7，采集台账见 seed-packs/external-sources/README.md 第六节的 S7 行）
+related_assets:
+  - MTH-REQ-001
+version: 0.1.0
+last_reviewed: 2026-09-29
+---
+
 # 优先级框架对照（9 种）
 
 > 用途：要在多个需求／想法里排序时，先选一个框架，再按它的公式打分。

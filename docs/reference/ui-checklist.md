@@ -1,3 +1,38 @@
+---
+id: REF-UI-CHECKLIST-001
+title: 界面检查清单（8 类，按影响排序）
+asset_type: method
+purpose: development
+layer: feature
+scope: global
+project_scale:
+  - personal
+  - medium
+  - large
+  - regulated
+tech_context:
+  - generic
+lifecycle_phase:
+  - design
+  - build
+status: candidate
+confidence: hypothesis
+override_allowed: true
+compile_target:
+  - none
+verification: manual
+evidence: []
+source_references:
+  - Claude Skills 的 ui-ux-pro-max 技能速查部分（外部来源采集 S7，台账见 seed-packs/external-sources/README.md 第六节的 S7 行）
+  - frontend-design 技能的「生成味」默认样式清单
+related_assets:
+  - RULE-DESIGN-QA-001
+  - RULE-DESIGN-TEMPLATE-LOOK-001
+  - RULE-DESIGN-COPY-001
+version: 0.1.0
+last_reviewed: 2026-09-29
+---
+
 # 界面检查清单（8 类，按影响排序）
 
 > 用途：做界面或改界面时，按这份清单从「影响最大」往下过一遍。
