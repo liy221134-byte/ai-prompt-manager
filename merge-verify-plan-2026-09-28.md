@@ -210,9 +210,15 @@ select count(*) from public.practice_attempts;    -- 期望 0
   既存 warning、生产构建产出 `/practice` 与 `/practice/[id]`），再 `git push origin main`
   （`7c3e913..0365229`，17 个提交）。推送同时触发两条线上链路：Vercel 生产部署、
   Supabase GitHub 集成自动应用 `20260928220000_add_practice.sql`。
-- **线上复验结果**：迁移已落地（`practice_questions` 127 行、`practice_attempts` 0 行）；匿名密钥
-  读两张表均为 0 行（RLS 生效）；线上 `/practice` 307 跳 `/login`、`/login` 200。本机以云模式
-  起服务后三项一致。生产库写入记录在 [数据库迁移](docs/operations/database-migrations.md)「事实记录」，
+- **数据库那半边成功**：迁移已落地（`practice_questions` 127 行、`practice_attempts` 0 行）；
+  匿名密钥读两张表均为 0 行（RLS 生效）。由 Supabase 的 GitHub 集成独立完成。
+- **前端那半边失败（当时的错误结论已订正）**：Vercel 对 `main` 的部署**自 2026-09-28 起持续失败**，
+  最后一次成功部署停在 2026-09-24 的 `3960cec`；`0365229`、`f3ae0a0` 两次都失败。
+  因此线上跑的仍是 9-24 的老代码，v2.21～v2.25 与练习题库**都没上线**。
+  上一版记录里写的「线上 `/practice` 307 跳 `/login` 说明路由已部署」是错的：登录中间件对
+  所有未登录路径都这样跳，用不存在的路径实测同样 307，该证据不成立。
+  失败详情需在 Vercel 控制台看构建日志（本机无 Vercel 凭据）。
+  生产库写入记录在 [数据库迁移](docs/operations/database-migrations.md)「事实记录」，
   验收口径在 [练习题库 M0 验收](docs/acceptance/practice-m0.md) 第四节。
 - **仍未做**：① 两账号界面手验（需产品负责人登录态，agent 不代登录）；② 5 个陈旧 `--merged`
   分支删除（需点头）；③ v2.25.0 的 T6 跨仓库改动（需点头 + token）；④ 练习题库是否打版本号标签

@@ -28,14 +28,23 @@
 
 ## 四、线上验证
 
-### 已验（2026-09-29，随 `main` 推送后由 Supabase GitHub 集成自动应用迁移）
+### 已验（2026-09-29）
 
 | 项 | 实测 | 判定 |
 | --- | --- | --- |
-| 迁移已应用 | `practice_questions` 127 行（种子题全到齐）、`practice_attempts` 0 行 | ✅ |
+| 数据库迁移已应用 | 云端 `practice_questions` 127 行（种子题全到齐）、`practice_attempts` 0 行 | ✅ |
 | RLS 生效 | 用匿名密钥直读两张表，各返回 0 行（策略只授 `to authenticated`） | ✅ |
-| 路由已部署 | 线上 `/practice` 返回 307 跳 `/login`，`/login` 返回 200 | ✅ |
-| 本机同版本可跑 | `npm run dev` 起在 `localhost:3000`，`/`、`/practice` 均 307 跳 `/login`，运行时日志无错误 | ✅ |
+| 本机可跑 | `npm run dev`（云模式）起在 `localhost:3000`，`/`、`/practice` 均跳 `/login`，运行时日志无错误 | ✅ |
+| **前端尚未上线** | **线上仍是 2026-09-24 的旧部署，`/practice` 与「更多 → 练习题库」入口都不存在** | ❌ |
+
+**为什么没上线**：Vercel 对 `main` 的部署自 2026-09-28 起持续失败（11 次连续失败，
+最后一次成功部署是 2026-09-24 的 `3960cec`）。失败详情需在 Vercel 控制台看构建日志，
+本机没有 Vercel 凭据。数据库那半边是 Supabase 的 GitHub 集成独立完成的，所以**表和数据在线、
+前端不在线**，两者不是同一条链路。
+
+**注意**：`/practice` 在线上返回 307 跳 `/login` **不能**当作「路由已部署」的证据——登录中间件
+对所有未登录路径（包括根本不存在的路径）都会这么跳。这条口径已在 2026-09-29 用
+`/definitely-not-a-real-page-xyz` 实测校准。
 
 生产库写入记录见 [数据库迁移](../operations/database-migrations.md) 的「事实记录」。
 

@@ -88,8 +88,9 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
   怎么回滚：`drop table if exists public.practice_attempts;`
   `drop table if exists public.practice_questions;`（只丢练习记录与题库，现有资产库不受影响）。
   验完的结果（只读核对，service role 直连 REST）：`practice_questions` 127 行、
-  `practice_attempts` 0 行；匿名密钥两张表都读到 0 行（策略为 `to authenticated`，RLS 生效）；
-  线上域名 `/practice` 返回 307 跳 `/login`、`/login` 返回 200，说明新路由已部署。
+  `practice_attempts` 0 行；匿名密钥两张表都读到 0 行（策略为 `to authenticated`，RLS 生效）。
+  本次只核对数据库这一半：Supabase 的 GitHub 集成与 Vercel 是两条独立链路，
+  **同一次推送里前者成功、后者自 2026-09-28 起持续失败**，所以前端 `/practice` 还没上线。
 - 2026-09-25（第二次写入）：**v2.20.0 部署后的线上复验**。产品负责人签字并同意自动部署，
   部署完成后做了最小复验，只读核对 + 一次挑资产。
   改了什么：新建复验项目 `复验-可归档-2026-09-25`
