@@ -5,7 +5,7 @@
 给产品负责人和接手会话用。这里放三类内容：需要人操作或拍板的事、已经定过不必再问的事、
 需要留痕的记录（分支处置、规则命中）。待办做完就把对应行删掉；记录保留，不写过程描述。
 
-更新时间：2026-09-28。
+更新时间：2026-09-29。
 
 ## 需要你操作或拍板
 
@@ -22,7 +22,52 @@
 | 9 | ~~规则引用模型的收尾~~ | **已完成（2026-09-25，v2.20.0）**：装包时可逐条挑规则（存排除清单），引用来的规则可「另存为项目规则」脱钩成项目副本 | 见 [v2.20.0 验收清单](acceptance/v2.20.0.md) | v2.18.0 落地时的已知缺口 |
 | 10 | ~~把本机数据推到云端~~ | **已完成（2026-09-24）**：挂上代理后 `npm run sync` 直接跑通，本机与云端各 249 条、0 差异、0 冲突 | 见 [v2.19.0 验收清单](acceptance/v2.19.0.md) | 之前直连 Supabase 的 TLS 握手被重置；同步命令现已自动读取系统代理 |
 | 11 | ~~v2.17.0～v2.19.0 上线~~ | **已完成（2026-09-24）**：推送 `main`（`a9c7c7e`）、打标签 v2.17.0／v2.18.0／v2.19.0、发布记录门禁勾完；线上站点在 Vercel 登录保护后面，界面自测仍需你的 Vercel 账号 | 见 [2.0 收口清单](2.0-closeout.md) | 三个版本一条线，一次上线 |
-| 12 | 桌面上那把新令牌的临时文件 | 新令牌已写进本机凭据管理器，桌面 `C:\Users\90402\Desktop\github-token.txt` 只是中转；确认推送无误后说一声，由 Codex 删除（删文件要你点头） | 文件已删除，令牌只留在本机凭据管理器 | 2026-09-29 恢复推送写权限时新建 |
+| 12 | ~~桌面上那把新令牌的临时文件~~ | **已完成（2026-09-29）**：产品负责人自己删掉了 `C:\Users\90402\Desktop\github-token.txt`；令牌只留在本机凭据管理器，2026-09-29 推送 `main`（`7c3e913..0365229`）成功，写权限确认正常 | 文件已删除 | 2026-09-29 恢复推送写权限时新建 |
+
+## 2026-09-29 分支合并与上线（记录）
+
+三分支（`feat/leads-3`、`feat/leads-4`、`feat/leads-4-practice`）已于 2026-09-29 全部合入
+`main` 并推送（`7c3e913..0365229`）。**同一次推送触发两条独立链路，结果不一样**：
+Supabase 自动迁移成功（练习题库 `practice_questions` 127 题、`practice_attempts` 已在云端）；
+Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后一次成功是 2026-09-24 的 `3960cec`，
+所以**线上网站仍是 9-24 的老版本，v2.21～v2.25 与练习题库都还没上线**。失败原因需在 Vercel
+控制台看构建日志（本机无 Vercel 凭据）。完整经过与订正说明见
+[合并与线上验证计划](merge-verify-plan-2026-09-28.md) 第七节；生产库写入记录见
+[数据库迁移](operations/database-migrations.md)「事实记录」；验收口径见
+[练习题库 M0 验收](acceptance/practice-m0.md)。本文件不重复叙述。
+
+**已定位线上部署失败的原因（2026-09-29，读 Vercel 接口拿到）**：失败不是代码问题，Vercel 给的
+`errorCode = BUILD_FAILED`、`errorMessage = Resource provisioning failed`——卡在「Supabase 集成
+给这次部署供给资源」这一步。事实核对：
+
+- Supabase 集成（`icfg_aUJ00Js13vXquEQfG9lkhMCj`）装在本账号上，但 `projects: []`，**没连到任何项目**。
+- 项目里还留着 **16 条由该集成供应的变量**（`contentHint.type = integration-store-secret`），
+  名字全是 2026-09-20 那次前缀事故留下的错误形态（`SUPABASE_SERVICE_ROLE_KEY_SUPABASE_URL` 等），
+  应用一条都读不到。
+- 应用真正读的 8 条变量（`NEXT_PUBLIC_DATA_MODE`、`NEXT_PUBLIC_SUPABASE_URL`、
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`、三条 `AI_*`）
+  **都是手动创建的**，没有集成标记，卸载集成不会带走它们。
+- **真正的病根（2026-09-29 产品负责人在 Vercel 集成页实测确认）**：这个集成在 2026-09-20 自己
+  建了一个 Supabase 项目 **`supabase-yellow-pocket`（ID `ycaogldltapzoscpnjo`）**，而该项目
+  **已被暂停（Suspended / Project has been paused）**。Vercel 每次部署都去找它做资源供给，
+  要不到就整条部署失败。时间线完全吻合：9-20 建项目 → 免费版闲置约一周被自动暂停 → 9-28 起
+  部署全挂（9-24/9-25 那两次成功是在暂停之前）。
+- **这个项目与应用无关**：应用真正用的是 `snxdoiddnyvuokibbmfv`（127 道练习题的库）。
+  `supabase-yellow-pocket` 是集成的副产物，应用一条数据都没往里写。
+
+**处置与结果（2026-09-29 已完成）**：产品负责人移除该集成与项目之间的连接后——
+
+- 那 16 条畸形变量全部消失；环境变量只剩应用真正用的 8 条（`NEXT_PUBLIC_DATA_MODE`、
+  `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、
+  `CRON_SECRET`、三条 `AI_*`），且 `updatedAt` 全是原值，**没有任何一条被改写**。
+- 部署恢复：`dpl_7ZpDSaq7RDwAoTtWPTM6aNwBkx3e` 状态 READY，指向提交 `7653805`，
+  已挂在生产域名 `ai-prompt-manager-liyunqi.vercel.app`；`GET /api/mcp-setup` 返回 401
+  可证线上跑的是新版。
+- 集成本身仍装在账号上，但已不连任何项目（空转状态），不影响部署。是否彻底卸载由产品负责人定，
+  不急。
+
+**只剩下要你做的**：登录线上站点手验练习题库——进 `/practice` 看 127 题分组、答一题确认写入
+本人记录、换第二个账号确认看不到对方记录（RLS 隔离）。这一项 agent 不代登录。
 
 ## 2026-09-25 线上数据层核对（记录）
 
