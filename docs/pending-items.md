@@ -47,18 +47,26 @@ Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后�
 - 应用真正读的 8 条变量（`NEXT_PUBLIC_DATA_MODE`、`NEXT_PUBLIC_SUPABASE_URL`、
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`、三条 `AI_*`）
   **都是手动创建的**，没有集成标记，卸载集成不会带走它们。
-- 集成配置与环境变量的最后修改时间是 2026-09-21 16:10，晚于 9-24 那次成功部署，所以
-  **坏点在这之后、Vercel 项目之外**（最可能是 Supabase 那一侧的 Vercel 连接被断/失效）。
+- **真正的病根（2026-09-29 产品负责人在 Vercel 集成页实测确认）**：这个集成在 2026-09-20 自己
+  建了一个 Supabase 项目 **`supabase-yellow-pocket`（ID `ycaogldltapzoscpnjo`）**，而该项目
+  **已被暂停（Suspended / Project has been paused）**。Vercel 每次部署都去找它做资源供给，
+  要不到就整条部署失败。时间线完全吻合：9-20 建项目 → 免费版闲置约一周被自动暂停 → 9-28 起
+  部署全挂（9-24/9-25 那两次成功是在暂停之前）。
+- **这个项目与应用无关**：应用真正用的是 `snxdoiddnyvuokibbmfv`（127 道练习题的库）。
+  `supabase-yellow-pocket` 是集成的副产物，应用一条数据都没往里写。
 
-**需要你做的**（二选一，都在 Vercel 界面）：
+**需要你做的**：把 Supabase 集成从账号上卸载（Vercel → Integrations → Supabase →
+Remove/Uninstall）。它会一并清掉那 16 条错误前缀的噪音变量，并去掉「每次部署都要去暂停项目
+那里供给资源」这一步。应用需要的 8 条变量是手动创建的（已核实），卸载不会带走。
 
-1. **推荐**：把 Supabase 集成从账号上卸载（Integrations → Supabase → Remove/Uninstall）。
-   它会连带清掉那 16 条错误前缀的噪音变量；应用需要的 8 条不受影响（已核实）。
-2. 若不想卸载：把 Supabase 集成重新连回本项目（Connect Project），或在 Supabase 控制台把
-   Vercel 集成重新授权。
+**不要走「Connect to Project」那条路**：那条会把项目连到 `supabase-yellow-pocket`（已暂停、
+且应用没在用），等于把应用指向一个死库。
 
-改完在 Vercel 的 Deployments 里对最近一条失败部署点 **Redeploy** 即可验证（不必再推代码）。
-前端上线后，再登录手验练习题库（进 `/practice`、答题、换账号看隔离）。
+**备选（只算止血，不推荐）**：去 Supabase 控制台把 `supabase-yellow-pocket` 恢复。它没用途、
+闲置一周还会再被暂停，几天后同样的失败会再来一次。
+
+卸载后由 Codex 触发重新部署并用接口核对（不必再推代码）。前端上线后，再登录手验练习题库
+（进 `/practice`、答题、换账号看隔离）。
 
 ## 2026-09-25 线上数据层核对（记录）
 
