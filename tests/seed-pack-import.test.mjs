@@ -63,10 +63,10 @@ test("种子包的包信息按 manifest 和 README 落地", () => {
   assert.equal(pack.metadata.packConfidence, "provisional");
   assert.equal(pack.status, "active");
   assert.match(pack.summary, /分析方法/);
-  assert.equal(members.length, 61);
+  assert.equal(members.length, 62);
   assert.equal(
     members.filter((member) => member.assetType === "rule").length,
-    46,
+    47,
   );
   assert.equal(
     members.filter((member) => member.assetType === "document").length,

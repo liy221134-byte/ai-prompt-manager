@@ -103,8 +103,10 @@
 - [参考清单](reference/prioritization-frameworks.md)：优先级框架对照（9 种）、界面检查清单（8 类，按影响排序）——方法级参考，不编译进 `AGENTS.md`
 - [产品方法提示词包（五条）](../prompt-packs/product-methods.md)：事前验尸、红队攻击承重假设、设计计划与复查、界面文案检查、需求改写成三种格式
 - [操作者训练包（试装）](../seed-packs/operator-training/README.md)：9 条「人怎么指挥 AI」的方法与清单，`npm run pack:operator` 生成可导入文件
-- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：51 条工程方法、规则、模板和案例（含 3 条案例），`0.12.0`（0.12.0 采入外部评审的 3 条整改、0.11.0 采入 4 条动手前的风险与视觉纪律、0.10.0 界面设计规则、0.9.0 多智能体协作、0.8.0 验证纪律、0.7.0 Postgres 规则，均来自外部来源采集），可作为文档包导入的样本
+- [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：52 条工程方法、规则、模板和案例（含 3 条案例），`0.12.0`（0.12.0 采入外部评审的 3 条整改、0.11.0 采入 4 条动手前的风险与视觉纪律、0.10.0 界面设计规则、0.9.0 多智能体协作、0.8.0 验证纪律、0.7.0 Postgres 规则，均来自外部来源采集），可作为文档包导入的样本
 - [交付就绪包（M0）](../seed-packs/delivery-readiness/README.md)：3 条（交付前环境适配体检、交付环境档案模板、客户环境部署手册模板），`0.1.0`，`npm run pack:delivery` 生成导入文件。换环境交付那条「配置解决不了」的缝，第一条真项目跑完前是**假设**
+- [外部来源采集台账](../seed-packs/external-sources/README.md)：来源清单、采集 SOP（提炼规则不照搬流程）与 S1～S8 的进度与处置结论
+- [WorkBuddy／CodeBuddy 上手手册](../seed-packs/external-sources/workbuddy-onboarding.md)：另一个工作台（命令行 `codebuddy`）怎么装、怎么接自己的 DeepSeek、怎么把 `AGENTS.md` 和资产包接进去
 
 ### 验收与测试
 
@@ -148,6 +150,7 @@
 - [v2.22.0 验收清单（技术上下文参与编译筛选）](acceptance/v2.22.0.md)
 - [v2.23.0 验收清单（本机 MCP 自动接入，只支持 Codex）](acceptance/v2.23.0.md)
 - [v2.24.0 验收清单（项目规模参与编译筛选）](acceptance/v2.24.0.md)
+- [v2.25.0 验收清单（文档与资产口径收口）](acceptance/v2.25.0.md)
 
 ### 云端部署
 
