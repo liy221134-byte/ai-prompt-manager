@@ -65,14 +65,70 @@ test("外部文档缺来源位置就违规", () => {
   assert.equal(violations[0].rule, "source");
 });
 
-test("假设级外部规则不得处于 active", () => {
+test("外部规则处于 active 但没有确认记录就违规", () => {
   const violations = evaluateAssetCompliance(ruleAsset({}, "active"));
   assert.equal(violations.length, 1);
   assert.equal(violations[0].rule, "no_auto_active");
 });
 
+test("外部规则升到 active 且写了确认记录（谁、何时、凭什么）就算合规", () => {
+  // M2 判据演进：不再要求 confidence 先变成 verified——
+  // provisional 的语义本就是「人工确认过、还没实战验证」，它就该允许 active。
+  const violations = evaluateAssetCompliance(
+    ruleAsset(
+      {
+        confidence: "provisional",
+        confirmation: {
+          confirmedBy: "本机使用者",
+          confirmedAt: "2026-09-29T10:00:00.000Z",
+          basis: "看过来源原文，与已采心法不重复",
+        },
+      },
+      "active",
+    ),
+  );
+  assert.deepEqual(violations, []);
+});
+
+test("确认记录不完整（缺时间）不算数，仍然违规", () => {
+  const violations = evaluateAssetCompliance(
+    ruleAsset(
+      { confirmation: { confirmedBy: "本机使用者", confirmedAt: "", basis: "看着行" } },
+      "active",
+    ),
+  );
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].rule, "no_auto_active");
+});
+
+test("文档资产的 active 不受第四约束管（文档没有发布语义）", () => {
+  // M0 那 9 个已入库文档就是 active 且没有确认记录，不该被扫成违规
+  assert.deepEqual(evaluateAssetCompliance(documentAsset()), []);
+  assert.deepEqual(
+    evaluateAssetCompliance(
+      documentAsset({ documentType: "采集记录", authority: false }),
+    ),
+    [],
+  );
+});
+
 test("合规的外部规则：候选状态 + 假设可信度 + 有来源", () => {
   assert.deepEqual(evaluateAssetCompliance(ruleAsset()), []);
+});
+
+test("provisional 是合法可信度，不该被当成违规（M1 判据的漏洞）", () => {
+  assert.deepEqual(
+    evaluateAssetCompliance(ruleAsset({ confidence: "provisional" })),
+    [],
+  );
+  assert.deepEqual(
+    evaluateAssetCompliance(ruleAsset({ confidence: "verified" })),
+    [],
+  );
+
+  const violations = evaluateAssetCompliance(ruleAsset({ confidence: "" }));
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].rule, "hypothesis");
 });
 
 test("外部规则缺来源摘录就违规", () => {

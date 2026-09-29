@@ -4,10 +4,21 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  buildAssetIndex,
+  compileStatusLabels,
   deriveCompileStatus,
   extractCanonicalIds,
+  filterByEcosystem,
   parseLedgerSection,
+  resolveLandingAssets,
+  summarizeEcosystems,
+  toCollectionRecordRows,
 } from "../src/lib/external-sources-ledger.ts";
+
+// M1 时这个文件的重点在「JSON 快照与 README 是否一致」；
+// M2 起台账进了产品（采集记录就是资产库里的文档），快照与生成脚本都退役了，
+// 所以这里改成测「记录解析 → 视图行 → 档位推导」这条链，README 只留解析测试
+// （迁移脚本还要用它读历史 23 条）。
 
 const readmePath = path.join(
   process.cwd(),
@@ -15,28 +26,79 @@ const readmePath = path.join(
   "external-sources",
   "README.md",
 );
-const snapshotPath = path.join(
-  process.cwd(),
-  "src",
-  "data",
-  "external-sources-ledger.json",
-);
-
 const markdown = readFileSync(readmePath, "utf8");
 const entries = parseLedgerSection(markdown);
-const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"));
 
-const LEDGER_FIELDS = [
-  "seq",
-  "source",
-  "type",
-  "status",
-  "sourceUrl",
-  "disposition",
-  "landing",
-  "verifiedAt",
-  "note",
-];
+function collectionRecord({
+  id,
+  title,
+  seq,
+  ecosystem,
+  status = "active",
+  landing = "",
+  disposition = "",
+  collectedAssetIds,
+  createdAt,
+  confirmation,
+}) {
+  return {
+    id,
+    projectId: "default",
+    assetType: "document",
+    title,
+    summary: "",
+    content: "",
+    status,
+    createdAt: createdAt ?? "2026-09-29T10:00:00.000Z",
+    updatedAt: "2026-09-29T10:00:00.000Z",
+    metadata: {
+      documentType: "采集记录",
+      role: "source",
+      authority: false,
+      sourceLocation: "seed-packs/external-sources/README.md",
+      collection: {
+        seq,
+        ecosystem,
+        disposition,
+        landing,
+        ...(collectedAssetIds ? { collectedAssetIds } : {}),
+      },
+      ...(confirmation ? { confirmation } : {}),
+    },
+  };
+}
+
+function ruleAsset(id, status) {
+  return {
+    id,
+    projectId: "default",
+    assetType: "rule",
+    title: `规则 ${id}`,
+    summary: "",
+    content: "",
+    status,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    metadata: { ruleType: "must", scope: "global" },
+  };
+}
+
+function documentAsset(id, title) {
+  return {
+    id,
+    projectId: "default",
+    assetType: "document",
+    title,
+    summary: "",
+    content: "",
+    status: "active",
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    metadata: { documentType: "团队方法", role: "source", authority: false },
+  };
+}
+
+// —— README 解析（迁移脚本的数据来源）——
 
 test("能解析出第六节采集台账的全部来源", () => {
   assert.equal(entries.length, 23);
@@ -49,7 +111,6 @@ test("能解析出第六节采集台账的全部来源", () => {
 });
 
 test("解析时清洗 Markdown 标记：加粗与行内代码不留在纯文本里", () => {
-  // 第 14 行（S4）在 README 里写作 **S4 Supabase 官方 Skills**（…），落点带反引号
   const s4 = entries[13];
   assert.equal(s4.source.startsWith("**"), false);
   assert.equal(s4.source.includes("`"), false);
@@ -74,95 +135,204 @@ test("能从「落到哪条资产」里抽出规范 ID", () => {
   assert.deepEqual(extractCanonicalIds("AGENTS.md「界面改动的验证」"), []);
 });
 
-test("是否编译的派生：空落点、知识库、已编译候选、未编译、未导入、已进模板", () => {
-  const index = {
-    "MTH-TEAM-OKR-001": {
-      libraryAssetId: "document-team-method-okr-md",
-      canonicalId: "MTH-TEAM-OKR-001",
-      title: "OKR：目标与关键结果",
+// —— 记录解析与派生（M2 视图的数据来源）——
+
+test("只把「采集记录」文档挑成视图行，别的资产不进台账", () => {
+  const rows = toCollectionRecordRows([
+    collectionRecord({ id: "c1", title: "来源一", seq: 1, ecosystem: "开源社区" }),
+    documentAsset("document-team-method-okr-md", "OKR：目标与关键结果"),
+    ruleAsset("rule-demo", "candidate"),
+    collectionRecord({ id: "c2", title: "来源二", seq: 2, ecosystem: "腾讯" }),
+  ]);
+
+  assert.equal(rows.length, 2);
+  assert.deepEqual(
+    rows.map((row) => row.assetId),
+    ["c1", "c2"],
+  );
+  assert.equal(rows[0].source, "来源一");
+  assert.equal(rows[0].ecosystem, "开源社区");
+  // 行号是给界面看的连续序号，不直接抄台账里的 seq
+  assert.deepEqual(
+    rows.map((row) => row.seq),
+    [1, 2],
+  );
+});
+
+test("行按登记序号排；没有序号的排在后面", () => {
+  const rows = toCollectionRecordRows([
+    collectionRecord({
+      id: "c-no-seq",
+      title: "手工建的",
+      ecosystem: "其他",
+      createdAt: "2026-09-29T09:00:00.000Z",
+    }),
+    collectionRecord({ id: "c2", title: "第二条", seq: 2, ecosystem: "阿里" }),
+    collectionRecord({ id: "c1", title: "第一条", seq: 1, ecosystem: "腾讯" }),
+  ]);
+
+  assert.deepEqual(
+    rows.map((row) => row.assetId),
+    ["c1", "c2", "c-no-seq"],
+  );
+});
+
+test("缺字段的记录不崩：空值显示成「—」，生态缺省归到其他", () => {
+  const rows = toCollectionRecordRows([
+    {
+      id: "c-broken",
+      projectId: "default",
       assetType: "document",
+      title: "半截记录",
+      summary: "",
+      content: "",
       status: "active",
-      role: "source",
-      authority: false,
+      createdAt: "2026-09-29T10:00:00.000Z",
+      updatedAt: "2026-09-29T10:00:00.000Z",
+      metadata: { documentType: "采集记录", role: "source", authority: false },
     },
-    "RULE-LIVE-001": {
-      libraryAssetId: "rule-live",
-      canonicalId: "RULE-LIVE-001",
-      title: "某条已发布规则",
-      assetType: "rule",
-      status: "active",
-    },
-    "RULE-DRAFT-001": {
-      libraryAssetId: "rule-draft",
-      canonicalId: "RULE-DRAFT-001",
-      title: "某条候选规则",
-      assetType: "rule",
-      status: "candidate",
-    },
-  };
+  ]);
 
-  assert.equal(deriveCompileStatus("—", index).level, "empty");
-  assert.equal(deriveCompileStatus("", index).level, "empty");
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].ecosystem, "其他");
+  assert.equal(rows[0].type, "");
+  assert.equal(rows[0].confirmed, null);
+});
 
-  const knowledge = deriveCompileStatus("`MTH-TEAM-OKR-001`", index);
+test("确认记录会跟着记录一起读出来", () => {
+  const rows = toCollectionRecordRows([
+    collectionRecord({
+      id: "c1",
+      title: "来源一",
+      seq: 1,
+      ecosystem: "腾讯",
+      confirmation: {
+        confirmedBy: "本机使用者",
+        confirmedAt: "2026-09-29T12:00:00.000Z",
+        basis: "看过原文",
+      },
+    }),
+  ]);
+
+  assert.equal(rows[0].confirmed?.confirmedBy, "本机使用者");
+});
+
+test("是否编译的派生：空落点、知识库、已进编译候选、未编译、未导入、已进模板", () => {
+  const assets = [
+    documentAsset("document-team-method-okr-md", "OKR：目标与关键结果"),
+    ruleAsset("rule-live", "active"),
+    ruleAsset("rule-draft", "candidate"),
+  ];
+  const index = buildAssetIndex(assets);
+
+  assert.equal(deriveCompileStatus({ landing: "—" }, index).level, "empty");
+  assert.equal(deriveCompileStatus({ landing: "" }, index).level, "empty");
+
+  const knowledge = deriveCompileStatus(
+    { landing: "MTH-TEAM-OKR-001", collectedAssetIds: ["document-team-method-okr-md"] },
+    index,
+  );
   assert.equal(knowledge.level, "knowledge");
-  assert.equal(knowledge.matchedAssets[0].libraryAssetId, "document-team-method-okr-md");
+  assert.equal(
+    knowledge.matchedAssets[0].libraryAssetId,
+    "document-team-method-okr-md",
+  );
 
-  assert.equal(deriveCompileStatus("`RULE-LIVE-001`", index).level, "compiled_candidate");
-  assert.equal(deriveCompileStatus("`RULE-DRAFT-001`", index).level, "not_compiled");
+  assert.equal(
+    deriveCompileStatus(
+      { landing: "RULE-LIVE-001", collectedAssetIds: ["rule-live"] },
+      index,
+    ).level,
+    "compiled_candidate",
+  );
+  assert.equal(
+    deriveCompileStatus(
+      { landing: "RULE-DRAFT-001", collectedAssetIds: ["rule-draft"] },
+      index,
+    ).level,
+    "not_compiled",
+  );
 
   // 写了 ID 但库内没有（例如种子包里的规则不在本机库）
-  assert.equal(deriveCompileStatus("`PLAYBOOK-DEBUG-001`", index).level, "not_imported");
+  assert.equal(
+    deriveCompileStatus({ landing: "PLAYBOOK-DEBUG-001" }, index).level,
+    "not_imported",
+  );
 
   // 落点是文件路径或 AGENTS.md 章节，不是库内资产
   assert.equal(
-    deriveCompileStatus("templates/new-project/AGENTS.md", index).level,
+    deriveCompileStatus({ landing: "templates/new-project/AGENTS.md" }, index)
+      .level,
     "template",
   );
   assert.equal(
-    deriveCompileStatus("AGENTS.md「界面改动的验证」", index).level,
+    deriveCompileStatus({ landing: "AGENTS.md「界面改动的验证」" }, index).level,
     "template",
   );
 });
 
-// 这条就是「纳入 check:fast」的落点：README 改了但没重跑生成脚本，这里会红。
-test("JSON 快照与 README 台账逐字段一致（README 改了要重跑生成脚本）", () => {
-  assert.equal(snapshot.count, entries.length);
-  assert.equal(snapshot.sources.length, entries.length);
-
-  entries.forEach((entry, position) => {
-    const record = snapshot.sources[position];
-    for (const field of LEDGER_FIELDS) {
-      assert.equal(
-        record[field],
-        entry[field],
-        `第 ${entry.seq} 条来源的 ${field} 与 README 不一致，请重跑 npm run generate:leads3-ledger`,
-      );
-    }
-    assert.ok(record.compileStatus, `第 ${entry.seq} 条缺少 compileStatus`);
-  });
-});
-
-// 台账「落到哪条资产」里登记的规范 ID，是落点深链的数据前提。
-// 这条挡住「把 M0 落库文档的落点删掉/改错」——删了它，视图里的「打开资产」按钮就没了。
-test("S7 行的落点登记了 M0 落库的 9 个文档资产规范 ID", () => {
-  const s7 = entries.find((entry) => entry.source.includes("S7 产品经理方法技能"));
-  assert.ok(s7, "台账里找不到 S7 行");
-
-  const ids = extractCanonicalIds(s7.landing);
-  const expected = [
-    "REF-PRIORITIZATION-001",
-    "REF-UI-CHECKLIST-001",
-    "MTH-TEAM-OKR-001",
-    "MTH-TEAM-MEETING-001",
-    "MTH-TEAM-RELEASENOTE-001",
-    "MTH-TEAM-RETRO-001",
-    "MTH-TEAM-ROADMAP-001",
-    "MTH-TEAM-SCHEDULE-001",
-    "MTH-TEAM-STAKEHOLDER-001",
+test("落点里有规则也有文档时，按规则判档（规则才进 AGENTS.md）", () => {
+  const assets = [
+    documentAsset("document-reference-x", "参考资料"),
+    ruleAsset("rule-live", "active"),
   ];
 
-  for (const id of expected) {
-    assert.ok(ids.includes(id), `S7 行落点缺少 ${id}`);
-  }
+  const status = deriveCompileStatus(
+    { landing: "两条", collectedAssetIds: ["document-reference-x", "rule-live"] },
+    buildAssetIndex(assets),
+  );
+
+  assert.equal(status.level, "compiled_candidate");
+  assert.equal(status.matchedAssets.length, 2);
+});
+
+test("「已进编译候选」的措辞说清了还没编译（M1 写的「已编译候选」与事实不符）", () => {
+  assert.equal(
+    compileStatusLabels.compiled_candidate,
+    "已进编译候选（待确认发布）",
+  );
+});
+
+test("按生态筛选：选中某档只留该档，传空串返全部", () => {
+  const rows = toCollectionRecordRows([
+    collectionRecord({ id: "c1", title: "一", seq: 1, ecosystem: "腾讯" }),
+    collectionRecord({ id: "c2", title: "二", seq: 2, ecosystem: "开源社区" }),
+    collectionRecord({ id: "c3", title: "三", seq: 3, ecosystem: "腾讯" }),
+  ]);
+
+  assert.equal(filterByEcosystem(rows, "腾讯").length, 2);
+  assert.equal(filterByEcosystem(rows, "开源社区").length, 1);
+  assert.equal(filterByEcosystem(rows, "").length, 3);
+  assert.equal(filterByEcosystem(rows, "字节").length, 0);
+});
+
+test("按生态统计条数，多的排前面", () => {
+  const rows = toCollectionRecordRows([
+    collectionRecord({ id: "c1", title: "一", seq: 1, ecosystem: "腾讯" }),
+    collectionRecord({ id: "c2", title: "二", seq: 2, ecosystem: "开源社区" }),
+    collectionRecord({ id: "c3", title: "三", seq: 3, ecosystem: "腾讯" }),
+  ]);
+
+  assert.deepEqual(summarizeEcosystems(rows), [
+    { ecosystem: "腾讯", count: 2 },
+    { ecosystem: "开源社区", count: 1 },
+  ]);
+});
+
+test("落点写资产标题或 ID 时能认出库内资产，认不出的不硬猜", () => {
+  const assets = [
+    ruleAsset("rule-evidence-scope", "active"),
+    documentAsset("document-team-method-okr-md", "OKR：目标与关键结果"),
+    ruleAsset("rule-pg", "candidate"),
+  ];
+
+  assert.deepEqual(resolveLandingAssets("rule-evidence-scope 等 3 条", assets), [
+    "rule-evidence-scope",
+  ]);
+  assert.deepEqual(
+    resolveLandingAssets("OKR：目标与关键结果", assets),
+    ["document-team-method-okr-md"],
+  );
+  assert.deepEqual(resolveLandingAssets("templates/new-project/AGENTS.md", assets), []);
+  assert.deepEqual(resolveLandingAssets("", assets), []);
 });
