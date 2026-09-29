@@ -4167,6 +4167,8 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       {assetEditorState && (
         <AssetEditorDrawer
           asset={editingAsset}
+          // 确认记录要署名：云端用登录邮箱，本机模式用默认署名
+          currentUser={userEmail ?? "本机使用者"}
           assetType={
             assetEditorState.mode === "create"
               ? assetEditorState.assetType

@@ -3,6 +3,8 @@ import {
   type AssetRelation,
   type AssetRelationType,
   type AssetStatus,
+  type CollectionRecordMetadata,
+  type ConfirmationRecord,
   type DocumentAssetData,
   type DocumentAssetMetadata,
   type DocumentRole,
@@ -26,11 +28,14 @@ import {
   type RuleScope,
   type RuleStage,
   type RuleType,
+  collectionDocumentType,
   createInitialAssetVersionId,
   defaultDocumentType,
   normalizeDocumentMetadata,
   normalizeEvidenceMetadata,
   normalizeReleaseRecordMetadata,
+  readCollectionRecord,
+  readConfirmationRecord,
   readDocumentEvidenceMetadata,
   readDocumentReleaseMetadata,
   normalizeGraphNodeMetadata,
@@ -115,6 +120,8 @@ export type RuleAssetDraft = {
   // 这条规则为什么立、从原文哪句话来：导入的规则会带上，手写也可以补
   rationale: string;
   sourceExcerpt: string;
+  // 人工确认记录：升 active 时要写（谁、何时、凭什么），没确认过为 null
+  confirmation: ConfirmationRecord | null;
   relations: AssetRelationDraft[];
 };
 
@@ -133,6 +140,10 @@ export type DocumentAssetDraft = {
   updateTrigger: string;
   freshness: string;
   lastVerifiedAt: string;
+  // 文档类型是「采集记录」时用：外部来源的结构化采集字段
+  collection: CollectionRecordMetadata;
+  // 人工确认记录：采集记录的处置结论经谁确认过，没确认过为 null
+  confirmation: ConfirmationRecord | null;
   // 文档类型是「验收记录」时用：结论与提交版本（覆盖哪些需求看关系）
   conclusion: EvidenceConclusion;
   commitRef: string;
@@ -335,6 +346,7 @@ export function createEmptyAssetDraft(
       verification: "",
       rationale: "",
       sourceExcerpt: "",
+      confirmation: null,
       relations: [],
     };
   }
@@ -426,6 +438,9 @@ export function createEmptyAssetDraft(
 // 所以这两个块的结构化字段也挂在文档草稿上，保存时按文档类型决定写不写。
 export function createEmptyDocumentDraft(options: {
   gates?: ReleaseGateItem[];
+  // 新建采集记录时预填：文档类型与采集字段（线索 3 M2）
+  documentType?: string;
+  collection?: CollectionRecordMetadata;
 } = {}): DocumentAssetDraft {
   return {
     assetType: "document",
@@ -433,7 +448,7 @@ export function createEmptyDocumentDraft(options: {
     summary: "",
     content: "",
     status: "active",
-    documentType: "PRD",
+    documentType: options.documentType ?? "PRD",
     role: "",
     authority: false,
     module: "",
@@ -442,6 +457,8 @@ export function createEmptyDocumentDraft(options: {
     updateTrigger: "",
     freshness: "",
     lastVerifiedAt: "",
+    collection: { ...(options.collection ?? {}) },
+    confirmation: null,
     // 结论默认待确认：改成「通过」由人在界面上操作
     conclusion: "pending",
     commitRef: "",
@@ -575,6 +592,8 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
       verification: metadata.verification,
       rationale: metadata.rationale,
       sourceExcerpt: metadata.sourceExcerpt,
+      // 确认记录不在 normalizeRuleMetadata 里（它是 M2 新加的），直接读原元数据
+      confirmation: readConfirmationRecord(asset.metadata),
       relations: relationsToDraft(readAssetRelations(asset.metadata)),
     };
   }
@@ -598,6 +617,8 @@ export function assetToDraft(asset: EditableAssetData): AssetDraft {
     updateTrigger: metadata.updateTrigger,
     freshness: metadata.freshness,
     lastVerifiedAt: metadata.lastVerifiedAt,
+    collection: readCollectionRecord(asset) ?? {},
+    confirmation: readConfirmationRecord(asset.metadata),
     conclusion: evidence?.conclusion ?? "pending",
     commitRef: evidence?.commitRef ?? "",
     version: release?.version ?? "",
@@ -727,6 +748,33 @@ function keepDocumentMetadata(metadata: DocumentAssetMetadata | null) {
   return metadata?.pack ? { pack: metadata.pack } : {};
 }
 
+// 采集字段的空值不写进元数据：留白就是「还没填」，写空串会让视图分不清
+// 「没登记」和「登记了但内容是空的」。
+function normalizeCollectionDraft(
+  collection: CollectionRecordMetadata,
+): CollectionRecordMetadata {
+  const cleaned: CollectionRecordMetadata = {};
+  const text = (value?: string) => (value ?? "").trim();
+
+  if (text(collection.ecosystem)) cleaned.ecosystem = text(collection.ecosystem);
+  if (text(collection.sourceType))
+    cleaned.sourceType = text(collection.sourceType);
+  if (text(collection.sourceUrl)) cleaned.sourceUrl = text(collection.sourceUrl);
+  if (text(collection.disposition))
+    cleaned.disposition = text(collection.disposition);
+  if (text(collection.landing)) cleaned.landing = text(collection.landing);
+  if (collection.collectedAssetIds?.length) {
+    cleaned.collectedAssetIds = collection.collectedAssetIds.filter((id) =>
+      id.trim(),
+    );
+  }
+  if (text(collection.verifiedAt))
+    cleaned.verifiedAt = text(collection.verifiedAt);
+  if (text(collection.note)) cleaned.note = text(collection.note);
+
+  return cleaned;
+}
+
 function buildAsset(
   draft: AssetDraft,
   base: {
@@ -786,6 +834,8 @@ function buildAsset(
       ...(draft.sourceExcerpt.trim()
         ? { sourceExcerpt: draft.sourceExcerpt.trim() }
         : {}),
+      // 确认记录一旦写下就随保存带回来：编辑器改不到它，丢了就等于把人工把关的痕迹抹掉
+      ...(draft.confirmation ? { confirmation: draft.confirmation } : {}),
       ...(draft.relations.length
         ? { relations: draftRelationsToMetadata(draft.relations) }
         : {}),
@@ -921,6 +971,12 @@ function buildAsset(
     updateTrigger: draft.updateTrigger.trim(),
     freshness: draft.freshness.trim(),
     lastVerifiedAt: draft.lastVerifiedAt.trim(),
+    // 采集字段只在「采集记录」这类文档上写：换了文档类型就自然丢掉，
+    // 与验收／发布两个块的处置口径一致
+    ...(documentType === collectionDocumentType
+      ? { collection: normalizeCollectionDraft(draft.collection) }
+      : {}),
+    ...(draft.confirmation ? { confirmation: draft.confirmation } : {}),
     ...(documentType === "验收记录"
       ? {
           evidence: {

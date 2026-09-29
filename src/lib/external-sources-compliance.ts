@@ -1,4 +1,4 @@
-// 线索 3 M1：外部来源资产的采集合规检查（SOP 四硬约束）。
+// 线索 3：外部来源资产的采集合规检查（SOP 四硬约束）。
 //
 // 只读校验，不改任何数据；扫本机库里「外部来源资产」，逐条检查有没有守住：
 //   1. 默认候选（未经确认不进入可用状态）
@@ -15,11 +15,21 @@
 // 所以「四约束 → 判据」按类型映射：
 //   | 约束            | 文档类判据                  | 规则类判据                        |
 //   | 默认候选        | authority === false（未采信）| status 不为 active（无确认记录）  |
-//   | 初始假设        | 不适用（并入上一条）        | confidence === "hypothesis"       |
+//   | 初始假设        | 不适用（并入上一条）        | confidence 取值合法且不为空       |
 //   | 必须带来源      | sourceLocation 非空         | sourceExcerpt 或 rationale 非空   |
-//   | 不自动升 active | 不适用（文档无 active 语义）| 假设级规则不得 active             |
+//   | 不自动升 active | 不适用（文档无 active 语义）| active 必须有确认记录             |
+//
+// 第四约束在 M2 演进过：M1 判的是「active 且 confidence 不是 verified」，
+// 那等于要求先有实战验证才能升活跃——把「人工把关」和「真实项目里用过」压成了一件事。
+// 按 SOP 原文，provisional 的语义恰恰是「人工确认过、还没实战验证」，它就该允许 active。
+// 现在的判据是「active 且没有确认记录」，确认记录由界面上的确认动作写入（谁、何时、凭什么）。
 
-import type { AssetData } from "../data/assets.ts";
+import {
+  readConfirmationRecord,
+  ruleConfidences,
+  type AssetData,
+  type RuleConfidence,
+} from "../data/assets.ts";
 
 export const complianceRuleKeys = [
   "candidate",
@@ -111,17 +121,23 @@ export function evaluateAssetCompliance(asset: AssetData): ComplianceViolation[]
   if (asset.assetType === "rule") {
     const confidence = readText(metadata.confidence);
 
-    if (confidence !== "hypothesis" && confidence !== "verified") {
+    // 三档可信度都是合法取值：hypothesis 是刚采进来的，provisional 是人工确认过、
+    // 还没实战验证的，verified 是验证过的。M1 的判据只放行 hypothesis 与 verified，
+    // 把 provisional 误判成违规（它恰恰是「进编译候选」时的典型状态），M2 一并修正。
+    if (!ruleConfidences.includes(confidence as RuleConfidence)) {
       report(
         "hypothesis",
-        `外部规则的初始可信度应为 hypothesis，当前 confidence=${confidence || "未设置"}`,
+        `外部规则的可信度应为 hypothesis／provisional／verified 之一，当前 confidence=${
+          confidence || "未设置"
+        }`,
       );
     }
 
-    if (asset.status === "active" && confidence !== "verified") {
+    if (asset.status === "active" && !readConfirmationRecord(asset.metadata)) {
       report(
         "no_auto_active",
-        `假设级外部规则不得处于 active（需人工确认升为 verified 后再说），当前 status=active`,
+        "这条外部规则处于 active（会进编译候选），但没有确认记录（谁、何时、凭什么）。" +
+          "在资产编辑器里升为活跃时要写确认依据。",
       );
     }
 

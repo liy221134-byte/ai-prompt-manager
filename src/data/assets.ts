@@ -154,6 +154,51 @@ export const documentRoles = [
 ] as const;
 export type DocumentRole = (typeof documentRoles)[number];
 
+// —— 采集记录（线索 3 M2）——
+//
+// 一条采集记录 = 一条 document 资产（documentType 取 collectionDocumentType）。
+// 选这个形态而不是新开一张表，是为了白拿资产体系已有的能力：增删改查、版本记录、
+// 备份与云同步、权限、落点深链。结构化字段都放在 metadata.collection 下。
+export const collectionDocumentType = "采集记录";
+
+// 生态／厂商维度：视图按它筛选「哪些生态还没碰」，所以这里必须收口成有限取值
+// （自由文本没法筛选）。「其他」兜住还没列进来的厂商与社区。
+export const collectionEcosystems = [
+  "开源社区",
+  "腾讯",
+  "阿里",
+  "字节",
+  "OpenAI",
+  "Anthropic",
+  "Google",
+  "微软",
+  "本机",
+  "其他",
+] as const;
+export type CollectionEcosystem = (typeof collectionEcosystems)[number];
+
+// 来源类型与处置结论只给表单做预设，不强制枚举——
+// 台账历史值存在 Skill/MCP、Skills、MCP、评审 + Skills 这类混合写法，
+// 强行归一会丢掉人写原话里的信息。
+export const collectionSourceTypePresets = [
+  "Skills",
+  "MCP",
+  "Skill/MCP",
+  "资讯流",
+  "评审",
+  "其他",
+] as const;
+
+export const collectionDispositionPresets = [
+  "已采",
+  "已采（部分）",
+  "已入库",
+  "已安装",
+  "进行中",
+  "暂缓",
+  "不采",
+] as const;
+
 export const assetVersionReasons = [
   "initial",
   "save",
@@ -228,7 +273,44 @@ export type RuleAssetMetadata = {
     packId?: string;
     packItemId?: string;
   };
+  // 人工确认记录：从候选升 active 时写入（谁、何时、凭什么）。
+  // 外部来源的规则靠它证明「这条是人工把过关的」，而不是自动升上来的。
+  confirmation?: ConfirmationRecord;
   relations?: AssetRelation[];
+};
+
+// 人工确认记录：外部来源资产进入可用状态时必填。
+// 记的是「谁、何时、凭什么」——因为外部来源默认不可信，升 active 必须有人负责。
+export type ConfirmationRecord = {
+  /** 确认人（设备/账号显示名） */
+  confirmedBy: string;
+  /** 确认时间（ISO 8601 字符串） */
+  confirmedAt: string;
+  /** 确认依据：凭什么认为它可以进候选（看过的内容、判断的理由） */
+  basis: string;
+};
+
+// 采集记录的结构化字段。人写的原话（处置结论、备注）原样保留，
+// 视图靠 ecosystem 筛选、靠 collectedAssetIds 直接跳到落点资产。
+export type CollectionRecordMetadata = {
+  /** 登记序号：搬历史台账时按原行序写入，视图照它排；手工新建的可以不填 */
+  seq?: number;
+  /** 生态／厂商，取值见 collectionEcosystems */
+  ecosystem?: string;
+  /** 来源类型：Skills／MCP／资讯流……（自由文本，预设见 collectionSourceTypePresets） */
+  sourceType?: string;
+  /** 来源链接（外部仓库、官方页；本机来源写「本机」） */
+  sourceUrl?: string;
+  /** 处置结论（自由文本，预设见 collectionDispositionPresets） */
+  disposition?: string;
+  /** 落到哪条资产：人读的原话（可能含规范 ID、文件路径或「—」） */
+  landing?: string;
+  /** 落点在库内的资产 ID：有它就能直接跳转，比按文本猜准 */
+  collectedAssetIds?: string[];
+  /** 核实日期 */
+  verifiedAt?: string;
+  /** 备注 */
+  note?: string;
 };
 
 export type DocumentAssetMetadata = {
@@ -241,6 +323,10 @@ export type DocumentAssetMetadata = {
   updateTrigger?: string;
   freshness?: string;
   lastVerifiedAt?: string;
+  // 采集记录专有字段（documentType 为「采集记录」时用）
+  collection?: CollectionRecordMetadata;
+  // 人工确认记录：这条采集记录的处置结论经谁确认过
+  confirmation?: ConfirmationRecord;
   // 验收记录文档：结论与提交版本；覆盖哪些需求看它指向的需求节点（关系）。
   // 正文写验收条件、步骤、结果，元数据只留能用来算覆盖口径的部分。
   evidence?: DocumentEvidenceMetadata;
@@ -689,6 +775,8 @@ function isRuleAssetMetadata(value: unknown): value is RuleAssetMetadata {
     isOptionalCompileDecision(value.compileDecision) &&
     isOptionalPackLink(value.pack) &&
     isOptionalStringList(value.techContext) &&
+    (value.confirmation === undefined ||
+      isConfirmationRecord(value.confirmation)) &&
     isOptionalRelations(value.relations)
   );
 }
@@ -876,6 +964,37 @@ function isReleaseRecordMetadata(
   );
 }
 
+function isConfirmationRecord(value: unknown): value is ConfirmationRecord {
+  return (
+    isRecord(value) &&
+    typeof value.confirmedBy === "string" &&
+    typeof value.confirmedAt === "string" &&
+    typeof value.basis === "string" &&
+    Boolean(value.confirmedBy.trim()) &&
+    Boolean(value.confirmedAt.trim())
+  );
+}
+
+// 采集记录的字段全部可选：一条记录允许先登记来源、后补落点，
+// 缺字段由界面显示「—」，不该因为没填全就拒绝写入。
+function isCollectionRecordMetadata(
+  value: unknown,
+): value is CollectionRecordMetadata {
+  return (
+    isRecord(value) &&
+    (value.seq === undefined ||
+      (typeof value.seq === "number" && Number.isFinite(value.seq))) &&
+    isOptionalString(value.ecosystem) &&
+    isOptionalString(value.sourceType) &&
+    isOptionalString(value.sourceUrl) &&
+    isOptionalString(value.disposition) &&
+    isOptionalString(value.landing) &&
+    isOptionalStringList(value.collectedAssetIds) &&
+    isOptionalString(value.verifiedAt) &&
+    isOptionalString(value.note)
+  );
+}
+
 function isDocumentAssetMetadata(
   value: unknown,
 ): value is DocumentAssetMetadata {
@@ -891,6 +1010,10 @@ function isDocumentAssetMetadata(
     isOptionalString(value.updateTrigger) &&
     isOptionalString(value.freshness) &&
     isOptionalString(value.lastVerifiedAt) &&
+    (value.collection === undefined ||
+      isCollectionRecordMetadata(value.collection)) &&
+    (value.confirmation === undefined ||
+      isConfirmationRecord(value.confirmation)) &&
     (value.evidence === undefined || isDocumentEvidence(value.evidence)) &&
     (value.release === undefined || isDocumentRelease(value.release)) &&
     isOptionalPackLink(value.pack) &&
@@ -1163,6 +1286,47 @@ export function createAssetVersion(
 
 // 文档类型的默认值：导入时先按参考资料归类，用户可以在编辑器里改
 export const defaultDocumentType = "参考资料";
+
+// 读一条资产的人工确认记录。返回 null 表示「没确认过」——
+// 合规第四约束（active 必须有确认记录）判的就是这个 null。
+export function readConfirmationRecord(
+  metadata: unknown,
+): ConfirmationRecord | null {
+  if (!isRecord(metadata)) {
+    return null;
+  }
+
+  const value = metadata.confirmation;
+
+  return isConfirmationRecord(value)
+    ? {
+        confirmedBy: value.confirmedBy,
+        confirmedAt: value.confirmedAt,
+        basis: value.basis,
+      }
+    : null;
+}
+
+/** 这条资产是不是一条采集记录（document 资产 + documentType 为「采集记录」） */
+export function isCollectionRecordAsset(
+  asset: AssetData,
+): asset is DocumentAssetData {
+  return (
+    asset.assetType === "document" &&
+    asset.metadata.documentType === collectionDocumentType
+  );
+}
+
+/** 读采集记录的结构化字段；非采集记录返回 null，采集记录没填过则返回空对象 */
+export function readCollectionRecord(
+  asset: AssetData,
+): CollectionRecordMetadata | null {
+  if (!isCollectionRecordAsset(asset)) {
+    return null;
+  }
+
+  return asset.metadata.collection ? { ...asset.metadata.collection } : {};
+}
 
 // 编辑器里用的完整形态：扩展字段缺省时补成空值，界面不需要自己兜底
 export type RuleMetadataForm = {

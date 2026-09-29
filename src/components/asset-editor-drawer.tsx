@@ -16,8 +16,10 @@ import {
   projectScales,
   releaseRecordResults,
   assetRelationTypes,
+  collectionDocumentType,
   type AssetStatus,
   type AssetRelationType,
+  type ConfirmationRecord,
   type DocumentRole,
   type EvidenceConclusion,
   type ReleaseRecordResult,
@@ -97,6 +99,8 @@ type AssetEditorDrawerProps = {
   initialStack?: Array<{ name: string; version?: string }>;
   // 用模板新建文档时的预填：把模板正文带进编辑器
   initialContent?: string;
+  // 当前使用者（云端是登录邮箱，本机是「本机使用者」）：写确认记录时署名用
+  currentUser?: string;
   onClose: () => void;
   onSave: (draft: AssetDraft) => Promise<void>;
 };
@@ -382,6 +386,7 @@ export function AssetEditorDrawer({
   initialGates,
   initialStack,
   initialContent,
+  currentUser = "本机使用者",
   onClose,
   onSave,
 }: AssetEditorDrawerProps) {
@@ -406,6 +411,8 @@ export function AssetEditorDrawer({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // 确认依据：升为活跃时写进确认记录（谁、何时、凭什么），保存时用
+  const [confirmBasis, setConfirmBasis] = useState("");
 
   useModalBehavior(isSaving ? () => undefined : onClose, isSaving);
 
@@ -424,6 +431,16 @@ export function AssetEditorDrawer({
                 ? "发布记录"
                 : "技术档案";
   const isEditing = Boolean(asset);
+  // 哪些资产升到活跃需要留确认记录：规则（会进编译候选）与采集记录（外部来源的台账条目）。
+  // 普通文档、模板这些没有「可用/不可用」的信任语义，不折腾它们。
+  const requiresConfirmation =
+    draft.assetType === "rule" ||
+    (draft.assetType === "document" &&
+      draft.documentType.trim() === collectionDocumentType);
+  const currentConfirmation: ConfirmationRecord | null =
+    draft.assetType === "rule" || draft.assetType === "document"
+      ? draft.confirmation
+      : null;
 
   function updateDraft(patch: Record<string, unknown>) {
     setDraft((current) => ({ ...current, ...patch }) as AssetDraft);
@@ -542,11 +559,35 @@ export function AssetEditorDrawer({
       return;
     }
 
+    // 升为活跃 = 这条资产进可用状态（规则会进编译候选）。外部来源默认不可信，
+    // 所以这一步必须有人负责：没有确认记录时，把「谁、何时、凭什么」一起写进去。
+    let draftToSave: AssetDraft = draft;
+
+    if (requiresConfirmation && draft.status === "active" && !currentConfirmation) {
+      const basis = confirmBasis.trim();
+
+      if (!basis) {
+        setErrorMessage("升为活跃要写确认依据：这条凭什么进候选。");
+        return;
+      }
+
+      if (draft.assetType === "rule" || draft.assetType === "document") {
+        draftToSave = {
+          ...draft,
+          confirmation: {
+            confirmedBy: currentUser.trim() || "本机使用者",
+            confirmedAt: new Date().toISOString(),
+            basis,
+          },
+        };
+      }
+    }
+
     setIsSaving(true);
     setErrorMessage(null);
 
     try {
-      await onSave(draft);
+      await onSave(draftToSave);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : `保存${typeLabel}失败。`,
@@ -1091,6 +1132,48 @@ export function AssetEditorDrawer({
                   ))}
                 </select>
               </label>
+
+              {requiresConfirmation && draft.status === "active" && (
+                <div className="sm:col-span-2">
+                  {currentConfirmation ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+                      <p className="text-xs font-semibold text-emerald-800">
+                        已有人工确认记录
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-emerald-700">
+                        {currentConfirmation.confirmedBy} ·{" "}
+                        {currentConfirmation.confirmedAt.slice(0, 10)}
+                        {currentConfirmation.basis
+                          ? ` · ${currentConfirmation.basis}`
+                          : ""}
+                      </p>
+                      <button
+                        className="mt-2 text-xs font-semibold text-emerald-800 underline-offset-2 hover:underline"
+                        onClick={() => updateDraft({ confirmation: null })}
+                        type="button"
+                      >
+                        清除确认记录（下次保存要重新写依据）
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>
+                        确认依据（升为活跃必填）
+                      </span>
+                      <input
+                        className={inputClassName}
+                        onChange={(event) => setConfirmBasis(event.target.value)}
+                        placeholder="例如：看过来源原文，与已采心法不重复，可以进编译候选"
+                        value={confirmBasis}
+                      />
+                      <span className="text-xs leading-5 text-slate-500">
+                        外部来源默认不可信，「活跃」意味着它可以进编译候选。
+                        保存时会记下「{currentUser}」和当前时间，作为人工把关的凭据。
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
 
             <details className="mt-5 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">

@@ -1,6 +1,6 @@
 {
   "name": "ai-prompt-manager",
-  "version": "2.26.0",
+  "version": "2.27.0",
   "private": true,
   "engines": {
     "node": "24.x"
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "mcp": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/mcp-server.ts",
     "mcp:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/check-mcp.mjs",
-    "generate:leads3-ledger": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/generate-external-sources-ledger.ts",
+    "import:leads3-records": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/import-external-source-records.ts",
     "check:leads3-compliance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/check-external-sources-compliance.ts",
     "pack:seed": "node scripts/build-seed-pack.mjs",
     "pack:operator": "node scripts/build-seed-pack.mjs operator-training",

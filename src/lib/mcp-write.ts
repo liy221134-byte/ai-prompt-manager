@@ -230,6 +230,8 @@ function createDraft(input: McpAssetCreateInput): AssetDraft {
       verification: "",
       rationale: input.rationale ?? "",
       sourceExcerpt: input.sourceExcerpt ?? "",
+      // MCP 写入通道不代人做确认：确认记录只能由人在界面上写
+      confirmation: null,
       relations: [],
     };
   }

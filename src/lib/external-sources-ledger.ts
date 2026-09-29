@@ -1,40 +1,33 @@
-// 线索 3 M1：把「seed-packs/external-sources/README.md 第六节 采集进度台账」
-// 解析成结构化数据。
+// 线索 3：采集记录的解析与派生。
 //
-// 台账仍然是一手真相源，由人手工维护 Markdown；这里只做**只读解析**，不写回。
-// 构建期由 scripts/generate-external-sources-ledger.ts 调用，产物是
-// src/data/external-sources-ledger.json，前端只读这份快照渲染。
+// M1 时台账是 seed-packs/external-sources/README.md 里由人手工维护的 Markdown 表格，
+// 产品只读构建期生成的 JSON 快照，视图是「只读镜像」。
+// M2 起台账进库——**一条采集记录 = 一条 document 资产**（documentType「采集记录」），
+// 本地与云端读同一套资产通道（本地 /api/assets、云端 Supabase），视图不再是镜像而是活的台账。
 //
-// 上限（有意留的简化）：视图是 README 的镜像，README 改了要重跑生成脚本
-// （npm run generate:leads3-ledger）才会更新；tests/external-sources-ledger.test.mjs
-// 会比对 JSON 与 README，README 改了没重跑就会被测试挡下。
+// README 第六节没有废弃：它保留为「人读的作业指引 + 历史留档」，
+// 迁移脚本 scripts/import-external-source-records.ts 会读它把 23 条历史登记录入产品，
+// 之后不再要求它与产品同步。
+//
+// 这个文件只放纯函数：挑记录、算五档「是否编译」、按生态分组。
+// 读库/写库由调用方负责（页面走 PromptDataSource，迁移脚本走本机库）。
 
-export type LedgerEntry = {
-  /** 台账里的行序，从 1 开始（用于界面展示序号） */
-  seq: number;
-  source: string;
-  type: string;
-  status: string;
-  sourceUrl: string;
-  disposition: string;
-  landing: string;
-  verifiedAt: string;
-  note: string;
-};
+import {
+  isCollectionRecordAsset,
+  readCollectionRecord,
+  readConfirmationRecord,
+  type AssetData,
+  type CollectionRecordMetadata,
+  type ConfirmationRecord,
+} from "../data/assets.ts";
 
-/** 库内资产的最小画像：只读关联用，不含正文 */
+/** 库内资产的最小画像：只看跳转和档位判定要用的字段，不带正文 */
 export type LibraryAssetRef = {
   libraryAssetId: string;
-  canonicalId: string;
   title: string;
   assetType: string;
   status: string;
-  role?: string;
-  authority?: boolean;
 };
-
-/** 规范 ID（大写）→ 库内资产画像 */
-export type LibraryIndex = Record<string, LibraryAssetRef>;
 
 export const compileStatusLevels = [
   "empty",
@@ -54,26 +47,307 @@ export type CompileStatus = {
 
 export const compileStatusLabels: Record<CompileStatusLevel, string> = {
   empty: "—（未提炼资产）",
-  compiled_candidate: "已编译候选（待你确认）",
+  compiled_candidate: "已进编译候选（待确认发布）",
   not_compiled: "未编译／候选",
   knowledge: "知识库资产（不编译进 AGENTS.md）",
   template: "已进模板/规则层（非库内资产）",
   not_imported: "未导入库（仅台账记录）",
 };
 
-export type LedgerSnapshotEntry = LedgerEntry & {
+/** 视图里的一行采集记录：资产本体 + 结构化字段 + 派生档位 */
+export type CollectionRecordRow = {
+  /** 库内资产 ID：编辑、跳转、深链都用它 */
+  assetId: string;
+  /** 视图行号：按登记录入顺序排好后从 1 开始 */
+  seq: number;
+  /** 来源名（资产标题） */
+  source: string;
+  /** 来源类型：Skills／MCP／资讯流…… */
+  type: string;
+  /** 资产状态（draft／active……），与「处置结论」不是一回事 */
+  status: string;
+  /** 来源链接 */
+  sourceUrl: string;
+  /** 处置结论（人写的原话） */
+  disposition: string;
+  /** 落到哪条资产（人写的原话） */
+  landing: string;
+  /** 核实日期 */
+  verifiedAt: string;
+  /** 备注 */
+  note: string;
+  /** 生态／厂商，取值见 collectionEcosystems */
+  ecosystem: string;
+  /** 人工确认记录；没确认过为 null */
+  confirmed: ConfirmationRecord | null;
   compileStatus: CompileStatus;
+  updatedAt: string;
 };
 
-export type LedgerSnapshot = {
-  generatedAt: string;
-  sourceFile: string;
-  ledgerHeading: string;
-  /** 生成快照时本机库是否可读；不可读时落点匹配一律为空 */
-  libraryAvailable: boolean;
-  count: number;
-  sources: LedgerSnapshotEntry[];
-};
+function readText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** 兜底显示用：空值统一成「—」，避免视图里出现一片空白看不出有没有填 */
+export function orDash(value: string): string {
+  return value.trim() ? value : "—";
+}
+
+/**
+ * 把库内资产里的采集记录挑出来，按登记录入顺序排成视图行。
+ *
+ * 排序：先按 collection.seq（迁移与新建时写入的登记序号），
+ * 没有 seq 的（手工在资产库里建的）排在后面，按创建时间先后。
+ */
+export function toCollectionRecordRows(assets: AssetData[]): CollectionRecordRow[] {
+  const assetsById = buildAssetIndex(assets);
+
+  const records = assets.filter(isCollectionRecordAsset);
+
+  const ordered = [...records].sort((left, right) => {
+    const leftSeq = readSequence(left);
+    const rightSeq = readSequence(right);
+
+    if (leftSeq !== rightSeq) {
+      return leftSeq - rightSeq;
+    }
+
+    const leftTime = left.createdAt || "";
+    const rightTime = right.createdAt || "";
+
+    if (leftTime !== rightTime) {
+      return leftTime < rightTime ? -1 : 1;
+    }
+
+    return left.id < right.id ? -1 : 1;
+  });
+
+  return ordered.map((asset, index) => {
+    const collection = readCollectionRecord(asset) ?? {};
+
+    return {
+      assetId: asset.id,
+      seq: index + 1,
+      source: asset.title,
+      type: readText(collection.sourceType),
+      status: asset.status,
+      sourceUrl: readText(collection.sourceUrl),
+      disposition: readText(collection.disposition),
+      landing: readText(collection.landing),
+      verifiedAt: readText(collection.verifiedAt),
+      note: readText(collection.note),
+      ecosystem: readText(collection.ecosystem) || "其他",
+      confirmed: readConfirmationRecord(asset.metadata),
+      compileStatus: deriveCompileStatus(collection, assetsById),
+      updatedAt: asset.updatedAt,
+    };
+  });
+}
+
+// 登记序号：缺省时给一个很大的值，让它稳定排在已知序号之后
+function readSequence(asset: AssetData): number {
+  const seq = readCollectionRecord(asset)?.seq;
+  return typeof seq === "number" && Number.isFinite(seq) ? seq : 1_000_000;
+}
+
+/** 资产 ID → 资产：落点判定要按 ID 反查，才能知道它是不是规则、是不是 active */
+export function buildAssetIndex(assets: AssetData[]): Map<string, AssetData> {
+  return new Map(assets.map((asset) => [asset.id, asset]));
+}
+
+/**
+ * 「是否编译」判定（M2 口径）。
+ *
+ * 判据来源从 M1 的「落点文本里的规范 ID → 源文件 frontmatter」改成
+ * 「落点的库内资产 ID（collection.collectedAssetIds）」，因为产品端读不到仓库文件，
+ * 而采集记录里已经存好了资产 ID（迁移脚本与新建时写入）。
+ *
+ * 六档：
+ *  1. 没有落点 → empty
+ *  2. 落点里有规则资产且其中至少一条 active → compiled_candidate（已进编译候选）
+ *  3. 落点里有规则资产但都还没 active → not_compiled
+ *  4. 落点里只有文档资产 → knowledge（知识库资产，本就不进 AGENTS.md）
+ *  5. 落点写了但库内找不到 / 是文件路径 → not_imported / template
+ */
+export function deriveCompileStatus(
+  record: Pick<CollectionRecordMetadata, "landing" | "collectedAssetIds">,
+  assetsById: Map<string, AssetData>,
+): CompileStatus {
+  const landing = readText(record.landing);
+
+  if (isEmptyLanding(landing)) {
+    return {
+      level: "empty",
+      label: compileStatusLabels.empty,
+      matchedAssets: [],
+    };
+  }
+
+  const matchedAssets = (record.collectedAssetIds ?? [])
+    .map((assetId) => assetsById.get(assetId))
+    .filter((asset): asset is AssetData => Boolean(asset))
+    .map(toAssetRef);
+
+  if (matchedAssets.length > 0) {
+    const ruleRefs = matchedAssets.filter((ref) => ref.assetType === "rule");
+
+    if (ruleRefs.length > 0) {
+      const hasActive = ruleRefs.some((ref) => ref.status === "active");
+
+      return {
+        level: hasActive ? "compiled_candidate" : "not_compiled",
+        label: hasActive
+          ? compileStatusLabels.compiled_candidate
+          : compileStatusLabels.not_compiled,
+        matchedAssets,
+      };
+    }
+
+    return {
+      level: "knowledge",
+      label: compileStatusLabels.knowledge,
+      matchedAssets,
+    };
+  }
+
+  // 写了资产 ID 但库里一条都没匹配上（例如种子包里的规则不在本机库）
+  if (extractCanonicalIds(landing).length > 0) {
+    return {
+      level: "not_imported",
+      label: compileStatusLabels.not_imported,
+      matchedAssets: [],
+    };
+  }
+
+  // 落点是文件路径或 AGENTS.md 章节，不是库内资产
+  if (/\.md\b/.test(landing) || /AGENTS\.md/i.test(landing)) {
+    return {
+      level: "template",
+      label: compileStatusLabels.template,
+      matchedAssets: [],
+    };
+  }
+
+  return {
+    level: "not_imported",
+    label: compileStatusLabels.not_imported,
+    matchedAssets: [],
+  };
+}
+
+function toAssetRef(asset: AssetData): LibraryAssetRef {
+  return {
+    libraryAssetId: asset.id,
+    title: asset.title,
+    assetType: asset.assetType,
+    status: asset.status,
+  };
+}
+
+function isEmptyLanding(text: string) {
+  return text === "" || text === "—" || text === "-";
+}
+
+/**
+ * 按生态筛出记录。「全部」档传空字符串时原样返回，避免上层分叉。
+ */
+export function filterByEcosystem(
+  rows: CollectionRecordRow[],
+  ecosystem: string,
+): CollectionRecordRow[] {
+  const target = ecosystem.trim();
+
+  return target ? rows.filter((row) => row.ecosystem === target) : rows;
+}
+
+/** 按生态统计条数，供筛选栏显示「这个生态采了多少条」 */
+export function summarizeEcosystems(
+  rows: CollectionRecordRow[],
+): Array<{ ecosystem: string; count: number }> {
+  const counts = new Map<string, number>();
+
+  for (const row of rows) {
+    counts.set(row.ecosystem, (counts.get(row.ecosystem) ?? 0) + 1);
+  }
+
+  return Array.from(counts, ([ecosystem, count]) => ({ ecosystem, count })).sort(
+    (left, right) => right.count - left.count,
+  );
+}
+
+/**
+ * 采集记录的正文：人读得懂的说明。
+ * 台账里那几列本来就是给人看的，搬进产品后仍然以「一眼能读完」为准，
+ * 不放机器用的重复字段（结构化部分在 metadata.collection 里）。
+ */
+export function buildCollectionRecordContent(input: {
+  source: string;
+  ecosystem: string;
+  sourceType: string;
+  sourceUrl: string;
+  disposition: string;
+  landing: string;
+  verifiedAt: string;
+  note: string;
+  /** 台账原件里的「状态」列：搬历史数据时带上，新建的没有 */
+  ledgerStatus?: string;
+}): string {
+  const line = (label: string, value: string) =>
+    `- ${label}：${value.trim() || "—"}`;
+
+  return [
+    `# ${input.source}`,
+    "",
+    "外部来源采集记录（线索 3）。",
+    "",
+    line("生态", input.ecosystem),
+    line("类型", input.sourceType),
+    line("来源链接", input.sourceUrl),
+    line("处置结论", input.disposition),
+    ...(input.ledgerStatus ? [line("台账状态", input.ledgerStatus)] : []),
+    line("落到哪条资产", input.landing),
+    line("核实日期", input.verifiedAt),
+    "",
+    "## 备注",
+    input.note.trim() || "—",
+  ].join("\n");
+}
+
+/**
+ * 从落点文本里认出库内资产，产出可以写进 collectedAssetIds 的资产 ID。
+ *
+ * 两种认法：文本里出现资产 ID，或出现资产标题（标题太短的不认，避免「OKR」这种
+ * 两三个字的标题到处误伤）。认不出来的不硬猜——视图会退回按文本判档。
+ */
+export function resolveLandingAssets(
+  landing: string,
+  assets: AssetData[],
+): string[] {
+  const text = landing.trim();
+
+  if (!text) {
+    return [];
+  }
+
+  const matched = new Set<string>();
+
+  for (const asset of assets) {
+    if (text.includes(asset.id)) {
+      matched.add(asset.id);
+      continue;
+    }
+
+    const title = asset.title.trim();
+
+    if (title.length >= 4 && text.includes(title)) {
+      matched.add(asset.id);
+    }
+  }
+
+  return Array.from(matched);
+}
+
+// —— 下面两个函数留给迁移脚本：把 README 第六节的老台账读进产品 ——
 
 const LEDGER_HEADING = "## 六、采集进度台账";
 const LEDGER_HEADING_PATTERN = /^##\s*六、采集进度台账\s*$/;
@@ -81,6 +355,20 @@ const LEDGER_HEADING_PATTERN = /^##\s*六、采集进度台账\s*$/;
 export function readLedgerHeading() {
   return LEDGER_HEADING;
 }
+
+/** 台账的一行原始文本（迁移脚本把它转成采集记录的字段） */
+export type LedgerEntry = {
+  /** 台账里的行序，从 1 开始 */
+  seq: number;
+  source: string;
+  type: string;
+  status: string;
+  sourceUrl: string;
+  disposition: string;
+  landing: string;
+  verifiedAt: string;
+  note: string;
+};
 
 /** 把一行表格拆成单元格；首尾的竖线和两侧空白都去掉 */
 function splitRow(line: string): string[] {
@@ -102,12 +390,8 @@ function cleanCell(value: string): string {
     .trim();
 }
 
-function isSeparatorRow(cells: string[]) {
-  return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
-}
-
 /**
- * 解析第六节「采集进度台账」的表格。
+ * 解析第六节「采集进度台账」的表格。迁移脚本用它读历史 23 条；
  * 找不到该节或表格不完整时返回空数组，由调用方决定怎么提示。
  */
 export function parseLedgerSection(markdown: string): LedgerEntry[] {
@@ -156,87 +440,10 @@ export function parseLedgerSection(markdown: string): LedgerEntry[] {
 
 /**
  * 从「落到哪条资产」文本里抽出规范 ID（如 MTH-TEAM-OKR-001、RULE-PG-FK-INDEX-001）。
- * 形态：大写字母开头、含至少一个连字符分段。用于和库内资产做只读匹配。
+ * 形态：大写字母开头、含至少一个连字符分段。
+ * 迁移脚本拿它去比对库内资产，换算成采集记录里的 collectedAssetIds。
  */
 export function extractCanonicalIds(text: string): string[] {
   const matched = text.match(/\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/g) ?? [];
   return Array.from(new Set(matched));
-}
-
-function isEmptyLanding(text: string) {
-  return text === "" || text === "—" || text === "-";
-}
-
-/**
- * 按设计稿第三节的简化规则推导「是否已编译进 AGENTS.md」。
- *
- * 规则（M1 阶段，不解析 AGENTS.md 正文做精确比对——那是更后面的事），共五档：
- *  1. 落点为空 → empty「—（未提炼资产）」
- *  2. 落点在库内且是规则类：active → compiled_candidate「已编译候选」，否则 not_compiled
- *  3. 落点在库内且是文档类 → knowledge「知识库资产（不编译进 AGENTS.md）」
- *  4. 落点是资产 ID 形态但库内找不到 → not_imported（例如种子包里的规则不在本机库）
- *  5. 落点不是资产 ID 而是文件路径或 AGENTS.md 章节 → template「已进模板/规则层」
- *
- * 说明：五档对应设计稿第三节（docs/leads-3-m1-design-and-tasks.md）的判定规则。
- * template 档是为台账里「templates/new-project/AGENTS.md」「AGENTS.md『界面改动的验证』」
- * 这类落点设的——它们其实已编译进模板/规则层，若按 not_imported 标会让人误判成「没编译」。
- */
-export function deriveCompileStatus(
-  landing: string,
-  index: LibraryIndex,
-): CompileStatus {
-  const text = (landing ?? "").trim();
-
-  if (isEmptyLanding(text)) {
-    return { level: "empty", label: compileStatusLabels.empty, matchedAssets: [] };
-  }
-
-  const matchedAssets = extractCanonicalIds(text)
-    .map((canonicalId) => index[canonicalId.toUpperCase()])
-    .filter((ref): ref is LibraryAssetRef => Boolean(ref));
-
-  if (matchedAssets.length > 0) {
-    const ruleRefs = matchedAssets.filter((ref) => ref.assetType === "rule");
-
-    if (ruleRefs.length > 0) {
-      const hasActive = ruleRefs.some((ref) => ref.status === "active");
-      return {
-        level: hasActive ? "compiled_candidate" : "not_compiled",
-        label: hasActive
-          ? compileStatusLabels.compiled_candidate
-          : compileStatusLabels.not_compiled,
-        matchedAssets,
-      };
-    }
-
-    return {
-      level: "knowledge",
-      label: compileStatusLabels.knowledge,
-      matchedAssets,
-    };
-  }
-
-  // 写了资产 ID（形态像），但库内一条都没匹配上
-  if (extractCanonicalIds(text).length > 0) {
-    return {
-      level: "not_imported",
-      label: compileStatusLabels.not_imported,
-      matchedAssets: [],
-    };
-  }
-
-  // 落点是文件路径或 AGENTS.md 章节，不是库内资产 ID
-  if (/\.md\b/.test(text) || /AGENTS\.md/i.test(text)) {
-    return {
-      level: "template",
-      label: compileStatusLabels.template,
-      matchedAssets: [],
-    };
-  }
-
-  return {
-    level: "not_imported",
-    label: compileStatusLabels.not_imported,
-    matchedAssets: [],
-  };
 }
