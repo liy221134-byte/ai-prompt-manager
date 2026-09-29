@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-28T04:23:08.227Z",
+  "exportedAt": "2026-09-28T09:46:43.595Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
@@ -2181,7 +2181,7 @@
       "assetType": "rule",
       "title": "动手前先做一次事前验尸",
       "summary": "排期、定档、开工之前，先做一次**事前验尸**：假定「14 天后这个版本已经失败了」，倒推为什么。",
-      "content": "# 动手前先做一次事前验尸\n\n## 核心结论\n\n排期、定档、开工之前，先做一次**事前验尸**：假定「14 天后这个版本已经失败了」，倒推为什么。\n\n风险分三类，缺一类就等于没做：\n\n| 类别 | 是什么 |\n| --- | --- |\n| **真问题** | 我自己看得见、有依据或合逻辑的风险——要动手处理 |\n| **纸老虎** | 别人担心、但我不信的——写下来对齐，不往这里投资源 |\n| **房间里的大象** | 没人说出口、也没人去验证的那种担心——**这一类价值最高**，上线前必须去查 |\n\n三条硬话：\n\n1. **拿不准就默认当「真问题」**——早处理比漏掉便宜。\n2. **每条上线阻断项要有「缓解动作 + 负责人 + 截止日」**，三样缺一样就等于没分派。\n3. **上线（或交付）前 2～3 周再看一遍**，确认缓解措施还在轨。\n\n## 使用条件\n\n- 定档、承诺工期、动手实现之前。\n- 一个版本接近上线或交付时（复核那一遍）。\n\n## 不适用场景\n\n- 一次性的小改动、已经验证过的局部调整。\n- 纯文档、纯文案改动。\n- 拿「纸老虎」当工作重点去投入资源。\n\n## 判断步骤\n\n1. 先把那份计划、需求文档或实现规格读一遍——没有它就没有可验尸的对象。\n2. 想「14 天后已经失败了，发生了什么」。\n3. 逐条列出来，按三类归位；某一类真的没有就写明「没有」，不要空着。\n4. 真问题再分三档：**上线前必须解决** / **30 天内跟进** / **观察**。\n5. 每条「上线前必须解决」补齐缓解动作、负责人、截止日。\n6. 结果写进已有的设计文档或验收清单里——不额外造一份新文档。\n7. 上线前 2～3 周复核一遍，写清哪条仍在轨、哪条变了。\n\n## 失败模式\n\n- 只列自己看得见的问题，没有「房间里的大象」这一类。\n- 把风险写成一句口号（「性能可能有风险」），没有缓解动作和截止日。\n- 反过来：所有担心都写成「纸老虎」而不写理由——那是自我安慰，不是分类。\n- 当成一次性仪式，做完再也没人看。\n- 用「我们有备份」这类没验过的说法当缓解动作。\n\n## 验证证据\n\n- 三类风险各有条目（或写明「没有」）。\n- 每条上线阻断项都带缓解动作、负责人、截止日。\n- 上线前那次复核的记录：哪条仍在轨、哪条变了。\n\n## 相关资产\n\n- `MTH-DESIGN-DOC-001`（补强）：设计文档的四块内容里没有「风险」这一块，这条把它补上。\n- `MTH-GATES-001`（相关）：这条落在设计门之前，是需求门到设计门之间的一次检查。\n- `RULE-REDTEAM-001`（区别）：事前验尸是想象已经失败、叙述原因；红队是现在就攻击承重假设。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PREMORTEM-001\ntitle: 动手前先做一次事前验尸\nasset_type: rule\nrule_type: must\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 pre-mortem 技能：假定已经失败再倒推原因、真问题／纸老虎／房间里的大象三分类、上线阻断项要带缓解动作\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-DESIGN-DOC-001\n  - MTH-GATES-001\n  - RULE-REDTEAM-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "content": "# 动手前先做一次事前验尸\n\n## 核心结论\n\n排期、定档、开工之前，先做一次**事前验尸**：假定「14 天后这个版本已经失败了」，倒推为什么。\n\n风险分三类，缺一类就等于没做：\n\n| 类别 | 是什么 |\n| --- | --- |\n| **真问题** | 我自己看得见、有依据或合逻辑的风险——要动手处理 |\n| **纸老虎** | 别人担心、但我不信的——写下来对齐，不往这里投资源 |\n| **房间里的大象** | 没人说出口、也没人去验证的那种担心——**这一类价值最高**，上线前必须去查 |\n\n三条硬话：\n\n1. **拿不准就默认当「真问题」**——早处理比漏掉便宜。\n2. **每条上线阻断项要有「缓解动作 + 负责人 + 截止日」**，三样缺一样就等于没分派。\n3. **上线（或交付）前 2～3 周再看一遍**，确认缓解措施还在轨。\n\n## 使用条件\n\n- 定档、承诺工期、动手实现之前。\n- 一个版本接近上线或交付时（复核那一遍）。\n\n## 不适用场景\n\n- 一次性的小改动、已经验证过的局部调整。\n- 纯文档、纯文案改动。\n- 拿「纸老虎」当工作重点去投入资源。\n\n## 判断步骤\n\n1. 先把那份计划、需求文档或实现规格读一遍——没有它就没有可验尸的对象。\n2. 想「14 天后已经失败了，发生了什么」。\n3. 逐条列出来，按三类归位；某一类真的没有就写明「没有」，不要空着。\n4. 真问题再分三档：**上线前必须解决** / **30 天内跟进** / **观察**。\n5. 每条「上线前必须解决」补齐缓解动作、负责人、截止日。\n6. 结果写进已有的设计文档或验收清单里——不额外造一份新文档。\n7. 上线前 2～3 周复核一遍，写清哪条仍在轨、哪条变了。\n\n## 失败模式\n\n- 只列自己看得见的问题，没有「房间里的大象」这一类。\n- 把风险写成一句口号（「性能可能有风险」），没有缓解动作和截止日。\n- 反过来：所有担心都写成「纸老虎」而不写理由——那是自我安慰，不是分类。\n- 当成一次性仪式，做完再也没人看。\n- 用「我们有备份」这类没验过的说法当缓解动作。\n\n## 验证证据\n\n- 三类风险各有条目（或写明「没有」）。\n- 每条上线阻断项都带缓解动作、负责人、截止日。\n- 上线前那次复核的记录：哪条仍在轨、哪条变了。\n\n## 相关资产\n\n- `MTH-DESIGN-DOC-001`（补强）：设计文档的四块内容里没有「风险」这一块，这条把它补上。\n- `MTH-GATES-001`（相关）：这条落在设计门之前，是需求门到设计门之间的一次检查。\n- `RULE-REDTEAM-001`（区别）：事前验尸是想象已经失败、叙述原因；红队是现在就攻击承重假设。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-PREMORTEM-001\ntitle: 动手前先做一次事前验尸\nasset_type: rule\nrule_type: must\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 pre-mortem 技能：假定已经失败再倒推原因、真问题／纸老虎／房间里的大象三分类、上线阻断项要带缓解动作\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
       "metadata": {
         "ruleType": "must",
         "scope": "global",
@@ -2210,24 +2210,7 @@
             "regulated"
           ]
         },
-        "rationale": "- 只列自己看得见的问题，没有「房间里的大象」这一类。 - 把风险写成一句口号（「性能可能有风险」），没有缓解动作和截止日。 - 反过来：所有担心都写成「纸老虎」而不写理由——那是自我安慰，不是分类。 - 当成一次性仪式，做完再也没人看。 - 用「我们有备份」这类没验过的说法当缓解动作。",
-        "relations": [
-          {
-            "targetAssetId": "rule-mth-design-doc-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-mth-gates-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-rule-redteam-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          }
-        ]
+        "rationale": "- 只列自己看得见的问题，没有「房间里的大象」这一类。 - 把风险写成一句口号（「性能可能有风险」），没有缓解动作和截止日。 - 反过来：所有担心都写成「纸老虎」而不写理由——那是自我安慰，不是分类。 - 当成一次性仪式，做完再也没人看。 - 用「我们有备份」这类没验过的说法当缓解动作。"
       },
       "status": "active"
     },
@@ -2236,7 +2219,7 @@
       "assetType": "rule",
       "title": "只打承重假设：先钢人，再攻击",
       "summary": "红队不是事前验尸。事前验尸是**想象已经失败、叙述原因**；红队是**现在就攻击承重假设**，趁还来得及测最便宜的那个。",
-      "content": "# 只打承重假设：先钢人，再攻击\n\n## 核心结论\n\n红队不是事前验尸。事前验尸是**想象已经失败、叙述原因**；红队是**现在就攻击承重假设**，趁还来得及测最便宜的那个。\n\n五步：\n\n1. **只攻击承重假设**——那种「假了方案就死」的假设；装饰性假设不管。\n2. **先钢人，再攻击**——先把这个说法最强的版本说出来，然后攻击那个版本。打稻草人的攻击没有价值。\n3. **失败模式写成「Fails if ___」**——要具体、可证伪。「失败如果激活根本不是瓶颈」胜过「有执行风险」。\n4. **按（错了的影响 × 错的可能性 × 测试的便宜度）排序**——排在最前面的就是这周该测的，要显式排出来，不要埋在正文里。\n5. **每条给四样**：Fails if（什么条件下方案就崩）/ 这周该拿什么证据 / Kill criterion（什么阈值就停或改道）/ 最便宜的测试（最小实验）。\n\n两条硬纪律：\n\n- **不许编造弱点**。想得通的就明说想得通——制造怀疑的红队和盖章通过的红队一样没用。\n- **五条真假设配测试，胜过二十条泛泛的风险**。目标是把判断变锐，不是把风险清单变长。\n\n## 使用条件\n\n- 计划、方案、需求或路线图已经成形、还没投入实现之前。\n- 拿一份文档去过会、去要资源之前。\n\n## 不适用场景\n\n- 已经开跑、没有可选项的应急处理——那时要做的是止损，不是红队。\n- 局部实现细节。\n- 当「挑刺仪式」用：真的挑不出承重的洞时，就应该明说「这份方案我想不出致命假设」。\n\n## 判断步骤\n\n1. 把方案里的断言全列出来（关于用户、市场、约束、机制、时间）。\n2. 分出承重假设和装饰性假设，只留承重的。\n3. 对每条承重假设先写「它最强的样子」，再攻击这个版本。\n4. 把失败模式写成「Fails if ___」。\n5. 按三个乘数排序，取前 3～5 条。\n6. 每条补上：这周该拿的证据、Kill criterion、最便宜的测试。\n7. 单独写两段：「哪些地方是想得通的」和「哪些地方我没法判断」。\n\n## 失败模式\n\n- 攻击方案的弱版本（稻草人），看着热闹，其实没碰到要害。\n- 为了显得有用，硬编一条弱点出来。\n- 列二十条泛泛的风险，没有一条带测试和阈值。\n- 把排序埋掉：最该测的那条淹没在长清单里。\n- 只输出恐惧，不输出「这周做什么」。\n\n## 验证证据\n\n- 承重假设 3～5 条，每条都有 Fails if、本周证据、Kill criterion、最便宜的测试。\n- 「想得通的」那一段确实写了内容（哪怕只有一条）。\n- 排在最前面的那条测试，是一周内真做得完的。\n\n## 相关资产\n\n- `RULE-PREMORTEM-001`（区别）：那条是想象已经失败、叙述原因；这条是现在就攻击承重假设。\n- `MTH-DESIGN-DOC-001`（相关）：红队结论写进设计文档，不另造文档。\n- `MTH-REQ-001`（补强）：需求澄清问的是「要什么」；红队问的是「你想的那个前提对不对」。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-REDTEAM-001\ntitle: 只打承重假设：先钢人，再攻击\nasset_type: rule\nrule_type: must\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 strategy-red-team 技能：只攻击承重假设、先钢人再攻击、失败模式写成 Fails if、按影响×可能性×测试便宜度排序\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-PREMORTEM-001\n  - MTH-DESIGN-DOC-001\n  - MTH-REQ-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "content": "# 只打承重假设：先钢人，再攻击\n\n## 核心结论\n\n红队不是事前验尸。事前验尸是**想象已经失败、叙述原因**；红队是**现在就攻击承重假设**，趁还来得及测最便宜的那个。\n\n五步：\n\n1. **只攻击承重假设**——那种「假了方案就死」的假设；装饰性假设不管。\n2. **先钢人，再攻击**——先把这个说法最强的版本说出来，然后攻击那个版本。打稻草人的攻击没有价值。\n3. **失败模式写成「Fails if ___」**——要具体、可证伪。「失败如果激活根本不是瓶颈」胜过「有执行风险」。\n4. **按（错了的影响 × 错的可能性 × 测试的便宜度）排序**——排在最前面的就是这周该测的，要显式排出来，不要埋在正文里。\n5. **每条给四样**：Fails if（什么条件下方案就崩）/ 这周该拿什么证据 / Kill criterion（什么阈值就停或改道）/ 最便宜的测试（最小实验）。\n\n两条硬纪律：\n\n- **不许编造弱点**。想得通的就明说想得通——制造怀疑的红队和盖章通过的红队一样没用。\n- **五条真假设配测试，胜过二十条泛泛的风险**。目标是把判断变锐，不是把风险清单变长。\n\n## 使用条件\n\n- 计划、方案、需求或路线图已经成形、还没投入实现之前。\n- 拿一份文档去过会、去要资源之前。\n\n## 不适用场景\n\n- 已经开跑、没有可选项的应急处理——那时要做的是止损，不是红队。\n- 局部实现细节。\n- 当「挑刺仪式」用：真的挑不出承重的洞时，就应该明说「这份方案我想不出致命假设」。\n\n## 判断步骤\n\n1. 把方案里的断言全列出来（关于用户、市场、约束、机制、时间）。\n2. 分出承重假设和装饰性假设，只留承重的。\n3. 对每条承重假设先写「它最强的样子」，再攻击这个版本。\n4. 把失败模式写成「Fails if ___」。\n5. 按三个乘数排序，取前 3～5 条。\n6. 每条补上：这周该拿的证据、Kill criterion、最便宜的测试。\n7. 单独写两段：「哪些地方是想得通的」和「哪些地方我没法判断」。\n\n## 失败模式\n\n- 攻击方案的弱版本（稻草人），看着热闹，其实没碰到要害。\n- 为了显得有用，硬编一条弱点出来。\n- 列二十条泛泛的风险，没有一条带测试和阈值。\n- 把排序埋掉：最该测的那条淹没在长清单里。\n- 只输出恐惧，不输出「这周做什么」。\n\n## 验证证据\n\n- 承重假设 3～5 条，每条都有 Fails if、本周证据、Kill criterion、最便宜的测试。\n- 「想得通的」那一段确实写了内容（哪怕只有一条）。\n- 排在最前面的那条测试，是一周内真做得完的。\n\n## 相关资产\n\n- `RULE-PREMORTEM-001`（区别）：那条是想象已经失败、叙述原因；这条是现在就攻击承重假设。\n- `MTH-DESIGN-DOC-001`（相关）：红队结论写进设计文档，不另造文档。\n- `MTH-REQ-001`（补强）：需求澄清问的是「要什么」；红队问的是「你想的那个前提对不对」。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-REDTEAM-001\ntitle: 只打承重假设：先钢人，再攻击\nasset_type: rule\nrule_type: must\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 strategy-red-team 技能：只攻击承重假设、先钢人再攻击、失败模式写成 Fails if、按影响×可能性×测试便宜度排序\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
       "metadata": {
         "ruleType": "must",
         "scope": "global",
@@ -2265,24 +2248,7 @@
             "regulated"
           ]
         },
-        "rationale": "- 攻击方案的弱版本（稻草人），看着热闹，其实没碰到要害。 - 为了显得有用，硬编一条弱点出来。 - 列二十条泛泛的风险，没有一条带测试和阈值。 - 把排序埋掉：最该测的那条淹没在长清单里。 - 只输出恐惧，不输出「这周做什么」。",
-        "relations": [
-          {
-            "targetAssetId": "rule-rule-premortem-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-mth-design-doc-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-mth-req-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          }
-        ]
+        "rationale": "- 攻击方案的弱版本（稻草人），看着热闹，其实没碰到要害。 - 为了显得有用，硬编一条弱点出来。 - 列二十条泛泛的风险，没有一条带测试和阈值。 - 把排序埋掉：最该测的那条淹没在长清单里。 - 只输出恐惧，不输出「这周做什么」。"
       },
       "status": "active"
     },
@@ -2291,7 +2257,7 @@
       "assetType": "rule",
       "title": "别做出模板味的默认样式",
       "summary": "「风格新潮」不是形容词，是一条能执行的纪律：**先把设计计划拿出来，问「哪一部分是我对任何同类页面都会产出的默认？」，是默认就改掉，并说明改了什么。**",
-      "content": "# 别做出模板味的默认样式\n\n## 核心结论\n\n「风格新潮」不是形容词，是一条能执行的纪律：**先把设计计划拿出来，问「哪一部分是我对任何同类页面都会产出的默认？」，是默认就改掉，并说明改了什么。**\n\n四步：\n\n1. **从主题取材**：独特来自主题本身——玩具的审美和金融仪表盘完全不同。行业、材料、场景里的话，才是视觉选择的来源。\n2. **避开已知的生成味**——它们是「默认」而不是「选择」：\n   - 暖奶油底 + 高对比衬线 + 陶土色点缀；\n   - 近黑底 + 单一荧光点缀；\n   - 大报风：细线分隔、零圆角、密集分栏；\n   - **SaaS 卡片套件**：一层级一个圆角、每张卡同一个柔和灰阴影、渐变当装饰；\n   - **模板外壳**：每个标题上方一行全大写小标签、元信息用中点连接、「单词 — 碎片」式破折号、用 #0B0B0B 冒充黑、小数据上等宽字体、链接和按钮后面加 →。\n   排版还有三个常见痕迹：只把标题里的一个词加粗或变色、标签全大写、内容上方加多余的小标签。\n3. **对照简报复查**：先出一版设计计划（4～6 个命名色值、字体与角色、布局概念加 ASCII 线框、原则），再拿它对着简报问「哪一块换成别的主题也成立」——改掉，并说明改了什么、为什么。\n4. **胆量花在一处**：留一个记忆点，周围保持安静。结构件（编号、边框、分隔线、标签）要承载信息，不承载信息就是装饰，删掉。\n\n两条补充：编号只用在真的是序列的地方；动效只在「回答人的动作、让人看清什么变了」或一次有编排的亮相时用——每屏淡入上移、每张卡都有 hover，是默认不是设计。\n\n## 使用条件\n\n- 定稿档：首次确定产品整体视觉风格时。\n- 有「要新潮」这类要求、需要避免撞脸通用模板时。\n\n## 不适用场景\n\n- 简报已经指定了视觉方向：按简报做，**简报自己的话永远优先**，包括它点名要上面某一种风格。\n- 配置档：界面锁在固定底座里（Vben／若依这类），做的是主题与布局配置，不重画底座已有的东西。\n- 改文案、调间距、换图标这类局部调整。\n\n## 判断步骤\n\n1. 先确认简报说的是什么产品、给谁用。\n2. 出一版设计计划：色值 / 字体与角色 / 布局概念（加 ASCII 线框）/ 原则。\n3. 自查一遍：「哪一部分是我对任何同类页面都会产出的默认？」。\n4. 改掉它，并记下「改了什么、为什么」。\n5. 选一处当记忆点，其余保持安静、克制。\n6. 做完对着截图自评一遍。\n\n## 失败模式\n\n- 直接套通用卡片网格 + 柔和阴影 + 渐变装饰，换掉文字就能给别人用。\n- 每个标题上面都加一行全大写小标签、元信息用中点串起来——换主题也不变。\n- 到处都是「装饰」，却没有一个能被记住的点。\n- 把 01 / 02 / 03 编号用在不构成序列的内容上。\n- 抄别人稿子的外观，而不是从这份简报的主题取材。\n\n## 验证证据\n\n- 那份设计计划（色值、字体与角色、布局概念、原则）。\n- 复查时写下的「改了什么、为什么」。\n- 成品里能指出唯一那个记忆点。\n\n## 相关资产\n\n- `MTH-DESIGN-GATE-001`（上游）：先过澄清门，知道设计的是什么，才谈得上从主题取材。\n- `RULE-DESIGN-COPY-001`（配套）：视觉定完之后，界面里的字同样要避免模板腔。\n- `RULE-DESIGN-QA-001`（下游）：有源设计稿时按稿对比验收；没有稿时按「能用、好用 + 风格一致」验收。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESIGN-TEMPLATE-LOOK-001\ntitle: 别做出模板味的默认样式\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 frontend-design 技能：从主题取材、两遍法（先出设计计划再对照简报复查）、五类生成味清单与排版三个痕迹、胆量只花一处\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - MTH-DESIGN-GATE-001\n  - RULE-DESIGN-COPY-001\n  - RULE-DESIGN-QA-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "content": "# 别做出模板味的默认样式\n\n## 核心结论\n\n「风格新潮」不是形容词，是一条能执行的纪律：**先把设计计划拿出来，问「哪一部分是我对任何同类页面都会产出的默认？」，是默认就改掉，并说明改了什么。**\n\n四步：\n\n1. **从主题取材**：独特来自主题本身——玩具的审美和金融仪表盘完全不同。行业、材料、场景里的话，才是视觉选择的来源。\n2. **避开已知的生成味**——它们是「默认」而不是「选择」：\n   - 暖奶油底 + 高对比衬线 + 陶土色点缀；\n   - 近黑底 + 单一荧光点缀；\n   - 大报风：细线分隔、零圆角、密集分栏；\n   - **SaaS 卡片套件**：一层级一个圆角、每张卡同一个柔和灰阴影、渐变当装饰；\n   - **模板外壳**：每个标题上方一行全大写小标签、元信息用中点连接、「单词 — 碎片」式破折号、用 #0B0B0B 冒充黑、小数据上等宽字体、链接和按钮后面加 →。\n   排版还有三个常见痕迹：只把标题里的一个词加粗或变色、标签全大写、内容上方加多余的小标签。\n3. **对照简报复查**：先出一版设计计划（4～6 个命名色值、字体与角色、布局概念加 ASCII 线框、原则），再拿它对着简报问「哪一块换成别的主题也成立」——改掉，并说明改了什么、为什么。\n4. **胆量花在一处**：留一个记忆点，周围保持安静。结构件（编号、边框、分隔线、标签）要承载信息，不承载信息就是装饰，删掉。\n\n两条补充：编号只用在真的是序列的地方；动效只在「回答人的动作、让人看清什么变了」或一次有编排的亮相时用——每屏淡入上移、每张卡都有 hover，是默认不是设计。\n\n## 使用条件\n\n- 定稿档：首次确定产品整体视觉风格时。\n- 有「要新潮」这类要求、需要避免撞脸通用模板时。\n\n## 不适用场景\n\n- 简报已经指定了视觉方向：按简报做，**简报自己的话永远优先**，包括它点名要上面某一种风格。\n- 配置档：界面锁在固定底座里（Vben／若依这类），做的是主题与布局配置，不重画底座已有的东西。\n- 改文案、调间距、换图标这类局部调整。\n\n## 判断步骤\n\n1. 先确认简报说的是什么产品、给谁用。\n2. 出一版设计计划：色值 / 字体与角色 / 布局概念（加 ASCII 线框）/ 原则。\n3. 自查一遍：「哪一部分是我对任何同类页面都会产出的默认？」。\n4. 改掉它，并记下「改了什么、为什么」。\n5. 选一处当记忆点，其余保持安静、克制。\n6. 做完对着截图自评一遍。\n\n## 失败模式\n\n- 直接套通用卡片网格 + 柔和阴影 + 渐变装饰，换掉文字就能给别人用。\n- 每个标题上面都加一行全大写小标签、元信息用中点串起来——换主题也不变。\n- 到处都是「装饰」，却没有一个能被记住的点。\n- 把 01 / 02 / 03 编号用在不构成序列的内容上。\n- 抄别人稿子的外观，而不是从这份简报的主题取材。\n\n## 验证证据\n\n- 那份设计计划（色值、字体与角色、布局概念、原则）。\n- 复查时写下的「改了什么、为什么」。\n- 成品里能指出唯一那个记忆点。\n\n## 相关资产\n\n- `MTH-DESIGN-GATE-001`（上游）：先过澄清门，知道设计的是什么，才谈得上从主题取材。\n- `RULE-DESIGN-COPY-001`（配套）：视觉定完之后，界面里的字同样要避免模板腔。\n- `RULE-DESIGN-QA-001`（下游）：有源设计稿时按稿对比验收；没有稿时按「能用、好用 + 风格一致」验收。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESIGN-TEMPLATE-LOOK-001\ntitle: 别做出模板味的默认样式\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 frontend-design 技能：从主题取材、两遍法（先出设计计划再对照简报复查）、五类生成味清单与排版三个痕迹、胆量只花一处\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
       "metadata": {
         "ruleType": "must",
         "scope": "global",
@@ -2320,24 +2286,7 @@
             "regulated"
           ]
         },
-        "rationale": "- 直接套通用卡片网格 + 柔和阴影 + 渐变装饰，换掉文字就能给别人用。 - 每个标题上面都加一行全大写小标签、元信息用中点串起来——换主题也不变。 - 到处都是「装饰」，却没有一个能被记住的点。 - 把 01 / 02 / 03 编号用在不构成序列的内容上。 - 抄别人稿子的外观，而不是从这份简报的主题取材。",
-        "relations": [
-          {
-            "targetAssetId": "rule-mth-design-gate-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-rule-design-copy-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-rule-design-qa-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          }
-        ]
+        "rationale": "- 直接套通用卡片网格 + 柔和阴影 + 渐变装饰，换掉文字就能给别人用。 - 每个标题上面都加一行全大写小标签、元信息用中点串起来——换主题也不变。 - 到处都是「装饰」，却没有一个能被记住的点。 - 把 01 / 02 / 03 编号用在不构成序列的内容上。 - 抄别人稿子的外观，而不是从这份简报的主题取材。"
       },
       "status": "active"
     },
@@ -2346,7 +2295,7 @@
       "assetType": "rule",
       "title": "界面文案也是设计",
       "summary": "界面里的字是**设计内容**，不是装饰。五条：",
-      "content": "# 界面文案也是设计\n\n## 核心结论\n\n界面里的字是**设计内容**，不是装饰。五条：\n\n1. **从用户视角命名**：用户管理的是「通知」，不是「webhook 配置」——名字用用户听得懂的话，不用系统怎么实现的话。\n2. **主动语态，按钮说清做完会发生什么**：「保存修改」，不是「提交」。\n3. **同一个动作贯穿流程用同一个词**：按钮写「发布」，提示就该是「已发布」。用词一致，是人学会这套界面的路标。\n4. **错误不道歉、不含糊；空状态是行动邀请**：说清出了什么事、怎么修；空页面要告诉人下一步能做什么。\n5. **每段文字只干一件事**：平实动词、句子大小写、删掉填充词。\n\n## 使用条件\n\n- 写按钮、菜单、表格列名、表单标签、提示语、空状态、错误提示、引导文案时。\n- 定稿档和沿用档的界面都适用。\n\n## 不适用场景\n\n- 营销页面里刻意的品牌语言——那是另一个工种。\n- 项目已经定了术语表：按术语表执行，不逐条重命名。\n\n## 判断步骤\n\n1. 先问这段字要帮人做成什么。\n2. 按「用户会怎么理解」命名，不按系统实现命名。\n3. 按钮写成它会带来的结果；同一个动作全流程同名。\n4. 错误写清「发生了什么 + 怎么修」，不道歉、不含糊。\n5. 空状态给一个明确的下一步。\n6. 通读一遍：每段是不是只干一件事，有没有填充词。\n\n## 失败模式\n\n- 界面上出现「提交」「确定」这类没说清结果的动作。\n- 同一个动作在不同地方换了三个名字（创建 / 新增 / 添加）。\n- 错误提示只有「操作失败」或者一句道歉，不给出路。\n- 空状态是一句「暂无数据」，没有下一步。\n- 每段文字想说三件事，结果一件都没说清。\n\n## 验证证据\n\n- 界面上能直接指出：按钮写的是结果、同一个动作同名、错误和空状态都有下一步。\n- 抽查一条流程：按钮名、提示语、结果状态用的是同一个词。\n\n## 相关资产\n\n- `RULE-DESIGN-TEMPLATE-LOOK-001`（配套）：视觉和文字一起避免模板味。\n- `MTH-DESIGN-GATE-001`（上游）：先澄清要做什么，再决定怎么写。\n- `RULE-EVIDENCE-BOUNDARY-001`（相关）：文案改动的验收要真打开页面看，不能只读代码。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESIGN-COPY-001\ntitle: 界面文案也是设计\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 frontend-design 技能「More on writing in design」一节：从用户视角命名、按钮说清结果、同一动作同名、错误与空状态的处理\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\n  - RULE-DESIGN-TEMPLATE-LOOK-001\n  - MTH-DESIGN-GATE-001\n  - RULE-EVIDENCE-BOUNDARY-001\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "content": "# 界面文案也是设计\n\n## 核心结论\n\n界面里的字是**设计内容**，不是装饰。五条：\n\n1. **从用户视角命名**：用户管理的是「通知」，不是「webhook 配置」——名字用用户听得懂的话，不用系统怎么实现的话。\n2. **主动语态，按钮说清做完会发生什么**：「保存修改」，不是「提交」。\n3. **同一个动作贯穿流程用同一个词**：按钮写「发布」，提示就该是「已发布」。用词一致，是人学会这套界面的路标。\n4. **错误不道歉、不含糊；空状态是行动邀请**：说清出了什么事、怎么修；空页面要告诉人下一步能做什么。\n5. **每段文字只干一件事**：平实动词、句子大小写、删掉填充词。\n\n## 使用条件\n\n- 写按钮、菜单、表格列名、表单标签、提示语、空状态、错误提示、引导文案时。\n- 定稿档和沿用档的界面都适用。\n\n## 不适用场景\n\n- 营销页面里刻意的品牌语言——那是另一个工种。\n- 项目已经定了术语表：按术语表执行，不逐条重命名。\n\n## 判断步骤\n\n1. 先问这段字要帮人做成什么。\n2. 按「用户会怎么理解」命名，不按系统实现命名。\n3. 按钮写成它会带来的结果；同一个动作全流程同名。\n4. 错误写清「发生了什么 + 怎么修」，不道歉、不含糊。\n5. 空状态给一个明确的下一步。\n6. 通读一遍：每段是不是只干一件事，有没有填充词。\n\n## 失败模式\n\n- 界面上出现「提交」「确定」这类没说清结果的动作。\n- 同一个动作在不同地方换了三个名字（创建 / 新增 / 添加）。\n- 错误提示只有「操作失败」或者一句道歉，不给出路。\n- 空状态是一句「暂无数据」，没有下一步。\n- 每段文字想说三件事，结果一件都没说清。\n\n## 验证证据\n\n- 界面上能直接指出：按钮写的是结果、同一个动作同名、错误和空状态都有下一步。\n- 抽查一条流程：按钮名、提示语、结果状态用的是同一个词。\n\n## 相关资产\n\n- `RULE-DESIGN-TEMPLATE-LOOK-001`（配套）：视觉和文字一起避免模板味。\n- `MTH-DESIGN-GATE-001`（上游）：先澄清要做什么，再决定怎么写。\n- `RULE-EVIDENCE-BOUNDARY-001`（相关）：文案改动的验收要真打开页面看，不能只读代码。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESIGN-COPY-001\ntitle: 界面文案也是设计\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - Claude Skills 的 frontend-design 技能「More on writing in design」一节：从用户视角命名、按钮说清结果、同一动作同名、错误与空状态的处理\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
       "metadata": {
         "ruleType": "must",
         "scope": "global",
@@ -2375,24 +2324,7 @@
             "regulated"
           ]
         },
-        "rationale": "- 界面上出现「提交」「确定」这类没说清结果的动作。 - 同一个动作在不同地方换了三个名字（创建 / 新增 / 添加）。 - 错误提示只有「操作失败」或者一句道歉，不给出路。 - 空状态是一句「暂无数据」，没有下一步。 - 每段文字想说三件事，结果一件都没说清。",
-        "relations": [
-          {
-            "targetAssetId": "rule-rule-design-template-look-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-mth-design-gate-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          },
-          {
-            "targetAssetId": "rule-rule-evidence-boundary-001",
-            "relationType": "reference",
-            "note": "包内关联"
-          }
-        ]
+        "rationale": "- 界面上出现「提交」「确定」这类没说清结果的动作。 - 同一个动作在不同地方换了三个名字（创建 / 新增 / 添加）。 - 错误提示只有「操作失败」或者一句道歉，不给出路。 - 空状态是一句「暂无数据」，没有下一步。 - 每段文字想说三件事，结果一件都没说清。"
       },
       "status": "active"
     },
@@ -2503,6 +2435,44 @@
             "note": "包内关联"
           }
         ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-mth-req-format-001",
+      "assetType": "rule",
+      "title": "需求改写成三种格式",
+      "summary": "一段模糊需求，先用三种格式各写一遍，再决定用哪个：",
+      "content": "# 需求改写成三种格式\n\n## 核心结论\n\n一段模糊需求，先用三种格式各写一遍，再决定用哪个：\n\n| 格式 | 从哪出发 | 句式 | 什么时候用 |\n| --- | --- | --- | --- |\n| **用户故事** | 谁 | 作为〔角色〕，我想要〔做什么〕，以便〔得到什么好处〕 | 功能能独立开发、单独验收时 |\n| **Job Story** | 情境 | 当〔情境〕，我想要〔动机〕，以便〔结果〕 | 同一角色在不同情境下差别很大、用户故事说不清时 |\n| **WWA** | 为什么 | Why（为什么做）→ What（做什么）→ Acceptance（怎么算做完） | 把工作交给别人做、需要先讲清战略时 |\n\n三种格式都要求**验收条件能点一遍判通过或失败**，且至少覆盖四类边界：空数据、超长、重复、并发；\n涉及键盘或读屏的补一条。\n\n## 使用条件\n\n- 需求模糊、涉及新方向或存在多种做法时。\n- 需求澄清后、动手设计之前。\n\n## 不适用场景\n\n- 已经清楚、只是要落地实现的例行需求。\n- 纯文案、纯样式改动。\n\n## 判断步骤\n\n1. 缺什么先问清（一次问完），不要编需求里没有的功能。\n2. 分别用三种格式写一遍，每条带 4～6 条验收条件。\n3. 单列一节「三种格式的差别与建议用哪个」，给出选择建议。\n4. 用户确认后，再进入设计门。\n\n## 失败模式\n\n- 三种格式互相抄，没有差别——那是凑数，不是澄清。\n- 验收条件写得不可观察（「体验良好」「完成度足够」）。\n- 边界情况不覆盖，上线才暴露空数据／超长／并发问题。\n- 拿不确定当确定写进需求。\n\n## 验证证据\n\n- 三种格式各一节，且确实用了各自的句式。\n- 每条验收条件都能观察、能判定通过或失败。\n- 有「差别与建议用哪个」一节，并说清为什么选这个。\n\n## 相关资产\n\n- `template-user-story-md` / `template-job-story-md` / `template-wwa-md`（骨架）：本方法是定义，\n  三份模板是填空结构，不要在这里重抄模板里的字段。\n- `prompt-pack-product-methods`（执行指令）：把三种格式写成可直接粘贴的提示词，供 AI 起草。\n\n## 包内原始元数据\n\n```yaml\nid: MTH-REQ-FORMAT-001\ntitle: 需求改写成三种格式\nasset_type: rule\nrule_type: recommended\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\npriority: p2\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - analysis\n  - design\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - 用户故事（3C + INVEST）、Job Story、WWA 三种需求格式的行业通行写法\n  - seed-packs/external-sources/README.md（采集台账与来源说明）\nrelated_assets:\nversion: 0.1.0\nlast_reviewed: 2026-09-28\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "may",
+        "overrideScope": "project",
+        "evidence": "- 用户故事（3C + INVEST）、Job Story、WWA 三种需求格式的行业通行写法\n- seed-packs/external-sources/README.md（采集台账与来源说明）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "MTH-REQ-FORMAT-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 三种格式互相抄，没有差别——那是凑数，不是澄清。 - 验收条件写得不可观察（「体验良好」「完成度足够」）。 - 边界情况不覆盖，上线才暴露空数据／超长／并发问题。 - 拿不确定当确定写进需求。"
       },
       "status": "active"
     },

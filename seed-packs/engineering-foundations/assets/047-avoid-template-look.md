@@ -28,9 +28,6 @@ source_references:
   - Claude Skills 的 frontend-design 技能：从主题取材、两遍法（先出设计计划再对照简报复查）、五类生成味清单与排版三个痕迹、胆量只花一处
   - seed-packs/external-sources/README.md（采集台账与来源说明）
 related_assets:
-  - MTH-DESIGN-GATE-001
-  - RULE-DESIGN-COPY-001
-  - RULE-DESIGN-QA-001
 version: 0.1.0
 last_reviewed: 2026-09-28
 ---

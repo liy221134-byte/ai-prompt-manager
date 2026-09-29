@@ -28,9 +28,6 @@ source_references:
   - Claude Skills 的 pre-mortem 技能：假定已经失败再倒推原因、真问题／纸老虎／房间里的大象三分类、上线阻断项要带缓解动作
   - seed-packs/external-sources/README.md（采集台账与来源说明）
 related_assets:
-  - MTH-DESIGN-DOC-001
-  - MTH-GATES-001
-  - RULE-REDTEAM-001
 version: 0.1.0
 last_reviewed: 2026-09-28
 ---
