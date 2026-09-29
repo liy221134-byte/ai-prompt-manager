@@ -1,7 +1,7 @@
 # 合并与线上验证计划（2026-09-28）
 
 针对 codeX 仓库（AI 开发资产管理系统）当前待合并的 feature 分支，整理 PR 描述与上线后验证步骤。
-本文件为**规划文档，未执行任何 git 合并/推送**，由你或 Codex 复验后操作。
+本文件为**规划文档**；2026-09-29 已完成本地合并（**尚未推送**），执行记录与门禁结果见第七节。
 
 ---
 
@@ -14,9 +14,9 @@
 | `feat/v2.23.0-local-mcp-setup` | 已合入 main | 陈旧，可删 |
 | `feat/v2.24.0-project-scale-filter` | 已合入 main | 陈旧，可删 |
 | `feat/v2.25.0-carrier` | 已合入 main（指向 `946ced8`） | 陈旧，可删 |
-| `feat/leads-3` | **未合并**，文档 + 1 行 README 修正 | 需 PR |
-| `feat/leads-4` | **未合并**，线索 4 设计文档 2 份 | 需 PR |
-| `feat/leads-4-practice` | **未合并**，题库模块代码 + 迁移 + 验收 | 需 PR（核心交付） |
+| `feat/leads-3` | ✅ **已合并**（2026-09-29，零冲突） | 本地已合入 main；未推送；未开 PR（个人项目，已拍板不开） |
+| `feat/leads-4` | ✅ **已合并**（2026-09-29） | 同上；唯一冲突取 practice 定稿版，见第三节 |
+| `feat/leads-4-practice` | ✅ **已合并**（2026-09-29，快进） | 同上；核心交付 |
 
 > 5 个 `--merged` 分支只是历史残留，删除前确认团队无人在上面继续工作即可（`git branch -d <名>`）。删除不影响 main。
 
@@ -46,13 +46,18 @@ main ──(FF)──> feat/leads-4-practice   // 已在 main HEAD 之上，快�
 - `feat/leads-4-practice` 版：状态为“设计门已确认、T8–T12 已实施”，含**偏离说明**（实际复用浏览器 client 直读直写，不走独立 API 路由）。
 
 **解决**：保留 `feat/leads-4-practice` 的版本（内容更完整、反映真实实现与设计门结论）。`leads-4` 的草案已作废。
-合并时若该文件报 conflict，执行：
+2026-09-29 实际执行时用的是 `--ours`，**不是**上面这条命令：
+
 ```bash
-git checkout --theirs docs/leads-4-cloud-practice-design.md   # 取 practice 版
+git checkout --ours docs/leads-4-cloud-practice-design.md   # 取 main 侧 = practice 定稿版
 git add docs/leads-4-cloud-practice-design.md
 git commit   # 完成 merge
 ```
-（`--theirs` 在“main 合并 feature”语境下指被合入的 feature 分支，即 practice；若方向相反请改用 `--ours` 并核对内容。）
+
+**原因是方向**：本文件的合并顺序是先合 practice（快进），所以执行到合 leads-4 时，main 侧
+**已经含 practice 定稿版**；此时 `--ours` = main = 要保留的 practice 版，`--theirs` = leads-4 = 作废草案。
+上面那句 `--theirs` 只在「先合 leads-4、后合 practice」的顺序下才成立。**取完必须核对内容**
+（应为「设计门已确认…T8–T12 已实施」与「与原草案的偏离」两处），不能只看命令成功。
 
 ---
 
@@ -184,3 +189,21 @@ select count(*) from public.practice_attempts;    -- 期望 0
 3. **陈旧分支清理**：5 个 `--merged` 分支可 `git branch -d` 删除（不影响 main）。
 4. **intranet-drill 不在本批 PR 内**：它是独立仓库（`E:\intranet-drill`），其 T7 真验收卡在 Docker + WSL2，需你本地装 Docker 后手验，与 codeX 合并无关。
 5. **leads-3 后续**：T2（台账补四字段）是纯文档活，可随时做；T3/T4 需逐次点头。
+
+---
+
+## 七、执行记录（2026-09-29，本地）
+
+- **备份**：`git tag backup/pre-merge-20260929-main`（指向合并前 main `7c3e913`，可一键还原）。
+- **合并**：① `feat/leads-4-practice` 快进 → main 到 `76f6b4f`；② `feat/leads-4` 合并提交
+  `002abb8`（唯一冲突取 practice 定稿版，见第三节）；③ `feat/leads-3` 合并提交 `f80f5e9`（零冲突）。
+  合并前三个分支都已与 main 对齐（落后 0），不存在「main 新增被显示成删除」的问题。
+- **顺手修掉**：`scripts/sync-method-assets.ts` 的 `prefer-const`（`content` 收成 `readTextOrNull()`；
+  `created` 本脚本恒为 0 改 const）——它是 main 上既有的 lint error，不修则 `npm run check` 卡死。
+  提交 `76f6b4f`。
+- **门禁（合并后的 main，在主工作树跑）**：lint 0 error（3 个既存 unused warning）、测试 549/549、
+  `next build` 通过且 `/practice`、`/practice/[id]` 路由已产出。
+  - 坑：**链接工作树跑不了 build**（junction 复用 node_modules，Turbopack 报
+    `Symlink [project]/node_modules is invalid`），生产构建必须在主工作树 `E:\codeX项目` 跑。
+- **未做**：① **未推送**（main 领先 origin/main 16 个提交）；② 线上迁移 + 两账号 RLS 验收（第五节
+  Step 1–3）；③ 5 个陈旧 `--merged` 分支删除（需点头）；④ v2.25.0 的 T6 跨仓库改动（需点头 + token）。
