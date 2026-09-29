@@ -1,0 +1,377 @@
+{
+  "generatedAt": "2026-09-29T09:36:34.963Z",
+  "sourceFile": "seed-packs/external-sources/README.md",
+  "ledgerHeading": "## 六、采集进度台账",
+  "libraryAvailable": true,
+  "count": 23,
+  "sources": [
+    {
+      "seq": 1,
+      "source": "Ponytail（7 层防重复造轮子）",
+      "type": "Skill/MCP",
+      "status": "已提炼并并入模板",
+      "sourceUrl": "Ponytail（X 用户）技能",
+      "disposition": "已采（进模板层）",
+      "landing": "templates/new-project/AGENTS.md",
+      "verifiedAt": "2026-09",
+      "note": "首个成功案例",
+      "compileStatus": {
+        "level": "template",
+        "label": "已进模板/规则层（非库内资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 2,
+      "source": "S1 obra/superpowers",
+      "type": "Skills",
+      "status": "部分采集",
+      "sourceUrl": "https://github.com/obra/superpowers",
+      "disposition": "已采（部分）",
+      "landing": "PLAYBOOK-DEBUG-001",
+      "verifiedAt": "2026-09-23",
+      "note": "其余技能（验证纪律、计划与执行、评审）待去重后再采",
+      "compileStatus": {
+        "level": "not_imported",
+        "label": "未导入库（仅台账记录）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 3,
+      "source": "S2 anthropics/skills",
+      "type": "Skills",
+      "status": "未采集",
+      "sourceUrl": "https://github.com/anthropics/skills",
+      "disposition": "不采（本版）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "重点看 skill-creator、webapp-testing",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 4,
+      "source": "S3 karpathy-skills",
+      "type": "Skills",
+      "status": "未采集",
+      "sourceUrl": "https://github.com/multica-ai/andrej-karpathy-skills",
+      "disposition": "不采（与 7 层梯子对照去重）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "与已采心法同主题，避免重复资产",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 5,
+      "source": "Context7",
+      "type": "MCP",
+      "status": "已安装",
+      "sourceUrl": "github.com/upstash/context7",
+      "disposition": "已安装（只读）",
+      "landing": "—",
+      "verifiedAt": "2026-09",
+      "note": "本机 Codex 已挂 npx -y @upstash/context7-mcp",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 6,
+      "source": "Playwright MCP",
+      "type": "MCP",
+      "status": "未安装",
+      "sourceUrl": "github.com/microsoft/playwright-mcp",
+      "disposition": "暂缓（黑盒验收用）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "验收用本地/预览环境，不授权生产提交",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 7,
+      "source": "Supabase MCP",
+      "type": "MCP",
+      "status": "已安装，当前不可用",
+      "sourceUrl": "github.com/supabase-community/supabase-mcp",
+      "disposition": "已安装（OAuth 过期待授权）",
+      "landing": "—",
+      "verifiedAt": "2026-09",
+      "note": "默认只读、与生产隔离",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 8,
+      "source": "GitHub MCP",
+      "type": "MCP",
+      "status": "进行中",
+      "sourceUrl": "github.com/github/github-mcp",
+      "disposition": "进行中（DeepSeek 下 PR 绕行）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "—",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 9,
+      "source": "Serena",
+      "type": "MCP",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（项目变大再装）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "语义级代码导航",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 10,
+      "source": "Sequential Thinking",
+      "type": "MCP",
+      "status": "已安装",
+      "sourceUrl": "—",
+      "disposition": "已安装（参考实现）",
+      "landing": "—",
+      "verifiedAt": "2026-09",
+      "note": "官方参考服务器有归档变动，维护版本待确认",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 11,
+      "source": "Snyk MCP",
+      "type": "MCP",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（生产加固阶段）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "依赖漏洞与安全扫描",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 12,
+      "source": "Postgres MCP",
+      "type": "MCP",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（自建/国产库阶段）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "通用数据库访问，规则同只读",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 13,
+      "source": "豆包「AI Coding 每日速递」9/23–9/27（5 条）",
+      "type": "资讯流",
+      "status": "已核对，未采纳",
+      "sourceUrl": "豆包定时任务",
+      "disposition": "不采（已覆盖为主）",
+      "landing": "—",
+      "verifiedAt": "2026-09-27",
+      "note": "结论见第三节；未采纳 1 条（Chrome DevTools MCP）",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 14,
+      "source": "S4 Supabase 官方 Skills（supabase、supabase-postgres-best-practices）",
+      "type": "Skills",
+      "status": "已入库 6 条",
+      "sourceUrl": "Supabase 官方 Skills",
+      "disposition": "已采（6/31）",
+      "landing": "RULE-PG-FK-INDEX-001 等 6 条",
+      "verifiedAt": "2026-09-27",
+      "note": "其余按暂缓处理，理由记在包 README 的 0.7.0；全部 confidence: hypothesis",
+      "compileStatus": {
+        "level": "not_imported",
+        "label": "未导入库（仅台账记录）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 15,
+      "source": "S5 superpowers 全套（本机 12 个技能）",
+      "type": "Skills",
+      "status": "已按适用规模采完（9 条）",
+      "sourceUrl": "本机 12 个技能",
+      "disposition": "已采（9 条，主动不采 3 类）",
+      "landing": "PLAYBOOK-DEBUG-001 等 9 条",
+      "verifiedAt": "2026-09-27",
+      "note": "标 large／regulated 靠规模筛选挡掉；TDD 铁律等主动不采",
+      "compileStatus": {
+        "level": "not_imported",
+        "label": "未导入库（仅台账记录）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 16,
+      "source": "S6 product-design（9 个技能）",
+      "type": "Skills",
+      "status": "已采集 4 条",
+      "sourceUrl": "Claude Skills 的 product-design",
+      "disposition": "已采（4/9，其余非规则型）",
+      "landing": "MTH-DESIGN-GATE-001 等 4 条",
+      "verifiedAt": "2026-09-27",
+      "note": "其余 6 个为设计与分享工具，非规则来源",
+      "compileStatus": {
+        "level": "not_imported",
+        "label": "未导入库（仅台账记录）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 17,
+      "source": "Figma 官方 Skills（12 个）",
+      "type": "Skills",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（本项目不做设计稿）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "暂时用不上",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 18,
+      "source": "Notion 官方 Skills（4 个）",
+      "type": "Skills",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（不用 Notion）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "—",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 19,
+      "source": "OpenAI 运行时技能（documents／pdf／presentations／spreadsheets／template-creator）",
+      "type": "Skills",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（办公文档能力，待另判）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "和本库的关系要另判",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 20,
+      "source": "computer-use／visualize",
+      "type": "Skills",
+      "status": "暂缓",
+      "sourceUrl": "—",
+      "disposition": "暂缓（能力型非规则型）",
+      "landing": "—",
+      "verifiedAt": "—",
+      "note": "—",
+      "compileStatus": {
+        "level": "empty",
+        "label": "—（未提炼资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 21,
+      "source": "S7 产品经理方法技能（19 来源：已采 3 / 剩余 16，详见处置表）",
+      "type": "Skills",
+      "status": "已采 4 条",
+      "sourceUrl": "Claude Skills 的产品经理方法技能",
+      "disposition": "已采 4；其余 16 处置见第三节",
+      "landing": "RULE-PREMORTEM-001 等 4 条",
+      "verifiedAt": "2026-09-28",
+      "note": "剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1",
+      "compileStatus": {
+        "level": "not_imported",
+        "label": "未导入库（仅台账记录）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 22,
+      "source": "Next.js 能力技能 5 个 与 ui-ux-pro-max",
+      "type": "Skills",
+      "status": "部分采集",
+      "sourceUrl": "Next.js 官方（next-dev-loop 等）",
+      "disposition": "已采（部分，进 AGENTS.md）",
+      "landing": "AGENTS.md「界面改动的验证」",
+      "verifiedAt": "2026-09-27",
+      "note": "其余待技术上下文筛选生效再按需采",
+      "compileStatus": {
+        "level": "template",
+        "label": "已进模板/规则层（非库内资产）",
+        "matchedAssets": []
+      }
+    },
+    {
+      "seq": 23,
+      "source": "S8 WorkBuddy 生态（本机 WorkBuddy 外部评审 + DEV-SYSTEM.md／MEMORY.md）",
+      "type": "评审 + Skills",
+      "status": "已采 3 条",
+      "sourceUrl": "本机 WorkBuddy",
+      "disposition": "已采 3 条",
+      "landing": "RULE-EVIDENCE-SCOPE-001 等 3 条",
+      "verifiedAt": "2026-09-28",
+      "note": "成本与额度纪律记为已知缺口不硬写",
+      "compileStatus": {
+        "level": "not_imported",
+        "label": "未导入库（仅台账记录）",
+        "matchedAssets": []
+      }
+    }
+  ]
+}

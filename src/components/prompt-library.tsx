@@ -345,6 +345,10 @@ export function PromptLibrary({
   // 标签、状态、关系和规则包四个筛选收进「筛选」面板，默认收起，把位置让给搜索框。
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [assetDetailId, setAssetDetailId] = useState<string | null>(null);
+  // 从采集台账深链过来时带过来的资产 ID（/?asset=...），等资产加载完再打开详情
+  const [pendingDeepLinkAssetId, setPendingDeepLinkAssetId] = useState<
+    string | null
+  >(null);
   const [assetEditorState, setAssetEditorState] =
     useState<AssetEditorState | null>(null);
   const [projectDialog, setProjectDialog] =
@@ -638,6 +642,34 @@ export function PromptLibrary({
       cancelled = true;
     };
   }, [dataSource, selectedPromptId]);
+
+  // 从采集台账深链过来时（/?asset=<库内资产 ID>）自动打开对应资产详情：
+  // 先取出参数，等资产加载完再匹配；匹配不到就当没带参数，不报错。
+  // 用 window.location 读参数（不引 useSearchParams），不给首页加构建约束。
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const assetId = new URLSearchParams(window.location.search).get("asset");
+    if (assetId) {
+      setPendingDeepLinkAssetId(assetId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pendingDeepLinkAssetId) {
+      return;
+    }
+
+    if (!assets.some((asset) => asset.id === pendingDeepLinkAssetId)) {
+      return;
+    }
+
+    setAssetDetailId(pendingDeepLinkAssetId);
+    setPendingDeepLinkAssetId(null);
+    window.history.replaceState(null, "", "/");
+  }, [assets, pendingDeepLinkAssetId]);
 
   const activeProject = useMemo(
     () => projects.find((project) => project.id === activeProjectId) ?? null,
@@ -2925,6 +2957,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           projects={projectViewProjects}
           showPractice={dataMode === "supabase"}
           onOpenPractice={() => router.push("/practice")}
+          onOpenExternalSources={() => router.push("/external-sources")}
           view={workspaceView}
         />
       </section>

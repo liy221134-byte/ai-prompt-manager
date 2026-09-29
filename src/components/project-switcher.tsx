@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, GraduationCap, Plus, Settings2 } from "lucide-react";
+import { ClipboardList, FolderKanban, GraduationCap, Plus, Settings2 } from "lucide-react";
 
 import {
   workspaceViewLabels,
@@ -25,6 +25,8 @@ type ProjectSwitcherProps = {
   // 练习题库是独立路由页（/practice），不属于 WorkspaceView，仅云端模式出现
   showPractice?: boolean;
   onOpenPractice?: () => void;
+  // 采集台账也是独立路由页（/external-sources），本地／云端都要看得到
+  onOpenExternalSources?: () => void;
 };
 
 export function ProjectSwitcher({
@@ -38,6 +40,7 @@ export function ProjectSwitcher({
   onOpenProjectSettings,
   showPractice = false,
   onOpenPractice,
+  onOpenExternalSources,
 }: ProjectSwitcherProps) {
   const activeProjects = projects.filter(
     (project) => project.status === "active",
@@ -64,6 +67,17 @@ export function ProjectSwitcher({
             {workspaceViewLabels[option]}
           </button>
         ))}
+
+        {onOpenExternalSources && (
+          <button
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md px-4 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-blue-700"
+            onClick={() => onOpenExternalSources()}
+            type="button"
+          >
+            <ClipboardList aria-hidden="true" className="size-4" />
+            采集台账
+          </button>
+        )}
 
         {showPractice && (
           <button

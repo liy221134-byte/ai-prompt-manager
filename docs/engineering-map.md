@@ -57,6 +57,9 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `src/lib/release-record.ts` | 发布门禁预填、完成情况与最近一次发布（纯逻辑） | 改门禁口径时 |
 | `src/lib/prompt-backup.ts` | 备份导出与导入预览 | 改备份范围时 |
 | `src/lib/server/runtime-config.ts` | 运行模式判定与配置失败关闭 | 改环境变量规则时 |
+| `scripts/generate-external-sources-ledger.ts`、`src/lib/external-sources-ledger.ts` | 线索 3 M1：把外部来源台账（`seed-packs/external-sources/README.md` 第六节）解析成只读快照 `src/data/external-sources-ledger.json`；生成期用「库内资产 sourceLocation → 源文件 frontmatter id」把台账落点匹配到库内资产 | 改台账解析或落点匹配规则时 |
+| `scripts/check-external-sources-compliance.ts`、`src/lib/external-sources-compliance.ts` | 线索 3 M1：外部来源资产按 SOP 四硬约束做只读合规检查（文档类走 role/authority 口径，规则类走 candidate/hypothesis 口径） | 改合规口径时 |
+| `src/app/external-sources/page.tsx`、`src/components/external-sources-ledger-view.tsx` | 线索 3 M1：采集台账只读视图（独立路由页，仿 `/practice`）与来源详情抽屉 | 改台账界面时 |
 | `supabase/migrations/*.sql` | 云端表结构、行级安全策略、RPC，每个迁移可重复执行 | 改云端结构时 |
 
 ## 数据流要点
@@ -75,7 +78,7 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
    写走 `src/lib/mcp-write.ts` 加同一套 `createAsset`／`updateAsset`；
    库文件按脚本所在仓库定位，`MCP_READ_ONLY=1` 时只注册查询工具。
 
-## 测试分布（78 个文件，525 项，约 15 秒）
+## 测试分布（82 个文件，563 项，约 14 秒）
 
 | 文件前缀 | 覆盖内容 |
 | --- | --- |
@@ -92,6 +95,7 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `mcp-server.test.mjs`、`mcp-stdio.test.mjs` | MCP 服务：工具清单、读写往返、只读模式、真实 stdio 传输 |
 | `acceptance-evidence.test.mjs` | 验收记录汇总、覆盖缺口与排序 |
 | `release-record.test.mjs` | 门禁预填、完成情况与最近一次发布 |
+| `external-sources-*.test.mjs` | 线索 3 M1：台账解析与「是否编译」派生、快照与 README 同步、外部来源资产合规检查 |
 
 命名规律：`<领域>-<对象>.test.mjs`，新测试按同一规律命名。
 
@@ -106,6 +110,8 @@ AI 调用：服务端路由 `src/app/api/ai/*`，请求组装在 `src/lib/prompt
 | `npm run build` | 生产构建 | 约 90 秒 |
 | `npm run check:fast` | 类型检查加测试 | 约 35 秒 |
 | `npm run check` | 类型、测试、代码检查、构建 | 约 3 分钟 |
+| `npm run generate:leads3-ledger` | 重生成采集台账 JSON 快照（改 README 第六节后跑） | 约 1 秒 |
+| `npm run check:leads3-compliance` | 外部来源资产合规检查（只读） | 约 1 秒 |
 
 ## 阅读建议
 
