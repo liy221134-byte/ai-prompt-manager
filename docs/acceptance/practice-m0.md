@@ -26,13 +26,24 @@
 - `eslint`（新增/改动 5 个文件）：**0 error**。
 - 说明：本机为链接工作树，依赖通过 junction 复用主工作树 `E:\codeX项目\node_modules`，用项目要求的 Node 24 运行。
 
-## 四、待线上验证（需先跑迁移，本机无法代跑）
+## 四、线上验证
 
-1. **应用迁移**：在 Supabase 项目执行 `supabase/migrations/20260928220000_add_practice.sql`（或 `supabase db push`），建表 + RLS + 种子 127 题。
-2. **手动验**：
-   - 登录后从「更多 → 练习题库」进入 `/practice`，能看到按分类分组的 127 题；
-   - 进入单题，选答案提交，页面显示正误 + 解析，且 `practice_attempts` 写入本人记录；
-   - 换一个账号登录，确认看不到前一个账号的答题记录（验证 RLS 隔离）。
+### 已验（2026-09-29，随 `main` 推送后由 Supabase GitHub 集成自动应用迁移）
+
+| 项 | 实测 | 判定 |
+| --- | --- | --- |
+| 迁移已应用 | `practice_questions` 127 行（种子题全到齐）、`practice_attempts` 0 行 | ✅ |
+| RLS 生效 | 用匿名密钥直读两张表，各返回 0 行（策略只授 `to authenticated`） | ✅ |
+| 路由已部署 | 线上 `/practice` 返回 307 跳 `/login`，`/login` 返回 200 | ✅ |
+| 本机同版本可跑 | `npm run dev` 起在 `localhost:3000`，`/`、`/practice` 均 307 跳 `/login`，运行时日志无错误 | ✅ |
+
+生产库写入记录见 [数据库迁移](../operations/database-migrations.md) 的「事实记录」。
+
+### 待产品负责人手验（需要登录态，agent 不代为登录）
+
+1. 登录后从「更多 → 练习题库」进入 `/practice`，能看到按分类分组的 127 题；
+2. 进入单题，选答案提交，页面显示正误 + 解析，且 `practice_attempts` 写入本人记录；
+3. 换第二个账号登录，确认看不到前一个账号的答题记录（RLS 隔离的关键一项）。
 
 ## 五、偏离记录（与原始设计草案）
 

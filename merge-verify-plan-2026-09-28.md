@@ -205,5 +205,15 @@ select count(*) from public.practice_attempts;    -- 期望 0
   `next build` 通过且 `/practice`、`/practice/[id]` 路由已产出。
   - 坑：**链接工作树跑不了 build**（junction 复用 node_modules，Turbopack 报
     `Symlink [project]/node_modules is invalid`），生产构建必须在主工作树 `E:\codeX项目` 跑。
-- **未做**：① **未推送**（main 领先 origin/main 16 个提交）；② 线上迁移 + 两账号 RLS 验收（第五节
-  Step 1–3）；③ 5 个陈旧 `--merged` 分支删除（需点头）；④ v2.25.0 的 T6 跨仓库改动（需点头 + token）。
+- **已推送并与线上对齐（2026-09-29）**：产品负责人指示「合并后迁移部署把服务起起来」后，
+  在主工作树跑完推送前门禁（`npm run check`：类型检查 0 error、测试 549/549、lint 0 error／3 个
+  既存 warning、生产构建产出 `/practice` 与 `/practice/[id]`），再 `git push origin main`
+  （`7c3e913..0365229`，17 个提交）。推送同时触发两条线上链路：Vercel 生产部署、
+  Supabase GitHub 集成自动应用 `20260928220000_add_practice.sql`。
+- **线上复验结果**：迁移已落地（`practice_questions` 127 行、`practice_attempts` 0 行）；匿名密钥
+  读两张表均为 0 行（RLS 生效）；线上 `/practice` 307 跳 `/login`、`/login` 200。本机以云模式
+  起服务后三项一致。生产库写入记录在 [数据库迁移](docs/operations/database-migrations.md)「事实记录」，
+  验收口径在 [练习题库 M0 验收](docs/acceptance/practice-m0.md) 第四节。
+- **仍未做**：① 两账号界面手验（需产品负责人登录态，agent 不代登录）；② 5 个陈旧 `--merged`
+  分支删除（需点头）；③ v2.25.0 的 T6 跨仓库改动（需点头 + token）；④ 练习题库是否打版本号标签
+  （待产品负责人拍板）。

@@ -17,13 +17,16 @@
 20260921120000 add_asset_prompt_storage
 20260922040501 add_source_package_storage
 20260923150000 add_project_risk_level
+20260928220000 add_practice
 ```
 
 `add_project_asset_foundation` 属于 2.0.0，`add_asset_prompt_storage` 属于 2.1.0，
 后者只新增统一资产上的原子操作函数（进垃圾箱、合并提交、恢复合并、优化提交、回到优化前、
 清空垃圾箱），不改表结构，也不删除 2.0.0 的旧函数，保证回滚到旧代码时仍然可用。
 
-八条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
+`add_practice` 属于线索 4 云端半边（练习题库），只新增两张表，不动现有表。
+
+九条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
 
 ## 三种执行方式
 
@@ -73,6 +76,20 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-09-29：**应用 `20260928220000_add_practice.sql`**（随 `main` 推送由 Supabase GitHub 集成自动执行，
+  非人工在控制台执行）。对应提交 `0365229`（迁移文件本身在 `705ac99`、缺陷修复在 `6095615`）。
+  改了什么：新增 `public.practice_questions`（题库，全局可读、终端用户无写权限）与
+  `public.practice_attempts`（答题记录，按 `auth.uid() = user_id` 隔离）两张表 + RLS 策略
+  + 索引 + 127 条种子题。**没有改动任何现有表、字段或数据。**
+  为什么要写：线索 4 云端半边（练习题库 M0）的建表与种子，验收清单见
+  `docs/acceptance/practice-m0.md`。
+  谁同意：产品负责人 2026-09-29 在对话里指示「合并后迁移部署把服务起起来」，即本次改动；
+  迁移内容是纯新增，不触碰既有资产库数据。
+  怎么回滚：`drop table if exists public.practice_attempts;`
+  `drop table if exists public.practice_questions;`（只丢练习记录与题库，现有资产库不受影响）。
+  验完的结果（只读核对，service role 直连 REST）：`practice_questions` 127 行、
+  `practice_attempts` 0 行；匿名密钥两张表都读到 0 行（策略为 `to authenticated`，RLS 生效）；
+  线上域名 `/practice` 返回 307 跳 `/login`、`/login` 返回 200，说明新路由已部署。
 - 2026-09-25（第二次写入）：**v2.20.0 部署后的线上复验**。产品负责人签字并同意自动部署，
   部署完成后做了最小复验，只读核对 + 一次挑资产。
   改了什么：新建复验项目 `复验-可归档-2026-09-25`
