@@ -55,18 +55,19 @@ Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后�
 - **这个项目与应用无关**：应用真正用的是 `snxdoiddnyvuokibbmfv`（127 道练习题的库）。
   `supabase-yellow-pocket` 是集成的副产物，应用一条数据都没往里写。
 
-**需要你做的**：把 Supabase 集成从账号上卸载（Vercel → Integrations → Supabase →
-Remove/Uninstall）。它会一并清掉那 16 条错误前缀的噪音变量，并去掉「每次部署都要去暂停项目
-那里供给资源」这一步。应用需要的 8 条变量是手动创建的（已核实），卸载不会带走。
+**处置与结果（2026-09-29 已完成）**：产品负责人移除该集成与项目之间的连接后——
 
-**不要走「Connect to Project」那条路**：那条会把项目连到 `supabase-yellow-pocket`（已暂停、
-且应用没在用），等于把应用指向一个死库。
+- 那 16 条畸形变量全部消失；环境变量只剩应用真正用的 8 条（`NEXT_PUBLIC_DATA_MODE`、
+  `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、
+  `CRON_SECRET`、三条 `AI_*`），且 `updatedAt` 全是原值，**没有任何一条被改写**。
+- 部署恢复：`dpl_7ZpDSaq7RDwAoTtWPTM6aNwBkx3e` 状态 READY，指向提交 `7653805`，
+  已挂在生产域名 `ai-prompt-manager-liyunqi.vercel.app`；`GET /api/mcp-setup` 返回 401
+  可证线上跑的是新版。
+- 集成本身仍装在账号上，但已不连任何项目（空转状态），不影响部署。是否彻底卸载由产品负责人定，
+  不急。
 
-**备选（只算止血，不推荐）**：去 Supabase 控制台把 `supabase-yellow-pocket` 恢复。它没用途、
-闲置一周还会再被暂停，几天后同样的失败会再来一次。
-
-卸载后由 Codex 触发重新部署并用接口核对（不必再推代码）。前端上线后，再登录手验练习题库
-（进 `/practice`、答题、换账号看隔离）。
+**只剩下要你做的**：登录线上站点手验练习题库——进 `/practice` 看 127 题分组、答一题确认写入
+本人记录、换第二个账号确认看不到对方记录（RLS 隔离）。这一项 agent 不代登录。
 
 ## 2026-09-25 线上数据层核对（记录）
 
