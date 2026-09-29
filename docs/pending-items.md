@@ -36,9 +36,29 @@ Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后�
 [数据库迁移](operations/database-migrations.md)「事实记录」；验收口径见
 [练习题库 M0 验收](acceptance/practice-m0.md)。本文件不重复叙述。
 
-**还剩需要你做的**：① 在 Vercel 打开失败部署的构建日志，把报错内容给 Codex（这是解开
-「线上部署为什么一直失败」的唯一入口）；② 前端上线后，登录手验练习题库（进 `/practice`、
-答题、换账号看隔离）。
+**已定位线上部署失败的原因（2026-09-29，读 Vercel 接口拿到）**：失败不是代码问题，Vercel 给的
+`errorCode = BUILD_FAILED`、`errorMessage = Resource provisioning failed`——卡在「Supabase 集成
+给这次部署供给资源」这一步。事实核对：
+
+- Supabase 集成（`icfg_aUJ00Js13vXquEQfG9lkhMCj`）装在本账号上，但 `projects: []`，**没连到任何项目**。
+- 项目里还留着 **16 条由该集成供应的变量**（`contentHint.type = integration-store-secret`），
+  名字全是 2026-09-20 那次前缀事故留下的错误形态（`SUPABASE_SERVICE_ROLE_KEY_SUPABASE_URL` 等），
+  应用一条都读不到。
+- 应用真正读的 8 条变量（`NEXT_PUBLIC_DATA_MODE`、`NEXT_PUBLIC_SUPABASE_URL`、
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`CRON_SECRET`、三条 `AI_*`）
+  **都是手动创建的**，没有集成标记，卸载集成不会带走它们。
+- 集成配置与环境变量的最后修改时间是 2026-09-21 16:10，晚于 9-24 那次成功部署，所以
+  **坏点在这之后、Vercel 项目之外**（最可能是 Supabase 那一侧的 Vercel 连接被断/失效）。
+
+**需要你做的**（二选一，都在 Vercel 界面）：
+
+1. **推荐**：把 Supabase 集成从账号上卸载（Integrations → Supabase → Remove/Uninstall）。
+   它会连带清掉那 16 条错误前缀的噪音变量；应用需要的 8 条不受影响（已核实）。
+2. 若不想卸载：把 Supabase 集成重新连回本项目（Connect Project），或在 Supabase 控制台把
+   Vercel 集成重新授权。
+
+改完在 Vercel 的 Deployments 里对最近一条失败部署点 **Redeploy** 即可验证（不必再推代码）。
+前端上线后，再登录手验练习题库（进 `/practice`、答题、换账号看隔离）。
 
 ## 2026-09-25 线上数据层核对（记录）
 
