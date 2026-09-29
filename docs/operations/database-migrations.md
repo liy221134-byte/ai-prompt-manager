@@ -18,15 +18,18 @@
 20260922040501 add_source_package_storage
 20260923150000 add_project_risk_level
 20260928220000 add_practice
+20260929000000 add_practice_type
 ```
 
 `add_project_asset_foundation` 属于 2.0.0，`add_asset_prompt_storage` 属于 2.1.0，
 后者只新增统一资产上的原子操作函数（进垃圾箱、合并提交、恢复合并、优化提交、回到优化前、
 清空垃圾箱），不改表结构，也不删除 2.0.0 的旧函数，保证回滚到旧代码时仍然可用。
 
-`add_practice` 属于线索 4 云端半边（练习题库），只新增两张表，不动现有表。
+`add_practice` 属于线索 4 云端半边（练习题库），只新增两张表，不动现有表；
+`add_practice_type` 是题库的交互优化，给 `practice_questions` 加一个 `type` 列（题型），
+同样只增不改。
 
-九条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
+十条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
 
 ## 三种执行方式
 
@@ -76,6 +79,21 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-09-29（第三次写入）：**应用 `20260929000000_add_practice_type.sql`**（随 `main` 推送由
+  Supabase GitHub 集成自动执行）。对应提交 `5121e8e`（迁移文件本身在 `73692f8`）。
+  改了什么：`public.practice_questions` 新增 `type text not null default '单选'`（现有 127 题
+  按默认值全部归为「单选」）+ 索引 `practice_questions_type_idx(type, category)` +
+  **新增 8 道样例题**（多选 3 / 判断 3 / 实操 2，`on conflict (id) do nothing`）。
+  **不改动任何现有题目、不改 `practice_attempts`、不动 RLS。**
+  为什么要写：题库交互优化需要「习题类型」这一筛选维度，且要有各档样例题撑起来。
+  谁同意：产品负责人 2026-09-29 在对话里指示「合并推送部署」，即本次改动。
+  怎么回滚：`delete from public.practice_questions where id in ('pq-eng-multi-01','pq-web-multi-01',
+  'pq-aicoding-multi-01','pq-git-judge-01','pq-sec-judge-01','pq-db-judge-01',
+  'pq-term-practice-01','pq-fe-practice-01');` 然后
+  `drop index if exists public.practice_questions_type_idx;`
+  `alter table public.practice_questions drop column if exists type;`
+  验完的结果（只读核对）：`practice_questions` 共 **135** 行，题型分布 **单选 127 / 多选 3 /
+  判断 3 / 实操 2**；8 道样例题按 id 逐一命中、题型正确。
 - 2026-09-29：**应用 `20260928220000_add_practice.sql`**（随 `main` 推送由 Supabase GitHub 集成自动执行，
   非人工在控制台执行）。对应提交 `0365229`（迁移文件本身在 `705ac99`、缺陷修复在 `6095615`）。
   改了什么：新增 `public.practice_questions`（题库，全局可读、终端用户无写权限）与
