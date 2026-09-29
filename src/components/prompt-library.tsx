@@ -27,7 +27,6 @@ import {
   Trash2,
   WandSparkles,
   X,
-  GraduationCap,
 } from "lucide-react";
 import {
   type ChangeEvent,
@@ -2924,6 +2923,8 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           }}
           onSelectProject={handleSelectProject}
           projects={projectViewProjects}
+          showPractice={dataMode === "supabase"}
+          onOpenPractice={() => router.push("/practice")}
           view={workspaceView}
         />
       </section>
@@ -3273,21 +3274,6 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
                 items={
                   workspaceView === "public"
                     ? [
-                        ...(dataMode === "supabase"
-                          ? [
-                              {
-                                key: "practice",
-                                label: "练习题库",
-                                icon: (
-                                  <GraduationCap
-                                    aria-hidden="true"
-                                    className="size-4"
-                                  />
-                                ),
-                                onSelect: () => router.push("/practice"),
-                              },
-                            ]
-                          : []),
                         {
                           key: "import-source-package",
                           label: "导入文档包",

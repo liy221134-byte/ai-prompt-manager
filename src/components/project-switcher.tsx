@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, Plus, Settings2 } from "lucide-react";
+import { FolderKanban, GraduationCap, Plus, Settings2 } from "lucide-react";
 
 import {
   workspaceViewLabels,
@@ -22,6 +22,9 @@ type ProjectSwitcherProps = {
   onSelectProject: (projectId: string) => void;
   onCreateProject: () => void;
   onOpenProjectSettings: () => void;
+  // 练习题库是独立路由页（/practice），不属于 WorkspaceView，仅云端模式出现
+  showPractice?: boolean;
+  onOpenPractice?: () => void;
 };
 
 export function ProjectSwitcher({
@@ -33,6 +36,8 @@ export function ProjectSwitcher({
   onSelectProject,
   onCreateProject,
   onOpenProjectSettings,
+  showPractice = false,
+  onOpenPractice,
 }: ProjectSwitcherProps) {
   const activeProjects = projects.filter(
     (project) => project.status === "active",
@@ -59,6 +64,17 @@ export function ProjectSwitcher({
             {workspaceViewLabels[option]}
           </button>
         ))}
+
+        {showPractice && (
+          <button
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md px-4 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-blue-700"
+            onClick={() => onOpenPractice?.()}
+            type="button"
+          >
+            <GraduationCap aria-hidden="true" className="size-4" />
+            练习题库
+          </button>
+        )}
       </div>
 
       {view === "public" ? (
