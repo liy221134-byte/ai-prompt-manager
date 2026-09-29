@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -84,13 +84,17 @@ export function PracticeQuiz({
     return statusMap?.[id] ?? "未做";
   }
 
-  // 切换到另一题时，若该题已在本轮答过，恢复其选项与对错；否则清空
-  useEffect(() => {
-    const a = current ? attempts[current.id] : undefined;
-    if (a) {
-      setSelectedSingle(typeof a.selected === "string" ? a.selected : null);
-      setSelectedMulti(Array.isArray(a.selected) ? a.selected : []);
-      setResult({ correct: a.correct });
+  // 切到另一题：把答题区状态重置到目标题——本轮答过就回显该题的选项与对错，否则清空。
+  // 这里用一个显式的切题函数，而不是监听 index 的 effect：切题只由「上一题 / 下一题 /
+  // 点左侧习题树」三种主动操作触发，在 effect 里同步 setState 会触发级联渲染
+  // （eslint 的 react-hooks/set-state-in-effect 会拦下这种写法）。
+  function goToQuestion(nextIndex: number) {
+    const target = queue[nextIndex];
+    const answered = target ? attempts[target.id] : undefined;
+    if (answered) {
+      setSelectedSingle(typeof answered.selected === "string" ? answered.selected : null);
+      setSelectedMulti(Array.isArray(answered.selected) ? answered.selected : []);
+      setResult({ correct: answered.correct });
     } else {
       setSelectedSingle(null);
       setSelectedMulti([]);
@@ -98,9 +102,8 @@ export function PracticeQuiz({
     }
     setShowPracticalRef(false);
     setSubmitError(null);
-    // 仅在切题时触发；attempts 更新（同题提交）由 submit 手动处理
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, current?.id]);
+    setIndex(nextIndex);
+  }
 
   const answeredCount = useMemo(
     () =>
@@ -129,7 +132,7 @@ export function PracticeQuiz({
     }
 
     let correct = false;
-    let selected: string | string[] | null = isMulti ? selectedMulti : selectedSingle;
+    const selected: string | string[] | null = isMulti ? selectedMulti : selectedSingle;
 
     if (isPractical) {
       // 实操题无对错，标记完成即记为已做
@@ -216,13 +219,13 @@ export function PracticeQuiz({
 
   function goPrev() {
     if (index > 0) {
-      setIndex((i) => i - 1);
+      goToQuestion(index - 1);
     }
   }
 
   function goNext() {
     if (index < queue.length - 1) {
-      setIndex((i) => i + 1);
+      goToQuestion(index + 1);
     }
   }
 
@@ -293,7 +296,7 @@ export function PracticeQuiz({
                               ? "bg-blue-50 text-blue-700"
                               : "text-slate-600 hover:bg-slate-50",
                           ].join(" ")}
-                          onClick={() => setIndex(pos)}
+                          onClick={() => goToQuestion(pos)}
                           type="button"
                         >
                           <span
