@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { collectionEcosystems } from "@/data/assets";
 import { buildCollectionTaskPrompt } from "@/lib/external-sources-ledger";
@@ -26,6 +26,7 @@ export function CollectionTaskDialog({ onClose }: CollectionTaskDialogProps) {
   const [focus, setFocus] = useState("");
   const [prompt, setPrompt] = useState("");
   const [hasCopied, setHasCopied] = useState(false);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
 
   function handleGenerate() {
     if (!sourceUrl.trim()) {
@@ -47,11 +48,26 @@ export function CollectionTaskDialog({ onClose }: CollectionTaskDialogProps) {
       return;
     }
 
+    // 先走异步剪贴板 API（HTTPS / localhost 可用）；
+    // 它被拒时（非安全上下文、无权限）退回选中文本 + execCommand，
+    // 这样按钮状态在两种环境下都如实反映是否复制成功。
     try {
       await navigator.clipboard.writeText(prompt);
       setHasCopied(true);
+      return;
     } catch {
-      // clipboard API 在非 HTTPS 环境可能不可用，退回选中文本让用户手动复制
+      // 落到下面的兜底
+    }
+
+    const node = promptRef.current;
+
+    if (node) {
+      node.focus();
+      node.select();
+
+      if (document.execCommand("copy")) {
+        setHasCopied(true);
+      }
     }
   }
 
@@ -145,6 +161,7 @@ export function CollectionTaskDialog({ onClose }: CollectionTaskDialogProps) {
               <textarea
                 className="mt-2 h-64 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs leading-5 text-slate-800 outline-none"
                 readOnly
+                ref={promptRef}
                 value={prompt}
               />
             </div>
