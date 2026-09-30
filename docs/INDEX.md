@@ -43,6 +43,7 @@
 
 ### 设计
 
+- [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads-3-ledger-paths-and-m2.2.md)
 - [线索 3 M2 采集台账进库与进编译候选设计与任务清单（已实现；M2.1 两条入口见同文档第十三节）](leads-3-m2-design-and-tasks.md)
 - [线索 3 M1 采集台账设计与任务清单（已实现，数据源已被 M2 取代）](leads-3-m1-design-and-tasks.md)
 - [线索 3 生态采集沉淀设计与任务清单（M0，已完成）](leads-3-design-and-tasks.md)
