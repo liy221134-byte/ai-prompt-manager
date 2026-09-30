@@ -219,8 +219,9 @@ let 新增 = 0;
 let 跳过 = 0;
 
 for (const asset of assets) {
+  const assetLabel = `${asset.id}（${asset.title}）`;
   if (!isAssetData(asset)) {
-    throw new Error(`资产结构不合法，已拦下：${asset.id}（${asset.title}）`);
+    throw new Error(`资产结构不合法，已拦下：${assetLabel}`);
   }
 
   if (existingIds.has(asset.id)) {
