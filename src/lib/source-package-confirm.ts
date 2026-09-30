@@ -53,6 +53,7 @@ function createMetadata(
   assetType: SourcePackageDraftType,
   item: SourcePackageDraft["items"][number],
   mode: SourcePackageMode = "standard",
+  collectionSource?: string,
 ) {
   if (assetType === "prompt") {
     const metadata: PromptAssetMetadata = {
@@ -85,6 +86,15 @@ function createMetadata(
   const metadata: DocumentAssetMetadata = {
     documentType: defaultDocumentType,
   };
+
+  // 外部采集模式下，文档类（MCP 服务／本地插件这类「装不装、怎么装」的使用文档）
+  // 也要能回溯来源：合规检查盯着这两项——authority: false 表达「外部来源、未采信」，
+  // sourceLocation 记录它从哪来。缺了任一项，采进来的文档当场就是一条违规。
+  if (mode === "external-collection") {
+    metadata.role = "source";
+    metadata.authority = false;
+    metadata.sourceLocation = collectionSource?.trim() || "外部采集";
+  }
 
   return metadata;
 }
@@ -211,7 +221,12 @@ export function planSourcePackageCreation(input: {
       title: item.title,
       summary: item.summary,
       content: item.content,
-      metadata: createMetadata(assetType, item, mode),
+      metadata: createMetadata(
+        assetType,
+        item,
+        mode,
+        input.collectionMeta?.source,
+      ),
       source: {
         sourceType: "import",
         sourceAssetId: sourceAssetIds[0] ?? null,
@@ -219,8 +234,11 @@ export function planSourcePackageCreation(input: {
         originalFilename: item.sourceFilename,
       },
       currentVersionId: `current-${id}`,
-      // AI 提取的规则默认是草稿状态，不会直接进入活跃列表
-      status: assetType === "rule" ? "draft" : "active",
+      // AI 提取的规则是草稿状态，不会直接进入活跃列表。
+      // 外部采集模式下文档同样是候选（可能是一条「装不装这个插件」的建议），
+      // 跟规则一个待遇：同一批采来的东西不该一部分要确认、一部分直接上架。
+      // 标准模式导入的文档（需求／设计／方案）仍是 active，那是用户自己交的正本。
+      status: assetType === "rule" || isExternalCollection ? "draft" : "active",
       archivedAt: null,
       deletedAt: null,
       deletedReason: null,
@@ -251,9 +269,11 @@ export function planSourcePackageCreation(input: {
       sourceType: "Skill/MCP",
       sourceUrl: "",
       disposition: "已采",
-      landing: `压缩包导入：${createdIds.join("、")}`,
+      landing: createdIds.join("、"),
       verifiedAt: now.slice(0, 10),
-      note: `由「给压缩包」入口自动生成，共 ${createdIds.length} 条候选资产。`,
+      // 不说「由哪个入口生成」：M2.2 起落库有两条路（UI 导入与落库命令），
+      // 写死入口会让命令落出来的记录谎报来源。
+      note: `外部采集自动生成，共 ${createdIds.length} 条候选资产。`,
     });
 
     const record = {
@@ -272,10 +292,10 @@ export function planSourcePackageCreation(input: {
           sourceType: "Skill/MCP",
           sourceUrl: "",
           disposition: "已采",
-          landing: `压缩包导入：${createdIds.join("、")}`,
+          landing: createdIds.join("、"),
           collectedAssetIds: createdIds,
           verifiedAt: now.slice(0, 10),
-          note: `由「给压缩包」入口自动生成，共 ${createdIds.length} 条候选资产。`,
+          note: `外部采集自动生成，共 ${createdIds.length} 条候选资产。`,
         },
       },
       source: {

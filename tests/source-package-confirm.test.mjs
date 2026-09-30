@@ -227,6 +227,51 @@ test("外部采集模式：额外生成一条采集记录，落点指向这批�
   assert.equal(plan.assets[3].version.changeReason, "外部采集");
 });
 
+// —— M2.2：目标是 MCP 服务／本地插件时，结论是使用文档而不是规则 ——
+
+test("外部采集模式：文档类（MCP／插件使用文档）落草稿，带未采信与来源位置", () => {
+  const plan = planSourcePackageCreation({
+    draft: createDraft(),
+    uploads: UPLOADS,
+    importBatchId: "batch-ext-4",
+    project: { mode: "existing", projectId: "default-project" },
+    mode: "external-collection",
+    collectionMeta: { source: "某 MCP 服务", ecosystem: "开源社区" },
+    now: NOW,
+  });
+
+  const document = plan.assets.find(
+    (entry) => entry.asset.assetType === "document",
+  );
+
+  // 合规检查盯着这两项：外部文档必须 authority: false（未采信）、必须有 sourceLocation（能回溯）
+  assert.equal(document.asset.metadata.authority, false);
+  assert.equal(document.asset.metadata.role, "source");
+  assert.equal(document.asset.metadata.sourceLocation, "某 MCP 服务");
+  // 采进来的都是候选，文档跟规则一个待遇：草稿，不直接上架
+  assert.equal(document.asset.status, "draft");
+  // 文档没有可信度这一档，不硬塞
+  assert.equal(document.asset.metadata.confidence, undefined);
+});
+
+test("标准模式：导入的文档仍是 active，不带外部采集的溯源字段（回归）", () => {
+  const plan = planSourcePackageCreation({
+    draft: createDraft(),
+    uploads: UPLOADS,
+    importBatchId: "batch-std-2",
+    project: { mode: "existing", projectId: "default-project" },
+    now: NOW,
+  });
+
+  const document = plan.assets.find(
+    (entry) => entry.asset.assetType === "document",
+  );
+
+  assert.equal(document.asset.status, "active");
+  assert.equal(document.asset.metadata.authority, undefined);
+  assert.equal(document.asset.metadata.sourceLocation, undefined);
+});
+
 test("标准模式：不生成采集记录（回归）", () => {
   const plan = planSourcePackageCreation({
     draft: createDraft(),

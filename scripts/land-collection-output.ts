@@ -1,11 +1,14 @@
 // 线索 3 M2.2 T15：把智能体的采集产出件直接落进本机库。
 //
 // 用法（话术里就是这么教本地智能体的）：
-//   npm run collect:land -- <产出件目录或单个 .md> --source "来源名" [--ecosystem "开源社区"]
+//   npm run collect:land -- <产出件目录或单个 .md> --source "来源名" [--kind document] [--ecosystem "开源社区"]
+//
+// --kind 定结论形态：rule（默认，工程规则）／document（MCP 服务、本地插件这类
+// 「装不装、怎么装」的使用文档）。形态不同落点不同：规则会进编译候选集，文档不会。
 //
 // 只写本机库（`.data/prompts.sqlite`，可用 PROMPT_DB_PATH 指到别处）；
-// 云端靠 `npm run sync -- --push` 跟上。落库规则与「给压缩包」入口完全一致：
-// 规则 draft + hypothesis + 来源摘录、进公共库、自动生成一条采集记录。
+// 云端靠 `npm run sync -- --push` 跟上。落库规则与「给压缩包」入口一致：
+// 进公共库、草稿态、自动生成一条采集记录。
 
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -39,7 +42,7 @@ function fail(message: string): never {
   console.error(`✗ ${message}`);
   console.error("");
   console.error(
-    '用法：npm run collect:land -- <产出件目录或单个 .md> --source "来源名" [--ecosystem "生态"]',
+    '用法：npm run collect:land -- <产出件目录或单个 .md> --source "来源名" [--kind document] [--ecosystem "生态"]',
   );
   process.exit(1);
 }
@@ -74,6 +77,18 @@ const targetPathArg = process.argv
 const source = readArg("source");
 const ecosystem = readArg("ecosystem") ?? "";
 
+// 结论形态：rule（默认，工程规则）／document（MCP 服务、插件这类「装不装、怎么装」的使用文档）。
+// 定形态是为了不把安装建议塞进规则库——规则会进编译候选集，文档不会。
+const kindArg = readArg("kind") ?? "rule";
+
+if (kindArg !== "rule" && kindArg !== "document") {
+  fail(`--kind 只能是 rule 或 document，收到「${kindArg}」。`);
+}
+
+const kind: "rule" | "document" = kindArg;
+const kindLabel = kind === "rule" ? "候选规则" : "使用文档";
+const kindUnit = kind === "rule" ? "条" : "份";
+
 if (!targetPathArg) {
   fail("没给产出件路径。");
 }
@@ -103,11 +118,12 @@ if (parsed.length === 0) {
 
 const database = getPromptDatabase();
 
-// 去重口径：公共库里已经有同名规则就跳过——命令可以重复跑，第二遍 0 新增。
+// 去重口径：公共库里已经有同类型同名资产就跳过——命令可以重复跑，第二遍 0 新增。
+// 按 kind 限定类型：规则与文档同名不算重复（「用 MCP 做持久化」既可能是规则也可能是文档）。
 const existingTitles = new Set(
   database
     .listAssets(DEFAULT_PROJECT_ID)
-    .filter((asset) => asset.assetType === "rule")
+    .filter((asset) => asset.assetType === kind)
     .map((asset) => asset.title.trim()),
 );
 
@@ -115,7 +131,7 @@ const fresh = parsed.filter((item) => !existingTitles.has(item.title.trim()));
 const skipped = parsed.filter((item) => existingTitles.has(item.title.trim()));
 
 for (const item of skipped) {
-  console.log(`· 跳过（库里已有同名规则）：${item.title}`);
+  console.log(`· 跳过（库里已有同名${kindLabel}）：${item.title}`);
 }
 
 if (fresh.length === 0) {
@@ -143,7 +159,7 @@ const draft: SourcePackageDraft = {
   items: fresh.map((item, index) => ({
     id: `draft-${index + 1}`,
     sourceFilename: item.sourceFilename,
-    assetType: "rule",
+    assetType: kind,
     title: item.title,
     summary: item.summary,
     content: item.content,
@@ -172,7 +188,9 @@ database.createSourcePackageImport(plan);
 console.log("");
 console.log(`✓ 已落库：批次 ${importBatchId}`);
 console.log(`  来源：${source}${ecosystem ? `（${ecosystem}）` : ""}`);
-console.log(`  新增候选规则 ${fresh.length} 条，跳过 ${skipped.length} 条：`);
+console.log(
+  `  新增${kindLabel} ${fresh.length} ${kindUnit}，跳过 ${skipped.length} ${kindUnit}：`,
+);
 
 for (const item of fresh) {
   console.log(`    - ${item.title}`);
@@ -180,5 +198,9 @@ for (const item of fresh) {
 
 console.log(`  采集记录：collection-${importBatchId}（台账会多一行）`);
 console.log("");
-console.log("规则是草稿态 + 假设级可信度，确认过再到产品里转 active。");
+console.log(
+  kind === "rule"
+    ? "规则是草稿态 + 假设级可信度，确认过再到产品里转 active。"
+    : "文档是草稿态（外部采来的都是候选），确认过再到产品里转 active。",
+);
 console.log("要同步到云端：npm run sync -- --push");

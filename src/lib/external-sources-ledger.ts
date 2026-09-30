@@ -331,29 +331,46 @@ export function buildCollectionTaskPrompt(input: {
   const focus = input.focus?.trim() ?? "";
 
   // 关注点这一条只在用户填了的时候出现，不硬塞空行
-  const focusLine = focus
-    ? `\n4. 重点关注：${focus}`
-    : "";
+  const focusLine = focus ? `\n重点关注：${focus}` : "";
 
   // 生态提示只在选了的时候出现
   const ecosystemHint = ecosystem ? `（生态：${ecosystem}）` : "";
 
-  // M2.2：本地智能体能碰仓库文件系统，就让它自己跑落库命令，不用把产出件交回来
-  const landCommand = [
-    `npm run collect:land -- <产出件目录> --source "${source}"`,
-    ecosystem ? ` --ecosystem "${ecosystem}"` : "",
-  ].join("");
+  // M2.2：本地智能体能碰仓库文件系统，就让它自己跑落库命令，不用把产出件交回来。
+  // 命令要带 --kind：目标是 MCP 服务／本地插件这类「能装的东西」时，结论是使用文档
+  // 而不是规则——写成规则会混进工程规则包、进编译候选集。
+  const buildLandCommand = (kind: "" | " --kind document") =>
+    [
+      `npm run collect:land -- <产出件目录> --source "${source}"${kind}`,
+      ecosystem ? ` --ecosystem "${ecosystem}"` : "",
+    ].join("");
+
+  const landCommandRule = buildLandCommand("");
+  const landCommandDoc = buildLandCommand(" --kind document");
 
   return [
     `请阅读这个 Skills / MCP 仓库：${source}`,
     `背景：我是产品经理，零代码用 AI 交付软件，正在建设工程规则资产包。`,
-    `任务：从中提炼"可复用的工程规则"，不要照搬它的完整流程，也不要安装或修改任何东西。`,
     ``,
-    `提炼要求：`,
+    `先判断这个来源的结论形态（两种选一种，不要两种都写）：`,
+    `- 规则类：它是方法论／约定／纪律（SKILL.md、编码规范、工作流约定）→ 按下面「规则类」产出。`,
+    `- 工具类：它是能装能接的东西（MCP 服务、本地插件、CLI、平台接入）→ 按下面「工具类」产出，`,
+    `  结论是「装不装 + 怎么装 + 注意什么」的使用文档，不要硬抽象成工程规则。`,
+    ``,
+    `不要照搬它的完整流程，也不要真的安装或修改任何东西。${focusLine}`,
+    ``,
+    `规则类 —— 提炼要求：`,
     `1. 逐条输出候选规则，每条标注来源（具体到哪个 SKILL.md / 哪个官方约定）。`,
     `2. 区分两类：约束 AI 的规则（进工程包）/ 教操作者的方法（进训练包）。`,
     `3. 每条给出：规则类型（必须/禁止/建议/流程/验收）、适用项目规模`,
-    `   （个人/中型/大型）、优先级、不适用场景。${focusLine}`,
+    `   （个人/中型/大型）、优先级、不适用场景。`,
+    ``,
+    `工具类 —— 产出要求：`,
+    `1. 每个结论写一份使用文档：它是什么、解决什么问题、装不装（给建议和理由）、`,
+    `   怎么装（步骤）、已知坑和注意事项。`,
+    `2. 不要写成「必须 / 禁止」式规则——它不是约束 AI 的纪律，是给操作者的安装建议，`,
+    `   写成规则会混进工程规则包、进编译候选集。`,
+    `3. 一个工具一个 .md，不要把多个工具塞进同一个文件。`,
     ``,
     `去重口径：`,
     `对照我现有的工程资产清单（见 seed-packs/engineering-foundations/manifest.md）去重，`,
@@ -365,17 +382,18 @@ export function buildCollectionTaskPrompt(input: {
     ``,
     `回填格式（重要，照做）：`,
     `- 产出物是一个或多个 .md 文件，条目多就打包成一个 .zip。`,
-    `- 每个 .md 文件写一条候选规则：第一行用 "# 规则标题" 起头，下面写规则正文`,
-    `  （类型/规模/优先级/不适用场景 + 正例反例），纯 Markdown。`,
+    `- 每个 .md 文件写一条候选：规则类写规则正文（类型/规模/优先级/不适用场景 + 正例反例），`,
+    `  工具类写使用文档（是什么/装不装/怎么装/坑）。第一行用 "# 标题" 起头，纯 Markdown。`,
     `- 不要写 YAML frontmatter：status、confidence、来源这些由产品落库时统一处理，写了也用不上。`,
     `- 不要在文件里写"去重说明""未采纳项"这类元信息——产品导入时会把文件里每一块`,
     `  内容都当候选提炼，元信息会变成垃圾资产。`,
     ``,
     `落库（按你的执行环境二选一，只做适用那一支）：`,
     `A. 你能访问我本机仓库（Codex 这类本地智能体）：把 .md 写进一个目录`,
-    `   （例如 .data/collection-outputs/obra-superpowers/），然后执行落库命令：`,
-    `   ${landCommand}`,
-    `   规则会进公共库（草稿态、假设级可信度，等我确认），同时自动生成一条采集记录；`,
+    `   （例如 .data/collection-outputs/obra-superpowers/），然后执行落库命令——`,
+    `   规则类：${landCommandRule}`,
+    `   工具类：${landCommandDoc}`,
+    `   落进公共库（草稿态，等我确认），同时自动生成一条采集记录；`,
     `   命令会打印新增了哪几条、采集记录是哪个 ID——在回复里把这两件事告诉我。`,
     `B. 你碰不到本机文件系统（云端 / 网页智能体）：把 .md（或 .zip）交回给我，`,
     `   并明确说下一步是到产品「采集台账 → 给压缩包」导入，导入后台账会自动多一行采集记录${ecosystemHint}。`,

@@ -372,6 +372,13 @@ test("采集任务单话术：来源与四段齐全，关注点和生态只在�
   assert.doesNotMatch(text, /--ecosystem/);
   assert.match(text, /B\. 你碰不到本机文件系统/);
   assert.match(text, /采集台账 → 给压缩包/);
+  // 结论形态：目标是 MCP 服务／插件这类「能装的东西」时，产出使用文档而不是规则
+  assert.match(text, /先判断这个来源的结论形态/);
+  assert.match(text, /工具类 —— 产出要求：/);
+  assert.match(text, /不要写成「必须 \/ 禁止」式规则/);
+  assert.match(text, /混进工程规则包、进编译候选集/);
+  // 工具类落库要带 --kind document，否则安装建议会被落成规则
+  assert.match(text, /工具类：npm run collect:land -- <产出件目录> --source "https:\/\/github\.com\/anthropics\/skills" --kind document/);
 });
 
 test("采集任务单话术：填了关注点与生态就带上", () => {
@@ -383,6 +390,10 @@ test("采集任务单话术：填了关注点与生态就带上", () => {
 
   assert.match(text, /重点关注：只提炼工程纪律类规则，不要安装任何东西/);
   assert.match(text, /（生态：开源社区）/);
-  // 选了生态，落库命令要带上
+  // 选了生态，落库命令要带上（规则类与工具类两支都要）
   assert.match(text, /--source "obra\/superpowers" --ecosystem "开源社区"/);
+  assert.match(
+    text,
+    /--source "obra\/superpowers" --kind document --ecosystem "开源社区"/,
+  );
 });
