@@ -377,6 +377,110 @@ test("装到第三个项目时按包内编号去重，跳过数不重复计算",
   assert.equal(again.skipped.length, 2);
 });
 
+test("重装规则包：包条目按包文件更新，编号、项目和创建时间不动", () => {
+  const parsed = createSamplePack();
+  const file = {
+    ...createRulePackFileFromAssets({
+      pack: createPackAsset(parsed),
+      members: [],
+      exportedAt: now,
+    }),
+    members: parsed.members,
+  };
+  // 库里这份是拿 0.1.0 的老包装进来的
+  const stalePack = {
+    ...createPackAsset(parsed),
+    metadata: { ...parsed.pack.metadata, packVersion: "0.1.0" },
+  };
+  const plan = planRulePackImport({
+    file,
+    existingAssets: [stalePack],
+    targetProjectId: "project-a",
+    now,
+  });
+
+  assert.equal(plan.packAsset, null);
+  assert.notEqual(plan.packAssetUpdate, null);
+  assert.equal(plan.packAssetUpdate.id, stalePack.id);
+  assert.equal(plan.packAssetUpdate.projectId, stalePack.projectId);
+  assert.equal(plan.packAssetUpdate.createdAt, stalePack.createdAt);
+  assert.equal(plan.packAssetUpdate.updatedAt, now);
+  // 包条目的版本号跟着包文件走（0.3.0），不再停在首次导入的值
+  assert.equal(plan.packAssetUpdate.metadata.packVersion, "0.3.0");
+  // 成员照旧只新增
+  assert.equal(plan.assetsToCreate.length, 2);
+});
+
+test("重装时报出「拿旧版本包装的成员」条数，正文不动", () => {
+  const parsed = createSamplePack();
+  const oldPackFile = {
+    ...createRulePackFileFromAssets({
+      pack: createPackAsset(parsed),
+      members: [],
+      exportedAt: now,
+    }),
+    pack: {
+      ...parsed.pack,
+      metadata: { ...parsed.pack.metadata, packVersion: "0.1.0" },
+    },
+    members: parsed.members,
+  };
+  const pack = createPackAsset(parsed);
+  const first = planRulePackImport({
+    file: oldPackFile,
+    existingAssets: [pack],
+    targetProjectId: "project-a",
+    now,
+  });
+
+  assert.equal(first.assetsToCreate.length, 2);
+  assert.equal(first.staleSkippedCount, 0);
+
+  // 拿 0.3.0 的包重装：两条成员都在库里，但记录里是 0.1.0 装的
+  const again = planRulePackImport({
+    file: { ...oldPackFile, pack: parsed.pack },
+    existingAssets: [pack, ...first.assetsToCreate],
+    targetProjectId: "project-a",
+    now,
+  });
+
+  assert.equal(again.assetsToCreate.length, 0);
+  assert.equal(again.skipped.length, 2);
+  assert.equal(again.staleSkippedCount, 2);
+});
+
+test("版本号读不出来时不算「旧版本」，宁可少报", () => {
+  const parsed = createSamplePack();
+  const unversionedFile = {
+    ...createRulePackFileFromAssets({
+      pack: createPackAsset(parsed),
+      members: [],
+      exportedAt: now,
+    }),
+    pack: {
+      ...parsed.pack,
+      metadata: { ...parsed.pack.metadata, packVersion: "" },
+    },
+    members: parsed.members,
+  };
+  const pack = createPackAsset(parsed);
+  const first = planRulePackImport({
+    file: unversionedFile,
+    existingAssets: [pack],
+    targetProjectId: "project-a",
+    now,
+  });
+  const again = planRulePackImport({
+    file: { ...unversionedFile, pack: parsed.pack },
+    existingAssets: [pack, ...first.assetsToCreate],
+    targetProjectId: "project-a",
+    now,
+  });
+
+  assert.equal(again.skipped.length, 2);
+  assert.equal(again.staleSkippedCount, 0);
+});
+
 test("引用记录带上排除清单：重复项去掉，空值忽略", () => {
   const plan = planRulePackImport({
     file: createSamplePack(),

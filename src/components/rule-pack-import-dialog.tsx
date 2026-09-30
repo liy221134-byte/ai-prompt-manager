@@ -13,6 +13,11 @@ import { useModalBehavior } from "@/hooks/use-modal-behavior";
 type RulePackImportDialogProps = {
   projects: ProjectData[];
   activeProjectId: string | null;
+  // 打开时预选的项目：从公共资产视图进来就固定是公共资产库（默认项目），
+  // 不靠「当前项目恰好是它」这个巧合
+  defaultProjectId: string | null;
+  // 公共资产库（默认项目）的标识：用来解释「装到哪儿」到底意味着复制还是引用
+  publicProjectId: string;
   onClose: () => void;
   onInstall: (file: RulePackFile, projectId: string) => Promise<void>;
 };
@@ -22,6 +27,8 @@ const maxPackFileSize = 5 * 1024 * 1024;
 export function RulePackImportDialog({
   projects,
   activeProjectId,
+  defaultProjectId,
+  publicProjectId,
   onClose,
   onInstall,
 }: RulePackImportDialogProps) {
@@ -30,7 +37,7 @@ export function RulePackImportDialog({
   const [fileName, setFileName] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [targetProjectId, setTargetProjectId] = useState(
-    activeProjectId ?? projects[0]?.id ?? "",
+    defaultProjectId ?? activeProjectId ?? projects[0]?.id ?? "",
   );
   const [isInstalling, setIsInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
@@ -273,6 +280,11 @@ export function RulePackImportDialog({
                     安装到这个项目
                   </button>
                 </div>
+                <p className="mt-3 text-xs leading-5 text-indigo-900/80">
+                  {targetProjectId === publicProjectId
+                    ? "装进公共资产库：成员正文的正本落在这里，以后可以从库里挑进各个项目。"
+                    : "装进普通项目：只在这个项目里记一条引用，规则正文留在公共资产库；改公共库，这里跟着变。"}
+                </p>
                 {installError && (
                   <p className="mt-3 text-sm text-red-700">{installError}</p>
                 )}

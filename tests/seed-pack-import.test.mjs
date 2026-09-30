@@ -74,6 +74,27 @@ test("种子包的包信息按 manifest 和 README 落地", () => {
   );
 });
 
+test("成员状态跟着源文件走：candidate 进库是待确认，不再被强制成 active", () => {
+  const { members } = parseRealPack();
+  const byId = new Map(members.map((member) => [member.id, member]));
+
+  // 源文件里唯一一条 status: active 的资产（PLAYBOOK-DEBUG-001，已经在用）保持 active
+  assert.equal(byId.get("rule-playbook-debug-001").status, "active");
+  // 源文件标 candidate 的规则，进库后是 pending（待确认），不进编译候选
+  assert.equal(byId.get("rule-rule-boundary-001").status, "pending");
+
+  // 58 条资产在源文件里标的都是 candidate → pending
+  assert.equal(
+    members.filter((member) => member.status === "pending").length,
+    58,
+  );
+  // 剩下 11 条 active：1 条真 active 的规则 + 10 条没有 status 字段的画像与验证记录
+  assert.equal(
+    members.filter((member) => member.status === "active").length,
+    11,
+  );
+});
+
 test("方法、流程、规则落成规则资产，模板和案例落成文档资产", () => {
   const { members } = parseRealPack();
   const byId = new Map(members.map((member) => [member.id, member]));

@@ -375,6 +375,25 @@ function readProjectScale(parsed: FrontMatter): ProjectScale[] {
   );
 }
 
+// 种子包 schema 的 candidate（默认候选）在资产库里的对应词是 pending（待确认）——
+// 两套词表不一样：库里的状态是 draft／pending／active／archived／deprecated。
+// 这里要映射而不是照抄，否则「未经人工确认不许升 active」这条 SOP 永远生效不了：
+// 源文件标 candidate 的规则，进库后是「待确认」，不进编译候选。
+// 没写 status 的文件（项目画像、编译验证记录）维持原来的 active 口径——
+// 它们是说明性文档，改成待确认会被默认列表藏掉，要改语义时单独处理。
+const seedStatusToAssetStatus: Record<string, AssetStatus> = {
+  draft: "draft",
+  candidate: "pending",
+  pending: "pending",
+  active: "active",
+  archived: "archived",
+  deprecated: "deprecated",
+};
+
+function readMemberStatus(parsed: FrontMatter): AssetStatus {
+  return seedStatusToAssetStatus[parsed.fields.status ?? ""] ?? "active";
+}
+
 function readPackAssetType(path: string, parsed: FrontMatter) {
   const folder = path.split("/").slice(-2, -1)[0];
 
@@ -490,7 +509,7 @@ export function seedPackFilesToRulePack(
       summary: coreConclusion.slice(0, 120),
       content: buildContent(parsed.body, parsed.raw),
       metadata: withFailureModeRationale(metadata, parsed.body),
-      status: "active",
+      status: readMemberStatus(parsed),
     });
 
     if (isRule) {

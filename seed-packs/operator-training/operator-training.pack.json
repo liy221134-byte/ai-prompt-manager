@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-30T03:09:46.463Z",
+  "exportedAt": "2026-09-30T04:24:02.971Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-operator-training",
@@ -68,7 +68,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-task-001",
@@ -116,7 +116,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-context-001",
@@ -164,7 +164,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-session-001",
@@ -212,7 +212,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-model-001",
@@ -260,7 +260,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-ops-accept-001",
@@ -283,7 +283,7 @@
         },
         "rationale": "- 只点主流程，看到\"好像好了\"就签收。 - 不看空数据和失败的样子，用户一用就撞上。 - 只信界面回显，不刷新、不看数据库。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-accept-002",
@@ -331,7 +331,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-debug-001",
@@ -379,7 +379,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-sink-001",
@@ -427,7 +427,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-memory-001",
@@ -477,7 +477,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-handoff-001",
@@ -525,7 +525,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-effect-001",
@@ -575,7 +575,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-empty-001",
@@ -625,7 +625,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-refuse-001",
@@ -675,7 +675,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-ops-burden-001",
@@ -725,7 +725,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     }
   ]
 }

@@ -25,12 +25,47 @@ export type ProjectPackOption = {
 export type RulePackInstallPlan = {
   assetsToCreate: AssetData[];
   skipped: Array<{ packItemId: string; title: string }>;
+  // 跳过的成员里，有多少条的来源版本比这次导入的包版本旧
+  // （库里那份没动过，但它是拿更早的包装进来的）
+  staleSkippedCount: number;
 };
 
 export type RulePackImportPlan = RulePackInstallPlan & {
   // 库里还没有这个包时要顺手建一条包资产，已经有时为 null
   packAsset: AssetData | null;
+  // 库里已经有这个包时要更新它（版本号、说明、元数据跟着包文件走），没有时为 null
+  packAssetUpdate: AssetData | null;
 };
+
+// 版本号比较：只有两边都能解析成 x.y.z 三段数字、且左边更小时才算「旧」。
+// 解析不了（空值、非数字、段数不对）一律返回 false —— 宁可少报，不误报。
+function isOlderPackVersion(recorded: string, current: string): boolean {
+  const parse = (value: string) => {
+    const parts = value
+      .trim()
+      .split(".")
+      .map((part) => Number.parseInt(part, 10));
+
+    return parts.length === 3 &&
+      parts.every((part) => Number.isInteger(part) && part >= 0)
+      ? parts
+      : null;
+  };
+  const left = parse(recorded);
+  const right = parse(current);
+
+  if (!left || !right) {
+    return false;
+  }
+
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] !== right[index]) {
+      return left[index] < right[index];
+    }
+  }
+
+  return false;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -440,23 +475,27 @@ export function planRulePackInstall(input: {
   ruleMode?: "copy" | "reference";
 }): RulePackInstallPlan {
   const ruleMode = input.ruleMode ?? "copy";
-  const installedKeys = new Set(
-    input.existingAssets
-      .map((asset) => ({
-        asset,
-        link: readAssetPackLink(asset.metadata),
-      }))
-      .filter((item) => item.link !== null)
-      .map(
-        (item) =>
-          `${item.asset.projectId}:${item.link!.packId}:${item.link!.packItemId}`,
-      ),
-  );
+  // 已装过的成员按「项目:包:包内编号」记账，同时记下当初装进来的包版本，
+  // 用来判断这条成员是不是「旧版本装的」
+  const installedRecords = new Map<string, string>();
+
+  for (const asset of input.existingAssets) {
+    const link = readAssetPackLink(asset.metadata);
+
+    if (link) {
+      installedRecords.set(
+        `${asset.projectId}:${link.packId}:${link.packItemId}`,
+        link.packVersion,
+      );
+    }
+  }
+
   const usedIds = new Set(input.existingAssets.map((asset) => asset.id));
   const idMap = new Map<string, string>();
   const skipped: Array<{ packItemId: string; title: string }> = [];
   const planned: Array<{ member: RulePackFileMember; id: string }> = [];
   const seenItemIds = new Set<string>();
+  let staleSkippedCount = 0;
 
   for (const member of input.members) {
     const link = readAssetPackLink(member.metadata);
@@ -481,8 +520,15 @@ export function planRulePackInstall(input: {
 
     const key = `${input.targetProjectId}:${input.pack.id}:${link.packItemId}`;
 
-    if (installedKeys.has(key)) {
+    const recordedVersion = installedRecords.get(key);
+
+    if (recordedVersion !== undefined) {
       skipped.push({ packItemId: link.packItemId, title: member.title });
+
+      if (isOlderPackVersion(recordedVersion, input.pack.metadata.packVersion)) {
+        staleSkippedCount += 1;
+      }
+
       continue;
     }
 
@@ -555,7 +601,7 @@ export function planRulePackInstall(input: {
     }
   }
 
-  return { assetsToCreate, skipped };
+  return { assetsToCreate, skipped, staleSkippedCount };
 }
 
 // 建包资产：包文件本身不带项目和生命周期字段，导入时补齐
@@ -594,6 +640,23 @@ function buildPackAsset(
 }
 
 // 导入包文件：库里没有这个包就先建包资产，再按安装计划把成员装进目标项目
+// 重装时更新包条目：标题、说明、正文、元数据跟着包文件走；
+// 编号、所属项目、创建时间、状态保持原样（引用记录的状态有自己的语义）。
+function refreshPackAsset(
+  existing: RulePackAssetData,
+  fresh: RulePackAssetData,
+  now: string,
+): RulePackAssetData {
+  return {
+    ...existing,
+    title: fresh.title,
+    summary: fresh.summary,
+    content: fresh.content,
+    metadata: fresh.metadata,
+    updatedAt: now,
+  };
+}
+
 export function planRulePackImport(input: {
   file: RulePackFile;
   existingAssets: AssetData[];
@@ -625,6 +688,17 @@ export function planRulePackImport(input: {
       ruleMode: "reference",
     });
 
+    // 引用记录已有的，排除清单照旧保留，只刷新包信息
+    const freshReference = existingReference
+      ? buildPackReferenceAsset(
+          input.file.pack,
+          input.targetProjectId,
+          input.now,
+          referenceId,
+          readExcludedItemIds(existingReference.metadata),
+        )
+      : null;
+
     return {
       packAsset: existingReference
         ? null
@@ -635,8 +709,13 @@ export function planRulePackImport(input: {
             referenceId,
             input.excludedItemIds ?? [],
           ),
+      packAssetUpdate:
+        existingReference && freshReference
+          ? refreshPackAsset(existingReference, freshReference, input.now)
+          : null,
       assetsToCreate: install.assetsToCreate,
       skipped: install.skipped,
+      staleSkippedCount: install.staleSkippedCount,
     };
   }
 
@@ -644,11 +723,18 @@ export function planRulePackImport(input: {
     (asset): asset is RulePackAssetData =>
       asset.id === input.file.pack.id && asset.assetType === "rule_pack",
   );
-  const packAsset =
-    existingPack ??
-    buildPackAsset(input.file.pack, input.targetProjectId, input.now);
+  // 这份「按包文件应该长成什么样」的包资产有两个用途：
+  //   1. 成员记的版本号跟着包文件走——不能跟着库里那条陈旧的包条目走，
+  //      否则重装时成员会被记成旧版本，下次再导入就分不清新旧了；
+  //   2. 库里已经有这个包时，用它刷新包条目。
+  const filePackAsset = buildPackAsset(
+    input.file.pack,
+    input.targetProjectId,
+    input.now,
+  );
+  const packAsset = existingPack ?? filePackAsset;
   const install = planRulePackInstall({
-    pack: packAsset,
+    pack: filePackAsset,
     members: input.file.members,
     existingAssets: existingPack
       ? input.existingAssets
@@ -660,8 +746,13 @@ export function planRulePackImport(input: {
 
   return {
     packAsset: existingPack ? null : packAsset,
+    // 库里已有这个包：包条目的版本号、说明和元数据跟着包文件走
+    packAssetUpdate: existingPack
+      ? refreshPackAsset(existingPack, filePackAsset, input.now)
+      : null,
     assetsToCreate: install.assetsToCreate,
     skipped: install.skipped,
+    staleSkippedCount: install.staleSkippedCount,
   };
 }
 

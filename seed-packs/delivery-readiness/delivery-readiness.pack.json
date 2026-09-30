@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-24T16:57:48.218Z",
+  "exportedAt": "2026-09-30T04:24:03.477Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-delivery-readiness",
@@ -70,7 +70,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-tpl-dlv-001",
@@ -95,7 +95,7 @@
         },
         "rationale": "- 把密码或密钥直接写进档案。 - 只写「生产服务器」，不写具体是哪台、怎么进。 - 交付完不回来更新版本号，档案很快变成错的，比没有更危险。 - 不写谁维护：出事时现场没人认领。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-tpl-dlv-002",
@@ -120,7 +120,7 @@
         },
         "rationale": "- 手册里直接写明文密码。 - 只写命令不写「预期看到什么」，执行的人分不清成功还是卡住。 - 迁移那节没写备份，出问题两头空。 - 回滚只写「有问题再说」，没写回到哪个版本。 - 交付完不更新环境档案，下一次交付从错的起点开始。"
       },
-      "status": "active"
+      "status": "pending"
     }
   ]
 }

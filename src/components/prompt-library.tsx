@@ -1942,6 +1942,7 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       successMessage?: (counts: {
         created: number;
         skipped: number;
+        stale: number;
         projectName: string;
       }) => string;
     },
@@ -2007,6 +2008,19 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       });
     }
 
+    // 库里已经有这个包：这次是重装，把包条目的版本号和说明更新到包文件的样子。
+    // 成员正文一律不动——用户可能改过，也可能确认过（见 v2.29.0 设计文档的「不做」）。
+    if (plan.packAssetUpdate) {
+      const versionId = createAssetVersionId();
+
+      await dataSource.updateAsset({
+        asset: { ...plan.packAssetUpdate, currentVersionId: versionId },
+        versionId,
+        changeReason: "重装规则包（更新包信息）",
+        versionReason: "save",
+      });
+    }
+
     for (const asset of plan.assetsToCreate) {
       await dataSource.createAsset({
         asset,
@@ -2024,12 +2038,16 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
     const counts = {
       created: plan.assetsToCreate.length,
       skipped: plan.skipped.length,
+      stale: plan.staleSkippedCount,
       projectName,
     };
 
     notify(
       options?.successMessage?.(counts) ??
-        `规则包已装到「${projectName}」：新增 ${plan.assetsToCreate.length} 条、跳过 ${plan.skipped.length} 条`,
+        `规则包已装到「${projectName}」：新增 ${counts.created} 条、跳过 ${counts.skipped} 条` +
+          (counts.stale > 0
+            ? `（其中 ${counts.stale} 条是拿旧版本包装的，正文没有动）`
+            : ""),
     );
   }
 
@@ -3885,9 +3903,13 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
       {isRulePackImportOpen && (
         <RulePackImportDialog
           activeProjectId={activeProjectId}
+          defaultProjectId={
+            workspaceView === "public" ? DEFAULT_PROJECT_ID : activeProjectId
+          }
           onClose={() => setIsRulePackImportOpen(false)}
           onInstall={handleInstallRulePackFile}
           projects={projects}
+          publicProjectId={DEFAULT_PROJECT_ID}
         />
       )}
 

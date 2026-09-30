@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-30T03:09:45.897Z",
+  "exportedAt": "2026-09-30T04:24:02.456Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
@@ -71,7 +71,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-route-001",
@@ -121,7 +121,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-req-001",
@@ -171,7 +171,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-req-002",
@@ -221,7 +221,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-arch-001",
@@ -281,7 +281,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-delivery-001",
@@ -330,7 +330,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-module-001",
@@ -380,7 +380,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-boundary-001",
@@ -429,7 +429,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-quality-001",
@@ -485,7 +485,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-tpl-accept-001",
@@ -509,7 +509,7 @@
         },
         "rationale": "- 只有任务清单，没有实际结果。 - 验收条件不可观察。 - 修复后没有复验和回归。 - 文档勾选完成，但生产配置未验证。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-playbook-release-001",
@@ -559,7 +559,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-playbook-incident-001",
@@ -608,7 +608,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-case-parallel-001",
@@ -632,7 +632,7 @@
         },
         "rationale": "- 用\"两个会话一起做更快\"判断并行价值，而不判断切分是否正交。 - 两个会话都从脏工作区分支，拿到不稳定基线。 - 发现重复后只删掉多余代码，不记录教训和门禁，下次继续发生。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-case-env-prefix-001",
@@ -656,7 +656,7 @@
         },
         "rationale": "- 把根因理解成\"命名错\"或\"作用域错\"其中之一，修一半。 - 只删掉几条显眼变量，留着完整的一套带前缀变量当噪音。 - 用页面显示的截断名字下结论。 - 事故处理完不把检查项写进发布清单，下次集成安装再犯。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-case-migration-001",
@@ -680,7 +680,7 @@
         },
         "rationale": "- 手工执行迁移但不回写历史表，自动部署时重复执行。 - 结构迁移和数据迁移拆成两次执行，中途失败留下半迁移状态。 - 只看迁移执行成功，不做顾问检查和权限策略复查。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-tech-001",
@@ -741,7 +741,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-tpl-tech-001",
@@ -766,7 +766,7 @@
         },
         "rationale": "- 只写用了什么，不写为什么用。 - 换了运行环境却不更新档案，实际打法和档案不一致。 - 偏离默认选型不写决策记录。 - 只列技术栈，没有禁止项、替代条件和维护责任。 - 维护责任人空缺，出问题时没人认领。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-playbook-debug-001",
@@ -869,7 +869,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-scope-001",
@@ -923,7 +923,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-design-doc-001",
@@ -978,7 +978,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-evidence-001",
@@ -1032,7 +1032,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-asset-layer-001",
@@ -1086,7 +1086,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-sink-001",
@@ -1140,7 +1140,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-ai-write-001",
@@ -1194,7 +1194,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-reference-001",
@@ -1248,7 +1248,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-pg-fk-index-001",
@@ -1297,7 +1297,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-pg-migration-001",
@@ -1342,7 +1342,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-pg-rls-001",
@@ -1391,7 +1391,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-pg-privilege-001",
@@ -1447,7 +1447,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-pg-transaction-001",
@@ -1496,7 +1496,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-pg-query-perf-001",
@@ -1545,7 +1545,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-verify-001",
@@ -1595,7 +1595,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-verify-002",
@@ -1650,7 +1650,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-agent-task-001",
@@ -1703,7 +1703,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-agent-verify-001",
@@ -1756,7 +1756,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-parallel-001",
@@ -1814,7 +1814,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-worktree-001",
@@ -1862,7 +1862,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-task-boundary-001",
@@ -1916,7 +1916,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-plan-ruling-001",
@@ -1964,7 +1964,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-design-gate-001",
@@ -2014,7 +2014,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-design-qa-001",
@@ -2069,7 +2069,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-design-asset-001",
@@ -2119,7 +2119,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-evidence-boundary-001",
@@ -2174,7 +2174,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-premortem-001",
@@ -2212,7 +2212,7 @@
         },
         "rationale": "- 只列自己看得见的问题，没有「房间里的大象」这一类。 - 把风险写成一句口号（「性能可能有风险」），没有缓解动作和截止日。 - 反过来：所有担心都写成「纸老虎」而不写理由——那是自我安慰，不是分类。 - 当成一次性仪式，做完再也没人看。 - 用「我们有备份」这类没验过的说法当缓解动作。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-redteam-001",
@@ -2250,7 +2250,7 @@
         },
         "rationale": "- 攻击方案的弱版本（稻草人），看着热闹，其实没碰到要害。 - 为了显得有用，硬编一条弱点出来。 - 列二十条泛泛的风险，没有一条带测试和阈值。 - 把排序埋掉：最该测的那条淹没在长清单里。 - 只输出恐惧，不输出「这周做什么」。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-design-template-look-001",
@@ -2288,7 +2288,7 @@
         },
         "rationale": "- 直接套通用卡片网格 + 柔和阴影 + 渐变装饰，换掉文字就能给别人用。 - 每个标题上面都加一行全大写小标签、元信息用中点串起来——换主题也不变。 - 到处都是「装饰」，却没有一个能被记住的点。 - 把 01 / 02 / 03 编号用在不构成序列的内容上。 - 抄别人稿子的外观，而不是从这份简报的主题取材。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-design-copy-001",
@@ -2326,7 +2326,7 @@
         },
         "rationale": "- 界面上出现「提交」「确定」这类没说清结果的动作。 - 同一个动作在不同地方换了三个名字（创建 / 新增 / 添加）。 - 错误提示只有「操作失败」或者一句道歉，不给出路。 - 空状态是一句「暂无数据」，没有下一步。 - 每段文字想说三件事，结果一件都没说清。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-evidence-scope-001",
@@ -2381,7 +2381,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-confidence-compile-001",
@@ -2436,7 +2436,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-req-format-001",
@@ -2474,7 +2474,7 @@
         },
         "rationale": "- 三种格式互相抄，没有差别——那是凑数，不是澄清。 - 验收条件写得不可观察（「体验良好」「完成度足够」）。 - 边界情况不覆盖，上线才暴露空数据／超长／并发问题。 - 拿不确定当确定写进需求。"
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-mth-asset-retire-001",
@@ -2529,7 +2529,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-destructive-git-001",
@@ -2584,7 +2584,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-degrade-silent-not-fake-001",
@@ -2639,7 +2639,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-no-personal-leak-001",
@@ -2694,7 +2694,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-adopt-not-overwrite-001",
@@ -2749,7 +2749,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-approval-is-explicit-001",
@@ -2804,7 +2804,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-dangerous-tools-switch-001",
@@ -2858,7 +2858,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "rule-rule-change-test-map-001",
@@ -2912,7 +2912,7 @@
           }
         ]
       },
-      "status": "active"
+      "status": "pending"
     },
     {
       "id": "document-profile-cloud-001",
