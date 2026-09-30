@@ -25,7 +25,8 @@
 10. **影响面收敛**：标准「导入文档包」入口（资产库页 → 导入文档包）行为不变——
     仍然要选项目、规则仍是 `draft` 且不带信任度、不生成采集记录。
 11. **真在浏览器看到渲染**：两个弹层都在浏览器里真打开看过，不是只跑测试。
-12. **全量检查**：`npm run check:fast` 全过；`npm run lint` 0 error（线上构建的门）。
+12. **全量检查**：`npm run check` 四道门全过——类型检查、测试、代码检查 0 error、生产构建；
+   这道是线上部署的门（M1 曾因漏跑代码检查让线上部署连挂两次）。
 
 ## 已知限制
 
@@ -51,6 +52,10 @@
 - `npm run check:fast`：类型检查通过；**583/583 测试通过，0 失败**
   （M2.0 基线 575，本轮新增 8 条：话术生成 2 条、外部采集 plan 4 条、外部采集接口 2 条）。
 - `npm run lint`：**0 error、3 warning**（3 条都是既有脚本的历史 warning，非本轮引入）。
+- **生产构建**：在 `E:/codeX项目` 跑 `npm run build` **通过**（`✓ Compiled successfully`，
+  路由表完整、`/external-sources` 与 `/api/source-packages/confirm` 均在）。
+  这道门单列，是因为线索 3 M1 就是只跑了 `check:fast`、漏了代码检查，让线上生产部署连挂两次；
+  本轮把 `npm run check` 的四道门（typecheck／test／lint／build）全跑齐才推送。
 
 ### 浏览器实测（本地模式）
 
