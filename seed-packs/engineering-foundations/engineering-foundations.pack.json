@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-30T04:24:02.456Z",
+  "exportedAt": "2026-09-30T08:16:11.962Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
@@ -2587,6 +2587,65 @@
       "status": "pending"
     },
     {
+      "id": "rule-rule-ext-query-001",
+      "assetType": "rule",
+      "title": "梯子前的外部查询：先问外面有没有轮子",
+      "summary": "动手写代码之前，先问一句\"这个方向 / 这个功能，外面有没有成熟的轮子\"。有，就优先复用或借，而不是闷头自己造。这一条把\"不重复造轮子\"从骨架期（定技术栈用 Vben+若依这类底座）下沉到了功能开发期：每做一个模块功能，都先去生态里找现成方",
+      "content": "# 梯子前的外部查询：先问外面有没有轮子\n\n## 核心结论\n\n动手写代码之前，先问一句\"这个方向 / 这个功能，外面有没有成熟的轮子\"。有，就优先复用或借，而不是闷头自己造。这一条把\"不重复造轮子\"从骨架期（定技术栈用 Vben+若依这类底座）下沉到了功能开发期：每做一个模块功能，都先去生态里找现成方案。它接在七层梯子之前，是梯子的\"第 0 步\"。\n\n两种口径并存（先观察命中效果，再决定是否固化）：\n\n- **大迭代口径**：每次进大迭代，主动启动一次外部查询——去 GitHub / npm / MCP registry / 官方文档搜这个方向的成熟方案。\n- **功能开发口径**：每个功能先判\"是不是已被成熟解决的通用问题\"，是才启动外部查询；产品特有逻辑（如本产品线索 3 这类）不搜。\n\n搜到候选后按 L1 一手源核：维护状态、许可证、有没有生产案例；想引入仍走 L5 同意门（引入第三方库须明确同意）。这既接住\"胶水编程法\"的思路，又用 L5 守住\"不随便加依赖\"。\n\n## 使用条件\n\n- 启动一个大迭代、要选方向或技术栈时（大迭代口径）。\n- 开发一个具体功能、且判断它是通用问题时（功能开发口径）。\n\n## 不适用场景\n\n- **产品特有逻辑**：只有我们这个产品才有的流程 / 规则（如线索 3 的采集回流），外面没有对应轮子，不搜，老老实实走梯子复用项目内 + 零依赖。\n- **项目内已有可复用实现**：直接走梯子的第 2 / 5 阶（复用既有代码、已装依赖），不必外搜。\n- **纯文档、纯内容改动**：不涉及功能开发。\n\n## 判断步骤\n\n大迭代口径：\n\n1. 列清这一轮要做的方向 / 技术点。\n2. 对每个点，去 GitHub / npm / MCP registry / 官方文档搜一遍成熟方案，记录候选与版本。\n3. 按 L1 核候选：是否还在维护、许可证是否允许我们的交付形态（含内网 / 信创）、有没有真实生产案例。\n4. 评估通过且确实省事 → 走 L5 引入；否则自己写最小胶水。\n\n功能开发口径：\n\n1. 动手前先判：这个功能是不是\"已被成熟解决的通用问题\"？\n2. 是 → 走上面大迭代口径的第 2–4 步。\n3. 不是（产品特有）→ 跳过外部查询，直接走七层梯子。\n\n## 失败模式\n\n- **该搜不搜**：自己造了一个轮子，事后发现生态里早有成熟方案，白做还更难维护。\n- **搜了不核 L1**：拉了个年久失修或许可证不兼容的库，埋下交付 / 合规坑。\n- **随手拉库违背 L5**：没经你同意就加依赖，增加内网 / 信创交付成本（胶水编程法默认\"能借就借\"，对我们的成本敏感产品要加这道闸）。\n- **什么都搜**：每个琐碎功能都外搜，反而拖慢节奏——所以功能级要\"先判通用问题\"。\n\n## 验证证据\n\n- 后续几轮真实开发中，对\"外部查询\"两口径的实际命中做记录：是真搜到了可复用轮子，还是大多判定为产品特有逻辑而跳过。\n- 记录进 rule-hits.md 的命中台账（按可信度三档），够了再决定固化成常驻还是收紧。\n\n## 相关资产\n\n- `MTH-ROUTE-001`（路线选择）：不确定性高时选探索路线，外部查询正是一种探索。\n- `RULE-AI-WRITE-001`（AI 写入边界）：外部查询的结论要落到文档 / 资产，不静默覆盖。\n- `MTH-SINK-001`（沉淀分流）：搜到的通用方案该升公共层就升公共层。\n- `MTH-EVIDENCE-001`（证据只记一处）：搜到的方案要有证据支撑再引入。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-EXT-QUERY-001\ntitle: 梯子前的外部查询：先问外面有没有轮子\nasset_type: rule\nrule_type: recommended\npurpose: development\nlayer: feature\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - design\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - agents\nverification: manual\nevidence: []\nsource_references:\n  - AGENTS.md §写代码的规矩（防过度设计梯子）\n  - DEV-SYSTEM.md §L1 一手源核实 / §L5 引入第三方库须明确同意\n  - docs/leads-3-collection-roundtrip.md（外部采集回流：先找成熟方案再落地）\nrelated_assets:\n  - MTH-ROUTE-001\n  - RULE-AI-WRITE-001\n  - MTH-SINK-001\n  - MTH-EVIDENCE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "plan",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- AGENTS.md §写代码的规矩（防过度设计梯子）\n- DEV-SYSTEM.md §L1 一手源核实 / §L5 引入第三方库须明确同意\n- docs/leads-3-collection-roundtrip.md（外部采集回流：先找成熟方案再落地）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-EXT-QUERY-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- **该搜不搜**：自己造了一个轮子，事后发现生态里早有成熟方案，白做还更难维护。 - **搜了不核 L1**：拉了个年久失修或许可证不兼容的库，埋下交付 / 合规坑。 - **随手拉库违背 L5**：没经你同意就加依赖，增加内网 / 信创交付成本（胶水编程法默认\"能借就借\"，对我们的成本敏感产品要加这道闸）。 - **什么都搜**：每个琐碎功能都外搜，反而拖慢节奏——所以功能级要\"先判通用问题\"。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-route-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "pending"
+    },
+    {
       "id": "rule-rule-degrade-silent-not-fake-001",
       "assetType": "rule",
       "title": "能力缺失就安静降级，绝不用替代品冒充",
@@ -2634,6 +2693,60 @@
           },
           {
             "targetAssetId": "rule-rule-confidence-compile-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "pending"
+    },
+    {
+      "id": "rule-rule-schema-check-001",
+      "assetType": "rule",
+      "title": "AI 产出与外部输入先过 schema 校验",
+      "summary": "任何来自 AI 生成、外部 API、或不可信用户输入的数据，在进业务逻辑之前，必须先用 schema（如 zod）校验一遍结构、类型和必填项。结构拿不准时，显式停下来问清楚，绝不让 AI 自己脑补一个结构继续跑。这是挡住\"AI 幻觉变成脏数",
+      "content": "# AI 产出与外部输入先过 schema 校验\n\n## 核心结论\n\n任何来自 AI 生成、外部 API、或不可信用户输入的数据，在进业务逻辑之前，必须先用 schema（如 zod）校验一遍结构、类型和必填项。结构拿不准时，显式停下来问清楚，绝不让 AI 自己脑补一个结构继续跑。这是挡住\"AI 幻觉变成脏数据\"的最后一道防线——对应胶水编程法里用 Zod schema 锁死 AI 输出的做法；我们产品里已装 zod，可零成本落地。\n\n## 使用条件\n\n- 接收 AI 生成内容（提示词优化结果、采集提炼结果、任意模型输出）的边界。\n- 接收外部 API 响应、文件导入、或用户原始输入的边界。\n\n## 不适用场景\n\n- 纯内部、来源可信、已被强类型约束的函数间调用。\n- 数据库内部已约束且来源可信的读取（仍建议入口校验，但非强制）。\n\n## 判断步骤\n\n1. 在进入业务处理前，为该输入定义一份 schema（字段、类型、必填、取值范围）。\n2. 在入口处 `schema.parse(input)`（或等价校验），失败立即返回结构化错误，不吞掉、不降级继续。\n3. 校验不过的数据不进入任何写操作（落库、发请求、改状态）。\n4. 当 schema 本身无法确定某字段含义时，停下问人，不要把猜测当默认值填进去。\n\n## 失败模式\n\n- **直接信任 AI 输出**：模型漏字段 / 改类型，业务在运行期崩溃或写入脏数据。\n- **校验失败静默继续**：catch 住异常后照样往下走，等于没校验。\n- **用 `any` 绕过**：表面过了类型检查，实则放弃了运行期保护。\n- **只在测试里校验、生产路径裸奔**：幻觉恰恰发生在生产。\n\n## 验证证据\n\n- 对关键入口写单元测试：喂非法 / 缺字段输入，断言被拒而非被吞。\n- 类型检查 + 运行期校验双保险；引入新外部源时把 schema 作为必改项。\n\n## 相关资产\n\n- `RULE-AI-WRITE-001`（AI 写入边界）：校验后才能写，写要留版本。\n- `MTH-EVIDENCE-001`（证据只记一处）：校验规则与失败样例只在一处维护。\n- `RULE-VERIFY-002`（声明完成前证据必须是这次跑出来的）：校验是否真挡住脏数据，要实测。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-SCHEMA-CHECK-001\ntitle: AI 产出与外部输入先过 schema 校验\nasset_type: rule\nrule_type: must\npurpose: safety\nlayer: feature\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: provisional\noverride_allowed: false\ncompile_target:\n  - agents\nverification: gate\nevidence:\n  - src 中已用 zod 校验外部 / AI 输入（产品已有实践）\n  - AGENTS.md 交付门第 7 条（本次新增）\nsource_references:\n  - AGENTS.md §交付门（凡 AI 产出或外部输入先过 schema 再进业务逻辑）\n  - DEV-SYSTEM.md §交付门\nrelated_assets:\n  - RULE-AI-WRITE-001\n  - MTH-EVIDENCE-001\n  - RULE-VERIFY-002\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "none",
+        "evidence": "- src 中已用 zod 校验外部 / AI 输入（产品已有实践）\n- AGENTS.md 交付门第 7 条（本次新增）\n- AGENTS.md §交付门（凡 AI 产出或外部输入先过 schema 再进业务逻辑）\n- DEV-SYSTEM.md §交付门",
+        "verification": "门禁检查",
+        "confidence": "provisional",
+        "compileTarget": [
+          "agents"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-SCHEMA-CHECK-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large"
+          ]
+        },
+        "rationale": "- **直接信任 AI 输出**：模型漏字段 / 改类型，业务在运行期崩溃或写入脏数据。 - **校验失败静默继续**：catch 住异常后照样往下走，等于没校验。 - **用 `any` 绕过**：表面过了类型检查，实则放弃了运行期保护。 - **只在测试里校验、生产路径裸奔**：幻觉恰恰发生在生产。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-verify-002",
             "relationType": "reference",
             "note": "包内关联"
           }
