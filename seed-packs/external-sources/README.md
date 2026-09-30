@@ -227,11 +227,17 @@ MCP 和 Skills 中，提炼可复用的工程规则，补充进工程方法种�
 | **S7 产品经理方法技能**（19 来源：已采 3 / 剩余 16，详见处置表） | Skills | 已采 4 条 | Claude Skills 的产品经理方法技能 | 已采 4；其余 16 处置见第三节 | `RULE-PREMORTEM-001` 等 4 条规则；进参考文档层 2：`REF-PRIORITIZATION-001`、`REF-UI-CHECKLIST-001`；单独立片 7：`MTH-TEAM-OKR-001`、`MTH-TEAM-MEETING-001`、`MTH-TEAM-RELEASENOTE-001`、`MTH-TEAM-RETRO-001`、`MTH-TEAM-ROADMAP-001`、`MTH-TEAM-SCHEDULE-001`、`MTH-TEAM-STAKEHOLDER-001` | 2026-09-28 | 剩余 16：不采 2、进模板层 3、进参考文档层 2、单独立片 7、不相关 1、暂缓 1；其中 2 个参考文档 + 7 个团队方法已导入本机库（可点开追溯） |
 | Next.js 能力技能 5 个 与 `ui-ux-pro-max` | Skills | 部分采集 | Next.js 官方（`next-dev-loop` 等） | 已采（部分，进 `AGENTS.md`） | `AGENTS.md`「界面改动的验证」 | 2026-09-27 | 其余待技术上下文筛选生效再按需采 |
 | **S8 WorkBuddy 生态**（本机 WorkBuddy 外部评审 + `DEV-SYSTEM.md`／`MEMORY.md`） | 评审 + Skills | 已采 3 条 | 本机 WorkBuddy | 已采 3 条 | `RULE-EVIDENCE-SCOPE-001` 等 3 条 | 2026-09-28 | 成本与额度纪律记为已知缺口不硬写 |
+| **S9 Exomem + MemOS**（两个开源仓库里的工程约定正本） | MCP 服务 + Skills | 已采 13 条 | https://github.com/Artexis10/exomem 、 https://github.com/MemTensor/MemOS | 已采 | 工程包 `RULE-DESTRUCTIVE-GIT-001` 等 7 条（0.13.0）+ 训练包 `OPS-MEMORY-001` 等 6 条（0.3.0） | 2026-09-30 | 生态「其他」。规则层采、**服务本体不安装**；星数与省 token 比例等宣传数字按采集口径不采信、不记录 |
 
 > 状态取值：未采集 / 已采集待确认 / 已入库 / 已安装 / 暂缓 / 放弃。
 
 ## 版本
 
+- `0.2.2`（2026-09-30）：新增 S9 行——Exomem（本地 Markdown／Obsidian 检索的 MCP 服务）
+  与 MemOS（面向 Agent 的记忆系统）两个仓库的工程约定正本，采出 13 条：7 条进工程包
+  0.13.0、6 条进操作者训练包 0.3.0。这两个仓库**服务层不装**——Exomem 与本机已有的
+  MCP 服务加资产库检索重合，MemOS 自建要 Neo4j 加 Qdrant、云版要外部服务，个人项目用不上。
+  台账四字段按 M0 口径填齐，处置结论「已采」。
 - `0.2.1`（2026-09-29）：第六节 S7 行「落到哪条资产」补全 9 个文档资产规范 ID——进参考文档层的
   2 个（`REF-PRIORITIZATION-001`、`REF-UI-CHECKLIST-001`）与单独立片的 7 个（`MTH-TEAM-*`）。
   M0 导入本机库的这批文档此前未登记落点，补上后 M1 采集台账的「落点深链」可用。

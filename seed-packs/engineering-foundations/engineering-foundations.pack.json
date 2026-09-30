@@ -1,15 +1,15 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-28T09:46:43.595Z",
+  "exportedAt": "2026-09-30T03:09:45.897Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-engineering-foundations",
     "title": "工程方法种子资产包",
     "summary": "这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、 工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、 冲突检测和项目编译使用。 它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过 人工确认、项目验证和后续版本复核。",
-    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.12.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：51 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.12.0 做了什么\n\n1. 新增 3 条，来源是 WorkBuddy 对本资产库的外部评审：结论要标外推边界、\n   没验证过的规则默认不参与编译、资产退役三问（外部来源采集第六批）。\n2. 这 3 条按新规自己执行：`hypothesis` + `compile_target: none`，不进 `AGENTS.md`。\n3. 评审原文与逐条裁决放在 `docs/reviews/2026-09-28-外部评审与裁决.md`，这里不重复叙述。\n\n## 0.11.0 做了什么\n\n1. 新增 4 条「动手之前」的纪律，来源是 Claude Skills 的 pre-mortem、strategy-red-team、\n   frontend-design 三个技能（外部来源采集第六批）：事前验尸、只打承重假设、\n   别做出模板味的默认样式、界面文案也是设计。\n2. 这 4 条补的是两个真实缺口：设计文档四块里缺「风险」那一块（前两条补在设计门之前）；\n   项目规则只说了「文案用中文」，没说怎么写（后两条把风格和文案变成能执行的检查）。\n3. 同批 19 个产品经理方法技能里其余 15 个的处置理由写在 `manifest.md` 的 0.11.0 一节，\n   不重复叙述。\n\n## 0.10.0 做了什么\n\n1. 新增 4 条界面设计规则，来源是 product-design 的 get-context、design-qa、audit\n   三个技能（外部来源采集第五批）：设计前先过澄清门、实现要和源设计对比验收、\n   源设计里的图片资产不许用代码近似、说清证据的边界。\n2. 这 4 条标 `generic` + 四档规模，本项目也适用——前提是项目规则里的设计门已经拆出\n   「界面设计线」（本次同步改了 `AGENTS.md`）。\n3. 其中「按源设计对比验收」是条件规则：没有源设计稿的项目改用「能用、好用」验收。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
+    "content": "# 工程方法种子资产包\n\n## 用途\n\n这个资产包把提示词管理系统 1.0、工程加固过程和大型项目分析中形成的分析方法、\n工程原则、交付门禁和故障演练经验整理成可复用资产，供 2.0 的 AI 提取、合并、\n冲突检测和项目编译使用。\n\n它不是产品功能，也不是不可修改的标准答案。所有内容都是候选知识，需要经过\n人工确认、项目验证和后续版本复核。\n\n## 当前版本\n\n- 版本：`0.13.0`\n- 状态：候选资产，已完成画像编译验证并经人工确认（2026-09-21）\n- 适用范围：零代码或低代码 AI 开发者\n- 当前资产：56 条核心方法、规则、模板和流程，加 3 条案例\n- 项目画像：个人工具、中型云端产品、大型平台\n\n## 目录\n\n```text\nseed-packs/engineering-foundations/\n  README.md\n  manifest.md\n  schema.md\n  assets/\n  profiles/\n  validation/\n```\n\n## 资产原则\n\n1. 每条资产只表达一个主要方法、原则或门禁。\n2. 必须说明适用条件和不适用场景。\n3. 必须保留来源，不能把推断写成事实。\n4. 必须区分原则、方法、流程、规则和模板。\n5. 项目经验默认标记为 `provisional`，不能直接宣称通用。\n6. 冲突和例外必须显式记录，不能由 AI 静默合并。\n7. 宁精勿多：先少量资产跑通验证，缺的后面按需补。新增资产成本低，删除已经落地的\n   资产成本高，所以不提前堆条目。\n\n## 使用方式\n\n首批资产用于验证三类能力：\n\n1. AI 能否提取和保持每条资产的边界。\n2. AI 合并时能否保留共性、补充内容、冲突和来源。\n3. 不同项目画像能否编译出不同结果，而不是套用同一份模板。\n\n## 0.3.0 做了什么\n\n1. 新增「系统化调试：先复现，再定位根因」：四阶段流程（复现 → 定位根因 → 最小修复 →\n   回归），把原来只有一句\"修 bug 修根因\"的口号补成可执行的步骤。来源是 superpowers\n  的 systematic-debugging 技能，属于外部来源采集的第一条；可信度先标 `hypothesis`，\n  等一次真实 bug 的复现与回归记录再升。\n\n## 0.4.0 做了什么\n\n1. 把 2.0 版本线（v2.12.0 至 v2.16.0）跑下来验证过的做法，整理成 7 条资产：三道门\n   （`MTH-GATES-001`）、一个版本只做一个子系统（`MTH-SCOPE-001`）、设计文档只写决定\n   （`MTH-DESIGN-DOC-001`）、证据只记一处（`MTH-EVIDENCE-001`）、资产分三层\n   （`MTH-ASSET-LAYER-001`）、沉淀分流（`MTH-SINK-001`）、AI 写入边界\n   （`RULE-AI-WRITE-001`）。\n2. 这 7 条不是推论：每一条都能在 `AGENTS.md`、`docs/acceptance/`、`CHANGELOG.md` 或\n   `docs/pending-items.md` 里指到已经发生过的记录，所以可信度直接标 `provisional`。\n3. 没有新增包、没有改文件格式：仍然在原来的 `assets/` 目录里，按现有编号继续排。\n\n## 0.13.0 做了什么\n\n1. 新增 7 条工程规则，来源是 Exomem 与 MemOS 两个开源仓库里的工程约定正本\n   （外部来源采集第七批）：丢改动的 git 操作要先获批且禁用 stash、能力缺失就安静降级\n   不许冒充、交付模板不许带个人或客户标识、接管既有环境先备份再合并、提案与计数不算\n   批准、危险工具面独立成层可一键关掉、改哪跑哪的映射表。\n2. 这 7 条的处置理由、去重结论和不采的部分写在 `manifest.md` 的 0.13.0 一节，\n   这里不重复叙述。\n3. 补登一条漏登的既有资产（`MTH-REQ-FORMAT-001`），清单与实际文件从这一版起对齐。\n\n## 0.12.0 做了什么\n\n1. 新增 3 条，来源是 WorkBuddy 对本资产库的外部评审：结论要标外推边界、\n   没验证过的规则默认不参与编译、资产退役三问（外部来源采集第六批）。\n2. 这 3 条按新规自己执行：`hypothesis` + `compile_target: none`，不进 `AGENTS.md`。\n3. 评审原文与逐条裁决放在 `docs/reviews/2026-09-28-外部评审与裁决.md`，这里不重复叙述。\n\n## 0.11.0 做了什么\n\n1. 新增 4 条「动手之前」的纪律，来源是 Claude Skills 的 pre-mortem、strategy-red-team、\n   frontend-design 三个技能（外部来源采集第六批）：事前验尸、只打承重假设、\n   别做出模板味的默认样式、界面文案也是设计。\n2. 这 4 条补的是两个真实缺口：设计文档四块里缺「风险」那一块（前两条补在设计门之前）；\n   项目规则只说了「文案用中文」，没说怎么写（后两条把风格和文案变成能执行的检查）。\n3. 同批 19 个产品经理方法技能里其余 15 个的处置理由写在 `manifest.md` 的 0.11.0 一节，\n   不重复叙述。\n\n## 0.10.0 做了什么\n\n1. 新增 4 条界面设计规则，来源是 product-design 的 get-context、design-qa、audit\n   三个技能（外部来源采集第五批）：设计前先过澄清门、实现要和源设计对比验收、\n   源设计里的图片资产不许用代码近似、说清证据的边界。\n2. 这 4 条标 `generic` + 四档规模，本项目也适用——前提是项目规则里的设计门已经拆出\n   「界面设计线」（本次同步改了 `AGENTS.md`）。\n3. 其中「按源设计对比验收」是条件规则：没有源设计稿的项目改用「能用、好用」验收。\n\n## 0.9.0 做了什么\n\n1. 新增 6 条多智能体协作规则，来源是 superpowers 的四个技能（外部来源采集第四批）：\n   派活四样给全、收成果必须自己验、只有独立任务才并行、隔离工作区四条硬规则、\n   任务边界按「能不能被单独否决」切、跑计划时裁决不卡住。\n2. **标 `large`／`regulated`**（任务边界那条另加 `medium`）：这是给大型项目的规则，\n   个人项目用不上——靠 v2.24.0 的规模筛选自动挡掉。\n3. superpowers 到此按适用规模采完。\n\n## 0.8.0 做了什么\n\n1. 新增 2 条验证纪律，来源是 superpowers 的 verification-before-completion 技能\n   （外部来源采集第三批）：回归测试要看到红-绿循环、声明完成前证据必须是这次跑出来的。\n2. 这两条补的都是已有资产的缺口——前者补 `PLAYBOOK-DEBUG-001`，后者补交付门口径。\n   它们标 `generic` + 四档规模，对本项目同样成立，会正常进 `AGENTS.md`。\n3. superpowers 到此采集完毕：剩下的技能都是本项目已明确不用的，不是遗漏。\n\n## 0.7.0 做了什么\n\n1. 新增 6 条 Postgres 工程规则，全部来自 Supabase 官方 Agent Skills\n   「supabase-postgres-best-practices」1.3.0（外部来源采集第二批）：外键列必须自己建索引、\n   加约束要写成幂等迁移、隔离放在数据库层（RLS）、应用连接只用最小权限、\n   事务里不放外部调用、查得慢先看两处（索引与 N+1）。\n2. 这 6 条**没有在本项目验证过**，可信度一律 `hypothesis`；技术上下文标 `postgres`\n   （其中两条另标 `supabase`）。它们主要面向中大型项目——本项目是个人工具，规模用不上，\n   作为公共资产给别的项目用。\n3. 没有改文件格式，成员按现有编号继续排（027～032）。\n\n## 0.6.0 做了什么\n\n1. 给「约束驱动的技术选型」（`MTH-TECH-001`）的场景对照表补一行：中后台系统要有开箱即用的\n   底座，先定底座再让 AI 写业务。只补这一行，不新增条目、不改文件格式。\n2. 顺手把上面「当前资产」那条从 23 条改正为 26 条——0.5.0 加了 1 条之后没有同步，\n   `manifest.md` 里一直是对的，只有这里漏改。\n\n## 0.5.0 做了什么\n\n1. 新增「引用优先于复制」（`MTH-REFERENCE-001`）：同一份内容只留一个正本，其他地方引用它；\n   复制只留给\"要脱钩自己改\"的场景。\n2. 回填证据并升级可信度：「生产故障演练」补上 v2.11.0 的真实演练记录\n   （回滚演练、备份往返、云端只读复核），从 `hypothesis` 升到 `provisional`。\n3. 没有改文件格式，成员按现有编号继续排。\n\n## 0.2.1 做了什么\n\n1. 新增「约束驱动的技术选型」：不挑产品，先把约束翻译成必须具备的能力，再决定托管、\n   自建还是混合；附一张场景到能力的候选对照表（高可用、内网离线、单人维护、有性能\n   指标、关键数据等）。\n2. 新增「技术档案模板」：技术选择一次性写清约束、已选和默认技术栈、禁止项、替代条件、\n   偏离项的决策记录和维护责任，作为项目的一级档案。\n\n## 0.2.0 做了什么\n\n1. 字段对齐 2.0：新增用途、层级、技术上下文、优先级、覆盖权限、编译去向、验证方式\n   和已产出证据，与 2.0 的规则元数据逐项对应，字段定义见 [schema.md](schema.md)。\n2. 回填证据：12 条核心资产把本项目里实际用过的记录写进 `evidence` 字段，例如\n   项目地图、验收清单、回滚演练和环境变量事故记录。\n3. 新增案例：3 条来自真实项目的案例，记录方法和门禁失效的地方。\n4. 跑通编译：三个项目画像各完成一次编译，结果和缺口记录在 `validation/`。\n5. 格式门禁：资产的字段、取值、章节和引用关系由 `tests/seed-pack.test.mjs` 自动校验，\n   跟随项目的 `npm run check` 一起执行，资产包变大时不会悄悄写坏。\n\n## 当前结论\n\n- 三个画像的资产选择明显不同（个人工具 11 项、中型产品 15 项、大型平台 17 项），\n  说明画像筛选确实产生了差异，而不是同一套模板。\n- 个人工具画像在本项目上暴露了一条真实冲突：公开上线并持有生产密钥后，门禁必须按\n  中型产品执行。冲突没有静默合并，已经写进 `MTH-QUALITY-001`。\n- 三份编译结果已于 2026-09-21 经人工确认，作为资产包结论使用。",
     "metadata": {
-      "packVersion": "0.12.0",
+      "packVersion": "0.13.0",
       "packConfidence": "provisional",
       "projectScale": [
         "large",
@@ -2524,6 +2524,389 @@
           },
           {
             "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-destructive-git-001",
+      "assetType": "rule",
+      "title": "共享检出里丢改动的 git 操作要先获批，且任何检出都禁用 stash",
+      "summary": "判据是「这个操作会不会让某个没提交的改动消失」，不是背一张禁用命令清单。 凡是会丢弃未提交改动、或重写工作树的 git 操作，在共享检出里**必须先拿到明确同意**。",
+      "content": "# 共享检出里丢改动的 git 操作要先获批，且任何检出都禁用 stash\n\n## 核心结论\n\n判据是「这个操作会不会让某个没提交的改动消失」，不是背一张禁用命令清单。\n凡是会丢弃未提交改动、或重写工作树的 git 操作，在共享检出里**必须先拿到明确同意**。\n\n四类要批：切分支（checkout／switch，会换掉工作树里的文件）、reset --hard、\n丢单个文件的现场（checkout -- 文件 / restore / clean）、会重写工作树的 rebase 与 merge。\n\n另有一条**无条件禁令：任何检出都禁用 `git stash`**。原因是 stash 栈属于**仓库**不属于\n工作树（`refs/stash` 是仓库级的），多个工作区共用同一份；`pop` 取的是栈顶，可能是别人\n压进去的。更麻烦的是 `git stash push -- <路径>` 在这些路径本来就干净时会**零退出但什么\n都没存**，紧接着的 `pop` 就静默作用到别人的条目上。\n\n## 使用条件\n\n- 两个或更多会话共用同一个检出时，这条是硬约束。\n- 动手前问一句：这个操作会不会让某个未提交的改动消失。\n\n**免批白名单**——共享检出里可以随时做：\n\n1. 只读 git：`status`、`log`、`diff`、`fetch`。\n2. 干净状态下的 `git pull --ff-only`：它只会前进，要冲突时**拒绝**而不是覆盖。\n3. 不碰 git 树的操作：装依赖、跑服务、改你自己刚建的那个文件。\n\n## 不适用场景\n\n- 你独占的一次性检出，且确认没有第二个会话在跑：白名单之外的操作风险低，但建议仍说一声。\n- 已经在隔离工作区里做本任务的改动：那条路径上的操作不涉及别人的现场。\n\n## 判断步骤\n\n1. 分类：这个操作属于「丢现场」还是「只前进」。\n2. 丢现场 → 停，说清「会丢什么」，拿到明确同意再做。\n3. 不同意或拿不准 → 换成不丢改动的做法：要跟某个提交比对，就另起一个一次性工作区去看，\n   不动原来的现场。\n4. 未提交的任务成果必须临时让路 → 在任务工作区里做一个**临时提交**，不要用 stash、\n   也不要用 checkout／restore 把它藏起来。\n\n## 失败模式\n\n- 把「记住的禁用命令清单」当安全规则：清单没覆盖到的操作照做，照样出事。\n- 在共享检出里切分支，把别人正在改的文件换掉（已经发生过编辑中的碰撞）。\n- `git stash pop` 拉到别人的成果并静默半应用（已经发生过：半应用了另一个会话的依赖\n  锁文件改动，跑出了一个假失败）。\n- `git stash push` 指定路径时零退出、无提示，让人误以为已经存好了。\n\n## 验证证据\n\n- 抽查任意一次「丢现场」操作，能说清：它属于哪一类、谁批的、批的是哪一次。\n- 仓库里不出现「没人认领的改动」——即被 pop 错工作区那一类事故的痕迹。\n- 做一次低成本演练：在临时仓库里把工作树弄脏，验证「零退出但没存」这个行为，\n  确认执行的人真的知道这条，而不只是读过。\n\n## 相关资产\n\n- `RULE-WORKTREE-001`（相关）：那条给的是隔离工作区的四条硬规则，这条给的是\n  在共享检出里动手时的动作判据；两条配合使用。\n- `CASE-PARALLEL-001`（相关）：多会话并行重复实现，和这里是同一类事故的两种表现。\n- `RULE-AI-WRITE-001`（相关）：同属「不许静默覆盖别人的东西」这一族。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DESTRUCTIVE-GIT-001\ntitle: 共享检出里丢改动的 git 操作要先获批，且任何检出都禁用 stash\nasset_type: rule\nrule_type: forbidden\npurpose: safety\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库的 agent 指引分册 worktrees：Concurrent sessions share ONE checkout 一节\n  - MemOS（github.com/MemTensor/MemOS）仓库根约定文件的 Never do 一节（禁止 force push 与 reset --hard）\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - RULE-WORKTREE-001\n  - CASE-PARALLEL-001\n  - RULE-AI-WRITE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库的 agent 指引分册 worktrees：Concurrent sessions share ONE checkout 一节\n- MemOS（github.com/MemTensor/MemOS）仓库根约定文件的 Never do 一节（禁止 force push 与 reset --hard）\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-DESTRUCTIVE-GIT-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 把「记住的禁用命令清单」当安全规则：清单没覆盖到的操作照做，照样出事。 - 在共享检出里切分支，把别人正在改的文件换掉（已经发生过编辑中的碰撞）。 - `git stash pop` 拉到别人的成果并静默半应用（已经发生过：半应用了另一个会话的依赖   锁文件改动，跑出了一个假失败）。 - `git stash push` 指定路径时零退出、无提示，让人误以为已经存好了。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-worktree-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-case-parallel-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-degrade-silent-not-fake-001",
+      "assetType": "rule",
+      "title": "能力缺失就安静降级，绝不用替代品冒充",
+      "summary": "可选能力（模型、检索方式、校验器、抽取器）缺失时，正确做法是**降级并说明**， 而不是换一个便宜的实现顶上、还挂着原来那个名字。",
+      "content": "# 能力缺失就安静降级，绝不用替代品冒充\n\n## 核心结论\n\n可选能力（模型、检索方式、校验器、抽取器）缺失时，正确做法是**降级并说明**，\n而不是换一个便宜的实现顶上、还挂着原来那个名字。\n\n三条做法：\n\n1. **缺能力 → 走降级路径**：功能仍然可用，结果照常给出来，不报错、不空转。\n2. **降级路径在任何界面上都不冒用被替代者的名字**：关键词检索代替语义检索可以，\n   但不能把关键词结果标成「语义搜索」；没有校验器时，审核队列里**不许**出现\n   任何形似「模型判定」的标签。\n3. **有一条只读的体检出口**，明确说出当前缺的是哪一层能力。\n\n一句话口径：**缺能力是沉默，不是替代品。**\n\n## 使用条件\n\n- 系统有「装了更好、不装也能跑」的可选层时。\n- 交付前要回答「这套东西现在到底有没有开语义检索／有没有校验」时。\n\n## 不适用场景\n\n- 缺的是校验、安全、数据完整性这类**红线能力**：那不属于降级，属于拒绝执行并说明原因。\n- 用户明确要求「用近似实现先跑通」，且你已在交付说明里写明近似点与上限：那是显式约定，\n  不算冒充。\n\n## 判断步骤\n\n1. 列出本系统的可选层，逐层写清「有它是什么行为、没它是什么行为」。\n2. 检查每个界面与每条输出：有没有地方用了原能力的名字，实际走的是降级路径。\n3. 提供一条只读体检命令，输出当前生效的层。\n4. 写进交付说明：本次「省掉了什么能力」，以及省掉之后结论的边界在哪。\n\n## 失败模式\n\n- 校验器没装，审核队列里照样出现「模型判定过」的标签。\n- 语义检索模型还没下完，界面照旧显示「语义搜索」。\n- 用降级后的结果去支撑一个只有原能力才能支撑的结论。\n- 把「降级」当成「可以悄悄少做一步」的借口，而不是一个需要说出来的状态。\n\n## 验证证据\n\n- 关掉任意一个可选层，跑一遍主流程：结果照常出，且没有任何一处冒用被替代者的名字。\n- 体检输出能指名缺失的那一层。\n- 交付说明里出现一句「本次省掉了什么」。\n\n## 相关资产\n\n- `RULE-DESIGN-ASSET-001`（同源）：那条是这条纪律在图片资产上的特例——源设计里的图片\n  不许用代码近似，本质同样是「不许用替代品冒充」。\n- `RULE-EVIDENCE-BOUNDARY-001`（相关）：降级之后证据能证明到哪，必须一起说清。\n- `RULE-CONFIDENCE-COMPILE-001`（相关）：没验证过的规则不参与编译，和这里\n  「没装的能力不要假装装了」是同一类诚实要求。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DEGRADE-SILENT-NOT-FAKE-001\ntitle: 能力缺失就安静降级，绝不用替代品冒充\nasset_type: rule\nrule_type: forbidden\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库说明的 Degradation modes 一节：可选能力「absent 时退化为沉默，而不是退化为替代品」\n  - Exomem 仓库说明中关于校验器缺失时的约定：绝不出现「用另一种方式产出的标签」冒用原名\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - RULE-DESIGN-ASSET-001\n  - RULE-EVIDENCE-BOUNDARY-001\n  - RULE-CONFIDENCE-COMPILE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库说明的 Degradation modes 一节：可选能力「absent 时退化为沉默，而不是退化为替代品」\n- Exomem 仓库说明中关于校验器缺失时的约定：绝不出现「用另一种方式产出的标签」冒用原名\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-DEGRADE-SILENT-NOT-FAKE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 校验器没装，审核队列里照样出现「模型判定过」的标签。 - 语义检索模型还没下完，界面照旧显示「语义搜索」。 - 用降级后的结果去支撑一个只有原能力才能支撑的结论。 - 把「降级」当成「可以悄悄少做一步」的借口，而不是一个需要说出来的状态。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-design-asset-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-evidence-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-confidence-compile-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-no-personal-leak-001",
+      "assetType": "rule",
+      "title": "交付模板里不许带个人或客户标识，用测试挡且不许加白名单",
+      "summary": "凡是**会被复制到别人项目里**的内容——模板、脚手架、示例、种子资产——不得包含个人姓名、 真实客户或产品名、以及某个具体项目的目录结构标签。",
+      "content": "# 交付模板里不许带个人或客户标识，用测试挡且不许加白名单\n\n## 核心结论\n\n凡是**会被复制到别人项目里**的内容——模板、脚手架、示例、种子资产——不得包含个人姓名、\n真实客户或产品名、以及某个具体项目的目录结构标签。\n\n这条不靠人检查，靠一条**自动化检查挡在提交前**。命中的处理方式是**把内容泛化掉**，\n不是把词加进白名单。\n\n## 使用条件\n\n- 仓库里存在「分发给别人用」的目录时（模板库、种子包、新手脚手架）。\n- 每次往这些目录里加内容之后。\n\n## 不适用场景\n\n- 内部专用、本来就不外发的文件。\n- 项目内容里**必须**出现的产品名：判断依据是这个文件会不会被人复制走，\n  不是文件里有没有出现过专有名词。\n\n## 判断步骤\n\n1. 圈定「会被人复制走」的目录，写进检查脚本的扫描范围。\n2. 检查里维护一份**禁用词**（人名、客户名、私有库结构标签）。\n3. 命中之后只有一种处置：把这个词泛化成通用说法，改内容而不是改检查。\n4. 白名单是禁用的：一旦允许「这几个词可以留」，这条检查就退化成摆设。\n\n## 失败模式\n\n- 模板里留着上一个项目的名字，被复制进下一个项目，命名污染一路扩散。\n- 检查命中了，处理方式是往白名单加一行——从此这条测试只证明「没被改坏」，\n  不再证明「干净」。\n- 只在文档里写『注意别泄漏』，没有机器挡：靠自觉的约定一定会漏。\n- 把「示例数据」当成可以夹带真实信息的理由。\n\n## 验证证据\n\n- 做一次红-绿：故意在模板目录里塞进一个真实名字，检查必须变红；拿掉之后必须变绿。\n- 对交付模板目录跑一次扫描：零命中。\n- 检查脚本里不存在白名单式的豁免分支。\n\n## 相关资产\n\n- `CASE-ENV-PREFIX-001`（相关）：那次的教训是集成前缀把命名错误放大成密钥泄露风险；\n  这条管的是同一类「命名带着私有信息出门」的风险。\n- `RULE-AI-WRITE-001`（相关）：同属对「AI 会顺手把上下文里的东西带出去」的防线。\n- `RULE-DESIGN-TEMPLATE-LOOK-001`（相关）：那条管模板的**视觉**别千篇一律，\n  这条管模板的**内容**别带着出处。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-NO-PERSONAL-LEAK-001\ntitle: 交付模板里不许带个人或客户标识，用测试挡且不许加白名单\nasset_type: rule\nrule_type: forbidden\npurpose: safety\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - release\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: test\nevidence: []\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库根约定文件的「编辑分发给新用户的脚手架」一节：自带测试在脚手架里发现任何个人名、产品名或库结构标签就失败，并要求泛化而不是加白名单\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - CASE-ENV-PREFIX-001\n  - RULE-AI-WRITE-001\n  - RULE-DESIGN-TEMPLATE-LOOK-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库根约定文件的「编辑分发给新用户的脚手架」一节：自带测试在脚手架里发现任何个人名、产品名或库结构标签就失败，并要求泛化而不是加白名单\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "自动化测试",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-NO-PERSONAL-LEAK-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 模板里留着上一个项目的名字，被复制进下一个项目，命名污染一路扩散。 - 检查命中了，处理方式是往白名单加一行——从此这条测试只证明「没被改坏」，   不再证明「干净」。 - 只在文档里写『注意别泄漏』，没有机器挡：靠自觉的约定一定会漏。 - 把「示例数据」当成可以夹带真实信息的理由。",
+        "relations": [
+          {
+            "targetAssetId": "document-case-env-prefix-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-design-template-look-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-adopt-not-overwrite-001",
+      "assetType": "rule",
+      "title": "接管既有环境先备份、合并、打差异，你没建的文件算别人的",
+      "summary": "工具第一次接管一个**已经存在**的环境（写配置、装依赖、接 MCP、初始化目录、导数据）时， 默认动作必须是**合并**，不是覆盖。三条：",
+      "content": "# 接管既有环境先备份、合并、打差异，你没建的文件算别人的\n\n## 核心结论\n\n工具第一次接管一个**已经存在**的环境（写配置、装依赖、接 MCP、初始化目录、导数据）时，\n默认动作必须是**合并**，不是覆盖。三条：\n\n1. **不是它建的文件，当作用户的**——合并不覆盖。\n2. **动手前先备份**，并说清备份在哪。\n3. **把合并后的差异打出来给人看**。\n\n重跑一次接管动作必须是**幂等**的：已经做过的步骤报「已跳过」，不重做、不覆盖。\n\n## 使用条件\n\n- 安装脚本、初始化向导、导入工具第一次接触一个非空环境时。\n- 换环境交付：同一套东西要在别人的机器上落地时。\n\n## 不适用场景\n\n- 全新空环境：没有可覆盖的东西，这套流程自然不触发。\n- 用户明确说「这套配置我不要了，直接覆盖」：属于当次显式授权，仍要留一句记录说明覆盖了什么。\n\n## 判断步骤\n\n1. 先扫一遍目标环境：哪些文件是这次要写的，哪些是本来就有的。\n2. 本来就有的 → 备份 → 合并 → 打印差异。\n3. 新写的 → 正常写，但也要出现在差异里。\n4. 结束时报三样：改了哪些文件、各自改了什么、备份在哪。\n\n## 失败模式\n\n- 一次性覆盖掉用户手写的配置，用户事后不知道原来有什么。\n- 合并了但不说改了什么：用户下次看到陌生配置，无法判断来源与去留。\n- 备份了但没告诉备份路径，等于没备份。\n- 「重跑一遍安装」把用户后来的调整抹掉——说明幂等没做。\n- 把「合并」理解成「我读一遍再整份写回去」，实际仍然覆盖了并发改动。\n\n## 验证证据\n\n- 接管前后各留一次差异对比，能看出只增加了什么。\n- 备份文件存在，且交付说明里能指名路径。\n- 对同一环境重复执行接管动作：第二次只报「已跳过」，文件内容不变。\n\n## 相关资产\n\n- `RULE-AI-WRITE-001`（相关）：那条管 AI 写内容时不静默覆盖；这条把同一条纪律\n  延伸到「工具接管你的环境」这个场景。\n- `MTH-TECH-001`（引用）：接管方式的取舍属于技术选型的一部分。\n- `TPL-TECH-001`（引用）：接管了哪些配置、怎么回滚，写进技术档案。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-ADOPT-NOT-OVERWRITE-001\ntitle: 接管既有环境先备份、合并、打差异，你没建的文件算别人的\nasset_type: rule\nrule_type: must\npurpose: development\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - release\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库说明的安装一节：不是它建的配置文件当作用户的，先备份再合并、并把差异打印出来\n  - Exomem 仓库说明的接管既有资料一节：只读扫描在前、明确复制在后，原有文件保持不动\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - RULE-AI-WRITE-001\n  - MTH-TECH-001\n  - TPL-TECH-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "开发",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库说明的安装一节：不是它建的配置文件当作用户的，先备份再合并、并把差异打印出来\n- Exomem 仓库说明的接管既有资料一节：只读扫描在前、明确复制在后，原有文件保持不动\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-ADOPT-NOT-OVERWRITE-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 一次性覆盖掉用户手写的配置，用户事后不知道原来有什么。 - 合并了但不说改了什么：用户下次看到陌生配置，无法判断来源与去留。 - 备份了但没告诉备份路径，等于没备份。 - 「重跑一遍安装」把用户后来的调整抹掉——说明幂等没做。 - 把「合并」理解成「我读一遍再整份写回去」，实际仍然覆盖了并发改动。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-tpl-tech-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-approval-is-explicit-001",
+      "assetType": "rule",
+      "title": "提案、计数、队列都不算批准，写操作要带校验值和理由",
+      "summary": "系统给出「建议做某事」的结果，那只是建议。**下面这些都不构成同意：**",
+      "content": "# 提案、计数、队列都不算批准，写操作要带校验值和理由\n\n## 核心结论\n\n系统给出「建议做某事」的结果，那只是建议。**下面这些都不构成同意：**\n\n- 一条待处理的提案；\n- 同一个建议重复出现的次数；\n- 待办／审核队列里的一个条目；\n- 一个清单上被打过的勾（勾选是**声明**，不是证据）。\n\n真正的写入要满足两条：\n\n1. **单独一次显式写入动作**，不是「上次那条提案还在，那就顺手做了」。\n2. 带上**当时看到的校验值**和**一句理由**。如果对象在这期间被别人改过，\n   写入必须**失败**，而不是覆盖。\n\n## 使用条件\n\n- 系统里有「建议 / 待办 / 审核队列」这类中间状态时。\n- 任何会把建议变成实际改动的地方。\n\n## 不适用场景\n\n- 用户在这次对话里明确说了「就按这个改」：那是当次授权，记一条即可，不必再要一次确认。\n- 纯读取、试运行、生成预览：本来就不需要批准。\n\n## 判断步骤\n\n1. 写入前先问：我现在做的这件事，对应的是**哪一次**明确的同意？\n2. 答不上来 → 停下来，把提案拿给人看，等一句明确的话。\n3. 写入时带上校验值和理由；写入失败要**当作正常结果**报出来，不要重试到成功。\n4. 批准和写入之间的上下文不能丢：批的是 A，就必须写 A。\n\n## 失败模式\n\n- 界面上排着一个「建议合并」，没人点，攒了几次之后被当成「已经默认同意」。\n- 同一个待办出现三遍，被理解成「用户催了三次」。\n- 写入不校验版本，覆盖掉别人刚做的改动。\n- 批准和写入拆成两步，第二步丢掉了第一步的对象，批的是 A 写的是 B。\n- 把勾选框当成证据：勾上就算做完。\n\n## 验证证据\n\n- 抽查任意一次写入，能指出：谁批的、批的是哪一条、提交时的校验值是多少。\n- 造一次并发冲突：先记下校验值，让别人改一下对象，再提交——写入必须被拒绝，\n  且提示是「对象已变化」而不是「权限不足」之类的误导信息。\n\n## 相关资产\n\n- `RULE-AI-WRITE-001`（补强）：那条讲 AI 只新增与更新、不静默覆盖；这条补的是\n  「**什么不算确认**」这一面。\n- `MTH-REFERENCE-001`（相关）：批准的对象要能被唯一指向，靠引用而不是靠描述。\n- `MTH-EVIDENCE-001`（相关）：同意与否这类事实，同样只记一处。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-APPROVAL-IS-EXPLICIT-001\ntitle: 提案、计数、队列都不算批准，写操作要带校验值和理由\nasset_type: rule\nrule_type: forbidden\npurpose: safety\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）的助手使用指南：绝不把提案、重复出现次数或队列条目当成批准，只有单独一次带校验值和理由的写入才算\n  - Exomem 仓库说明：会话管理动作不暴露成给 Agent 的工具\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - RULE-AI-WRITE-001\n  - MTH-REFERENCE-001\n  - MTH-EVIDENCE-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "forbidden",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）的助手使用指南：绝不把提案、重复出现次数或队列条目当成批准，只有单独一次带校验值和理由的写入才算\n- Exomem 仓库说明：会话管理动作不暴露成给 Agent 的工具\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-APPROVAL-IS-EXPLICIT-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 界面上排着一个「建议合并」，没人点，攒了几次之后被当成「已经默认同意」。 - 同一个待办出现三遍，被理解成「用户催了三次」。 - 写入不校验版本，覆盖掉别人刚做的改动。 - 批准和写入拆成两步，第二步丢掉了第一步的对象，批的是 A 写的是 B。 - 把勾选框当成证据：勾上就算做完。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-ai-write-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-reference-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-mth-evidence-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-dangerous-tools-switch-001",
+      "assetType": "rule",
+      "title": "危险工具面独立成层，默认可一键关掉",
+      "summary": "把「能移动、删除、清空回收站、跨目录操作」这类**不可逆**能力，从日常能力里切出来 单独一层，并给整层配一个开关，关掉之后这些能力**直接在工具清单里看不到**。",
+      "content": "# 危险工具面独立成层，默认可一键关掉\n\n## 核心结论\n\n把「能移动、删除、清空回收站、跨目录操作」这类**不可逆**能力，从日常能力里切出来\n单独一层，并给整层配一个开关，关掉之后这些能力**直接在工具清单里看不到**。\n\n理由很朴素：Agent 平时用不上它们，但只要它们存在，迟早会被用上。\n\n## 使用条件\n\n- 系统把能力以「工具／接口」的形式暴露给 Agent 或脚本时。\n- 工具清单里出现任何不可逆动作时。\n\n## 不适用场景\n\n- 单人本地、没有 Agent 接入的一次性脚本。\n- 环境本身就是一次性的（容器、临时沙箱），删了也不心疼。\n\n## 判断步骤\n\n1. 分两层：**日常能力**（读、搜、写新内容）与**危险能力**（移动、删除、清空回收站、\n   跨目录批量操作）。\n2. 危险层给一个独立开关；关掉后连能力描述都不出现。\n3. 验证关掉之后主流程仍然跑得通——跑不通说明分层没切干净。\n4. 把「这一层有哪些能力」列成清单，纳入交接材料。\n\n## 失败模式\n\n- 危险能力默认开着，而且没有任何开关。\n- 开关存在，但关掉之后主流程报错：说明日常能力偷偷依赖了危险能力。\n- 用「我在提示词里写了不许删」代替真实的能力开关——那是靠自觉，不是靠设计。\n- 工具一层平铺，Agent 分不清哪个是只读、哪个会改文件。\n\n## 验证证据\n\n- 关掉危险层跑一遍主流程：主流程通、危险工具确实不在清单里。\n- 工具清单能按层列出能力，交接时能一眼看出「哪些是不可逆的」。\n- 抽查一次 Agent 操作记录：在危险层关闭的状态下，没有任何一次不可逆动作发生。\n\n## 相关资产\n\n- `RULE-PG-PRIVILEGE-001`（同源）：那条管数据库连接只用最小权限，这条把同样的\n  「默认最小能力」用在工具面上。\n- `RULE-BOUNDARY-001`（相关）：工具边界也是接口契约的一部分。\n- `RULE-APPROVAL-IS-EXPLICIT-001`（引用）：危险层开着的时候，每次不可逆动作\n  按那条走——要有单独一次明确同意。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-DANGEROUS-TOOLS-SWITCH-001\ntitle: 危险工具面独立成层，默认可一键关掉\nasset_type: rule\nrule_type: must\npurpose: safety\nlayer: project\ntech_context:\n  - generic\npriority: p0\nscope: global\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - operate\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库说明：把列目录、建文件、移动页面、清空回收站这类文件系统逃生口归为第二层工具，并提供一个环境变量把它们整体隐藏\n  - Exomem 的助手使用指南：真正的修复写入由宿主运维口执行，远端工具只做审计与试运行\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - RULE-PG-PRIVILEGE-001\n  - RULE-BOUNDARY-001\n  - RULE-APPROVAL-IS-EXPLICIT-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "must",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库说明：把列目录、建文件、移动页面、清空回收站这类文件系统逃生口归为第二层工具，并提供一个环境变量把它们整体隐藏\n- Exomem 的助手使用指南：真正的修复写入由宿主运维口执行，远端工具只做审计与试运行\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-DANGEROUS-TOOLS-SWITCH-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 危险能力默认开着，而且没有任何开关。 - 开关存在，但关掉之后主流程报错：说明日常能力偷偷依赖了危险能力。 - 用「我在提示词里写了不许删」代替真实的能力开关——那是靠自觉，不是靠设计。 - 工具一层平铺，Agent 分不清哪个是只读、哪个会改文件。",
+        "relations": [
+          {
+            "targetAssetId": "rule-rule-pg-privilege-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-boundary-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-approval-is-explicit-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-rule-change-test-map-001",
+      "assetType": "rule",
+      "title": "建一张改哪跑哪的映射表",
+      "summary": "把「改了哪个目录 → 至少跑哪组检查」写成一张表，和代码放在一起。它解决的不是 「要不要测」，而是**「这次具体该跑什么」**。",
+      "content": "# 建一张改哪跑哪的映射表\n\n## 核心结论\n\n把「改了哪个目录 → 至少跑哪组检查」写成一张表，和代码放在一起。它解决的不是\n「要不要测」，而是**「这次具体该跑什么」**。\n\n只有两档（日常快检查 / 合并前全量）时会出现两个问题：改一行文档要跑全量，浪费时间；\n改了对外契约只跑快检查，漏掉真正的风险。映射表把这两头都收掉。\n\n## 使用条件\n\n- 项目已经有稳定的目录结构和不止一条检查命令时。\n- 出现「这次该跑什么」需要靠讨论来决定的时候。\n\n## 不适用场景\n\n- 只有一条检查命令、改动范围单一的小项目：一张表是多余的。\n- 探索期、目录结构还在天天变：先等结构稳定，否则这张表只会过期。\n\n## 判断步骤\n\n1. 先把目录按「改动风险」分层，而不是按业务分类。\n2. 逐层写下**至少**要跑什么，例如（以本仓库为例，其他项目照自己的结构替换）：\n\n| 改了 | 至少跑 |\n| --- | --- |\n| `docs/`（纯文档） | 内容与合规检查 |\n| `seed-packs/` 某个包 | 重新生成该包 + 该包的格式测试 |\n| `src/lib/` 共享逻辑 | 类型检查 + 相关单测 |\n| 对外契约（工具定义、包格式、接口模型） | 上面全部 + 生产构建 |\n\n3. 动手前先查表；跑完把真实输出留在交付说明里。\n4. 表里每加一行，就顺手把那条命令跑一遍，确认它是活的。\n\n## 失败模式\n\n- 只有「快检查 / 全检查」两档，危险改动被漏检或被过度检查。\n- 表存在但没人查，最后仍然拍脑袋决定跑什么。\n- 表里写的命令已经失效：脚本改名了、命令删了，表没跟着改。\n- 把表当成「检查清单打勾」，只勾不跑。\n\n## 验证证据\n\n- 抽查三次不同类型的改动，每次都能说清：按表该跑什么、实际跑了什么。\n- 表里的命令逐条跑一遍，没有失效条目。\n- 出现过至少一次「因为查表才发现要跑某条检查」的记录。\n\n## 相关资产\n\n- `MTH-QUALITY-001`（补强）：那条定的是质量画像与必选门禁，这条把门禁落到\n  「改动落点」这一级。\n- `RULE-VERIFY-002`（相关）：证据必须是这次跑出来的；这条负责回答「这次该跑哪条」。\n- `CASE-MIGRATION-001`（相关）：迁移历史与文件名不一致那次事故，正是「改了 A\n  却没跑 B 的检查」的典型。\n\n## 包内原始元数据\n\n```yaml\nid: RULE-CHANGE-TEST-MAP-001\ntitle: 建一张改哪跑哪的映射表\nasset_type: rule\nrule_type: process\npurpose: testing\nlayer: project\ntech_context:\n  - generic\npriority: p1\nscope: global\nproject_scale:\n  - medium\n  - large\n  - regulated\nlifecycle_phase:\n  - build\n  - release\nstatus: candidate\nconfidence: hypothesis\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nsource_references:\n  - MemOS（github.com/MemTensor/MemOS）仓库根约定文件的 Change → Test Mapping 一节：按改动落点规定至少要跑的检查\n  - MemOS 仓库根约定文件的行为边界一节：碰了对外接口定义就要重跑并确认契约没有意外变化\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - MTH-QUALITY-001\n  - RULE-VERIFY-002\n  - CASE-MIGRATION-001\nversion: 0.1.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "process",
+        "scope": "global",
+        "purpose": "测试",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- MemOS（github.com/MemTensor/MemOS）仓库根约定文件的 Change → Test Mapping 一节：按改动落点规定至少要跑的检查\n- MemOS 仓库根约定文件的行为边界一节：碰了对外接口定义就要重跑并确认契约没有意外变化\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-engineering-foundations",
+          "packItemId": "RULE-CHANGE-TEST-MAP-001",
+          "packVersion": "0.1.0",
+          "packAssetType": "rule",
+          "projectScale": [
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 只有「快检查 / 全检查」两档，危险改动被漏检或被过度检查。 - 表存在但没人查，最后仍然拍脑袋决定跑什么。 - 表里写的命令已经失效：脚本改名了、命令删了，表没跟着改。 - 把表当成「检查清单打勾」，只勾不跑。",
+        "relations": [
+          {
+            "targetAssetId": "rule-mth-quality-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-rule-verify-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "document-case-migration-001",
             "relationType": "reference",
             "note": "包内关联"
           }

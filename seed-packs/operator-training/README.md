@@ -26,7 +26,7 @@ Agents），以及豆包整理的外部来源评估（`seed-packs/external-sourc
 
 ## 当前版本
 
-- 版本：`0.1.0`（试装第一批 9 条）
+- 版本：`0.3.0`
 - 状态：`candidate`，等产品负责人确认后升 `active`
 - 覆盖模块：心法、M2 派活、M3 驭程、M4 验收、M5 排错、M7 沉淀
 - 未覆盖：M1 开工（`templates/new-project/START_PROMPT.md` 和工程包 `MTH-REQ-001` 已覆盖）、
@@ -49,6 +49,25 @@ npm run pack:operator
 - 每条资产的 `related_assets` 都指回工程包里对应的规则或模板，方便对照。
 
 ## 版本变化
+
+### 0.3.0
+
+- 新增 6 条「人怎么指挥 AI」的方法，来源是 Exomem 与 MemOS 两个开源仓库里的工程约定
+  （外部来源采集第七批，台账 S9）：记忆分层（`OPS-MEMORY-001`）、按效果判断危险
+  （`OPS-EFFECT-001`）、别把能自己跑的命令丢给人（`OPS-BURDEN-001`）、交接检查点
+  （`OPS-HANDOFF-001`）、搜不到不等于不存在（`OPS-EMPTY-001`）、环境不支持就明说
+  （`OPS-REFUSE-001`）。
+- 这 6 条都是 `confidence: hypothesis` + `compile_target: none`：还没在你手上用过，
+  不编译进 `AGENTS.md`。
+- 填补了一个**登记在案的缺口**：多会话协作边界——原来只有工程包的案例
+  （`CASE-PARALLEL-001`），没有给人看的方法，现在由交接检查点和「谁动手」两条承载。
+- 版本口径：本包要求每条资产的 `version` 与包版本一致，所以 9 条老资产的版本号
+  **一起从 0.2.0 提到 0.3.0**（只改版本号，内容一字未动）。
+
+### 0.2.0
+
+- 回填证据并升级一条可信度（会话管理 `OPS-SESSION-001`，`hypothesis` → `provisional`）。
+  清单版本随之从 0.1.0 提到 0.2.0；README 这一节当时漏改，0.3.0 一并补上。
 
 ### 0.1.0
 

@@ -102,13 +102,14 @@ function documentAsset(id, title) {
 // —— README 解析（迁移脚本的数据来源）——
 
 test("能解析出第六节采集台账的全部来源", () => {
-  assert.equal(entries.length, 23);
+  assert.equal(entries.length, 24);
   assert.equal(entries[0].seq, 1);
   assert.equal(entries[0].source, "Ponytail（7 层防重复造轮子）");
   assert.equal(entries[0].type, "Skill/MCP");
   assert.equal(entries[0].landing, "templates/new-project/AGENTS.md");
   assert.equal(entries[0].verifiedAt, "2026-09");
   assert.equal(entries[22].source.startsWith("S8 WorkBuddy 生态"), true);
+  assert.equal(entries[23].source.startsWith("S9 Exomem + MemOS"), true);
 });
 
 test("解析时清洗 Markdown 标记：加粗与行内代码不留在纯文本里", () => {

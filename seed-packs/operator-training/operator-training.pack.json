@@ -1,19 +1,21 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-24T15:19:14.995Z",
+  "exportedAt": "2026-09-30T03:09:46.463Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-operator-training",
     "title": "操作者训练包",
     "summary": "工程方法种子资产包管的是「AI 该守什么规矩」；这个包管的是「**人该怎么指挥 AI**」—— 面向零代码或低代码用 AI 交付软件的操作者（先是本人，将来是要带的同事）。 来源有三条：本项目两轮开发的真实经验、成熟工具与资料里的方法（superpowers、12-Factor Agents），以及豆包整理的外部来源评",
-    "content": "# 操作者训练包\n\n## 用途\n\n工程方法种子资产包管的是「AI 该守什么规矩」；这个包管的是「**人该怎么指挥 AI**」——\n面向零代码或低代码用 AI 交付软件的操作者（先是本人，将来是要带的同事）。\n\n来源有三条：本项目两轮开发的真实经验、成熟工具与资料里的方法（superpowers、12-Factor\nAgents），以及豆包整理的外部来源评估（`seed-packs/external-sources`）。\n\n## 和工程包的关系\n\n| | 工程方法种子资产包 | 操作者训练包（本包） |\n| --- | --- | --- |\n| 训练对象 | AI | 人 |\n| 回答的问题 | AI 该守什么规矩 | 人该怎么指挥 AI |\n| 编译产物 | `AGENTS.md` / `START_PROMPT.md` | 操作手册、检查清单（**还没实现**） |\n\n两条约定：\n\n1. **每条人的动作都回链到 AI 规则**：资产的 `related_assets` 指向工程包里对应的规则，\n   凡是需要 AI 配合的部分，最终都落在 `AGENTS.md` 里。\n2. **暂不动 schema**：`compile_target` 现在只有 `agents`、`readme`、`start_prompt`、\n   `template`、`none`，没有「操作手册」这一项，所以本包的资产都填 `none`\n   （意思是\"不编译进 AGENTS.md\"）。等这一包真用过一轮，再决定要不要加编译去向。\n\n## 当前版本\n\n- 版本：`0.1.0`（试装第一批 9 条）\n- 状态：`candidate`，等产品负责人确认后升 `active`\n- 覆盖模块：心法、M2 派活、M3 驭程、M4 验收、M5 排错、M7 沉淀\n- 未覆盖：M1 开工（`templates/new-project/START_PROMPT.md` 和工程包 `MTH-REQ-001` 已覆盖）、\n  M6 上线（工程包 `PLAYBOOK-RELEASE-001`、`PLAYBOOK-INCIDENT-001` 已覆盖）\n\n## 怎么装进产品\n\n```bash\nnpm run pack:operator\n```\n\n生成 `seed-packs/operator-training/operator-training.pack.json`，在产品里走\n「导入规则包」装进项目；方法、流程类落成规则资产，模板类落成模板资产，都带包内编号\n（例如 `OPS-SESSION-001`），以后能按包筛选。\n\n## 去重说明\n\n- 与工程包不重复：工程包讲\"该怎么做工程\"，本包讲\"人怎么操作 AI\"。\n- 与提示词不重复：那些是让 AI 干活的正文，本包是给人看的操作动作。\n- 每条资产的 `related_assets` 都指回工程包里对应的规则或模板，方便对照。\n\n## 版本变化\n\n### 0.1.0\n\n- 试装第一批 9 条：指挥官心法、需求翻译、给上下文、会话管理、思考等级与成本、\n  黑盒验收五状态、让 AI 自测、让 AI 找根因、踩坑→规则。\n- 格式门禁：`tests/operator-pack.test.mjs` 随 `npm run check` 执行，校验字段、取值、\n  章节、模块/难度取值和跨包引用。",
+    "content": "# 操作者训练包\n\n## 用途\n\n工程方法种子资产包管的是「AI 该守什么规矩」；这个包管的是「**人该怎么指挥 AI**」——\n面向零代码或低代码用 AI 交付软件的操作者（先是本人，将来是要带的同事）。\n\n来源有三条：本项目两轮开发的真实经验、成熟工具与资料里的方法（superpowers、12-Factor\nAgents），以及豆包整理的外部来源评估（`seed-packs/external-sources`）。\n\n## 和工程包的关系\n\n| | 工程方法种子资产包 | 操作者训练包（本包） |\n| --- | --- | --- |\n| 训练对象 | AI | 人 |\n| 回答的问题 | AI 该守什么规矩 | 人该怎么指挥 AI |\n| 编译产物 | `AGENTS.md` / `START_PROMPT.md` | 操作手册、检查清单（**还没实现**） |\n\n两条约定：\n\n1. **每条人的动作都回链到 AI 规则**：资产的 `related_assets` 指向工程包里对应的规则，\n   凡是需要 AI 配合的部分，最终都落在 `AGENTS.md` 里。\n2. **暂不动 schema**：`compile_target` 现在只有 `agents`、`readme`、`start_prompt`、\n   `template`、`none`，没有「操作手册」这一项，所以本包的资产都填 `none`\n   （意思是\"不编译进 AGENTS.md\"）。等这一包真用过一轮，再决定要不要加编译去向。\n\n## 当前版本\n\n- 版本：`0.3.0`\n- 状态：`candidate`，等产品负责人确认后升 `active`\n- 覆盖模块：心法、M2 派活、M3 驭程、M4 验收、M5 排错、M7 沉淀\n- 未覆盖：M1 开工（`templates/new-project/START_PROMPT.md` 和工程包 `MTH-REQ-001` 已覆盖）、\n  M6 上线（工程包 `PLAYBOOK-RELEASE-001`、`PLAYBOOK-INCIDENT-001` 已覆盖）\n\n## 怎么装进产品\n\n```bash\nnpm run pack:operator\n```\n\n生成 `seed-packs/operator-training/operator-training.pack.json`，在产品里走\n「导入规则包」装进项目；方法、流程类落成规则资产，模板类落成模板资产，都带包内编号\n（例如 `OPS-SESSION-001`），以后能按包筛选。\n\n## 去重说明\n\n- 与工程包不重复：工程包讲\"该怎么做工程\"，本包讲\"人怎么操作 AI\"。\n- 与提示词不重复：那些是让 AI 干活的正文，本包是给人看的操作动作。\n- 每条资产的 `related_assets` 都指回工程包里对应的规则或模板，方便对照。\n\n## 版本变化\n\n### 0.3.0\n\n- 新增 6 条「人怎么指挥 AI」的方法，来源是 Exomem 与 MemOS 两个开源仓库里的工程约定\n  （外部来源采集第七批，台账 S9）：记忆分层（`OPS-MEMORY-001`）、按效果判断危险\n  （`OPS-EFFECT-001`）、别把能自己跑的命令丢给人（`OPS-BURDEN-001`）、交接检查点\n  （`OPS-HANDOFF-001`）、搜不到不等于不存在（`OPS-EMPTY-001`）、环境不支持就明说\n  （`OPS-REFUSE-001`）。\n- 这 6 条都是 `confidence: hypothesis` + `compile_target: none`：还没在你手上用过，\n  不编译进 `AGENTS.md`。\n- 填补了一个**登记在案的缺口**：多会话协作边界——原来只有工程包的案例\n  （`CASE-PARALLEL-001`），没有给人看的方法，现在由交接检查点和「谁动手」两条承载。\n- 版本口径：本包要求每条资产的 `version` 与包版本一致，所以 9 条老资产的版本号\n  **一起从 0.2.0 提到 0.3.0**（只改版本号，内容一字未动）。\n\n### 0.2.0\n\n- 回填证据并升级一条可信度（会话管理 `OPS-SESSION-001`，`hypothesis` → `provisional`）。\n  清单版本随之从 0.1.0 提到 0.2.0；README 这一节当时漏改，0.3.0 一并补上。\n\n### 0.1.0\n\n- 试装第一批 9 条：指挥官心法、需求翻译、给上下文、会话管理、思考等级与成本、\n  黑盒验收五状态、让 AI 自测、让 AI 找根因、踩坑→规则。\n- 格式门禁：`tests/operator-pack.test.mjs` 随 `npm run check` 执行，校验字段、取值、\n  章节、模块/难度取值和跨包引用。",
     "metadata": {
-      "packVersion": "0.2.0",
+      "packVersion": "0.3.0",
       "packConfidence": "provisional",
       "projectScale": [
+        "large",
         "medium",
-        "personal"
+        "personal",
+        "regulated"
       ],
       "sourceNote": "来自仓库里的种子资产包（Markdown 源文件）；manifest 与 schema 属于包的目录和字段定义，内容已并入包说明。"
     },
@@ -25,7 +27,7 @@
       "assetType": "rule",
       "title": "你是指挥官，不是程序员",
       "summary": "代码是 AI 写的，但有三件事必须由你定：**定范围**（做什么、不做什么）、 **做验收**（点一遍、看结果）、**定发布**（什么时候上、出事退到哪）。 把这三件事抓住，零代码也能把项目交付出去；这三件事一放手，AI 写得再快也没用。",
-      "content": "# 你是指挥官，不是程序员\n\n## 核心结论\n\n代码是 AI 写的，但有三件事必须由你定：**定范围**（做什么、不做什么）、\n**做验收**（点一遍、看结果）、**定发布**（什么时候上、出事退到哪）。\n把这三件事抓住，零代码也能把项目交付出去；这三件事一放手，AI 写得再快也没用。\n\n## 使用条件\n\n- 用 AI 做任何一个项目，尤其是刚开始不知道从哪下手的时候。\n- 换了新工具、新模型时也要重新建立这三件事的习惯。\n\n## 不适用场景\n\n- 只是让 AI 查一段资料、写一句话，用完就扔的场景。\n- 已经有团队规范替你兜底时——仍然要自己看过一遍范围和验收标准。\n\n## 三句话心法\n\n1. **定范围**：一句话说清这次做什么、明确不做什么；范围由你砍，不由 AI 扩。\n2. **做验收**：不信\"我做好了\"，按用户流程点一遍，看结果对不对。\n3. **定发布**：什么时候上线、上线前必须留下哪些证据、出事退回哪个版本，都由你定。\n\n## 失败模式\n\n- 把\"AI 说已完成\"当成验收。\n- 不敢砍需求，每轮都想全做完，结果哪件都没做完。\n- 让 AI 自己决定什么时候上线，出事时不知道退回哪里。\n\n## 验证证据\n\n- 每个版本一份验收清单，清单上有你的签字。\n- 每个发布版本一条发布记录（门禁勾选情况）。\n\n## 相关资产\n\n- `MTH-REQ-001`（依赖）：定范围的具体做法在这里。\n- `MTH-QUALITY-001`（引用）：你定的验收强度要和项目质量等级对得上。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-MINDSET-001\ntitle: 你是指挥官，不是程序员\nasset_type: principle\naudience: human\nmodule: 心法\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - analysis\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/acceptance/v2.11.0.md（2.0 整条线由产品负责人逐版签收，范围、验收和发布都是人定的）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Contact humans with tool calls（关键节点必须能停下来叫人）\n  - 本项目两轮真实交付（1.0 与 2.0 共 20 多个版本，每版一份验收清单）\nrelated_assets:\n  - OPS-TASK-001\n  - OPS-ACCEPT-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 你是指挥官，不是程序员\n\n## 核心结论\n\n代码是 AI 写的，但有三件事必须由你定：**定范围**（做什么、不做什么）、\n**做验收**（点一遍、看结果）、**定发布**（什么时候上、出事退到哪）。\n把这三件事抓住，零代码也能把项目交付出去；这三件事一放手，AI 写得再快也没用。\n\n## 使用条件\n\n- 用 AI 做任何一个项目，尤其是刚开始不知道从哪下手的时候。\n- 换了新工具、新模型时也要重新建立这三件事的习惯。\n\n## 不适用场景\n\n- 只是让 AI 查一段资料、写一句话，用完就扔的场景。\n- 已经有团队规范替你兜底时——仍然要自己看过一遍范围和验收标准。\n\n## 三句话心法\n\n1. **定范围**：一句话说清这次做什么、明确不做什么；范围由你砍，不由 AI 扩。\n2. **做验收**：不信\"我做好了\"，按用户流程点一遍，看结果对不对。\n3. **定发布**：什么时候上线、上线前必须留下哪些证据、出事退回哪个版本，都由你定。\n\n## 失败模式\n\n- 把\"AI 说已完成\"当成验收。\n- 不敢砍需求，每轮都想全做完，结果哪件都没做完。\n- 让 AI 自己决定什么时候上线，出事时不知道退回哪里。\n\n## 验证证据\n\n- 每个版本一份验收清单，清单上有你的签字。\n- 每个发布版本一条发布记录（门禁勾选情况）。\n\n## 相关资产\n\n- `MTH-REQ-001`（依赖）：定范围的具体做法在这里。\n- `MTH-QUALITY-001`（引用）：你定的验收强度要和项目质量等级对得上。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-MINDSET-001\ntitle: 你是指挥官，不是程序员\nasset_type: principle\naudience: human\nmodule: 心法\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - analysis\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/acceptance/v2.11.0.md（2.0 整条线由产品负责人逐版签收，范围、验收和发布都是人定的）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Contact humans with tool calls（关键节点必须能停下来叫人）\n  - 本项目两轮真实交付（1.0 与 2.0 共 20 多个版本，每版一份验收清单）\nrelated_assets:\n  - OPS-TASK-001\n  - OPS-ACCEPT-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -45,7 +47,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-MINDSET-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "principle",
           "projectScale": [
             "personal",
@@ -73,7 +75,7 @@
       "assetType": "rule",
       "title": "需求翻译：一次一个清晰目标",
       "summary": "把需求切成\"AI 能一次做完、并且能自己证明做完\"的小目标，**一次只给一个**， 每个目标都附验收标准。一次发十个需求，等于让 AI 自己决定先做哪个、做到什么程度算完。",
-      "content": "# 需求翻译：一次一个清晰目标\n\n## 核心结论\n\n把需求切成\"AI 能一次做完、并且能自己证明做完\"的小目标，**一次只给一个**，\n每个目标都附验收标准。一次发十个需求，等于让 AI 自己决定先做哪个、做到什么程度算完。\n\n## 使用条件\n\n- 任何要落成功能、改动或内容的需求。\n- 一轮迭代开始时，先把这一轮的清单摆出来，再逐个派。\n\n## 不适用场景\n\n- 还在探索阶段、只想让 AI 先给方案时：那是讨论，不是派活。\n- 一行文案、一个配置值这种看一眼就能判定的改动。\n\n## 派活四件套\n\n```text\n现状：现在是什么样、为什么不行\n目标：这次要做到什么样（一句话）\n不做什么：明确排除的范围\n验收标准：怎么点、看到什么算完成\n```\n\n派活时按这三个动作走：\n\n1. 先写四件套，再发任务；写不出来说明需求还没想清楚。\n2. 一个目标一个任务；互相依赖的分先后，别一起发。\n3. 做完先验收，再发下一个；验收没过就不往下叠。\n\n## 失败模式\n\n- 一口气描述十个需求，AI 挑简单的做。\n- 只给目标、不给验收标准，结果\"做完了\"但达不到你要的效果。\n- 前一个目标还没验收就发下一个，问题叠问题。\n\n## 验证证据\n\n- 版本拆分记录和每版的验收清单。\n- 每轮迭代的交付说明：改了哪些文件、怎么验证。\n\n## 相关资产\n\n- `MTH-REQ-001`（引用）：先把边界澄清清楚，再翻译成任务。\n- `OPS-ACCEPT-001`（引用）：验收标准要用黑盒验收的写法。\n- `OPS-SESSION-001`（引用）：任务跨度大时，先想想是不是该开新对话。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-TASK-001\ntitle: 需求翻译：一次一个清晰目标\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p0\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）\n  - AGENTS.md（\"一次提交只处理一个清晰目标\"）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Small, Focused Agents（一次只给一个清晰目标）\n  - 本项目 2.0 功能线的版本拆分与逐版交付记录\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-SESSION-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 需求翻译：一次一个清晰目标\n\n## 核心结论\n\n把需求切成\"AI 能一次做完、并且能自己证明做完\"的小目标，**一次只给一个**，\n每个目标都附验收标准。一次发十个需求，等于让 AI 自己决定先做哪个、做到什么程度算完。\n\n## 使用条件\n\n- 任何要落成功能、改动或内容的需求。\n- 一轮迭代开始时，先把这一轮的清单摆出来，再逐个派。\n\n## 不适用场景\n\n- 还在探索阶段、只想让 AI 先给方案时：那是讨论，不是派活。\n- 一行文案、一个配置值这种看一眼就能判定的改动。\n\n## 派活四件套\n\n```text\n现状：现在是什么样、为什么不行\n目标：这次要做到什么样（一句话）\n不做什么：明确排除的范围\n验收标准：怎么点、看到什么算完成\n```\n\n派活时按这三个动作走：\n\n1. 先写四件套，再发任务；写不出来说明需求还没想清楚。\n2. 一个目标一个任务；互相依赖的分先后，别一起发。\n3. 做完先验收，再发下一个；验收没过就不往下叠。\n\n## 失败模式\n\n- 一口气描述十个需求，AI 挑简单的做。\n- 只给目标、不给验收标准，结果\"做完了\"但达不到你要的效果。\n- 前一个目标还没验收就发下一个，问题叠问题。\n\n## 验证证据\n\n- 版本拆分记录和每版的验收清单。\n- 每轮迭代的交付说明：改了哪些文件、怎么验证。\n\n## 相关资产\n\n- `MTH-REQ-001`（引用）：先把边界澄清清楚，再翻译成任务。\n- `OPS-ACCEPT-001`（引用）：验收标准要用黑盒验收的写法。\n- `OPS-SESSION-001`（引用）：任务跨度大时，先想想是不是该开新对话。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-TASK-001\ntitle: 需求翻译：一次一个清晰目标\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p0\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）\n  - AGENTS.md（\"一次提交只处理一个清晰目标\"）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Small, Focused Agents（一次只给一个清晰目标）\n  - 本项目 2.0 功能线的版本拆分与逐版交付记录\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-SESSION-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -93,7 +95,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-TASK-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "method",
           "projectScale": [
             "personal",
@@ -121,7 +123,7 @@
       "assetType": "rule",
       "title": "给 AI 有效上下文",
       "summary": "上下文不是越多越好，而是**和这次任务对得上**。优先给项目自己的文档和真实现象， 不要让 AI 去猜项目结构，也不要塞一整段无关聊天记录。",
-      "content": "# 给 AI 有效上下文\n\n## 核心结论\n\n上下文不是越多越好，而是**和这次任务对得上**。优先给项目自己的文档和真实现象，\n不要让 AI 去猜项目结构，也不要塞一整段无关聊天记录。\n\n## 使用条件\n\n- 每次开工（新任务、新版本）。\n- 每次报 bug、每次要求返工。\n\n## 不适用场景\n\n- 一次性的问答、查资料。\n- 项目规则文档已经完全覆盖的常规小改动（让它先读规则即可）。\n\n## 该给什么\n\n| 给什么 | 具体内容 | 为什么 |\n| --- | --- | --- |\n| 项目规则 | 项目根目录的规则文档、文档索引 | 让它按项目习惯做事，不自己发明流程 |\n| 相关文档 | 这次任务的设计、验收、运维文档 | 决策和边界已经在文档里 |\n| 真实现象 | 报错原文、截图、复现步骤、数据样本 | 现象比描述准，避免它猜 |\n| 明确边界 | 不要动什么、不要引入什么 | 防止顺手重构、顺手加依赖 |\n\n不要给：整篇历史聊天记录、无关模块的代码、别人项目的规范（除非你确认要照搬）。\n\n## 失败模式\n\n- 贴一大段无关内容，把真正的问题淹掉。\n- 只说\"不行\"，不给现象、不给复现步骤。\n- 让 AI 自己猜项目结构，它猜错了你还得收拾。\n\n## 验证证据\n\n- 交付说明里的\"改了哪些文件、如何验证\"——说明它确实读了项目文档。\n- 报 bug 时的复现记录。\n\n## 相关资产\n\n- `OPS-DEBUG-001`（引用）：报 bug 的上下文怎么给，那条讲得更细。\n- `MTH-DELIVERY-001`（引用）：端到端最小链路是给上下文的最好素材。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-CONTEXT-001\ntitle: 给 AI 有效上下文\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/INDEX.md（开工先读索引和项目规则，再按任务读文档）\n  - docs/engineering-map.md（改代码前先定位文件，不整篇读大文件）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Own your context window（上下文要自己掌控，不是越多越好）\n  - 本项目\"开工先读文档\"的固定顺序与工程地图\nrelated_assets:\n  - OPS-DEBUG-001\n  - OPS-TASK-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 给 AI 有效上下文\n\n## 核心结论\n\n上下文不是越多越好，而是**和这次任务对得上**。优先给项目自己的文档和真实现象，\n不要让 AI 去猜项目结构，也不要塞一整段无关聊天记录。\n\n## 使用条件\n\n- 每次开工（新任务、新版本）。\n- 每次报 bug、每次要求返工。\n\n## 不适用场景\n\n- 一次性的问答、查资料。\n- 项目规则文档已经完全覆盖的常规小改动（让它先读规则即可）。\n\n## 该给什么\n\n| 给什么 | 具体内容 | 为什么 |\n| --- | --- | --- |\n| 项目规则 | 项目根目录的规则文档、文档索引 | 让它按项目习惯做事，不自己发明流程 |\n| 相关文档 | 这次任务的设计、验收、运维文档 | 决策和边界已经在文档里 |\n| 真实现象 | 报错原文、截图、复现步骤、数据样本 | 现象比描述准，避免它猜 |\n| 明确边界 | 不要动什么、不要引入什么 | 防止顺手重构、顺手加依赖 |\n\n不要给：整篇历史聊天记录、无关模块的代码、别人项目的规范（除非你确认要照搬）。\n\n## 失败模式\n\n- 贴一大段无关内容，把真正的问题淹掉。\n- 只说\"不行\"，不给现象、不给复现步骤。\n- 让 AI 自己猜项目结构，它猜错了你还得收拾。\n\n## 验证证据\n\n- 交付说明里的\"改了哪些文件、如何验证\"——说明它确实读了项目文档。\n- 报 bug 时的复现记录。\n\n## 相关资产\n\n- `OPS-DEBUG-001`（引用）：报 bug 的上下文怎么给，那条讲得更细。\n- `MTH-DELIVERY-001`（引用）：端到端最小链路是给上下文的最好素材。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-CONTEXT-001\ntitle: 给 AI 有效上下文\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/INDEX.md（开工先读索引和项目规则，再按任务读文档）\n  - docs/engineering-map.md（改代码前先定位文件，不整篇读大文件）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Own your context window（上下文要自己掌控，不是越多越好）\n  - 本项目\"开工先读文档\"的固定顺序与工程地图\nrelated_assets:\n  - OPS-DEBUG-001\n  - OPS-TASK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -141,7 +143,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-CONTEXT-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "method",
           "projectScale": [
             "personal",
@@ -169,7 +171,7 @@
       "assetType": "rule",
       "title": "会话管理：什么时候开新对话",
       "summary": "对话越长，越贵、越容易跑偏。**让文档承载记忆，让会话承载一次任务**： 任务切换、方向跑偏、上下文太长时开新对话，开之前先把结论写进文档。",
-      "content": "# 会话管理：什么时候开新对话\n\n## 核心结论\n\n对话越长，越贵、越容易跑偏。**让文档承载记忆，让会话承载一次任务**：\n任务切换、方向跑偏、上下文太长时开新对话，开之前先把结论写进文档。\n\n## 使用条件\n\n- 每个工作时段开始时看一眼：这条对话是不是该换了。\n- 一个阶段做完、要交接时。\n\n## 不适用场景\n\n- 同一个任务正在连续推进（写代码、跑测试、收尾），中途频繁重开反而丢细节。\n- 需要连续迭代的排错过程：等这一轮定位有结论了再换。\n\n## 该换对话的四个信号\n\n1. **换任务**：从做功能切到写文档、从改这个模块切到改另一个。\n2. **跑偏**：同一个话题来回三次没有进展，或者它开始答非所问。\n3. **太长**：输入内容越来越长、回得越来越慢、你翻不到刚才的结论。\n4. **要交接**：这个阶段要收尾，下一个阶段从零开始。\n\n换之前做三件事：把结论写进文档（设计、验收、待办）、把未完成事项写清楚、\n新对话里先让它读文档再开工。\n\n## 失败模式\n\n- 一条对话从立项一路用到发布，越到后面越贵越乱。\n- 结论只在聊天里，不开新对话就继续不下去。\n- 开了新对话，但不给文档，从头再描述一遍项目。\n\n## 验证证据\n\n- 项目文档里的决策与验收记录：把旧对话关掉，新对话读文档还能接着干。\n- 待办文档里的\"正在进行\"一节。\n\n## 相关资产\n\n- `OPS-MODEL-001`（相关）：换对话也是省成本的主要手段之一。\n- `OPS-SINK-001`（引用）：换对话前的结论怎么落成资产。\n- `MTH-DELIVERY-001`（引用）：最小链路的文档是交接时最有用的材料。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-SESSION-001\ntitle: 会话管理：什么时候开新对话\nasset_type: playbook\naudience: human\nmodule: M3-驭程\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/pending-items.md（会话之间的交接靠文档：\"正在进行\"一节接续上一轮）\n  - docs/acceptance/v2.11.0.md（旧会话里的演练结论落成文档，新会话接着用）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Own your context window（对话越长越贵越容易跑偏）\n  - 本项目多会话协作的实践：结论落文档、新会话先读文档\nrelated_assets:\n  - OPS-MODEL-001\n  - OPS-SINK-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 会话管理：什么时候开新对话\n\n## 核心结论\n\n对话越长，越贵、越容易跑偏。**让文档承载记忆，让会话承载一次任务**：\n任务切换、方向跑偏、上下文太长时开新对话，开之前先把结论写进文档。\n\n## 使用条件\n\n- 每个工作时段开始时看一眼：这条对话是不是该换了。\n- 一个阶段做完、要交接时。\n\n## 不适用场景\n\n- 同一个任务正在连续推进（写代码、跑测试、收尾），中途频繁重开反而丢细节。\n- 需要连续迭代的排错过程：等这一轮定位有结论了再换。\n\n## 该换对话的四个信号\n\n1. **换任务**：从做功能切到写文档、从改这个模块切到改另一个。\n2. **跑偏**：同一个话题来回三次没有进展，或者它开始答非所问。\n3. **太长**：输入内容越来越长、回得越来越慢、你翻不到刚才的结论。\n4. **要交接**：这个阶段要收尾，下一个阶段从零开始。\n\n换之前做三件事：把结论写进文档（设计、验收、待办）、把未完成事项写清楚、\n新对话里先让它读文档再开工。\n\n## 失败模式\n\n- 一条对话从立项一路用到发布，越到后面越贵越乱。\n- 结论只在聊天里，不开新对话就继续不下去。\n- 开了新对话，但不给文档，从头再描述一遍项目。\n\n## 验证证据\n\n- 项目文档里的决策与验收记录：把旧对话关掉，新对话读文档还能接着干。\n- 待办文档里的\"正在进行\"一节。\n\n## 相关资产\n\n- `OPS-MODEL-001`（相关）：换对话也是省成本的主要手段之一。\n- `OPS-SINK-001`（引用）：换对话前的结论怎么落成资产。\n- `MTH-DELIVERY-001`（引用）：最小链路的文档是交接时最有用的材料。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-SESSION-001\ntitle: 会话管理：什么时候开新对话\nasset_type: playbook\naudience: human\nmodule: M3-驭程\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/pending-items.md（会话之间的交接靠文档：\"正在进行\"一节接续上一轮）\n  - docs/acceptance/v2.11.0.md（旧会话里的演练结论落成文档，新会话接着用）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Own your context window（对话越长越贵越容易跑偏）\n  - 本项目多会话协作的实践：结论落文档、新会话先读文档\nrelated_assets:\n  - OPS-MODEL-001\n  - OPS-SINK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "process",
         "scope": "global",
@@ -189,7 +191,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-SESSION-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "playbook",
           "projectScale": [
             "personal",
@@ -217,7 +219,7 @@
       "assetType": "rule",
       "title": "思考等级与成本：低档打底，高档攻坚",
       "summary": "日常实现用低档，架构选型、拆版本、难缠的 bug 用高档，**别全程高档**。 不同档位的成本能差好几倍，钱要花在真正需要\"想清楚\"的地方。",
-      "content": "# 思考等级与成本：低档打底，高档攻坚\n\n## 核心结论\n\n日常实现用低档，架构选型、拆版本、难缠的 bug 用高档，**别全程高档**。\n不同档位的成本能差好几倍，钱要花在真正需要\"想清楚\"的地方。\n\n## 使用条件\n\n- 每次开始一个任务前，先看一眼当前档位。\n- 换了工具、换了模型时，重新建立这个习惯。\n\n## 不适用场景\n\n- 你用的工具/账号没有档位可选时——那就只能靠\"任务切小\"来控成本。\n\n## 档位与场景\n\n| 档位 | 用在 | 说明 |\n| --- | --- | --- |\n| 低 | 写功能、改 bug、更新文档、跑检查 | 绝大多数时间应该停在这里 |\n| 高 | 架构选型、版本拆分、复杂排错、方案评审、加固验收 | 需要\"想清楚\"的场合才升 |\n| 最高 | 极少用 | 卡死很久、影响面很大的问题 |\n\n四个动作：\n\n1. 开工前看档位（默认常常是高，先拉回来）。\n2. 攻坚时临时升档，并在心里记一个\"这次为什么升\"。\n3. 攻坚结束立刻降回来。\n4. 账单或额度异常时，回看是不是忘了降、或者任务没切小。\n\n## 失败模式\n\n- 全程高档跑一天，多花几倍的钱。\n- 改文案、排版这种活也用高档，纯浪费。\n- 不知道自己钱花在哪：没有成本记录，也没有任务清单可对照。\n\n## 验证证据\n\n- 两轮开发的实际账单对比。\n- 攻坚任务前临时升档、完成后降回的动作记录。\n\n## 相关资产\n\n- `OPS-SESSION-001`（相关）：控制对话长度同样影响成本。\n- `MTH-ROUTE-001`（引用）：不确定性高的活本来就应该先探路再动手。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-MODEL-001\ntitle: 思考等级与成本：低档打底，高档攻坚\nasset_type: method\naudience: human\nmodule: M3-驭程\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/acceptance/v2.11.0.md（加固与验收这类\"攻坚\"任务用高档跑，日常实现用低档）\n  - docs/acceptance/v2.17.0.md（连续两版按\"低档打底、攻坚才开高档\"执行，没有因此返工）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 本项目两轮开发的真实账单经验：全程高档跑，两天多花约 50 元\n  - 12-Factor Agents：Small, Focused Agents（任务小，就不需要一直开高档）\nrelated_assets:\n  - OPS-SESSION-001\n  - OPS-SINK-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 思考等级与成本：低档打底，高档攻坚\n\n## 核心结论\n\n日常实现用低档，架构选型、拆版本、难缠的 bug 用高档，**别全程高档**。\n不同档位的成本能差好几倍，钱要花在真正需要\"想清楚\"的地方。\n\n## 使用条件\n\n- 每次开始一个任务前，先看一眼当前档位。\n- 换了工具、换了模型时，重新建立这个习惯。\n\n## 不适用场景\n\n- 你用的工具/账号没有档位可选时——那就只能靠\"任务切小\"来控成本。\n\n## 档位与场景\n\n| 档位 | 用在 | 说明 |\n| --- | --- | --- |\n| 低 | 写功能、改 bug、更新文档、跑检查 | 绝大多数时间应该停在这里 |\n| 高 | 架构选型、版本拆分、复杂排错、方案评审、加固验收 | 需要\"想清楚\"的场合才升 |\n| 最高 | 极少用 | 卡死很久、影响面很大的问题 |\n\n四个动作：\n\n1. 开工前看档位（默认常常是高，先拉回来）。\n2. 攻坚时临时升档，并在心里记一个\"这次为什么升\"。\n3. 攻坚结束立刻降回来。\n4. 账单或额度异常时，回看是不是忘了降、或者任务没切小。\n\n## 失败模式\n\n- 全程高档跑一天，多花几倍的钱。\n- 改文案、排版这种活也用高档，纯浪费。\n- 不知道自己钱花在哪：没有成本记录，也没有任务清单可对照。\n\n## 验证证据\n\n- 两轮开发的实际账单对比。\n- 攻坚任务前临时升档、完成后降回的动作记录。\n\n## 相关资产\n\n- `OPS-SESSION-001`（相关）：控制对话长度同样影响成本。\n- `MTH-ROUTE-001`（引用）：不确定性高的活本来就应该先探路再动手。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-MODEL-001\ntitle: 思考等级与成本：低档打底，高档攻坚\nasset_type: method\naudience: human\nmodule: M3-驭程\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/acceptance/v2.11.0.md（加固与验收这类\"攻坚\"任务用高档跑，日常实现用低档）\n  - docs/acceptance/v2.17.0.md（连续两版按\"低档打底、攻坚才开高档\"执行，没有因此返工）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 本项目两轮开发的真实账单经验：全程高档跑，两天多花约 50 元\n  - 12-Factor Agents：Small, Focused Agents（任务小，就不需要一直开高档）\nrelated_assets:\n  - OPS-SESSION-001\n  - OPS-SINK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -237,7 +239,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-MODEL-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "method",
           "projectScale": [
             "personal",
@@ -265,14 +267,14 @@
       "assetType": "document",
       "title": "零代码黑盒验收：五状态走查",
       "summary": "不读代码也能验收：**按用户流程走一遍，五个状态都看，出错时看控制台和网络请求**。 只看主流程顺利，等于没验收。",
-      "content": "# 零代码黑盒验收：五状态走查\n\n## 核心结论\n\n不读代码也能验收：**按用户流程走一遍，五个状态都看，出错时看控制台和网络请求**。\n只看主流程顺利，等于没验收。\n\n## 使用条件\n\n- 每次功能交付前，你自己点一遍。\n- AI 说\"做完了\"之后、你签字之前。\n\n## 不适用场景\n\n- 纯文案、纯样式的微调：看一眼即可，不必走五状态。\n- 已经在自动化测试里锁死的内部逻辑：抽查即可。\n\n## 五状态走查\n\n| 状态 | 怎么点 | 看什么 |\n| --- | --- | --- |\n| 正常 | 按主流程走一遍 | 结果对不对、下一步顺不顺 |\n| 空数据 | 新建一个空项目/清空列表 | 有没有引导语，不是空白页 |\n| 错误 | 故意填错、断网、给错权限 | 有没有中文提示，坏数据有没有落库 |\n| 加载 | 操作慢的场景（大文件、慢网络） | 有没有转圈、会不会重复提交 |\n| 边界 | 超长内容、特殊字符、重复提交、越权访问 | 被拦住还是写坏了数据 |\n\n三眼看 bug：\n\n1. 控制台有没有报错（界面看着正常也可能是错的）。\n2. 网络请求状态码和返回内容对不对。\n3. 数据到底有没有写进去（刷新页面再看一遍，不是只看界面回显）。\n\n## 失败模式\n\n- 只点主流程，看到\"好像好了\"就签收。\n- 不看空数据和失败的样子，用户一用就撞上。\n- 只信界面回显，不刷新、不看数据库。\n\n## 验证证据\n\n- 验收清单里的实测记录（点了什么、看到什么）。\n- 控制台报错和网络请求的截图或原文（出问题时）。\n\n## 相关资产\n\n- `TPL-ACCEPT-001`（引用）：验收证据链模板，验收记录就写在那里。\n- `OPS-ACCEPT-002`（相关）：让 AI 先自测，你只做抽查。\n- `MTH-QUALITY-001`（引用）：质量等级越高，验收状态要看得越全。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-ACCEPT-001\ntitle: 零代码黑盒验收：五状态走查\n# 用 template 而不是新造 checklist 类型：装进产品时落成「模板」资产，\n# 不为了一个词去动资产类型枚举\nasset_type: template\naudience: human\nmodule: M4-验收\ndifficulty: L1\npurpose: testing\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - release\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/acceptance/v2.6.0.md（界面动作逐条实测：导入、解析、限制、云端禁用）\n  - docs/acceptance/v2.11.0.md（演练都在真实数据副本上做，原始库不动）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 本项目每版的\"界面补验\"记录（浏览器实际点一遍，不读代码）\n  - superpowers：verification-before-completion（完成前必须实际验证）\nrelated_assets:\n  - OPS-ACCEPT-002\n  - OPS-MINDSET-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 零代码黑盒验收：五状态走查\n\n## 核心结论\n\n不读代码也能验收：**按用户流程走一遍，五个状态都看，出错时看控制台和网络请求**。\n只看主流程顺利，等于没验收。\n\n## 使用条件\n\n- 每次功能交付前，你自己点一遍。\n- AI 说\"做完了\"之后、你签字之前。\n\n## 不适用场景\n\n- 纯文案、纯样式的微调：看一眼即可，不必走五状态。\n- 已经在自动化测试里锁死的内部逻辑：抽查即可。\n\n## 五状态走查\n\n| 状态 | 怎么点 | 看什么 |\n| --- | --- | --- |\n| 正常 | 按主流程走一遍 | 结果对不对、下一步顺不顺 |\n| 空数据 | 新建一个空项目/清空列表 | 有没有引导语，不是空白页 |\n| 错误 | 故意填错、断网、给错权限 | 有没有中文提示，坏数据有没有落库 |\n| 加载 | 操作慢的场景（大文件、慢网络） | 有没有转圈、会不会重复提交 |\n| 边界 | 超长内容、特殊字符、重复提交、越权访问 | 被拦住还是写坏了数据 |\n\n三眼看 bug：\n\n1. 控制台有没有报错（界面看着正常也可能是错的）。\n2. 网络请求状态码和返回内容对不对。\n3. 数据到底有没有写进去（刷新页面再看一遍，不是只看界面回显）。\n\n## 失败模式\n\n- 只点主流程，看到\"好像好了\"就签收。\n- 不看空数据和失败的样子，用户一用就撞上。\n- 只信界面回显，不刷新、不看数据库。\n\n## 验证证据\n\n- 验收清单里的实测记录（点了什么、看到什么）。\n- 控制台报错和网络请求的截图或原文（出问题时）。\n\n## 相关资产\n\n- `TPL-ACCEPT-001`（引用）：验收证据链模板，验收记录就写在那里。\n- `OPS-ACCEPT-002`（相关）：让 AI 先自测，你只做抽查。\n- `MTH-QUALITY-001`（引用）：质量等级越高，验收状态要看得越全。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-ACCEPT-001\ntitle: 零代码黑盒验收：五状态走查\n# 用 template 而不是新造 checklist 类型：装进产品时落成「模板」资产，\n# 不为了一个词去动资产类型枚举\nasset_type: template\naudience: human\nmodule: M4-验收\ndifficulty: L1\npurpose: testing\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - release\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/acceptance/v2.6.0.md（界面动作逐条实测：导入、解析、限制、云端禁用）\n  - docs/acceptance/v2.11.0.md（演练都在真实数据副本上做，原始库不动）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 本项目每版的\"界面补验\"记录（浏览器实际点一遍，不读代码）\n  - superpowers：verification-before-completion（完成前必须实际验证）\nrelated_assets:\n  - OPS-ACCEPT-002\n  - OPS-MINDSET-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "documentType": "模板",
         "sourceLocation": "本项目每版的\"界面补验\"记录（浏览器实际点一遍，不读代码）；superpowers：verification-before-completion（完成前必须实际验证）",
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-ACCEPT-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "template",
           "projectScale": [
             "personal",
@@ -288,7 +290,7 @@
       "assetType": "rule",
       "title": "让 AI 先自测，再交验收清单",
       "summary": "交付时必须同时给你两样东西：**它自己跑了什么检查、结果是什么**，以及 **你该怎么验、看到什么算对**。你只做抽查，不做它的第一遍测试。",
-      "content": "# 让 AI 先自测，再交验收清单\n\n## 核心结论\n\n交付时必须同时给你两样东西：**它自己跑了什么检查、结果是什么**，以及\n**你该怎么验、看到什么算对**。你只做抽查，不做它的第一遍测试。\n\n## 使用条件\n\n- 每次要求它交付功能、修复或内容改动时。\n- 你和它不在同一台设备时（更依赖它的自测结果）。\n\n## 不适用场景\n\n- 纯咨询、只讨论方案不产出的对话。\n- 它明确说了\"这次只在本地试了、没法验证\"的场景——那就降到最小改动再验。\n\n## 交付时必须回答的四件事\n\n```text\n1. 改了哪些文件，每个文件改了什么\n2. 怎么预览或验证（具体点哪里、看什么）\n3. 它自己跑了什么检查，真实结果是什么（不许说\"应该没问题\"）\n4. 没做完的事和已知风险\n```\n\n追加一条习惯：要求它**先自己跑一遍再交**，跑不过就先修，不要让你当第一个测试员；\n跑不过又修不了的，必须明说卡在哪。\n\n## 失败模式\n\n- 只回一句\"已完成\"，你连从哪开始验都不知道。\n- 说\"应该没问题\"，没有跑过任何检查。\n- 检查没过也照常交付，把问题留给下一轮。\n\n## 验证证据\n\n- 交付说明（四件事写全）。\n- 检查命令的真实输出（例如类型检查、测试、构建的结果）。\n\n## 相关资产\n\n- `OPS-ACCEPT-001`（引用）：拿到清单后，你按五状态自己抽一遍。\n- `TPL-ACCEPT-001`（引用）：验收证据链模板。\n- `MTH-QUALITY-001`（引用）：项目等级决定要跑哪些检查。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-ACCEPT-002\ntitle: 让 AI 先自测，再交验收清单\nasset_type: method\naudience: human\nmodule: M4-验收\ndifficulty: L1\npurpose: testing\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - AGENTS.md（交付说明要写：改了哪些文件、每个文件改了什么、如何预览或验证、未完成事项和风险）\n  - docs/acceptance/v2.11.0.md（每次交付都附检查结果：429 项测试 + 生产构建）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - superpowers：verification-before-completion（声明完成前必须实际运行验证）\n  - 本项目交付门的固定要求：先跑检查，再报结果\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-TASK-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 让 AI 先自测，再交验收清单\n\n## 核心结论\n\n交付时必须同时给你两样东西：**它自己跑了什么检查、结果是什么**，以及\n**你该怎么验、看到什么算对**。你只做抽查，不做它的第一遍测试。\n\n## 使用条件\n\n- 每次要求它交付功能、修复或内容改动时。\n- 你和它不在同一台设备时（更依赖它的自测结果）。\n\n## 不适用场景\n\n- 纯咨询、只讨论方案不产出的对话。\n- 它明确说了\"这次只在本地试了、没法验证\"的场景——那就降到最小改动再验。\n\n## 交付时必须回答的四件事\n\n```text\n1. 改了哪些文件，每个文件改了什么\n2. 怎么预览或验证（具体点哪里、看什么）\n3. 它自己跑了什么检查，真实结果是什么（不许说\"应该没问题\"）\n4. 没做完的事和已知风险\n```\n\n追加一条习惯：要求它**先自己跑一遍再交**，跑不过就先修，不要让你当第一个测试员；\n跑不过又修不了的，必须明说卡在哪。\n\n## 失败模式\n\n- 只回一句\"已完成\"，你连从哪开始验都不知道。\n- 说\"应该没问题\"，没有跑过任何检查。\n- 检查没过也照常交付，把问题留给下一轮。\n\n## 验证证据\n\n- 交付说明（四件事写全）。\n- 检查命令的真实输出（例如类型检查、测试、构建的结果）。\n\n## 相关资产\n\n- `OPS-ACCEPT-001`（引用）：拿到清单后，你按五状态自己抽一遍。\n- `TPL-ACCEPT-001`（引用）：验收证据链模板。\n- `MTH-QUALITY-001`（引用）：项目等级决定要跑哪些检查。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-ACCEPT-002\ntitle: 让 AI 先自测，再交验收清单\nasset_type: method\naudience: human\nmodule: M4-验收\ndifficulty: L1\npurpose: testing\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - AGENTS.md（交付说明要写：改了哪些文件、每个文件改了什么、如何预览或验证、未完成事项和风险）\n  - docs/acceptance/v2.11.0.md（每次交付都附检查结果：429 项测试 + 生产构建）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - superpowers：verification-before-completion（声明完成前必须实际运行验证）\n  - 本项目交付门的固定要求：先跑检查，再报结果\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-TASK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -308,7 +310,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-ACCEPT-002",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "method",
           "projectScale": [
             "personal",
@@ -336,7 +338,7 @@
       "assetType": "rule",
       "title": "让 AI 找根因的提问法",
       "summary": "出 bug 时，**先说现象、再要根因、最后才要修复**。只说\"帮我修好\"，等于让它猜； 猜出来的修复通常会盖住症状、留下隐患。",
-      "content": "# 让 AI 找根因的提问法\n\n## 核心结论\n\n出 bug 时，**先说现象、再要根因、最后才要修复**。只说\"帮我修好\"，等于让它猜；\n猜出来的修复通常会盖住症状、留下隐患。\n\n## 使用条件\n\n- 任何\"能观察到、但还没解释清楚\"的异常。\n- 你自己点出来的、用户反馈的、上线后发现的，都一样。\n\n## 不适用场景\n\n- 一眼可见的笔误、配置写错：改完确认一下就行。\n- 正在扩大影响的事故：先回滚或止血，再回头查根因。\n\n## 四句提问脚本\n\n```text\n1. 现象是……，复现步骤是……，报错原文是……\n2. 先别改代码：说清你判断的根因是什么、依据是什么\n3. 搜一下这个函数的全部调用方，给最小修复方案（只改根因那一处）\n4. 修完补一条能挡住同类问题的检查，并跑一遍项目检查\n```\n\n配套三个追问：**影响范围**（还有哪些路径会踩到）、**为什么之前没发现**（观测缺在哪）、\n**怎么防止复发**（补哪条检查或规则）。\n\n## 失败模式\n\n- 直接说\"帮我修好\"，拿回一个\"加了判断就不报了\"的补丁。\n- 不追问影响范围，同一个 bug 在别的路径又冒出来。\n- 修完不验证，你去点的时候才发现别的地方坏了。\n\n## 验证证据\n\n- 复现步骤和根因结论。\n- 新加的回归检查（测试用例或手工检查步骤）。\n- 项目检查的通过结果。\n\n## 相关资产\n\n- `PLAYBOOK-DEBUG-001`（依赖）：四阶段流程的完整版在工程包那条里。\n- `OPS-ACCEPT-002`（引用）：修完的验证结果要写进交付说明。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-DEBUG-001\ntitle: 让 AI 找根因的提问法\nasset_type: playbook\naudience: human\nmodule: M5-排错\ndifficulty: L2\npurpose: development\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - seed-packs/engineering-foundations/assets/018-systematic-debugging.md（四阶段流程）\n  - docs/acceptance/v2.6.0.md（实测发现 React 受控告警，先复现再定位再修）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - superpowers：systematic-debugging（四阶段根因调试，禁止猜着改）\nrelated_assets:\n  - OPS-ACCEPT-002\n  - OPS-SINK-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 让 AI 找根因的提问法\n\n## 核心结论\n\n出 bug 时，**先说现象、再要根因、最后才要修复**。只说\"帮我修好\"，等于让它猜；\n猜出来的修复通常会盖住症状、留下隐患。\n\n## 使用条件\n\n- 任何\"能观察到、但还没解释清楚\"的异常。\n- 你自己点出来的、用户反馈的、上线后发现的，都一样。\n\n## 不适用场景\n\n- 一眼可见的笔误、配置写错：改完确认一下就行。\n- 正在扩大影响的事故：先回滚或止血，再回头查根因。\n\n## 四句提问脚本\n\n```text\n1. 现象是……，复现步骤是……，报错原文是……\n2. 先别改代码：说清你判断的根因是什么、依据是什么\n3. 搜一下这个函数的全部调用方，给最小修复方案（只改根因那一处）\n4. 修完补一条能挡住同类问题的检查，并跑一遍项目检查\n```\n\n配套三个追问：**影响范围**（还有哪些路径会踩到）、**为什么之前没发现**（观测缺在哪）、\n**怎么防止复发**（补哪条检查或规则）。\n\n## 失败模式\n\n- 直接说\"帮我修好\"，拿回一个\"加了判断就不报了\"的补丁。\n- 不追问影响范围，同一个 bug 在别的路径又冒出来。\n- 修完不验证，你去点的时候才发现别的地方坏了。\n\n## 验证证据\n\n- 复现步骤和根因结论。\n- 新加的回归检查（测试用例或手工检查步骤）。\n- 项目检查的通过结果。\n\n## 相关资产\n\n- `PLAYBOOK-DEBUG-001`（依赖）：四阶段流程的完整版在工程包那条里。\n- `OPS-ACCEPT-002`（引用）：修完的验证结果要写进交付说明。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-DEBUG-001\ntitle: 让 AI 找根因的提问法\nasset_type: playbook\naudience: human\nmodule: M5-排错\ndifficulty: L2\npurpose: development\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p0\noverride_allowed: false\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - seed-packs/engineering-foundations/assets/018-systematic-debugging.md（四阶段流程）\n  - docs/acceptance/v2.6.0.md（实测发现 React 受控告警，先复现再定位再修）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - superpowers：systematic-debugging（四阶段根因调试，禁止猜着改）\nrelated_assets:\n  - OPS-ACCEPT-002\n  - OPS-SINK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "process",
         "scope": "global",
@@ -356,7 +358,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-DEBUG-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "playbook",
           "projectScale": [
             "personal",
@@ -384,7 +386,7 @@
       "assetType": "rule",
       "title": "踩坑→规则：把一次教训变成资产",
       "summary": "每次踩坑、返工、超支之后问三句：**这是哪一类问题、下次怎么提前发现、写进哪份文档**。 教训不落成资产，下个项目还会再踩一遍。",
-      "content": "# 踩坑→规则：把一次教训变成资产\n\n## 核心结论\n\n每次踩坑、返工、超支之后问三句：**这是哪一类问题、下次怎么提前发现、写进哪份文档**。\n教训不落成资产，下个项目还会再踩一遍。\n\n## 使用条件\n\n- 事故、返工、明显超支之后。\n- 一次演练或验收发现了\"原来会这样\"的问题之后。\n\n## 不适用场景\n\n- 一次性的环境问题（记一句备忘就够，不用立规则）。\n- 还没弄明白根因的问题：先查清楚，再决定沉淀成什么。\n\n## 三句 + 三个去向\n\n| 问自己 | 去向 |\n| --- | --- |\n| 这是哪一类问题？ | 规则（项目规则文档或规则资产） |\n| 下次怎么提前发现？ | 检查（自动化测试、发布门禁、清单） |\n| 写进哪份文档？ | 文档（运维手册、FAQ、验收清单） |\n\n两条纪律：\n\n1. **先记录、后立规**：同一条规则被违反两次以上，才动规则文件；一次异常只记录。\n2. **改规则要同时说明删了或并了哪条**：规则只增不减，最后没人会读。\n\n## 失败模式\n\n- 修完就忘，教训只留在聊天记录里。\n- 每遇到一次小问题就加一条规则，规则文件越写越厚。\n- 只改代码、不补检查，同类问题下次照样发生。\n\n## 验证证据\n\n- 规则命中记录（违反了几次、改了什么）。\n- 新增的检查或测试，以及它挡住过的一次真实问题。\n\n## 相关资产\n\n- `OPS-DEBUG-001`（引用）：先有根因结论，才谈得上沉淀。\n- `OPS-SESSION-001`（相关）：换对话之前，把这次学到的东西落下来。\n- `MTH-QUALITY-001`（引用）：能变成门禁的教训优先变成门禁。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-SINK-001\ntitle: 踩坑→规则：把一次教训变成资产\nasset_type: method\naudience: human\nmodule: M7-沉淀\ndifficulty: L2\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - operate\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/pending-items.md（规则命中记录：一条规则被违反两次以上才允许改规则文件）\n  - docs/acceptance/v2.11.0.md（演练发现三处问题，直接修进代码和运维文档）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 本项目 AGENTS.md 的\"一个版本、一份文档、三道门\"与规则维护约定\n  - 12-Factor Agents：Own your prompts（提示词和规则当资产管起来）\nrelated_assets:\n  - OPS-DEBUG-001\n  - OPS-SESSION-001\nversion: 0.2.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 踩坑→规则：把一次教训变成资产\n\n## 核心结论\n\n每次踩坑、返工、超支之后问三句：**这是哪一类问题、下次怎么提前发现、写进哪份文档**。\n教训不落成资产，下个项目还会再踩一遍。\n\n## 使用条件\n\n- 事故、返工、明显超支之后。\n- 一次演练或验收发现了\"原来会这样\"的问题之后。\n\n## 不适用场景\n\n- 一次性的环境问题（记一句备忘就够，不用立规则）。\n- 还没弄明白根因的问题：先查清楚，再决定沉淀成什么。\n\n## 三句 + 三个去向\n\n| 问自己 | 去向 |\n| --- | --- |\n| 这是哪一类问题？ | 规则（项目规则文档或规则资产） |\n| 下次怎么提前发现？ | 检查（自动化测试、发布门禁、清单） |\n| 写进哪份文档？ | 文档（运维手册、FAQ、验收清单） |\n\n两条纪律：\n\n1. **先记录、后立规**：同一条规则被违反两次以上，才动规则文件；一次异常只记录。\n2. **改规则要同时说明删了或并了哪条**：规则只增不减，最后没人会读。\n\n## 失败模式\n\n- 修完就忘，教训只留在聊天记录里。\n- 每遇到一次小问题就加一条规则，规则文件越写越厚。\n- 只改代码、不补检查，同类问题下次照样发生。\n\n## 验证证据\n\n- 规则命中记录（违反了几次、改了什么）。\n- 新增的检查或测试，以及它挡住过的一次真实问题。\n\n## 相关资产\n\n- `OPS-DEBUG-001`（引用）：先有根因结论，才谈得上沉淀。\n- `OPS-SESSION-001`（相关）：换对话之前，把这次学到的东西落下来。\n- `MTH-QUALITY-001`（引用）：能变成门禁的教训优先变成门禁。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-SINK-001\ntitle: 踩坑→规则：把一次教训变成资产\nasset_type: method\naudience: human\nmodule: M7-沉淀\ndifficulty: L2\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - operate\npriority: p1\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/pending-items.md（规则命中记录：一条规则被违反两次以上才允许改规则文件）\n  - docs/acceptance/v2.11.0.md（演练发现三处问题，直接修进代码和运维文档）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 本项目 AGENTS.md 的\"一个版本、一份文档、三道门\"与规则维护约定\n  - 12-Factor Agents：Own your prompts（提示词和规则当资产管起来）\nrelated_assets:\n  - OPS-DEBUG-001\n  - OPS-SESSION-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -404,7 +406,7 @@
         "pack": {
           "packId": "rule-pack-operator-training",
           "packItemId": "OPS-SINK-001",
-          "packVersion": "0.2.0",
+          "packVersion": "0.3.0",
           "packAssetType": "method",
           "projectScale": [
             "personal",
@@ -420,6 +422,304 @@
           },
           {
             "targetAssetId": "rule-ops-session-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-ops-memory-001",
+      "assetType": "rule",
+      "title": "记忆分层：哪些事该让 AI 记，哪些事该写进文档",
+      "summary": "不要把「AI 记住我」当成一件事。分两层放，各管各的：",
+      "content": "# 记忆分层：哪些事该让 AI 记，哪些事该写进文档\n\n## 核心结论\n\n不要把「AI 记住我」当成一件事。分两层放，各管各的：\n\n| 放哪儿 | 放什么 | 特征 |\n| --- | --- | --- |\n| AI 的**原生记忆**／自定义指令 | 偏好、习惯、怎么跟你说话、常用路径 | 短期的、行为层面的 |\n| **受治理的文档库**（你的仓库、资产库、笔记） | 项目背景、做过的决定、踩过的坑、证据、可复用的结论 | 长期的、要能被搜到、被引用、被推翻的 |\n\n一句话判据：**这件事将来要不要被找到、被引用、被推翻？** 要，就写进文档，别指望 AI 记住。\n\n## 使用条件\n\n- 你会发现同一件事要对不同的 AI 会话重复说第二遍。\n- 上一个会话做的决定，新会话不知道。\n- 你想让 AI「记住」某个业务规则或项目事实。\n\n## 不适用场景\n\n- 一次性的、这次聊完就不再用的小事：写进文档反而是负担。\n- 已经在项目文档里写着的内容：那是让 AI 去读，不是让它记住。\n\n## 判断步骤\n\n1. 想让它记住的东西，逐条问：**换个会话还会用到吗？**\n2. 不会 → 留在对话里，不用管。\n3. 会、而且是「我怎么跟你配合」 → 放进 AI 的原生记忆或项目规则文件。\n4. 会、而且是「这个项目是怎么运作的」 → 写成文档，进仓库或资产库。\n5. 文档写完，新会话的第一件事是**先读文档**，不是让它回忆。\n\n## 失败模式\n\n- 把项目事实当偏好塞进原生记忆：换个工具就丢了，而且人和 AI 都说不清它存在过。\n- 反过来，把偏好写成一堆文档：新会话读不完，反而没人看。\n- 记忆里存的是结论，但结论的前提没存 → 新会话照着一个过期的结论干活。\n- 以为「AI 记得」就可以不写文档：长期记忆最容易在换环境、换工具时归零。\n\n## 验证证据\n\n- 关掉当前会话，新起一个：只给它项目文档，它能接着干——说明该落的都落了。\n- 项目文档里能指到至少一条「上个会话做的决定」。\n- 偏好类的东西不在文档里、项目事实不在原生记忆里，两边不混。\n\n## 相关资产\n\n- `OPS-CONTEXT-001`（引用）：给 AI 有效上下文是这一层的操作面。\n- `OPS-SESSION-001`（引用）：换会话之前按那条把该落的落下来。\n- `MTH-ASSET-LAYER-001`（引用）：文档这边再按三层分——方法、项目实例、可复用骨架。\n- `MTH-SINK-001`（引用）：哪些内容值得从对话沉淀成文档，按那条判断。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-MEMORY-001\ntitle: 记忆分层：哪些事该让 AI 记，哪些事该写进文档\nasset_type: principle\naudience: human\nmodule: 心法\ndifficulty: L2\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\n  - operate\npriority: p0\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库根约定文件的 Memory boundary 一节：助手原生记忆只当短期与行为记忆，长期受治理的知识单独存\n  - Exomem 的助手使用指南：偏好与路由归原生记忆，项目背景、决策、证据、可复用结论归受治理的长期库\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - OPS-CONTEXT-001\n  - OPS-SESSION-001\nversion: 0.3.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "must",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库根约定文件的 Memory boundary 一节：助手原生记忆只当短期与行为记忆，长期受治理的知识单独存\n- Exomem 的助手使用指南：偏好与路由归原生记忆，项目背景、决策、证据、可复用结论归受治理的长期库\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-operator-training",
+          "packItemId": "OPS-MEMORY-001",
+          "packVersion": "0.3.0",
+          "packAssetType": "principle",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 把项目事实当偏好塞进原生记忆：换个工具就丢了，而且人和 AI 都说不清它存在过。 - 反过来，把偏好写成一堆文档：新会话读不完，反而没人看。 - 记忆里存的是结论，但结论的前提没存 → 新会话照着一个过期的结论干活。 - 以为「AI 记得」就可以不写文档：长期记忆最容易在换环境、换工具时归零。",
+        "relations": [
+          {
+            "targetAssetId": "rule-ops-context-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-ops-session-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-ops-handoff-001",
+      "assetType": "rule",
+      "title": "交接检查点：换会话前只留结构证据，不留对话",
+      "summary": "会话要交接（关掉、换新、或上下文被压缩）时，落的应该是**有界的结构证据**， 不是把聊天记录复制一份。",
+      "content": "# 交接检查点：换会话前只留结构证据，不留对话\n\n## 核心结论\n\n会话要交接（关掉、换新、或上下文被压缩）时，落的应该是**有界的结构证据**，\n不是把聊天记录复制一份。\n\n检查点只记三样：\n\n1. **仓库状态**：当前分支、有没有未提交的改动、最近一次提交。\n2. **产物的指纹与数量**：改了哪些文件、各多少条、关键产物的哈希。\n3. **来源指纹**：这次依据的外部材料是哪几份、各自什么版本。\n\n**不记**：对话正文、工具调用细节、AI 的总结、产物内容本身。\n\n理由：前一类能验证「状态对不对」，后一类只会让下一轮重新读一遍你已经读过的东西——\n又贵又容易被上一轮的错判带偏。\n\n## 使用条件\n\n- 一个阶段做完要收尾、下一个阶段从零开始。\n- 会话上下文被压缩前后。\n- 把任务交给另一个会话或另一个人接手时。\n\n## 不适用场景\n\n- 同一个任务连续推进中：中途落检查点只会打断节奏，等这一轮有结论再落。\n- 单人、单会话、没有交接需求的小任务。\n\n## 判断步骤\n\n1. 换之前先问：下一轮的**唯一目标**是什么。\n2. 按这个目标挑证据——只有能验证下一轮目标是否达成的才记。\n3. 写成三块：仓库状态、改动清单（带数量）、来源清单（带版本）。\n4. 明确写出「不知道的部分」：哪些还没验、哪些是上一轮的推断。\n5. 新会话第一句是「先读这份检查点」，不是「我上次说到哪了」。\n\n## 失败模式\n\n- 把整段对话贴过去当交接材料：又长又贵，而且把上一轮的错判一起继承。\n- 只写「已完成」不写状态：新会话无法验证，只能重做一遍。\n- 落的是结论不是证据：结论被推翻时，下一轮看不出它当初站不站得住。\n- 检查点里混进了真实数据或密钥（凭证不该出现在任何交接材料里）。\n\n## 验证证据\n\n- 拿这份检查点新开一个会话：它能说清当前状态、下一步、以及哪些事还没验证。\n- 检查点里没有任何一段是对话原文。\n- 检查点存在的情况下，新一轮没有重复读已经读过的材料。\n\n## 相关资产\n\n- `OPS-SESSION-001`（引用）：那条讲什么时候换会话，这条讲换的时候留什么。\n- `OPS-SINK-001`（引用）：值得长期留的结论走沉淀，不该塞进检查点。\n- `CASE-PARALLEL-001`（引用）：多会话并行最容易出的问题就是不认别人的现场。\n- `RULE-VERIFY-002`（引用）：交接时声明的状态，和那条一样要有这次的证据支撑。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-HANDOFF-001\ntitle: 交接检查点：换会话前只留结构证据，不留对话\nasset_type: playbook\naudience: human\nmodule: M3-驭程\ndifficulty: L2\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库说明的客户端钩子一节：上下文压缩前后落一个有界的结构证据检查点，只存仓库状态、产物哈希与数量、来源哈希，绝不存对话、工具、摘要或产物内容\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - OPS-SESSION-001\n  - OPS-SINK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "process",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库说明的客户端钩子一节：上下文压缩前后落一个有界的结构证据检查点，只存仓库状态、产物哈希与数量、来源哈希，绝不存对话、工具、摘要或产物内容\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-operator-training",
+          "packItemId": "OPS-HANDOFF-001",
+          "packVersion": "0.3.0",
+          "packAssetType": "playbook",
+          "projectScale": [
+            "personal",
+            "medium"
+          ]
+        },
+        "rationale": "- 把整段对话贴过去当交接材料：又长又贵，而且把上一轮的错判一起继承。 - 只写「已完成」不写状态：新会话无法验证，只能重做一遍。 - 落的是结论不是证据：结论被推翻时，下一轮看不出它当初站不站得住。 - 检查点里混进了真实数据或密钥（凭证不该出现在任何交接材料里）。",
+        "relations": [
+          {
+            "targetAssetId": "rule-ops-session-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-ops-sink-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-ops-effect-001",
+      "assetType": "rule",
+      "title": "按效果判断危不危险，别背命令清单",
+      "summary": "规则如果写成「不许敲某几条命令」，它只能挡住你想到过的那几条。换一种写法：",
+      "content": "# 按效果判断危不危险，别背命令清单\n\n## 核心结论\n\n规则如果写成「不许敲某几条命令」，它只能挡住你想到过的那几条。换一种写法：\n\n> **这个操作会不会让某样东西永久消失？会不会动到别人正在做的事？**\n\n按**效果**判断，而不是按命令名字判断。命令清单可以当例子，不能当规则。\n\n## 使用条件\n\n- 要把「什么能做、什么不能做」讲给 AI 或新同事时。\n- 你自己拿不准一个操作该不该做时。\n- 发现规则清单越来越长、但仍然会出事的时候。\n\n## 不适用场景\n\n- 纯粹的个人沙箱、里面没有任何需要保住的东西：这时只要一句「随便折腾」。\n- 已经明确列出白名单的场景（例如只读命令）：白名单是另一回事，可以照样列。\n\n## 判断步骤\n\n1. 把要判断的操作按效果归三类：**可逆**、**可恢复**（有备份／有版本）、**不可逆**。\n2. 不可逆的那类，改问一句：**谁批准了？**\n3. 会动到别人正在做的事（共享目录、别人的分支、正在跑的服务）→ 归到不可逆一档处理。\n4. 把这次判断的结论写成**判据**，不是写成「以后不许敲 X」。\n\n## 失败模式\n\n- 规则清单越写越长，真正出事的操作不在清单上。\n- 换个工具、换个命令名，同一件危险事照样做——说明规则绑在名字上而不是效果上。\n- 拿「以前这么干没出事」当安全证明。\n- 把可恢复的操作当成不可逆来拦，导致正常干活也被卡住，最后规则被整体忽略。\n\n## 验证证据\n\n- 拿三个**不在**原先清单里的新命令做测试：按判据能正确分出可逆与不可逆。\n- 规则文件里能找到一句以「会不会……」开头的判据，而不只是命令列表。\n\n## 相关资产\n\n- `OPS-MINDSET-001`（引用）：你是指挥官——判断责任在你，不在命令清单。\n- `OPS-DEBUG-001`（引用）：同一个思路用在排错上：找根因，不猜着改。\n- `RULE-WORKTREE-001`（引用）：工程包里那条是这条判据在并行开发上的实例。\n- `RULE-DESTRUCTIVE-GIT-001`（引用）：会丢改动的那几个 git 操作，是这条判据的样板。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-EFFECT-001\ntitle: 按效果判断危不危险，别背命令清单\nasset_type: method\naudience: human\nmodule: 心法\ndifficulty: L1\npurpose: safety\nlayer: project\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库的 agent 指引分册 worktrees：判断一个操作按它的效果，而不是按背下来的命令清单\n  - Exomem 同一分册：在共享检出里会丢改动的操作清单，作为效果判断的样例而不是逐条背诵的表\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - OPS-MINDSET-001\n  - OPS-DEBUG-001\nversion: 0.3.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "安全",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库的 agent 指引分册 worktrees：判断一个操作按它的效果，而不是按背下来的命令清单\n- Exomem 同一分册：在共享检出里会丢改动的操作清单，作为效果判断的样例而不是逐条背诵的表\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-operator-training",
+          "packItemId": "OPS-EFFECT-001",
+          "packVersion": "0.3.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 规则清单越写越长，真正出事的操作不在清单上。 - 换个工具、换个命令名，同一件危险事照样做——说明规则绑在名字上而不是效果上。 - 拿「以前这么干没出事」当安全证明。 - 把可恢复的操作当成不可逆来拦，导致正常干活也被卡住，最后规则被整体忽略。",
+        "relations": [
+          {
+            "targetAssetId": "rule-ops-mindset-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-ops-debug-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-ops-empty-001",
+      "assetType": "rule",
+      "title": "搜不到不等于不存在：让 AI 换词再搜一遍",
+      "summary": "AI 说「没有找到」时，它真正说的是**「用这个查询、在这个范围里没找到」**。 这不是「不存在」的证明。",
+      "content": "# 搜不到不等于不存在：让 AI 换词再搜一遍\n\n## 核心结论\n\nAI 说「没有找到」时，它真正说的是**「用这个查询、在这个范围里没找到」**。\n这不是「不存在」的证明。\n\n正确的下一步不是接受结论，而是让它**换三种方式再搜一遍**：\n\n1. 换词：同义词、相邻概念；\n2. 换形态：单数／复数、中英文、全称／简称；\n3. 换范围：放宽目录、放宽时间、去掉过滤条件。\n\n三种都空，才能说「按目前能找到的材料，没有」——并且要说清找过哪些词。\n\n## 使用条件\n\n- AI 说「没有相关文档」「没有这条记录」「这个功能没实现」。\n- 你在验收一件「应该不存在的东西是不是真的不存在」。\n\n## 不适用场景\n\n- 检索范围本身就是确定且完整的（例如「这个文件里有没有这一行」）。\n- 你要的答案是**它现在拿着什么**，不是**库里有什么**：那问它原文，不给它搜。\n\n## 判断步骤\n\n1. 听到「没找到」，先问一句：**你搜的是什么词？在哪个范围搜的？**\n2. 让它换同义词／相邻词再搜一次。\n3. 还空 → 放宽范围（跨目录、跨项目、跨时间）再搜一次。\n4. 三次都空 → 接受结论，但要求它写清「搜过哪些词、范围是哪、仍然是空」。\n5. 排序分数只能用来解释「为什么这条排前面」，**不能当作可靠程度**。\n\n## 失败模式\n\n- 把一次空结果当成结论，据此决定「重做一个已经有了的东西」。\n- 只换一次说法就放弃——同义词往往差一个词就命中。\n- 把搜索排序分当成「可信度」，按分数高低判断结论真假。\n- 承认找不到，但不记录找过什么，下次又从零开始。\n\n## 验证证据\n\n- 抽查一次「没找到」的结论：能列出搜过的词与范围。\n- 故意用一个偏门的词问一件确实存在的事，看它会不会换词找到。\n- 结论里出现「按目前能找到的材料」这类限定语，而不是「不存在」。\n\n## 相关资产\n\n- `OPS-ACCEPT-001`（引用）：验收时同样要区分「没看到」和「没有」。\n- `OPS-ACCEPT-002`（引用）：让 AI 先自测——自测里也该包含换词再搜这一条。\n- `RULE-EVIDENCE-BOUNDARY-001`（引用）：证据能证明什么、不能证明什么，这条是它在检索上的实例。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-EMPTY-001\ntitle: 搜不到不等于不存在：让 AI 换词再搜一遍\nasset_type: method\naudience: human\nmodule: M4-验收\ndifficulty: L1\npurpose: analysis\nlayer: project\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）的助手使用指南：空结果只意味着「用那个查询和范围没找到」，不是「这个东西不存在」，要先换同义词、相邻词、单复数或放宽范围\n  - Exomem 的助手使用指南：解释信息只用来检查排序，排序指标不是置信度\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-ACCEPT-002\nversion: 0.3.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "分析",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）的助手使用指南：空结果只意味着「用那个查询和范围没找到」，不是「这个东西不存在」，要先换同义词、相邻词、单复数或放宽范围\n- Exomem 的助手使用指南：解释信息只用来检查排序，排序指标不是置信度\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-operator-training",
+          "packItemId": "OPS-EMPTY-001",
+          "packVersion": "0.3.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 把一次空结果当成结论，据此决定「重做一个已经有了的东西」。 - 只换一次说法就放弃——同义词往往差一个词就命中。 - 把搜索排序分当成「可信度」，按分数高低判断结论真假。 - 承认找不到，但不记录找过什么，下次又从零开始。",
+        "relations": [
+          {
+            "targetAssetId": "document-ops-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-ops-accept-002",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-ops-refuse-001",
+      "assetType": "rule",
+      "title": "环境不支持就让它明说，别让它硬跑",
+      "summary": "当一套东西在某个环境里**本来就不成立**（平台不支持、缺底层能力、缺权限）时， 正确的结果是**明确拒绝并说明原因**，不是想办法让它看起来跑起来了。",
+      "content": "# 环境不支持就让它明说，别让它硬跑\n\n## 核心结论\n\n当一套东西在某个环境里**本来就不成立**（平台不支持、缺底层能力、缺权限）时，\n正确的结果是**明确拒绝并说明原因**，不是想办法让它看起来跑起来了。\n\n你要在提示里给 AI 的指令是：\n\n> 如果这个环境做不到，直接告诉我做不到、为什么，不要用别的办法凑。\n\n## 使用条件\n\n- 换机器、换系统、换运行环境之后第一次跑。\n- 装一个新工具、接一个新服务之前。\n- 交付给别人之前：先问「你这台机器上它成立吗」。\n\n## 不适用场景\n\n- 你明确要求「先凑一个能看的版本，问题后面再说」：那是显式的降级要求，\n  但要它同时说清近似点在哪。\n- 纯文档、纯内容类的交付：没有环境依赖。\n\n## 判断步骤\n\n1. 开工前先让它跑一次**环境体检**：这台机器上什么有、什么没有。\n2. 缺的关键能力问清楚：是「没装」还是「这个平台根本没有」。\n3. 「没装」→ 可以装，但要你先同意；「根本没有」→ 直接放弃这条路，换方案。\n4. 交付说明里写清：这个环境成立、那个环境不成立，各自的原因。\n\n## 失败模式\n\n- 工具在半支持的环境里勉强跑起来，结果时对时错，最难排查。\n- 用别的方式凑出一个「看起来能跑」的版本，把「做不到」藏起来。\n- 体检命令存在但输出没人看得懂，等于没有。\n- 换环境交付时才发现整套东西不成立，前面做的全都白做。\n\n## 验证证据\n\n- 在一个确实不满足条件的环境里跑一次：得到的是一句明确的原因，不是一团报错。\n- 交付说明里能看到「哪些环境成立、哪些不成立」这一节。\n- 体检输出能指名缺的是哪一项能力。\n\n## 相关资产\n\n- `OPS-ACCEPT-001`（引用）：验收时要能区分「跑通了」和「看起来跑通了」。\n- `OPS-DEBUG-001`（引用）：环境不成立不是 bug，别按 bug 的路子去修。\n- `MTH-TECH-001`（引用）：技术选型时的场景对照，就是提前问「这个环境成立吗」。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-REFUSE-001\ntitle: 环境不支持就让它明说，别让它硬跑\nasset_type: method\naudience: human\nmodule: M5-排错\ndifficulty: L1\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\n  - release\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库说明：某个平台上服务直接拒绝运行，并由体检命令说明原因，而不是勉强跑起来\n  - Exomem 仓库说明：接管既有资料时先给只读报告，不先动文件\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-DEBUG-001\nversion: 0.3.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库说明：某个平台上服务直接拒绝运行，并由体检命令说明原因，而不是勉强跑起来\n- Exomem 仓库说明：接管既有资料时先给只读报告，不先动文件\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-operator-training",
+          "packItemId": "OPS-REFUSE-001",
+          "packVersion": "0.3.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 工具在半支持的环境里勉强跑起来，结果时对时错，最难排查。 - 用别的方式凑出一个「看起来能跑」的版本，把「做不到」藏起来。 - 体检命令存在但输出没人看得懂，等于没有。 - 换环境交付时才发现整套东西不成立，前面做的全都白做。",
+        "relations": [
+          {
+            "targetAssetId": "document-ops-accept-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-ops-debug-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          }
+        ]
+      },
+      "status": "active"
+    },
+    {
+      "id": "rule-ops-burden-001",
+      "assetType": "rule",
+      "title": "它能安全跑的命令，别让它丢给你跑",
+      "summary": "AI 常常把一个命令贴给你，让你复制到终端里跑。判断标准只有一条：",
+      "content": "# 它能安全跑的命令，别让它丢给你跑\n\n## 核心结论\n\nAI 常常把一个命令贴给你，让你复制到终端里跑。判断标准只有一条：\n\n> **这个操作它自己能安全做完吗？** 能，就别交给你。\n\n交给你跑的成本不只是一次复制粘贴：你不知道结果对不对、出错时看不出是命令错了还是环境错了、\n中间还有一次上下文丢失。\n\n只有当操作**动到你正在做的事**、**不可逆**、或**需要你的身份**时才交给你——\n而且要交得明白：说清为什么必须你来、会发生什么、怎么退回去。\n\n## 使用条件\n\n- AI 回你一条命令让你「自己跑一下」时。\n- 你在派活时写清「哪些你必须自己动手、哪些交给它」。\n- 它说「我帮你做了，但我需要你做一步」时。\n\n## 不适用场景\n\n- 操作需要你的账号、你的身份、你的确认：那必须你来。\n- 操作不可逆或会丢数据：先经你同意，也由你掌控节奏。\n- 操作在你的机器上权限不同、它够不着：那也确实只能你来。\n\n## 判断步骤\n\n1. 收到一条「你来跑」的命令，先问：**它为什么不能自己跑？**\n2. 答不出实质理由 → 让它自己跑，并把真实输出贴回来。\n3. 理由是「需要你的身份」或「不可逆」 → 你来跑，但要求它给三样：\n   为什么必须你来、会发生什么、出问题怎么退。\n4. 在项目规则里写死这条偏好，省得每轮都问。\n\n## 失败模式\n\n- 每改一点东西就丢一串命令给你，你变成它的执行器。\n- 你跑了、报错，但你分不清是命令的问题还是环境的问题。\n- 反过来：它把该让你确认的不可逆操作自己做了——这是两个方向的同一类失衡。\n- 因为它怕出错，把所有事都推给你：结果谁都不快。\n\n## 验证证据\n\n- 抽查一轮协作：你手动跑的命令，每条都能说出「为什么必须我来」。\n- 项目规则文件里能找到「能自己跑的不要交给用户」这一条。\n- 交付说明里，AI 自己跑掉的动作有真实输出贴回来。\n\n## 相关资产\n\n- `OPS-MINDSET-001`（引用）：你是指挥官——指挥包括「拒绝当执行器」。\n- `OPS-TASK-001`（引用）：派活时说清边界，其中一条边界就是谁动手。\n- `RULE-WORKTREE-001`（引用）：工程包那条白名单，是「它能自己跑」的实例。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-BURDEN-001\ntitle: 它能安全跑的命令，别让它丢给你跑\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p1\nscope: global\nproject_scale:\n  - personal\n  - medium\n  - large\n  - regulated\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence: []\nstatus: candidate\nconfidence: hypothesis\nsource_references:\n  - Exomem（github.com/Artexis10/exomem）仓库的 agent 指引分册 worktrees：不要把可以安全自行执行的命令交给用户去跑\n  - Exomem 同一分册：共享检出里可以放心自行执行的白名单（只读 git、干净状态下只前进的拉取、不碰代码树的操作）\n  - 采集台账：seed-packs/external-sources/README.md（来源 S9）\nrelated_assets:\n  - OPS-MINDSET-001\n  - OPS-TASK-001\nversion: 0.3.0\nlast_reviewed: 2026-09-30\n```",
+      "metadata": {
+        "ruleType": "recommended",
+        "scope": "global",
+        "purpose": "协作",
+        "techContext": [
+          "generic"
+        ],
+        "stage": "implement",
+        "priority": "should",
+        "overrideScope": "project",
+        "evidence": "- Exomem（github.com/Artexis10/exomem）仓库的 agent 指引分册 worktrees：不要把可以安全自行执行的命令交给用户去跑\n- Exomem 同一分册：共享检出里可以放心自行执行的白名单（只读 git、干净状态下只前进的拉取、不碰代码树的操作）\n- 采集台账：seed-packs/external-sources/README.md（来源 S9）",
+        "verification": "人工核对",
+        "confidence": "hypothesis",
+        "compileTarget": [
+          "none"
+        ],
+        "pack": {
+          "packId": "rule-pack-operator-training",
+          "packItemId": "OPS-BURDEN-001",
+          "packVersion": "0.3.0",
+          "packAssetType": "method",
+          "projectScale": [
+            "personal",
+            "medium",
+            "large",
+            "regulated"
+          ]
+        },
+        "rationale": "- 每改一点东西就丢一串命令给你，你变成它的执行器。 - 你跑了、报错，但你分不清是命令的问题还是环境的问题。 - 反过来：它把该让你确认的不可逆操作自己做了——这是两个方向的同一类失衡。 - 因为它怕出错，把所有事都推给你：结果谁都不快。",
+        "relations": [
+          {
+            "targetAssetId": "rule-ops-mindset-001",
+            "relationType": "reference",
+            "note": "包内关联"
+          },
+          {
+            "targetAssetId": "rule-ops-task-001",
             "relationType": "reference",
             "note": "包内关联"
           }
