@@ -361,8 +361,16 @@ test("采集任务单话术：来源与四段齐全，关注点和生态只在�
   assert.match(text, /不要在文件里写"去重说明"/);
   // 硬约束：只出候选，等人工确认
   assert.match(text, /等我人工确认/);
-  // 交回时必须说清落点与下一步（台账如何更新要反馈给用户）
-  assert.match(text, /必须在回复里说清两件事/);
+  // 落库按执行环境分两支：本地智能体跑命令，云端智能体交产出件走 UI
+  assert.match(text, /落库（按你的执行环境二选一，只做适用那一支）/);
+  assert.match(text, /A\. 你能访问我本机仓库/);
+  assert.match(
+    text,
+    /npm run collect:land -- <产出件目录> --source "https:\/\/github\.com\/anthropics\/skills"/,
+  );
+  // 没选生态时命令里不冒出 --ecosystem
+  assert.doesNotMatch(text, /--ecosystem/);
+  assert.match(text, /B\. 你碰不到本机文件系统/);
   assert.match(text, /采集台账 → 给压缩包/);
 });
 
@@ -375,4 +383,6 @@ test("采集任务单话术：填了关注点与生态就带上", () => {
 
   assert.match(text, /重点关注：只提炼工程纪律类规则，不要安装任何东西/);
   assert.match(text, /（生态：开源社区）/);
+  // 选了生态，落库命令要带上
+  assert.match(text, /--source "obra\/superpowers" --ecosystem "开源社区"/);
 });

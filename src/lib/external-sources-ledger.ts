@@ -338,6 +338,12 @@ export function buildCollectionTaskPrompt(input: {
   // 生态提示只在选了的时候出现
   const ecosystemHint = ecosystem ? `（生态：${ecosystem}）` : "";
 
+  // M2.2：本地智能体能碰仓库文件系统，就让它自己跑落库命令，不用把产出件交回来
+  const landCommand = [
+    `npm run collect:land -- <产出件目录> --source "${source}"`,
+    ecosystem ? ` --ecosystem "${ecosystem}"` : "",
+  ].join("");
+
   return [
     `请阅读这个 Skills / MCP 仓库：${source}`,
     `背景：我是产品经理，零代码用 AI 交付软件，正在建设工程规则资产包。`,
@@ -364,8 +370,15 @@ export function buildCollectionTaskPrompt(input: {
     `- 不要写 YAML frontmatter：status、confidence、来源这些由产品落库时统一处理，写了也用不上。`,
     `- 不要在文件里写"去重说明""未采纳项"这类元信息——产品导入时会把文件里每一块`,
     `  内容都当候选提炼，元信息会变成垃圾资产。`,
-    `- 交回产出件时必须在回复里说清两件事：① 产出件放在哪个路径；② 下一步由我把产出件`,
-    `  交回产品"采集台账 → 给压缩包"导入，导入后台账会自动多一行采集记录${ecosystemHint}。`,
+    ``,
+    `落库（按你的执行环境二选一，只做适用那一支）：`,
+    `A. 你能访问我本机仓库（Codex 这类本地智能体）：把 .md 写进一个目录`,
+    `   （例如 .data/collection-outputs/obra-superpowers/），然后执行落库命令：`,
+    `   ${landCommand}`,
+    `   规则会进公共库（草稿态、假设级可信度，等我确认），同时自动生成一条采集记录；`,
+    `   命令会打印新增了哪几条、采集记录是哪个 ID——在回复里把这两件事告诉我。`,
+    `B. 你碰不到本机文件系统（云端 / 网页智能体）：把 .md（或 .zip）交回给我，`,
+    `   并明确说下一步是到产品「采集台账 → 给压缩包」导入，导入后台账会自动多一行采集记录${ecosystemHint}。`,
   ].join("\n");
 }
 
