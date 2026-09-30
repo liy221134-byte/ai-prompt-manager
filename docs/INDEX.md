@@ -48,6 +48,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 `README.md`）；新设计继续放这里，不要另开第二个规格目录。
 
 - [T6：技能仓库 references 标注资产库正本（2026-09-30，已启动）](superpowers/specs/2026-09-30-t6-skill-references-single-source-design.md)
+- [零代码交付线 M0：设计 + 任务清单（2026-09-30，待确认）](superpowers/specs/2026-09-30-v3-m0-design-and-tasks.md)
 - [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads-3-ledger-paths-and-m2.2.md)
 - [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads-3-m2-2-requirements-draft.md)
 - [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads-3-collection-roundtrip.md)

@@ -18,6 +18,7 @@
     "mcp:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/check-mcp.mjs",
     "import:leads3-records": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/import-external-source-records.ts",
     "collect:land": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/land-collection-output.ts",
+    "seed:v3-m0": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/seed-v3-m0-assets.ts",
     "check:leads3-compliance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/check-external-sources-compliance.ts",
     "pack:seed": "node scripts/build-seed-pack.mjs",
     "pack:operator": "node scripts/build-seed-pack.mjs operator-training",
