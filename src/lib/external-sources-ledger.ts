@@ -354,13 +354,18 @@ export function buildCollectionTaskPrompt(input: {
     `只输出真正的新增项，并指出它补强或冲突的现有资产 ID。`,
     ``,
     `合规硬约束：`,
-    `- 候选规则默认 status: candidate、confidence: hypothesis，填好 source_references。`,
-    `- 先只输出候选清单，不要写进 AGENTS.md，也不要新建资产文件，等我人工确认。`,
+    `- 只产出候选清单，不要写进 AGENTS.md，也不要把任何条目当作正式规则启用，等我人工确认。`,
     `- 一次只处理这一个来源，不要批量采。`,
     ``,
-    `回填格式：`,
-    `- 确认的条目写成资产文件，status: candidate、confidence: hypothesis，填好 source_references。`,
-    `- 在采集台账登记这条来源${ecosystemHint}，处置结论填「已采」。`,
+    `回填格式（重要，照做）：`,
+    `- 产出物是一个或多个 .md 文件，条目多就打包成一个 .zip。`,
+    `- 每个 .md 文件写一条候选规则：第一行用 "# 规则标题" 起头，下面写规则正文`,
+    `  （类型/规模/优先级/不适用场景 + 正例反例），纯 Markdown。`,
+    `- 不要写 YAML frontmatter：status、confidence、来源这些由产品落库时统一处理，写了也用不上。`,
+    `- 不要在文件里写"去重说明""未采纳项"这类元信息——产品导入时会把文件里每一块`,
+    `  内容都当候选提炼，元信息会变成垃圾资产。`,
+    `- 交回产出件时必须在回复里说清两件事：① 产出件放在哪个路径；② 下一步由我把产出件`,
+    `  交回产品"采集台账 → 给压缩包"导入，导入后台账会自动多一行采集记录${ecosystemHint}。`,
   ].join("\n");
 }
 
