@@ -287,6 +287,9 @@ export function planSourcePackageCreation(input: {
         documentType: collectionDocumentType,
         role: "source",
         authority: false,
+        // 采集记录自己也是「外部来源文档」，合规检查同样盯着 sourceLocation。
+        // 历史从 README 迁进来的那批填的是台账位置，自动生成的填来源名——都能回溯。
+        sourceLocation: landing,
         collection: {
           ecosystem: input.collectionMeta?.ecosystem ?? "",
           sourceType: "Skill/MCP",

@@ -225,6 +225,9 @@ test("外部采集模式：额外生成一条采集记录，落点指向这批�
   assert.equal(record.title, "obra/superpowers");
   assert.equal(record.status, "active");
   assert.equal(plan.assets[3].version.changeReason, "外部采集");
+  // 采集记录自己也是「外部来源文档」，合规检查同样盯着 sourceLocation；
+  // 早期版本漏了这一项，采一次多一条「无法回溯它从哪来」的违规。
+  assert.equal(record.metadata.sourceLocation, "obra/superpowers");
 });
 
 // —— M2.2：目标是 MCP 服务／本地插件时，结论是使用文档而不是规则 ——
