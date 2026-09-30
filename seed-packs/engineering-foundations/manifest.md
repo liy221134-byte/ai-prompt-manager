@@ -113,6 +113,11 @@
   schema 校验是 `provisional`（产品已用 zod，但作为强制门禁刚写进交付门，待一轮实测）。
   按可信度三档机制，暂不直接进编译候选。
 - 资产总数从 59 变 61，其中 2 条是新增，其余不变。
+- **重编号（同版附带）**：目录里原有三处撞号——`050`（`RULE-CONFIDENCE-COMPILE-001` 与
+  `MTH-REQ-FORMAT-001` 同名号）、`052` 与 `053`（各有一个 S9 批次文件与本批新增同号）。
+  把较晚编目的三份移到队尾，现在是 **001～061 连续无重复**：
+  `059-confidence-compile-gate.md`、`060-external-query-before-ladder.md`、
+  `061-schema-validation-gate.md`。**只改文件名，正文与元数据一个字没动。**
 
 ### 0.13.0
 
