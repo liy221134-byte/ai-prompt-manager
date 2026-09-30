@@ -6,6 +6,7 @@
 //   npm run sync                       两个方向都做
 //   npm run sync -- --push             只推（本机 → 云端）
 //   npm run sync -- --pull             只拉（云端 → 本机）
+//   npm run sync -- --prefer-cloud     待裁决项（时间一样、内容不同）按云端为准解开
 //   npm run sync -- --export-push-file 把"要推的"导出成备份文件
 //                                      （本机连不上云端时，用线上站点的
 //                                       数据管理 → 导入备份，走 Vercel 的网络推上去）
@@ -71,6 +72,9 @@ if (systemProxy) {
 
 const args = process.argv.slice(2);
 const isDryRun = args.includes("--dry-run");
+// --prefer-cloud：把「时间一样、内容不同」的待裁决项按云端为准解开（默认关闭，
+// 保持「判不出来就留给人裁决」的纪律；开这个开关等于人明确选了云端）。
+const preferCloud = args.includes("--prefer-cloud");
 const direction = args.includes("--push")
   ? "push"
   : args.includes("--pull")
@@ -259,6 +263,15 @@ const plan = planAssetSync({
   direction,
 });
 
+// --prefer-cloud：把待裁决项（时间一样、内容不同）按云端为准，并入「拉到本机」，
+// 走和普通拉取同一条写入路径（更新资产 + 留一条版本记录，可回退）。
+const conflictsResolvedByCloud = preferCloud ? plan.conflicts.length : 0;
+
+if (conflictsResolvedByCloud > 0) {
+  plan.assetsToPull.push(...plan.conflicts.map((conflict) => conflict.cloud));
+  plan.conflicts = [];
+}
+
 console.log("本机：", { projects: localProjects.length, assets: localAssets.length });
 console.log("云端：", { projects: cloudProjects.length, assets: cloudAssets.length });
 console.log("这次要动：", {
@@ -268,6 +281,10 @@ console.log("这次要动：", {
   两边一样: plan.unchanged,
   新建项目: plan.projectsToCreateRemotely.length + plan.projectsToCreateLocally.length,
 });
+
+if (conflictsResolvedByCloud > 0) {
+  console.log(`  --prefer-cloud：${conflictsResolvedByCloud} 条待裁决以云端为准，并入「拉到本机」。`);
+}
 
 for (const conflict of plan.conflicts) {
   console.log(
