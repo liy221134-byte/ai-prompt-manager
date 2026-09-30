@@ -1,5 +1,7 @@
 # 验收：线索 4 云端半边 · 练习题库（M0）
 
+- 状态：**已于 2026-09-30 由产品负责人签收**。
+
 日期：2026-09-28 晚。分支：`feat/leads-4-practice`。关联设计：`docs/leads-4-cloud-practice-design.md`。
 
 ## 一、验收项
