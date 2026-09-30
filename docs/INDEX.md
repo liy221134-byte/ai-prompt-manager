@@ -158,6 +158,7 @@
 - [v2.23.0 验收清单（本机 MCP 自动接入，只支持 Codex）](acceptance/v2.23.0.md)
 - [v2.24.0 验收清单（项目规模参与编译筛选）](acceptance/v2.24.0.md)
 - [v2.25.0 验收清单（文档与资产口径收口）](acceptance/v2.25.0.md)
+- [v2.29.0 验收清单（线索 3 M2.2 采集产出自动落库）](acceptance/leads-3-m2-2.md)
 - [v2.28.0 验收清单（线索 3 M2.1 两条采集入口）](acceptance/leads-3-m2-1.md)
 - [v2.27.0 验收清单（线索 3 M2 采集台账进库与进编译候选，已签核）](acceptance/leads-3-m2.md)
 - [v2.26.0 验收清单（线索 3 M1 采集台账，已签核 8/8）](acceptance/leads-3-m1.md)

@@ -372,6 +372,51 @@ T13、T14 落地。两条入口都做成「台账视图上的一个按钮 + 一�
 - `src/components/external-sources-ledger-view.tsx`（加两个入口按钮）
 - 测试：`tests/source-package-confirm.test.mjs`（+4）、`tests/source-package-confirm-api.test.mjs`（+2）、`tests/external-sources-ledger.test.mjs`（+2）
 
+## 十四、M2.2 设计：采集产出自动落库（2026-09-30，需求草案已确认）
+
+需求草案见 [`leads-3-m2-2-requirements-draft.md`](leads-3-m2-2-requirements-draft.md)，
+产品负责人 2026-09-30 答了三个问题：**① 全自动**（话术驱动，采完即落库，不等口令）、
+**② 不加 `--dry-run`**（默认真跑）、**③ 话术按执行环境分两支**。
+
+**为什么必须改交互路径**：产品负责人实测时把话术给了本地智能体，智能体把采集目标的规则
+整理成**种子资产包**让他回填，**完全绕开了采集台账**——因为话术里只有「交产出件走 UI」
+这一条路，本地智能体没有能自己走完的落点。修法不是再补一份说明文档，而是给本地智能体
+一条**它能自己执行完的命令**。
+
+**T15 落库命令 `npm run collect:land`**
+
+```
+npm run collect:land -- <产出件目录或单个 .md> --source "来源名" [--ecosystem "生态"]
+```
+
+- 新增纯函数 `parseCollectionOutputFiles`（`src/lib/collection-output.ts`）：.md → 草稿条目。
+  标题取第一个 `# ` 行、没有就退回文件名；正文整段保留；摘要取首个非标题行（80 字截断）；
+  YAML frontmatter 忽略（话术不让写，真写了也不让它进正文）；空文件跳过。
+- 新增 `scripts/land-collection-output.ts`：读文件 → 解析 → **按标题在公共库去重**（已存在的
+  规则跳过）→ `planSourcePackageCreation(mode: "external-collection")` →
+  `getPromptDatabase().createSourcePackageImport(plan)` → 打印批次号／新增／跳过／采集记录 ID。
+- 批次号 `land-<来源 slug>-<标题集合哈希 8 位>`：同输入同号，重复跑自然落到同一批。
+- 只写**本机库**；云端靠 `npm run sync -- --push`。
+
+**T16 话术双分支（回填格式改写）**
+
+- **A 本地智能体**（能碰仓库文件系统）：把 .md 写进一个目录，然后执行
+  `npm run collect:land -- <目录> --source "…" --ecosystem "…"` 直接落库，
+  并在回复里说明台账多了哪一行。
+- **B 云端／无文件系统智能体**：交回 .md（或 .zip），明确说「到『采集台账 → 给压缩包』导入，
+  导入后台账自动多一行采集记录」。
+- 产出物契约不变：每文件一条、禁 frontmatter、禁元信息。
+
+**不改什么**：不改落库规则（仍 draft + hypothesis + 来源摘录 + 自动采集记录、进公共库）；
+**不自动转正**（落库仍是草稿态，转正走人工）；不改数据模型；不做双向同步。
+
+**已知口径（有意保留）**：同一来源补采会生成第二条采集记录——与 UI 入口同口径，
+没有来源级去重；这个在台账里看得见，不做隐藏。
+
+**验收**：① 造 3 个 .md 跑命令 → 公共库 3 条 rule（draft / hypothesis / 摘录）+ 1 条采集记录
+（落点指向新资产），再跑一遍 0 新增；② 话术两支都在（测试断言）；③ 产品负责人用真实来源
+端到端试一遍。
+
 ## 版本
 
 - `0.3.0`（2026-09-30）：M2.1 实现完成（生成采集任务单、压缩包外部采集模式），回填实现记录。
