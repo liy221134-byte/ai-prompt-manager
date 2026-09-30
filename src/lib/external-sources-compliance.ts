@@ -74,9 +74,22 @@ function readText(value: unknown): string {
 /**
  * 是否属于「外部来源资产」——合规检查只针对这些。
  * 文档类看 role:"source" 或 authority:false；规则类看可信度标记为假设。
+ *
+ * ⚠ 2026-09-30 修：`authority: false` 是**文档资产的默认元数据**，不是「外部采来的」标记，
+ * 光靠它判会把两类自家东西也扫成外部来源（主库因此误报 3 处）：
+ *   ① 规则包成员（种子包／公共库包导入的画像、验证记录，metadata 里有 pack）；
+ *   ② 本产品的编译产物（role: "compiled"，例如 START_PROMPT.md）。
+ * 它们不是采来的，只是恰好带着这个默认值，先排除掉。
  */
 export function isExternalSourceAsset(asset: AssetData): boolean {
   const metadata = readMetadata(asset);
+
+  const fromPack =
+    typeof metadata.pack === "object" && metadata.pack !== null;
+  const compiledByUs = metadata.role === "compiled";
+  if (fromPack || compiledByUs) {
+    return false;
+  }
 
   if (metadata.role === "source" || metadata.authority === false) {
     return true;

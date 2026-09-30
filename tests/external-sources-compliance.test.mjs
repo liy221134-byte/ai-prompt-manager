@@ -170,6 +170,62 @@ test("外部规则缺来源摘录就违规", () => {
   assert.equal(violations[0].rule, "source");
 });
 
+test("规则包成员与本产品的编译产物不算外部来源（authority:false 是文档默认值）", () => {
+  // 主库真实案例（2026-09-30 的三处误报）：前两条从规则包导入、第三条是编译产物，
+  // 三条都不是采来的，却因为文档默认 authority:false 被判成外部来源、要求填来源位置。
+  const packProfile = {
+    id: "document-profile-personal-001-3",
+    title: "个人工具",
+    assetType: "document",
+    status: "active",
+    metadata: {
+      documentType: "项目画像",
+      authority: false,
+      sourceLocation: "",
+      pack: {
+        packId: "rule-pack-engineering-foundations",
+        packItemId: "PROFILE-PERSONAL-001",
+        packVersion: "0.2.1",
+      },
+    },
+  };
+  const packValidation = {
+    id: "document-validation-01-personal-tool-3",
+    title: "个人工具编译验证",
+    assetType: "document",
+    status: "active",
+    metadata: {
+      documentType: "编译验证记录",
+      authority: false,
+      sourceLocation: "",
+      pack: {
+        packId: "rule-pack-public-library",
+        packItemId: "validation-01-personal-tool",
+        packVersion: "0.1.0",
+      },
+    },
+  };
+  const compiled = {
+    id: "document-71cddf08-e265-4891-992a-90c93864634b",
+    title: "START_PROMPT.md",
+    assetType: "document",
+    status: "active",
+    metadata: {
+      documentType: "START_PROMPT.md",
+      role: "compiled",
+      authority: false,
+      sourceLocation: "",
+    },
+  };
+
+  assert.equal(isExternalSourceAsset(packProfile), false);
+  assert.equal(isExternalSourceAsset(packValidation), false);
+  assert.equal(isExternalSourceAsset(compiled), false);
+
+  // 真正的外部来源文档（role: source）不受影响，照样要检查
+  assert.equal(isExternalSourceAsset(documentAsset()), true);
+});
+
 test("只扫外部来源资产，普通提示词不计入", () => {
   const promptAsset = {
     id: "prompt-code-review",
