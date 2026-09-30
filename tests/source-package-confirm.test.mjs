@@ -156,3 +156,89 @@ test("标识按类型和批次生成，便于回溯同一次导入", () => {
     ["pkg-batch-5-1", "pkg-batch-5-2"],
   );
 });
+
+// —— M2.1 T14：外部采集模式 ——
+
+test("外部采集模式：规则强制假设级可信度 + 来源摘录", () => {
+  const plan = planSourcePackageCreation({
+    draft: createDraft(),
+    uploads: UPLOADS,
+    importBatchId: "batch-ext-1",
+    project: { mode: "existing", projectId: "default-project" },
+    mode: "external-collection",
+    collectionMeta: { source: "obra/superpowers", ecosystem: "开源社区" },
+    now: NOW,
+  });
+
+  const rule = plan.assets.find((entry) => entry.asset.assetType === "rule");
+
+  assert.equal(rule.asset.metadata.confidence, "hypothesis");
+  assert.equal(rule.asset.metadata.sourceExcerpt, "提交前必须通过完整检查。");
+  // 文档与提示词不受影响，不硬塞信任度
+  const document = plan.assets.find((entry) => entry.asset.assetType === "document");
+  assert.equal(document.asset.metadata.confidence, undefined);
+});
+
+test("外部采集模式：固定落公共资产库，不新建项目", () => {
+  const plan = planSourcePackageCreation({
+    draft: createDraft(),
+    uploads: UPLOADS,
+    importBatchId: "batch-ext-2",
+    // 即便客户端传了新建项目，外部采集模式也忽略它
+    project: { mode: "new", name: "不该被建出来", goal: "" },
+    mode: "external-collection",
+    collectionMeta: { source: "obra/superpowers", ecosystem: "开源社区" },
+    now: NOW,
+  });
+
+  assert.equal(plan.project, null);
+  assert.equal(plan.assets[0].asset.projectId, "default-project");
+  assert.equal(plan.sourcePackages[0].projectId, "default-project");
+});
+
+test("外部采集模式：额外生成一条采集记录，落点指向这批新资产", () => {
+  const plan = planSourcePackageCreation({
+    draft: createDraft(),
+    uploads: UPLOADS,
+    importBatchId: "batch-ext-3",
+    project: { mode: "existing", projectId: "default-project" },
+    mode: "external-collection",
+    collectionMeta: { source: "obra/superpowers", ecosystem: "开源社区" },
+    now: NOW,
+  });
+
+  // 3 条草稿资产 + 1 条采集记录
+  assert.equal(plan.assets.length, 4);
+
+  const record = plan.assets[3].asset;
+
+  assert.equal(record.id, "collection-batch-ext-3");
+  assert.equal(record.assetType, "document");
+  assert.equal(record.metadata.documentType, "采集记录");
+  assert.equal(record.metadata.collection.ecosystem, "开源社区");
+  assert.equal(record.metadata.collection.disposition, "已采");
+  assert.deepEqual(record.metadata.collection.collectedAssetIds, [
+    "document-batch-ext-3-1",
+    "rule-batch-ext-3-2",
+    "prompt-batch-ext-3-3",
+  ]);
+  assert.equal(record.title, "obra/superpowers");
+  assert.equal(record.status, "active");
+  assert.equal(plan.assets[3].version.changeReason, "外部采集");
+});
+
+test("标准模式：不生成采集记录（回归）", () => {
+  const plan = planSourcePackageCreation({
+    draft: createDraft(),
+    uploads: UPLOADS,
+    importBatchId: "batch-std-1",
+    project: { mode: "existing", projectId: "default-project" },
+    now: NOW,
+  });
+
+  assert.equal(plan.assets.length, 3);
+  assert.equal(
+    plan.assets.some((entry) => entry.asset.id.startsWith("collection-")),
+    false,
+  );
+});

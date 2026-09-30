@@ -3,6 +3,7 @@
 import { LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
 
+import { collectionEcosystems } from "@/data/assets";
 import type { ProjectData } from "@/data/projects";
 import { useModalBehavior } from "@/hooks/use-modal-behavior";
 import {
@@ -21,10 +22,17 @@ type UploadRef = {
 };
 
 type SourcePackageImportDialogProps = {
-  projects: ProjectData[];
-  currentProjectId: string;
+  /** 仅 standard 模式（选导入到哪个项目）需要 */
+  projects?: ProjectData[];
+  currentProjectId?: string;
   onClose: () => void;
   onImported: () => Promise<void> | void;
+  /**
+   * 缺省 standard（原「导入文档包」行为）；
+   * external-collection 为 M2.1 外部采集模式：规则强制 hypothesis + 来源摘录，
+   * 落库同时自动生成一条采集记录，项目固定公共资产库。
+   */
+  mode?: "standard" | "external-collection";
 };
 
 const typeLabels: Record<SourcePackageDraftType, string> = {
@@ -39,11 +47,13 @@ const inputClassName =
 // 文档包导入：上传原文 → AI 识别草稿 → 在预览里改完再确认创建。
 // 确认之前不建项目、不写资产，原文只暂时放在来源目录里。
 export function SourcePackageImportDialog({
-  projects,
-  currentProjectId,
+  projects = [],
+  currentProjectId = "",
   onClose,
   onImported,
+  mode = "standard",
 }: SourcePackageImportDialogProps) {
+  const isExternalCollection = mode === "external-collection";
   const [files, setFiles] = useState<File[]>([]);
   const [uploads, setUploads] = useState<UploadRef[]>([]);
   const [draft, setDraft] = useState<SourcePackageDraft | null>(null);
@@ -52,6 +62,9 @@ export function SourcePackageImportDialog({
   const [projectName, setProjectName] = useState("");
   const [projectGoal, setProjectGoal] = useState("");
   const [existingProjectId, setExistingProjectId] = useState(currentProjectId);
+  // 外部采集模式：来源名与生态，写进自动生成的采集记录
+  const [collectionSource, setCollectionSource] = useState("");
+  const [collectionEcosystem, setCollectionEcosystem] = useState("");
   const [statusText, setStatusText] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -198,6 +211,11 @@ export function SourcePackageImportDialog({
       return;
     }
 
+    if (isExternalCollection && !collectionSource.trim()) {
+      setErrorMessage("外部采集要填来源名——采集记录靠它认这条来源。");
+      return;
+    }
+
     setIsBusy(true);
     setErrorMessage(null);
     setStatusText("正在创建项目与资产…");
@@ -209,10 +227,16 @@ export function SourcePackageImportDialog({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             importBatchId,
-            project:
-              projectMode === "new"
+            mode,
+            // 外部采集固定公共资产库，不用传项目选择
+            project: isExternalCollection
+              ? undefined
+              : projectMode === "new"
                 ? { mode: "new", name: projectName, goal: projectGoal }
                 : { mode: "existing", projectId: existingProjectId },
+            collectionMeta: isExternalCollection
+              ? { source: collectionSource, ecosystem: collectionEcosystem }
+              : undefined,
             uploads,
             draft: {
               project: { name: projectName, goal: projectGoal },
@@ -252,7 +276,7 @@ export function SourcePackageImportDialog({
             className="text-base font-semibold text-slate-900"
             id="source-package-import-title"
           >
-            导入文档包
+            {isExternalCollection ? "给压缩包（外部采集）" : "导入文档包"}
           </h2>
           <button
             aria-label="关闭导入"
@@ -267,11 +291,23 @@ export function SourcePackageImportDialog({
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <p className="text-sm leading-6 text-slate-600">
-            支持 Markdown、纯文本和 ZIP（单包 20 MB）。识别结果只是草稿，
-            <strong className="font-semibold text-slate-800">
-              确认之前不会创建项目，也不会写入资产
-            </strong>
-            ，原文只暂时保存在来源目录里。
+            {isExternalCollection ? (
+              <>
+                上传外部来源的 ZIP（单包 20 MB），AI 提取候选规则。落库时规则会自动带上
+                <strong className="font-semibold text-slate-800">
+                  假设级可信度 + 来源摘录
+                </strong>
+                ，并自动生成一条采集记录，两项都进公共资产库。
+              </>
+            ) : (
+              <>
+                支持 Markdown、纯文本和 ZIP（单包 20 MB）。识别结果只是草稿，
+                <strong className="font-semibold text-slate-800">
+                  确认之前不会创建项目，也不会写入资产
+                </strong>
+                ，原文只暂时保存在来源目录里。
+              </>
+            )}
           </p>
 
           <label className="mt-4 flex flex-col gap-2">
@@ -303,60 +339,105 @@ export function SourcePackageImportDialog({
 
           {draft && (
             <>
-              <fieldset className="mt-5 rounded-lg border border-slate-200 px-4 py-3">
-                <legend className="px-1 text-sm font-semibold text-slate-700">
-                  创建到哪个项目
-                </legend>
-                <div className="flex flex-col gap-3">
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      checked={projectMode === "new"}
-                      name="project-mode"
-                      onChange={() => setProjectMode("new")}
-                      type="radio"
-                    />
-                    新建项目
-                  </label>
-                  {projectMode === "new" && (
-                    <div className="grid gap-3 sm:grid-cols-2">
+              {isExternalCollection ? (
+                <fieldset className="mt-5 rounded-lg border border-slate-200 px-4 py-3">
+                  <legend className="px-1 text-sm font-semibold text-slate-700">
+                    这条来源是谁
+                  </legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-600">
+                        来源名 <span className="text-rose-500">*</span>
+                      </span>
                       <input
                         className={inputClassName}
-                        onChange={(event) => setProjectName(event.target.value)}
-                        placeholder="项目名称"
-                        value={projectName}
+                        onChange={(event) =>
+                          setCollectionSource(event.target.value)
+                        }
+                        placeholder="例：obra/superpowers"
+                        value={collectionSource}
                       />
-                      <input
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-slate-600">
+                        生态
+                      </span>
+                      <select
                         className={inputClassName}
-                        onChange={(event) => setProjectGoal(event.target.value)}
-                        placeholder="这个项目要解决什么问题"
-                        value={projectGoal}
+                        onChange={(event) =>
+                          setCollectionEcosystem(event.target.value)
+                        }
+                        value={collectionEcosystem}
+                      >
+                        <option value="">不选</option>
+                        {collectionEcosystems.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    落库后自动生成一条采集记录，登记这条来源与它提炼出的资产。
+                  </p>
+                </fieldset>
+              ) : (
+                <fieldset className="mt-5 rounded-lg border border-slate-200 px-4 py-3">
+                  <legend className="px-1 text-sm font-semibold text-slate-700">
+                    创建到哪个项目
+                  </legend>
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        checked={projectMode === "new"}
+                        name="project-mode"
+                        onChange={() => setProjectMode("new")}
+                        type="radio"
                       />
-                    </div>
-                  )}
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      checked={projectMode === "existing"}
-                      name="project-mode"
-                      onChange={() => setProjectMode("existing")}
-                      type="radio"
-                    />
-                    导入到已有项目
-                  </label>
-                  {projectMode === "existing" && (
-                    <select
-                      className={inputClassName}
-                      onChange={(event) => setExistingProjectId(event.target.value)}
-                      value={existingProjectId}
-                    >
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </fieldset>
+                      新建项目
+                    </label>
+                    {projectMode === "new" && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <input
+                          className={inputClassName}
+                          onChange={(event) => setProjectName(event.target.value)}
+                          placeholder="项目名称"
+                          value={projectName}
+                        />
+                        <input
+                          className={inputClassName}
+                          onChange={(event) => setProjectGoal(event.target.value)}
+                          placeholder="这个项目要解决什么问题"
+                          value={projectGoal}
+                        />
+                      </div>
+                    )}
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        checked={projectMode === "existing"}
+                        name="project-mode"
+                        onChange={() => setProjectMode("existing")}
+                        type="radio"
+                      />
+                      导入到已有项目
+                    </label>
+                    {projectMode === "existing" && (
+                      <select
+                        className={inputClassName}
+                        onChange={(event) => setExistingProjectId(event.target.value)}
+                        value={existingProjectId}
+                      >
+                        {projects.map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </fieldset>
+              )}
 
               <section className="mt-5">
                 <h3 className="text-sm font-semibold text-slate-700">

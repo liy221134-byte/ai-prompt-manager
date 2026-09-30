@@ -219,3 +219,67 @@ test("同一批次重复确认不会写第二遍", async () => {
     temp.restore();
   }
 });
+
+// —— M2.1 T14：外部采集模式 ——
+
+test("外部采集模式：不传项目也能落库，自动生一条采集记录进公共库", async () => {
+  const temp = useTempDataRoot();
+
+  try {
+    const response = await POST(
+      confirmRequest({
+        importBatchId: "batch-ext-a",
+        mode: "external-collection",
+        collectionMeta: { source: "obra/superpowers", ecosystem: "开源社区" },
+        uploads: [UPLOADS[1]],
+        draft: {
+          project: { name: "忽略", goal: "" },
+          items: [createDraft().items[1]],
+        },
+      }),
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 201);
+    // 2 条草稿资产（1 rule）+ 1 条自动生成的采集记录
+    assert.equal(body.created.assets, 2);
+    assert.equal(body.projectId, "default-project");
+
+    const assets = temp.database.listAssets("default-project");
+
+    const record = assets.find((asset) => asset.metadata?.documentType === "采集记录");
+
+    assert.ok(record, "应当自动生成一条采集记录");
+    assert.equal(record.title, "obra/superpowers");
+    assert.equal(record.metadata.collection.ecosystem, "开源社区");
+    assert.equal(record.metadata.collection.disposition, "已采");
+    assert.equal(record.assetType, "document");
+
+    // 规则带上假设级可信度与来源摘录（合规检查盯的两项）
+    const rule = assets.find((asset) => asset.assetType === "rule");
+    assert.equal(rule.metadata.confidence, "hypothesis");
+    assert.equal(rule.metadata.sourceExcerpt, "提交前必须通过完整检查。");
+  } finally {
+    temp.restore();
+  }
+});
+
+test("外部采集模式：没填来源名时拒绝创建", async () => {
+  const temp = useTempDataRoot();
+
+  try {
+    const response = await POST(
+      confirmRequest({
+        importBatchId: "batch-ext-b",
+        mode: "external-collection",
+        uploads: [UPLOADS[0]],
+        draft: { project: { name: "x", goal: "" }, items: [createDraft().items[0]] },
+      }),
+    );
+
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /外部采集要填来源名/);
+  } finally {
+    temp.restore();
+  }
+});

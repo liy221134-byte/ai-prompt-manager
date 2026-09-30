@@ -1,12 +1,15 @@
 import { getPromptDatabase } from "../../../../lib/server/prompt-database.ts";
 import { getRuntimeConfigurationError, isSupabaseDataMode } from "../../../../lib/server/runtime-config.ts";
+import { DEFAULT_PROJECT_ID } from "../../../../data/projects.ts";
 import {
   checkSourcePackageDraftLimit,
   type SourcePackageDraft,
 } from "../../../../lib/source-package-draft.ts";
 import {
   planSourcePackageCreation,
+  type CollectionMeta,
   type SourcePackageCreationPlan,
+  type SourcePackageMode,
   type SourcePackageProjectChoice,
   type SourcePackageUploadRef,
 } from "../../../../lib/source-package-confirm.ts";
@@ -108,6 +111,38 @@ function readProjectChoice(value: unknown): SourcePackageProjectChoice | null {
   return null;
 }
 
+function readMode(value: unknown): SourcePackageMode {
+  return value === "external-collection" ? "external-collection" : "standard";
+}
+
+function readCollectionMeta(value: unknown): CollectionMeta | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const source = typeof value.source === "string" ? value.source.trim() : "";
+  const ecosystem =
+    typeof value.ecosystem === "string" ? value.ecosystem.trim() : "";
+
+  if (!source) {
+    return undefined;
+  }
+
+  return { source, ecosystem };
+}
+
+// 落库实际写进哪个项目：新建项目看 plan，已有项目（含外部采集的公共库）看 fallback
+function resolvePlanProjectId(
+  plan: SourcePackageCreationPlan,
+  project: SourcePackageProjectChoice | null,
+): string | null {
+  if (plan.project) {
+    return plan.project.id;
+  }
+
+  return project?.mode === "existing" ? project.projectId : null;
+}
+
 // 用户在预览里确认后才走到这里：项目、来源包、资产一次性创建。
 export async function POST(request: Request) {
   const configurationError = getRuntimeConfigurationError();
@@ -128,6 +163,8 @@ export async function POST(request: Request) {
   const uploads = readUploads(value.uploads);
   const draft = readDraft(value.draft);
   const project = readProjectChoice(value.project);
+  const mode = readMode(value.mode);
+  const collectionMeta = readCollectionMeta(value.collectionMeta);
   const importBatchId =
     typeof value.importBatchId === "string" && value.importBatchId.trim()
       ? value.importBatchId
@@ -141,8 +178,13 @@ export async function POST(request: Request) {
     return createErrorResponse("草稿内容不完整，请检查标题、正文和资产类型。", 400);
   }
 
-  if (!project) {
+  // 外部采集模式固定落户公共资产库，不要求客户端传项目选择
+  if (mode === "standard" && !project) {
     return createErrorResponse("请选择要导入的项目。", 400);
+  }
+
+  if (mode === "external-collection" && !collectionMeta) {
+    return createErrorResponse("外部采集要填来源名。", 400);
   }
 
   if (!importBatchId) {
@@ -155,28 +197,31 @@ export async function POST(request: Request) {
     return createErrorResponse(limitError, 400);
   }
 
+  // 外部采集模式忽略客户端的项目选择，直接落公共资产库
+  const effectiveProject: SourcePackageProjectChoice =
+    mode === "external-collection" || !project
+      ? { mode: "existing", projectId: DEFAULT_PROJECT_ID }
+      : project;
+
   const plan = planSourcePackageCreation({
     draft,
     uploads,
     importBatchId,
-    project,
+    project: effectiveProject,
+    mode,
+    collectionMeta,
   });
 
   // 云端走登录会话写库（行级安全按账号隔离），本地走 SQLite。
   if (isSupabaseDataMode()) {
-    return createSourcePackageInCloud(plan, project);
+    return createSourcePackageInCloud(plan, effectiveProject);
   }
 
   try {
     const created = getPromptDatabase().createSourcePackageImport(plan);
-    const projectId = plan.project
-      ? plan.project.id
-      : project.mode === "existing"
-        ? project.projectId
-        : null;
 
     return Response.json(
-      { created, projectId },
+      { created, projectId: resolvePlanProjectId(plan, effectiveProject) },
       { status: 201 },
     );
   } catch (error) {
@@ -193,7 +238,7 @@ export async function POST(request: Request) {
 
 async function createSourcePackageInCloud(
   plan: SourcePackageCreationPlan,
-  project: SourcePackageProjectChoice,
+  project: SourcePackageProjectChoice | null,
 ) {
   const { getSupabaseServerClient } = await import(
     "../../../../lib/supabase/server.ts"
@@ -243,11 +288,7 @@ async function createSourcePackageInCloud(
     );
   }
 
-  const projectId = plan.project
-    ? plan.project.id
-    : project.mode === "existing"
-      ? project.projectId
-      : null;
+  const projectId = resolvePlanProjectId(plan, project);
 
   return Response.json(
     {

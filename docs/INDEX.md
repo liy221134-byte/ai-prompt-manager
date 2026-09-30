@@ -43,7 +43,7 @@
 
 ### 设计
 
-- [线索 3 M2 采集台账进库与进编译候选设计与任务清单（已实现）](leads-3-m2-design-and-tasks.md)
+- [线索 3 M2 采集台账进库与进编译候选设计与任务清单（已实现；M2.1 两条入口见同文档第十三节）](leads-3-m2-design-and-tasks.md)
 - [线索 3 M1 采集台账设计与任务清单（已实现，数据源已被 M2 取代）](leads-3-m1-design-and-tasks.md)
 - [线索 3 生态采集沉淀设计与任务清单（M0，已完成）](leads-3-design-and-tasks.md)
 - [线索 4 内网练习项目设计与任务清单](leads-4-design-and-tasks.md)
@@ -155,7 +155,8 @@
 - [v2.23.0 验收清单（本机 MCP 自动接入，只支持 Codex）](acceptance/v2.23.0.md)
 - [v2.24.0 验收清单（项目规模参与编译筛选）](acceptance/v2.24.0.md)
 - [v2.25.0 验收清单（文档与资产口径收口）](acceptance/v2.25.0.md)
-- [v2.27.0 验收清单（线索 3 M2 采集台账进库与进编译候选）](acceptance/leads-3-m2.md)
+- [v2.28.0 验收清单（线索 3 M2.1 两条采集入口）](acceptance/leads-3-m2-1.md)
+- [v2.27.0 验收清单（线索 3 M2 采集台账进库与进编译候选，已签核）](acceptance/leads-3-m2.md)
 - [v2.26.0 验收清单（线索 3 M1 采集台账，已签核 8/8）](acceptance/leads-3-m1.md)
 - [线索 3 M0 验收清单（生态采集沉淀，已签核）](acceptance/leads-3-m0.md)
 - [练习题库 M0 验收清单](acceptance/practice-m0.md)

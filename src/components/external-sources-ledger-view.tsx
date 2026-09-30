@@ -7,9 +7,11 @@ import {
   ArrowLeft,
   BookOpenText,
   Check,
+  ClipboardList,
   Copy,
   ExternalLink,
   Loader2,
+  Package,
   Pencil,
   Plus,
   RefreshCw,
@@ -18,7 +20,9 @@ import {
 } from "lucide-react";
 
 import { collectionEcosystems, type AssetData } from "@/data/assets";
+import { CollectionTaskDialog } from "@/components/collection-task-dialog";
 import { ExternalSourceRecordDialog } from "@/components/external-source-record-dialog";
+import { SourcePackageImportDialog } from "@/components/source-package-import-dialog";
 import {
   compileStatusLabels,
   filterByEcosystem,
@@ -105,6 +109,8 @@ export function ExternalSourcesLedgerView({
   const [isCheckHintOpen, setIsCheckHintOpen] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [showPackageDialog, setShowPackageDialog] = useState(false);
 
   const reload = useCallback(async () => {
     const list = await dataSource.fetchAssets();
@@ -227,6 +233,22 @@ export function ExternalSourcesLedgerView({
             >
               <Plus aria-hidden="true" className="size-4" />
               新建采集
+            </button>
+            <button
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100"
+              onClick={() => setShowTaskDialog(true)}
+              type="button"
+            >
+              <ClipboardList aria-hidden="true" className="size-4" />
+              生成采集任务单
+            </button>
+            <button
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100"
+              onClick={() => setShowPackageDialog(true)}
+              type="button"
+            >
+              <Package aria-hidden="true" className="size-4" />
+              给压缩包
             </button>
             <button
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100"
@@ -604,6 +626,21 @@ export function ExternalSourcesLedgerView({
           nextSeq={nextSeq}
           onClose={() => setDialogAsset(undefined)}
           onSaved={(message) => void handleSaved(message)}
+        />
+      )}
+
+      {showTaskDialog && (
+        <CollectionTaskDialog onClose={() => setShowTaskDialog(false)} />
+      )}
+
+      {showPackageDialog && (
+        <SourcePackageImportDialog
+          mode="external-collection"
+          onClose={() => setShowPackageDialog(false)}
+          onImported={async () => {
+            await reload();
+            setNotice("已从压缩包采集，采集记录与候选资产都已落在公共库。");
+          }}
         />
       )}
     </main>

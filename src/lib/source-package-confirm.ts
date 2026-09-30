@@ -1,22 +1,36 @@
 // 确认创建：把用户在预览里确认过的草稿落成正式项目和资产。
 // 这里是纯逻辑，只负责算出「要创建什么」，写库由接口用一次事务完成。
 
-import type {
-  AssetData,
-  AssetVersionData,
-  DocumentAssetMetadata,
-  PromptAssetMetadata,
-  RuleAssetMetadata,
+import {
+  collectionDocumentType,
+  defaultDocumentType,
+  type AssetData,
+  type AssetVersionData,
+  type DocumentAssetMetadata,
+  type PromptAssetMetadata,
+  type RuleAssetMetadata,
 } from "../data/assets.ts";
-import { defaultDocumentType } from "../data/assets.ts";
-import type { ProjectData } from "../data/projects.ts";
-import { defaultProjectRiskLevel } from "../data/projects.ts";
+import {
+  DEFAULT_PROJECT_ID,
+  defaultProjectRiskLevel,
+  type ProjectData,
+} from "../data/projects.ts";
+import { buildCollectionRecordContent } from "./external-sources-ledger.ts";
 import type {
   SourcePackageDraft,
   SourcePackageDraftType,
 } from "./source-package-draft.ts";
 
 export const SOURCE_PACKAGE_DEFAULT_CATEGORY = "导入";
+
+// 外部采集模式（M2.1 T14）：复用文档包导入链路，但规则强制 hypothesis + 来源摘录，
+// 落库同时自动生成一条采集记录，项目固定公共资产库。
+export type SourcePackageMode = "standard" | "external-collection";
+
+export type CollectionMeta = {
+  source: string;
+  ecosystem: string;
+};
 
 export type SourcePackageUploadRef = {
   uploadId: string;
@@ -38,6 +52,7 @@ export type SourcePackageCreationPlan = {
 function createMetadata(
   assetType: SourcePackageDraftType,
   item: SourcePackageDraft["items"][number],
+  mode: SourcePackageMode = "standard",
 ) {
   if (assetType === "prompt") {
     const metadata: PromptAssetMetadata = {
@@ -58,6 +73,12 @@ function createMetadata(
       scope: "project",
     };
 
+    // 外部采集模式下，规则强制 hypothesis + 来源摘录（合规检查盯着这两项）
+    if (mode === "external-collection") {
+      metadata.confidence = "hypothesis";
+      metadata.sourceExcerpt = item.content.slice(0, 200);
+    }
+
     return metadata;
   }
 
@@ -71,7 +92,12 @@ function createMetadata(
 // 正式保存的第 1 版：来源指向对应的来源包资产
 function createInitialVersion(
   asset: AssetData,
-  input: { versionId: string; now: string; sourceAssetIds: string[] },
+  input: {
+    versionId: string;
+    now: string;
+    sourceAssetIds: string[];
+    changeReason?: string;
+  },
 ): AssetVersionData {
   return {
     versionId: input.versionId,
@@ -82,7 +108,7 @@ function createInitialVersion(
     summary: asset.summary,
     content: asset.content,
     metadata: asset.metadata,
-    changeReason: "导入文档包",
+    changeReason: input.changeReason ?? "导入文档包",
     versionReason: "initial",
     sourceAssetIds: [...input.sourceAssetIds],
     restoredAt: null,
@@ -97,15 +123,24 @@ export function planSourcePackageCreation(input: {
   importBatchId: string;
   project: SourcePackageProjectChoice;
   now?: string;
+  /** 缺省 standard（原「导入文档包」行为）；external-collection 为 M2.1 外部采集模式 */
+  mode?: SourcePackageMode;
+  /** 外部采集模式必填：这条来源叫什么、属于哪个生态（写进自动生成的采集记录） */
+  collectionMeta?: CollectionMeta;
 }): SourcePackageCreationPlan {
   const now = input.now ?? new Date().toISOString();
-  const projectId =
-    input.project.mode === "existing"
+  const mode = input.mode ?? "standard";
+  const isExternalCollection = mode === "external-collection";
+
+  // 外部采集固定落户公共资产库，不新建项目（采集记录与候选资产都进公共库）
+  const projectId = isExternalCollection
+    ? DEFAULT_PROJECT_ID
+    : input.project.mode === "existing"
       ? input.project.projectId
       : `project-${input.importBatchId}`;
 
   const project: ProjectData | null =
-    input.project.mode === "new"
+    !isExternalCollection && input.project.mode === "new"
       ? {
           id: projectId,
           name: input.project.name.trim() || "导入的项目",
@@ -176,7 +211,7 @@ export function planSourcePackageCreation(input: {
       title: item.title,
       summary: item.summary,
       content: item.content,
-      metadata: createMetadata(assetType, item),
+      metadata: createMetadata(assetType, item, mode),
       source: {
         sourceType: "import",
         sourceAssetId: sourceAssetIds[0] ?? null,
@@ -202,6 +237,72 @@ export function planSourcePackageCreation(input: {
       }),
     };
   });
+
+  // 外部采集模式：这批资产落库的同时自动生成一条采集记录，
+  // 「落到哪条资产」指向这批新资产，供台账追踪。
+  if (isExternalCollection) {
+    const createdIds = assets.map((entry) => entry.asset.id);
+    const landing =
+      input.collectionMeta?.source ?? input.uploads[0]?.filename ?? "压缩包";
+    const collectionId = `collection-${input.importBatchId}`;
+    const recordContent = buildCollectionRecordContent({
+      source: landing,
+      ecosystem: input.collectionMeta?.ecosystem ?? "",
+      sourceType: "Skill/MCP",
+      sourceUrl: "",
+      disposition: "已采",
+      landing: `压缩包导入：${createdIds.join("、")}`,
+      verifiedAt: now.slice(0, 10),
+      note: `由「给压缩包」入口自动生成，共 ${createdIds.length} 条候选资产。`,
+    });
+
+    const record = {
+      id: collectionId,
+      projectId,
+      assetType: "document",
+      title: landing,
+      summary: `压缩包采集：${createdIds.length} 条候选资产`,
+      content: recordContent,
+      metadata: {
+        documentType: collectionDocumentType,
+        role: "source",
+        authority: false,
+        collection: {
+          ecosystem: input.collectionMeta?.ecosystem ?? "",
+          sourceType: "Skill/MCP",
+          sourceUrl: "",
+          disposition: "已采",
+          landing: `压缩包导入：${createdIds.join("、")}`,
+          collectedAssetIds: createdIds,
+          verifiedAt: now.slice(0, 10),
+          note: `由「给压缩包」入口自动生成，共 ${createdIds.length} 条候选资产。`,
+        },
+      },
+      source: {
+        sourceType: "import",
+        sourceAssetId: sourcePackages[0]?.id ?? null,
+        importBatchId: input.importBatchId,
+        originalFilename: input.uploads[0]?.filename ?? null,
+      },
+      currentVersionId: `current-${collectionId}`,
+      status: "active",
+      archivedAt: null,
+      deletedAt: null,
+      deletedReason: null,
+      createdAt: now,
+      updatedAt: now,
+    } as AssetData;
+
+    assets.push({
+      asset: record,
+      version: createInitialVersion(record, {
+        versionId: `current-${collectionId}`,
+        now,
+        sourceAssetIds: sourcePackages.map((pkg) => pkg.id),
+        changeReason: "外部采集",
+      }),
+    });
+  }
 
   return { project, sourcePackages, assets };
 }

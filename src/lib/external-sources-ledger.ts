@@ -314,6 +314,57 @@ export function buildCollectionRecordContent(input: {
 }
 
 /**
+ * 生成采集任务单话术（M2.1 T13）。
+ *
+ * 把用户填的「目标来源 + 生态 + 关注点」参数化成一段可复制的话术，
+ * 交给 WorkBuddy / Codex 执行。模板源自 seed-packs/external-sources/README.md
+ * 第五节采集作业 SOP，按设计稿要求拆成提炼要求、去重口径、合规硬约束、
+ * 回填格式四段。
+ */
+export function buildCollectionTaskPrompt(input: {
+  sourceUrl: string;
+  ecosystem?: string;
+  focus?: string;
+}): string {
+  const source = input.sourceUrl.trim();
+  const ecosystem = input.ecosystem?.trim() ?? "";
+  const focus = input.focus?.trim() ?? "";
+
+  // 关注点这一条只在用户填了的时候出现，不硬塞空行
+  const focusLine = focus
+    ? `\n4. 重点关注：${focus}`
+    : "";
+
+  // 生态提示只在选了的时候出现
+  const ecosystemHint = ecosystem ? `（生态：${ecosystem}）` : "";
+
+  return [
+    `请阅读这个 Skills / MCP 仓库：${source}`,
+    `背景：我是产品经理，零代码用 AI 交付软件，正在建设工程规则资产包。`,
+    `任务：从中提炼"可复用的工程规则"，不要照搬它的完整流程，也不要安装或修改任何东西。`,
+    ``,
+    `提炼要求：`,
+    `1. 逐条输出候选规则，每条标注来源（具体到哪个 SKILL.md / 哪个官方约定）。`,
+    `2. 区分两类：约束 AI 的规则（进工程包）/ 教操作者的方法（进训练包）。`,
+    `3. 每条给出：规则类型（必须/禁止/建议/流程/验收）、适用项目规模`,
+    `   （个人/中型/大型）、优先级、不适用场景。${focusLine}`,
+    ``,
+    `去重口径：`,
+    `对照我现有的工程资产清单（见 seed-packs/engineering-foundations/manifest.md）去重，`,
+    `只输出真正的新增项，并指出它补强或冲突的现有资产 ID。`,
+    ``,
+    `合规硬约束：`,
+    `- 候选规则默认 status: candidate、confidence: hypothesis，填好 source_references。`,
+    `- 先只输出候选清单，不要写进 AGENTS.md，也不要新建资产文件，等我人工确认。`,
+    `- 一次只处理这一个来源，不要批量采。`,
+    ``,
+    `回填格式：`,
+    `- 确认的条目写成资产文件，status: candidate、confidence: hypothesis，填好 source_references。`,
+    `- 在采集台账登记这条来源${ecosystemHint}，处置结论填「已采」。`,
+  ].join("\n");
+}
+
+/**
  * 从落点文本里认出库内资产，产出可以写进 collectedAssetIds 的资产 ID。
  *
  * 两种认法：文本里出现资产 ID，或出现资产标题（标题太短的不认，避免「OKR」这种

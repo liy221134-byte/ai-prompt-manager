@@ -5,6 +5,7 @@ import test from "node:test";
 
 import {
   buildAssetIndex,
+  buildCollectionTaskPrompt,
   compileStatusLabels,
   deriveCompileStatus,
   extractCanonicalIds,
@@ -335,4 +336,36 @@ test("落点写资产标题或 ID 时能认出库内资产，认不出的不硬�
   );
   assert.deepEqual(resolveLandingAssets("templates/new-project/AGENTS.md", assets), []);
   assert.deepEqual(resolveLandingAssets("", assets), []);
+});
+
+// —— M2.1 T13：采集任务单话术 ——
+
+test("采集任务单话术：来源与四段齐全，关注点和生态只在填了时出现", () => {
+  const text = buildCollectionTaskPrompt({
+    sourceUrl: "https://github.com/anthropics/skills",
+  });
+
+  assert.match(text, /请阅读这个 Skills \/ MCP 仓库：https:\/\/github\.com\/anthropics\/skills/);
+  assert.match(text, /提炼要求：/);
+  assert.match(text, /去重口径：/);
+  assert.match(text, /合规硬约束：/);
+  assert.match(text, /回填格式：/);
+  // 没填关注点时不冒出「重点关注」
+  assert.doesNotMatch(text, /重点关注/);
+  // 没选生态时不冒出「（生态：」
+  assert.doesNotMatch(text, /（生态：/);
+  // 合规硬约束两条关键要求要在
+  assert.match(text, /confidence: hypothesis/);
+  assert.match(text, /等我人工确认/);
+});
+
+test("采集任务单话术：填了关注点与生态就带上", () => {
+  const text = buildCollectionTaskPrompt({
+    sourceUrl: "obra/superpowers",
+    ecosystem: "开源社区",
+    focus: "只提炼工程纪律类规则，不要安装任何东西",
+  });
+
+  assert.match(text, /重点关注：只提炼工程纪律类规则，不要安装任何东西/);
+  assert.match(text, /（生态：开源社区）/);
 });

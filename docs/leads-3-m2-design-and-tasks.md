@@ -294,8 +294,8 @@ M1 走的是 A 方案（台账仍是 README，产品读构建期生成的 JSON �
 | M2.0 | T10 文档同步：本文件、M1 设计稿标注演进、README 第六节、`docs/INDEX.md`、`docs/user-map.md`、`docs/engineering-map.md`、`docs/pending-items.md`、`docs/leads-3-design-and-tasks.md` | 各文档 | T3～T9 |
 | M2.0 | T11 验收清单 | 新增 `docs/acceptance/leads-3-m2.md` | T8、T9 |
 | M2.0 | T12 走完全程（验收动作，一条真实外部技能） | 产出：1 条采集记录 + 若干候选资产 + 1 条确认记录 | T6 |
-| M2.1 | T13 生成采集任务单 | 新增组件 + 话术模板 | M2.0 收口 |
-| M2.1 | T14 压缩包入口（复用文档包导入链路，加「外部采集」模式） | `src/lib/source-package-confirm.ts`、`src/components/source-package-import-dialog.tsx`、`src/app/api/ai/extract-package/route.ts` | M2.0 收口 |
+| M2.1 | T13 生成采集任务单 | 新增 `src/components/collection-task-dialog.tsx` + `buildCollectionTaskPrompt`（话术模板，在 `src/lib/external-sources-ledger.ts`） | M2.0 收口 |
+| M2.1 | T14 压缩包入口（复用文档包导入链路，加「外部采集」模式） | `src/lib/source-package-confirm.ts`、`src/components/source-package-import-dialog.tsx`、`src/app/api/source-packages/confirm/route.ts`、`external-sources-ledger-view.tsx` | M2.0 收口 |
 
 > 界面改动按 `AGENTS.md` 界面验证规矩在浏览器真看一遍；本工作区 `node_modules` 是跨盘符号链接，
 > 起 dev 要用「E 盘临时工作树 + 同盘 junction + `--webpack`」那套做法（已记在项目记忆里）。
@@ -332,7 +332,7 @@ T1～T12 全部落地。设计与实现有几处不一致，逐条说明，不�
 | 2 | 第四约束改为「active 且没有确认记录 → 违规」，未限定类型 | **只对规则资产判** | 文档没有「发布」语义：采集记录一登记就是 active（它是台账条目，本来就该可见），M0 的 9 个已入库文档也是 active 且没有确认记录——按全类型判会一次冒出 32 条假违规。采集记录的确认状态改为在视图里显示（「人工确认」一列），不进违规判定。 |
 | 3 | 未提及第一约束 | **顺带修了第一约束的漏洞** | 原判据「confidence 既不是 hypothesis 也不是 verified → 违规」把合法的中间态 `provisional` 误判成违规，而 `provisional` 恰恰是「人工确认过、还没实战验证」——正是进编译候选时的典型状态。改成「可信度取值合法且不为空」。 |
 | 4 | 生态九档直接套到历史 23 条 | **逐条判定，并允许落「其他」** | 台账原文没有生态这一列（M2 才加的维度）。判断口径：厂商官方产品归对应厂商，GitHub 开源仓库归「开源社区」，本机技能归「本机」；清单里没有对应档的（Supabase、Figma、Next.js 官方、Snyk）归「其他」，不硬塞。映射表写在 `scripts/import-external-source-records.ts` 顶部，可逐条改。 |
-| 5 | T13/T14（生成采集任务单、压缩包入口）属 M2.1 | 未做，仍是 M2.1 | 按分期执行，M2.0 先收地基与闭环。 |
+| 5 | T13/T14（生成采集任务单、压缩包入口）属 M2.1 | M2.0 时未做，仍是 M2.1；**2026-09-30 已在 M2.1 落地**，见第十三节 | 按分期执行，M2.0 先收地基与闭环。 |
 | 6 | 视图抽屉里「打开资产」跳资产详情 | 同左，并补了「在资产库里打开」按钮（直接打开本条采集记录） | 抽屉里两个方向都要能走：往落点去、往记录本身去。 |
 
 新增的文件（六处）：
@@ -346,7 +346,34 @@ T1～T12 全部落地。设计与实现有几处不一致，逐条说明，不�
 
 删除：`scripts/generate-external-sources-ledger.ts`、`src/data/external-sources-ledger.json`。
 
+## 十三、M2.1 实现记录（2026-09-30 回填，如实登记）
+
+T13、T14 落地。两条入口都做成「台账视图上的一个按钮 + 一个弹层」，与本版其余入口同一形态：
+
+**T13 生成采集任务单**
+- 新增 `src/components/collection-task-dialog.tsx`：填「目标来源（必填）+ 生态 + 关注点（可选）」→ 生成话术 → 一键复制。
+- 话术模板做成纯函数 `buildCollectionTaskPrompt`（放 `external-sources-ledger.ts`），按设计稿要求拆成四段：提炼要求、去重口径、合规硬约束、回填格式。关注点与生态只在填了的时候出现，不硬塞空行。
+- 产品不联网这一条落到界面上：弹层里明说「产品本身不联网搜索」，避免被误读成能自动抓取。
+
+**T14 压缩包入口（外部采集模式）**
+- 复用现有「导入文档包」链路，加一个 `mode: "external-collection"`：
+  - `SourcePackageImportDialog` 加 `mode` prop。外部采集模式下标题变「给压缩包（外部采集）」，把「创建到哪个项目」换成「这条来源是谁」（来源名 + 生态），项目选择不出现。
+  - `planSourcePackageCreation` 加 `mode` 与 `collectionMeta`。外部采集模式下：规则强制 `confidence: hypothesis` + `sourceExcerpt`（正文前 200 字）；项目固定 `default-project`，忽略客户端传来的项目选择；在资产列表末尾追加一条采集记录（`documentType: "采集记录"`，`collectedAssetIds` 指向这批新资产）。
+  - `confirm` 接口透传 `mode` / `collectionMeta`；外部采集模式要求填来源名，缺了报 400。
+- 与设计稿的一处偏离：设计稿把 `src/app/api/ai/extract-package/route.ts` 列进 T14 改动文件，**实际没改**——AI 提取出来的仍是同一份草稿结构，外部采集只是在「确认落库」这一步换了落法（信任度、来源摘录、采集记录），提取环节无需分叉。少改一个文件，链路也只有一条。
+
+新增／改动文件：
+
+- `src/components/collection-task-dialog.tsx`（新增：采集任务单生成器）
+- `src/components/source-package-import-dialog.tsx`（改造：加外部采集模式）
+- `src/lib/source-package-confirm.ts`（改造：加 `mode` / `collectionMeta`，外部采集落法）
+- `src/app/api/source-packages/confirm/route.ts`（改造：透传模式与采集信息）
+- `src/lib/external-sources-ledger.ts`（新增 `buildCollectionTaskPrompt`）
+- `src/components/external-sources-ledger-view.tsx`（加两个入口按钮）
+- 测试：`tests/source-package-confirm.test.mjs`（+4）、`tests/source-package-confirm-api.test.mjs`（+2）、`tests/external-sources-ledger.test.mjs`（+2）
+
 ## 版本
 
+- `0.3.0`（2026-09-30）：M2.1 实现完成（生成采集任务单、压缩包外部采集模式），回填实现记录。
 - `0.2.0`（2026-09-29）：M2.0 实现完成，回填实现记录与偏离。
 - `0.1.0`（2026-09-29）：首版草案，按产品负责人口径修正改写 M2 定位，待确认。
