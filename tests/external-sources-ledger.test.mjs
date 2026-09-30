@@ -350,14 +350,21 @@ test("采集任务单话术：来源与四段齐全，关注点和生态只在�
   assert.match(text, /提炼要求：/);
   assert.match(text, /去重口径：/);
   assert.match(text, /合规硬约束：/);
-  assert.match(text, /回填格式：/);
+  assert.match(text, /回填格式（重要，照做）：/);
   // 没填关注点时不冒出「重点关注」
   assert.doesNotMatch(text, /重点关注/);
   // 没选生态时不冒出「（生态：」
   assert.doesNotMatch(text, /（生态：/);
-  // 合规硬约束两条关键要求要在
-  assert.match(text, /confidence: hypothesis/);
+  // 产出物格式契约：md/zip、每文件一条、禁 frontmatter、禁元信息
+  assert.match(text, /一个或多个 \.md 文件/);
+  assert.match(text, /打包成一个 \.zip/);
+  assert.match(text, /不要写 YAML frontmatter/);
+  assert.match(text, /不要在文件里写"去重说明"/);
+  // 硬约束：只出候选，等人工确认
   assert.match(text, /等我人工确认/);
+  // 交回时必须说清落点与下一步（台账如何更新要反馈给用户）
+  assert.match(text, /必须在回复里说清两件事/);
+  assert.match(text, /采集台账 → 给压缩包/);
 });
 
 test("采集任务单话术：填了关注点与生态就带上", () => {

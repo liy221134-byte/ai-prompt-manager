@@ -47,6 +47,7 @@
 含义是「设计文档」，不是外部工具）；新设计继续放这里，不要另开第二个规格目录。
 
 - [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads-3-ledger-paths-and-m2.2.md)
+- [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads-3-m2-2-requirements-draft.md)
 - [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads-3-collection-roundtrip.md)
 - [线索 3 M2 采集台账进库与进编译候选设计与任务清单（已实现；M2.1 两条入口见同文档第十三节）](leads-3-m2-design-and-tasks.md)
 - [线索 3 M1 采集台账设计与任务清单（已实现，数据源已被 M2 取代）](leads-3-m1-design-and-tasks.md)

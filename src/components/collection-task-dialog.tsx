@@ -111,6 +111,9 @@ export function CollectionTaskDialog({ onClose }: CollectionTaskDialogProps) {
               产品本身不联网搜索
             </strong>
             ，只是帮你把 README 第五节那份 SOP 参数化。
+            智能体交回 .md / .zip 产出件后，回到台账点
+            <strong className="font-semibold text-slate-800">「给压缩包」</strong>
+            导入，台账会自动多一行采集记录，候选资产落在公共库等你确认。
           </p>
 
           <div className="mt-4 flex flex-col gap-4">
