@@ -24,8 +24,7 @@ compile_target:
 verification: manual
 evidence: []
 source_references:
-  - AGENTS.md §写代码的规矩（防过度设计梯子）
-  - DEV-SYSTEM.md §L1 一手源核实 / §L5 引入第三方库须明确同意
+  - AGENTS.md §写代码的规矩（防过度设计梯子；一手源核实 L1 与引入第三方库同意门 L5 同文件）
   - docs/leads-3-collection-roundtrip.md（外部采集回流：先找成熟方案再落地）
 related_assets:
   - MTH-ROUTE-001

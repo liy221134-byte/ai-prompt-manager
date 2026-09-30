@@ -26,7 +26,6 @@ evidence:
   - AGENTS.md 交付门第 7 条（本次新增）
 source_references:
   - AGENTS.md §交付门（凡 AI 产出或外部输入先过 schema 再进业务逻辑）
-  - DEV-SYSTEM.md §交付门
 related_assets:
   - RULE-AI-WRITE-001
   - MTH-EVIDENCE-001

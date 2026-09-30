@@ -59,14 +59,14 @@ test("种子包的包信息按 manifest 和 README 落地", () => {
   const { pack, members } = parseRealPack();
 
   assert.equal(pack.title, "工程方法种子资产包");
-  assert.equal(pack.metadata.packVersion, "0.13.0");
+  assert.equal(pack.metadata.packVersion, "0.14.0");
   assert.equal(pack.metadata.packConfidence, "provisional");
   assert.equal(pack.status, "active");
   assert.match(pack.summary, /分析方法/);
-  assert.equal(members.length, 69);
+  assert.equal(members.length, 71);
   assert.equal(
     members.filter((member) => member.assetType === "rule").length,
-    54,
+    56,
   );
   assert.equal(
     members.filter((member) => member.assetType === "document").length,
@@ -83,10 +83,10 @@ test("成员状态跟着源文件走：candidate 进库是待确认，不再被�
   // 源文件标 candidate 的规则，进库后是 pending（待确认），不进编译候选
   assert.equal(byId.get("rule-rule-boundary-001").status, "pending");
 
-  // 58 条资产在源文件里标的都是 candidate → pending
+  // 60 条资产在源文件里标的都是 candidate → pending
   assert.equal(
     members.filter((member) => member.status === "pending").length,
-    58,
+    60,
   );
   // 剩下 11 条 active：1 条真 active 的规则 + 10 条没有 status 字段的画像与验证记录
   assert.equal(
