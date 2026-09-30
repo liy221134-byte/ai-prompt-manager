@@ -33,7 +33,7 @@
 - [从沉淀到立项：链路断点评估](project-lifecycle-gaps.md)
 - [两条线索的立项需求草案（生态采集沉淀 / 内网基础能力练习，已立项）](leads-3-4-requirements-draft.md)
 - [文档与资产口径收口需求草案（v2.25.0 暂定名，待确认）](v2.25.0-requirements-draft.md)
-- [零代码交付线需求草案（v3 暂定名，待确认）](v3-requirements-draft.md)
+- [零代码交付线需求草案（v3 暂定名，2026-09-30 已确认，下一步写 M0 设计）](v3-requirements-draft.md)
 - [需求收敛：文档／模板边界、Spec 层与交互流程（待确认）](requirements-v2.md)
 - [产品范围](product-brief.md)
 - [8 周路线图](roadmap.md)
@@ -43,9 +43,11 @@
 
 ### 设计
 
-带 `superpowers/specs/` 前缀的是本项目**设计文档的唯一正本**（目录名是历史遗留，
-含义是「设计文档」，不是外部工具）；新设计继续放这里，不要另开第二个规格目录。
+带 `superpowers/specs/` 前缀的是本项目**设计文档的唯一正本**（目录名是从外部采集的
+superpowers 来源借来的，含义是「本项目的设计文档」，不是外部工具；来由见该目录下的
+`README.md`）；新设计继续放这里，不要另开第二个规格目录。
 
+- [T6：技能仓库 references 标注资产库正本（2026-09-30，已启动）](superpowers/specs/2026-09-30-t6-skill-references-single-source-design.md)
 - [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads-3-ledger-paths-and-m2.2.md)
 - [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads-3-m2-2-requirements-draft.md)
 - [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads-3-collection-roundtrip.md)
