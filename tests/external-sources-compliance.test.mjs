@@ -5,6 +5,7 @@ import {
   checkExternalSourcesCompliance,
   evaluateAssetCompliance,
   isExternalSourceAsset,
+  planAutoActiveDowngrade,
 } from "../src/lib/external-sources-compliance.ts";
 
 function documentAsset(metadataOverrides = {}) {
@@ -41,6 +42,38 @@ function ruleAsset(metadataOverrides = {}, status = "pending") {
 
 test("合规的外部文档资产：不报任何违规", () => {
   assert.deepEqual(evaluateAssetCompliance(documentAsset()), []);
+});
+
+test("批量降级只挑「active 且没有确认记录」的外部规则", () => {
+  const targets = planAutoActiveDowngrade([
+    // 要降的：外部规则、active、没有确认记录
+    ruleAsset({}, "active"),
+    // 不该动：已经有确认记录
+    ruleAsset(
+      {
+        confirmation: {
+          confirmedBy: "产品负责人",
+          confirmedAt: "2026-09-30",
+          basis: "本项目实际用过一轮",
+        },
+      },
+      "active",
+    ),
+    // 不该动：本来就是待确认
+    ruleAsset({}, "pending"),
+    // 不该动：文档类没有 active 语义
+    documentAsset(),
+    // 不该动：进了垃圾箱
+    { ...ruleAsset({}, "active"), deletedAt: "2026-09-30T00:00:00.000Z" },
+    // 不该动：不是外部来源（没有 hypothesis 标记）
+    {
+      ...ruleAsset({ confidence: "verified" }, "active"),
+      metadata: { ruleType: "must", confidence: "verified" },
+    },
+  ]);
+
+  assert.equal(targets.length, 1);
+  assert.equal(targets[0].status, "active");
 });
 
 test("参考文档（未标 role，但 authority:false + 有来源）也算合规", () => {

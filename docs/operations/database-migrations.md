@@ -184,3 +184,20 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
   这两处原先被一条内容检查测试锁住（断言迁移文件里必须出现 `source_prompt_ids_json`），
   已一并修正。应用后核对结果：老表 9 条提示词全部回填为 9 个资产和 14 条版本，标题、
   正文、垃圾箱状态逐条一致；`db lint` 无结果；旧提示词表两行未改，旧函数全部保留。
+
+- 2026-09-30（**本机库，不是生产库**）：**批量把 29 条外部来源规则从 `active` 降回 `pending`**。
+  对象：`.data/prompts.sqlite` 的 `assets`（`asset_type='rule'`），每条另写一条 `asset_versions`。
+  改了什么：只改 `status`（active → pending）和 `updated_at`，外加一条版本记录；
+  **不碰标题、正文、元数据，不删任何行。** 名单由 `src/lib/external-sources-compliance.ts`
+  的 `planAutoActiveDowngrade` 判定：外部来源规则 + 状态为 active + 没有人工确认记录。
+  为什么：打包器曾经把种子包里的每个成员都写成 active（源文件标的 candidate 从来没生效），
+  绕过了 SOP 第 4 条「未经人工确认不许升 active」。打包口径已在 v2.29.0 修掉，这批是存量。
+  谁同意：产品负责人 2026-09-30 在对话里指示「按你的建议来」，即批量降回待确认。
+  怎么回滚：① 整库回退——写库前已备份到
+  `.data/backups/prompts-pre-v2.29.0-downgrade-2026-09-30T12-44-38.sqlite`；
+  ② 单条回退——每条改动都带版本记录（`change_reason` 含「批量降回待确认」），
+  在资产详情里恢复到上一版即可。
+  验完的结果（只读核对）：合规检查从 **32 处违规降到 3 处**（剩下 3 处是三份文档缺
+  「来源位置」，与本次无关）；29 条版本记录全部写入；脚本再跑一次名单为 0（幂等）。
+  为什么没写成迁移：本机库不走迁移文件体系；改动用
+  `scripts/downgrade-external-source-status.ts` 执行，走应用同一条写入路径，可重复执行。

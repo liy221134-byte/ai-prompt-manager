@@ -164,3 +164,24 @@ export function checkExternalSourcesCompliance(
 
   return { checkedCount: externalAssets.length, violations };
 }
+
+/**
+ * 挑出「处于 active 但没有确认记录」的外部来源规则，供批量降回待确认用。
+ *
+ * 为什么需要它：打包器曾经把种子包里的每个成员都写成 active（源文件标的 candidate
+ * 从来没生效），于是 SOP 第 4 条「未经人工确认不许升 active」被系统性绕过。打包口径已在
+ * v2.29.0 修掉，库里那批存量要单独处理——就是这里。
+ *
+ * 只挑规则：文档类没有 active 语义，走 role／authority 口径，不参与降级。
+ * 已经在资产编辑器里写过确认依据的规则不在名单里（有确认记录就不算违规）。
+ */
+export function planAutoActiveDowngrade(assets: AssetData[]): AssetData[] {
+  return assets.filter(
+    (asset) =>
+      !asset.deletedAt &&
+      asset.assetType === "rule" &&
+      isExternalSourceAsset(asset) &&
+      asset.status === "active" &&
+      !readConfirmationRecord(asset.metadata),
+  );
+}
