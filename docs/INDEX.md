@@ -20,12 +20,16 @@
 ### 规则与协作
 
 - [项目规则（唯一规则源）](../AGENTS.md)
+- [项目方法正本（三道门判据、交付门细则、防过度设计梯子、技能使用规则）](method.md)
+- [规则命中台账（append-only：规则有没有真在起作用）](rule-hits.md)
+- [两侧体系对照表（本仓 ↔ WB 侧：哪些有意分叉、哪些应该一致）](reference/two-sides-alignment.md)
 - [2.0 收口清单](2.0-closeout.md)
 - [开发规则说明（给人看的版本）](development-rules.md)
 - [外部评审与裁决（2026-09-28，WorkBuddy 评我们的资产库）](reviews/2026-09-28-外部评审与裁决.md)
 - [文档体系盘点（2026-09-30，WorkBuddy 侧技能与模板 vs 本项目文档体系）](reviews/2026-09-30-文档体系盘点.md)
 - [文档体系盘点·第二轮（2026-10-01，一手事实重核与两轮对照）](reviews/2026-10-01-文档体系盘点-第二轮.md)
 - [开发流程符合度审计（2026-10-01，各道门的产物痕迹与漂移清单）](reviews/2026-10-01-开发流程符合度审计.md)
+- [两套体系对比调研（2026-10-01，WB 侧体系 vs 本仓，六维度评估与四档建议）](reviews/2026-10-01-两套体系对比调研.md)
 - [生产级项目指南地图](project-map.md)
 - [工程地图：文件职责与请求链路](engineering-map.md)
 - [待确认与待办事项](pending-items.md)
@@ -51,6 +55,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 `README.md`）；新设计继续放这里，不要另开第二个规格目录。
 
 - [T6：技能仓库 references 标注资产库正本（2026-09-30，已启动）](superpowers/specs/2026-09-30-t6-skill-references-single-source-design.md)
+- [体系治理 M0：设计 + 任务清单（2026-10-01，已执行）](superpowers/specs/2026-10-01-体系治理-m0-design-and-tasks.md)
 - [零代码交付线 M0：设计 + 任务清单（2026-09-30，待确认）](superpowers/specs/2026-09-30-v3-m0-design-and-tasks.md)
 - [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads-3-ledger-paths-and-m2.2.md)
 - [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads-3-m2-2-requirements-draft.md)
@@ -119,6 +124,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - 需求链路的模板与编号（需求 → 规格 → 契约 → 交付）：`TPL-PRD-001` 产品需求（PRD）→ `TPL-SPEC-001` 实现规格（Spec）→ `TPL-CONTRACT-001` 数据契约（zod）→ 上面的工程文档模板。PRD 定「做不做、为什么」，Spec 定「这次怎么改」，契约定「外部输入怎么校验」，三者不互相替代
 - [方法模板（六份）](../templates/methods/design-plan.md)：设计计划、事前验尸记录、红队结论、用户故事、Job Story、WWA，和上面的工程文档模板一样用「导入模板」装进项目（已在公共资产库）
 - [参考清单](reference/prioritization-frameworks.md)：优先级框架对照（9 种）、界面检查清单（8 类，按影响排序）——方法级参考，不编译进 `AGENTS.md`
+- [技能清单与触发预算体检（2026-10-01）](reference/skill-inventory.md)：本机 142 个技能的清点、重名与非规范字段、可降级／可停用的建议
 - [产品方法提示词包（五条）](../prompt-packs/product-methods.md)：事前验尸、红队攻击承重假设、设计计划与复查、界面文案检查、需求改写成三种格式
 - [操作者训练包（试装）](../seed-packs/operator-training/README.md)：9 条「人怎么指挥 AI」的方法与清单，`npm run pack:operator` 生成可导入文件
 - [工程方法种子资产包](../seed-packs/engineering-foundations/README.md)：52 条工程方法、规则、模板和案例（含 3 条案例），`0.12.0`（0.12.0 采入外部评审的 3 条整改、0.11.0 采入 4 条动手前的风险与视觉纪律、0.10.0 界面设计规则、0.9.0 多智能体协作、0.8.0 验证纪律、0.7.0 Postgres 规则，均来自外部来源采集），可作为文档包导入的样本
