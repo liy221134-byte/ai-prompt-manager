@@ -204,26 +204,37 @@ Agent Skills 规范只允许六个字段：`allowed-tools` / `compatibility` / `
 
 ---
 
-## 七、降级：关掉 27 个（2026-10-01 执行）
+## 七、降级：44 个改成「不自动触发，但随时能 `$` 调」（2026-10-01 执行）
 
 **为什么动**：实测技能清单占预算的 **96%**（70,743 / 73,400 字符）。按官方口径，再装几个就会
 先缩短 description、再省略技能 —— 那是**静默降级**，不如主动清。
 
-**机制**：用官方给的 `[[skills.config]]` 关技能（**关掉，不删除本体**），写在
-`C:\Users\90402\.codex\config.toml`：
+### 换了两次机制，都记下来（免得下次踩）
 
-```toml
-[[skills.config]]
-path = 'C:\Users\90402\.codex\skills\pre-mortem\SKILL.md'
-enabled = false
-```
+1. **第一版**用 `[[skills.config]] enabled = false`（官方「关掉但不删除」那个开关）。
+   **实测有效**：下一轮的技能清单里那 27 个确实消失了 —— 这一条是拿真实注入的清单核对过的，
+   不是推断。
+2. **但产品负责人要的是「不自动触发、随时能 `$` 调」**，而 `enabled = false` 是彻底关掉。
+   于是换成官方另一个开关 —— 在技能目录里放一份 `agents/openai.yaml`：
 
-配置改动前先备份到 `config.toml.bak-2026-10-01-skills`。**改完要重启 Codex 才生效**
-（官方要求），所以本次会话看不到效果。
+   ```yaml
+   policy:
+     allow_implicit_invocation: false
+   ```
 
-### 关了哪 27 个
+   `config.toml` 已整份还原成改动前的样子（原始备份留在
+   `C:\Users\90402\.codex\config.toml.bak-2026-10-01-skills`）。
 
-**A 档 · 功能重复（6 个，1,720 字符）** —— 同一件事已经被保留的中文技能完整覆盖：
+   **这不是我们发明的写法**：OpenAI 自己的技能就这么干 —— `.system/review-agent` 和
+   `product-design` 里 5 个技能，本来就写着 `allow_implicit_invocation: false`。
+
+**落点**：44 个技能，分三处 —— `~/.cc-switch/skills/*/agents/openai.yaml`（11 个，经符号链接
+对用户级与 `next-*` 生效；这个目录是共用正本，`agents/openai.yaml` 对其它工具是惰性文件）、
+vercel 插件内（28 个）、figma 插件内（5 个）。全机现在共 **50 个**写着 `false`（本次 44 + 原有 6）。
+
+### 第一批（27 个）
+
+**A 档 · 功能重复（6 个）** —— 同一件事已经被保留的中文技能完整覆盖：
 
 | 关掉 | 为什么 |
 | --- | --- |
@@ -232,42 +243,52 @@ enabled = false
 | `user-stories`、`job-stories`、`wwas` | 三个都是需求写法；`requirement-rewrite-cn` 一份就覆盖这三种格式 |
 | `test-scenarios` | 与 `acceptance-checklist-cn` 同一功能 |
 
-**B 档 · 与本机工作无关（21 个，5,835 字符）** —— 都在 vercel 插件里，本项目一样都不用：
+**B 档 · 与本机工作无关（21 个）** —— 都在 vercel 插件里，本项目一样都不用：
 
 `chat-sdk`（Slack/Teams 机器人）、`marketplace`（电商/店铺）、`payments`（Stripe）、`cms`、
 `microfrontends`、`turborepo`、`ncc`、`micro`、`satori`、`geistdocs`、`next-forge`、`v0-dev`、
 `vercel-queues`、`vercel-sandbox`、`vercel-services`、`eve`、`sign-in-with-vercel`、`vercel-flags`、
 `vercel-connect`、`vercel-agent`、`ai-elements`。
 
-**合计省 7,555 字符 ≈ 预算的 10%**，从 96% 降到约 86%。
+共省 7,555 字符 ≈ 预算的 10%。
 
-### 没关的（保持可用）
+### 第二批（17 个，2026-10-01 同日追加）
 
-`vercel` 插件 54 个里，**33 个原样保留**，本项目真正会用到的都在：
+| 组 | 技能 | 为什么 |
+| --- | --- | --- |
+| `next-*` × 5 | `next-cache-components-adoption` / `-optimizer`、`next-partial-prefetching-adoption` / `-optimizer`、`next-dev-loop` | 只在真的改造 Next.js 缓存／预取时才用得上，日常用不着 |
+| figma × 5 | `figma-swiftui`、`figma-code-connect`、`figma-generate-library`、`figma-implement-motion`、`figma-generate-design` | SwiftUI 是 iOS（本项目不做）；Code Connect、设计系统库、动效、设计系统整库这几件本机都没上；其余 figma 的「MANDATORY 前置」类技能保持自动，不然会断掉 `use_figma` 的前置链 |
+| vercel × 7 | `vercel-firewall`、`cron-jobs`、`workflow`、`json-render`、`ai-gateway`、`vercel-storage`、`routing-middleware` | 本项目没开这些平台能力：没有定时任务、没有 WDK 工作流、没用 AI Gateway 路由、没用 Vercel 的存储（数据在 Supabase） |
 
-`nextjs`、`next-upgrade`、`next-cache-components`、`turbopack`、`deployments-cicd`、`vercel-cli`、
-`vercel-api`、`cdn-caching`、`runtime-cache`、`env-vars`、`vercel-functions`、`vercel-storage`、
-`observability`、`vercel-firewall`、`routing-middleware`、`bootstrap`、`investigation-mode`、
-`knowledge-update`、`ai-sdk`、`ai-gateway`、`ai-generation-persistence`、`json-render`、`workflow`、
-`geist`、`shadcn`、`swr`、`auth`、`email`、`react-best-practices`、`agent-browser`、
-`agent-browser-verify`、`verification`，以及插件自带的其余几项。
+### 没动的（保持自动触发）
 
-**figma 全 12 个、supabase 全 2 个、`.agents/skills` 全 14 个、`.system` 全 4 个，一个没动。**
-（`$技能名` 显式调用不受影响 —— 关掉的那 27 个是彻底不出现在清单里，不是「只能手动调」。）
+**figma 12 个里留了 7 个**（含 `figma-use` 一族和 3 个 MANDATORY 前置技能）——
+它们必须在调 `use_figma` 前被自动加载，改成手动会断链。
+
+**vercel 54 个里留了 26 个**，本项目真会用到的都在：`nextjs`、`next-upgrade`、
+`next-cache-components`、`turbopack`、`deployments-cicd`、`vercel-cli`、`vercel-api`、
+`cdn-caching`、`runtime-cache`、`env-vars`、`vercel-functions`、`observability`、`bootstrap`、
+`investigation-mode`、`knowledge-update`、`ai-sdk`、`ai-generation-persistence`、`geist`、
+`shadcn`、`swr`、`auth`、`email`、`react-best-practices`、`agent-browser`、`agent-browser-verify`、
+`verification`。
+
+**supabase 2 个、`.agents/skills` 里另外 9 个、`.system` 4 个，一个没动。**
 
 ### 怎么恢复
 
-1. 打开 `C:\Users\90402\.codex\config.toml`；
-2. 删掉对应的那一段 `[[skills.config]]`（或把 `enabled` 改成 `true`）；
-3. 重启 Codex。
+要临时用某个被降级的技能：**在提示里写 `$技能名` 就能调**，不用改任何东西。
 
-原始文件在 `C:\Users\90402\.codex\config.toml.bak-2026-10-01-skills`，整份还原就是
-`Copy-Item` 回去再重启。
+要恢复成自动触发：删掉那个技能目录下的 `agents/openai.yaml`（如果里面只有 `policy:` 两行），
+或把 `allow_implicit_invocation` 改成 `true`。
 
-### 下一步（还没做，等你定）
+### 还没验证的一件事（下一轮做）
 
-省下 10% 只是把 96% 拉到 86%。要真正腾出余量，下一批候选是：
-vercel 插件里剩下的边缘项（`micro` 类、`geistdocs` 类已关；还剩若干）、figma 12 个（5,722 字符，
-但源里本来就标了 `disable-model-invocation`）、`.agents/skills` 里 5 个 `next-*`（2,200 字符，
-只在改造 Next.js 缓存/预取时用得上）。**这批要不要动，等产品负责人定。**
+`enabled = false` 能省字符是**实测过的**；但 `allow_implicit_invocation: false` 到底会不会
+把 description 从清单里去掉，**官方文档没写，我也不确定** —— 有可能只是不触发、清单照样占位。
+
+下一轮开工第一件事就是拿真实注入的技能清单核一遍：
+
+- 如果清单里这 44 个的描述**变短或消失** → 就按现在这样做，收工；
+- 如果**照样占满** → 把这个结论写回本节，并把「确实一次都不用的」退回 `enabled = false`
+  （那批的 config 写法在本节第 1 条里留着）。
 
