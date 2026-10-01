@@ -121,6 +121,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 
 - [工程能力学习计划](learning/engineering-readiness.md)
 - [工程文档模板（十二份）](../templates/engineering/architecture.md)：架构与请求链路、数据流、环境变量清单、发布与回滚、备份与恢复、安全检查、故障处理手册、成本与性能基线、故障演练记录、产品需求（PRD）、实现规格（Spec）、数据契约（zod），用「导入模板」装进项目
+- [模板层说明](../templates/README.md)：三个模板目录各自是什么、母本与副本的判据、改了模板之后要做哪两件事、为什么不建母仓
 - 需求链路的模板与编号（需求 → 规格 → 契约 → 交付）：`TPL-PRD-001` 产品需求（PRD）→ `TPL-SPEC-001` 实现规格（Spec）→ `TPL-CONTRACT-001` 数据契约（zod）→ 上面的工程文档模板。PRD 定「做不做、为什么」，Spec 定「这次怎么改」，契约定「外部输入怎么校验」，三者不互相替代
 - [方法模板（六份）](../templates/methods/design-plan.md)：设计计划、事前验尸记录、红队结论、用户故事、Job Story、WWA，和上面的工程文档模板一样用「导入模板」装进项目（已在公共资产库）
 - [参考清单](reference/prioritization-frameworks.md)：优先级框架对照（9 种）、界面检查清单（8 类，按影响排序）——方法级参考，不编译进 `AGENTS.md`
