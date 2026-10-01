@@ -260,12 +260,12 @@ vercel 插件内（28 个）、figma 插件内（5 个）。全机现在共 **50
 | figma × 5 | `figma-swiftui`、`figma-code-connect`、`figma-generate-library`、`figma-implement-motion`、`figma-generate-design` | SwiftUI 是 iOS（本项目不做）；Code Connect、设计系统库、动效、设计系统整库这几件本机都没上；其余 figma 的「MANDATORY 前置」类技能保持自动，不然会断掉 `use_figma` 的前置链 |
 | vercel × 7 | `vercel-firewall`、`cron-jobs`、`workflow`、`json-render`、`ai-gateway`、`vercel-storage`、`routing-middleware` | 本项目没开这些平台能力：没有定时任务、没有 WDK 工作流、没用 AI Gateway 路由、没用 Vercel 的存储（数据在 Supabase） |
 
-> **后来改了**：`next-*` 5 个与 figma 里的 4 个（只剩 `figma-swiftui` 继续降级）在当天稍后
-> **恢复**了 —— 理由见下面的「恢复 9 个」。
+> **后来改了**：`next-*` 5 个在当天稍后**恢复**；figma 那 4 个一度恢复，随后按产品负责人
+> 「我也用不了」又**收回**。详见下面的「恢复 5 个」与「figma 再收回 4 个」。
 
 ### 没动的（保持自动触发）
 
-**figma 12 个里留了 11 个**（含 `figma-use` 一族和 3 个 MANDATORY 前置技能）——
+**figma 12 个里留了 7 个**（`figma-use` 一族和 3 个 MANDATORY 前置技能）——
 它们必须在调 `use_figma` 前被自动加载，改成手动会断链。
 
 **vercel 54 个里留了 26 个**，本项目真会用到的都在：`nextjs`、`next-upgrade`、
@@ -309,7 +309,7 @@ DeepSeek 官方定价（2026-10-01 核 `api-docs.deepseek.com/quick_start/pricin
 所以「省不省这 2%」**主要不是钱的问题**，而是「别超预算、别让 Codex 悄悄缩短 description
 或省略技能」的问题。**这条改变了取舍：有钱的余量就该换回能力。**
 
-### 恢复 9 个（2026-10-01 同日）
+### 恢复 5 个（2026-10-01）
 
 既然余量约 50k 字符、钱又几乎不花，就把「有价值但还没用起来」的放回来：
 
@@ -317,20 +317,43 @@ DeepSeek 官方定价（2026-10-01 核 `api-docs.deepseek.com/quick_start/pricin
 | --- | --- |
 | `next-dev-loop` | **它被本项目 `AGENTS.md` 点名了**（工具分工：「两边都要时走完整的 `next-dev-loop` 流程」）。降级它＝让规则指向一个不会出现的技能，是冲突，必须改回来 |
 | `next-cache-components-adoption` / `-optimizer`、`next-partial-prefetching-adoption` / `-optimizer` | 本项目就是 Next.js 16，缓存与预取改造迟早要碰 |
-| `figma-generate-design` | 「页面 → Figma」正是产品负责人手上的活儿 |
-| `figma-generate-library` | 对应本项目「固定 UI 风格、全产品风格一致」的要求 |
-| `figma-implement-motion` | 产品负责人做动效 |
-| `figma-code-connect` | Figma 组件 ↔ 代码的映射 |
 
-写 `false` 的从 50 降到 **41**（本次 35 + 原有 6）。
+（第一版恢复的是 9 个，含 4 个 figma；那 4 个当天又收回，见下一节。）
 
-### 仍然降级的 35 个（想再拉回哪个，说一声）
+### figma 再收回 4 个（产品负责人 2026-10-01 定）
 
-- **用户级 6 个**（`pre-mortem`、`strategy-red-team`、`user-stories`、`job-stories`、`wwas`、
-  `test-scenarios`）：中文同类技能已完整覆盖，重复。
-- **figma 1 个**（`figma-swiftui`）：iOS/SwiftUI，本机不做。
+产品负责人明确：「figma 那几个降级吧，我也用不了」。于是把当天恢复的 4 个
+（`figma-generate-design`、`figma-generate-library`、`figma-implement-motion`、`figma-code-connect`）
+收回去。**figma 现在共降级 5 个、留着 7 个。**
+
+留着的 7 个是 `use_figma` 的**前置依赖链**（`figma-use`、`figma-use-figjam`、`figma-use-motion`、
+`figma-use-slides`、`figma-create-new-file`、`figma-design-to-code`、`figma-generate-diagram`）——
+它们必须在调 `use_figma` 之前被自动加载，关掉会断链。
+
+**如果「用不了」指的是整个 figma 都用不上**，说一声「全关」，这 7 个也能一起降级；
+代价是以后真要动 Figma，得先在提示里写 `$figma-use` 这类名字才加载得到。
+
+### 产品经理侧的 6 个：确认是重复，保持降级
+
+产品负责人问「那几个产品经理侧的技能有重复的了么」——**是，功能重复，不是逐字重复**：
+
+| 降级的（英文，来自 cc-switch 库） | 已保留的中文技能 | 关系 |
+| --- | --- | --- |
+| `pre-mortem` | `premortem-cn` | 同一套事前验尸方法 |
+| `strategy-red-team` | `redteam-cn` | 同一套承重假设攻击法 |
+| `user-stories`、`job-stories`、`wwas` | `requirement-rewrite-cn` | 一份就覆盖这三种需求写法 |
+| `test-scenarios` | `acceptance-checklist-cn` | 同一件事：列可点的验收入口 |
+
+中文那套是本项目自己写的，用词和口径更贴产品负责人的习惯 —— 所以**留中文、降英文**。
+
+### 仍然降级的 39 个
+
+- **用户级 6 个**：见上一节，功能重复。
+- **figma 5 个**：`figma-swiftui`（iOS/SwiftUI，本机不做）＋ 当天收回的 4 个。
 - **vercel 28 个**：本项目没开的平台能力 —— 支付、CMS、邮件、存储、防火墙、工作流、队列、
   沙箱、微前端、单体仓、打包器、AI 网关、OAuth、Flags、Agent、聊天机器人、电商等。
+
+写 `false` 的最终是 **45 个**（本次 39 + 原有 6）。
 
 > 判断口径：**「这件事本机是否已经在做或近期要做」** —— 是就恢复，不是就继续降级。
 > 这个口径写下来，是为了下次加技能时不用重新想一遍。
