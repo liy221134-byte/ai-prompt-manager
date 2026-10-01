@@ -16,7 +16,7 @@ import { join, resolve } from "node:path";
 
 import { isAssetData, type AssetData } from "../src/data/assets.ts";
 import { DEFAULT_PROJECT_ID } from "../src/data/projects.ts";
-import { templateFileToDraft } from "../src/lib/template-asset.ts";
+import { templateDraftToAsset, templateFileToDraft } from "../src/lib/template-asset.ts";
 import { getPromptDatabase } from "../src/lib/server/prompt-database.ts";
 
 const projectRoot = resolve(import.meta.dirname, "..");
@@ -29,10 +29,18 @@ const sourceNote = "来源：腾讯 WorkBuddy；正本在 templates/new-project/
 // 不动标题，避免破坏已经引用它们的资产。
 const entries = [
   { id: "template-agents", file: "templates/new-project/AGENTS.md" },
+  { id: "template-method", file: "templates/new-project/docs/method.md" },
+  { id: "template-rule-hits", file: "templates/new-project/docs/rule-hits.md" },
   { id: "template-readme", file: "templates/new-project/README.md" },
   { id: "template-start-prompt", file: "templates/new-project/START_PROMPT.md" },
   { id: "template-document-system", file: "templates/new-project/docs/DOCUMENT_SYSTEM.md" },
 ];
+
+// 新资产（method / rule-hits）第一次进来时，拿正文一级标题当库里的标题，
+// 免得出现 "METHOD" 这种英文文件名标题。
+function readHeading(content: string) {
+  return content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "";
+}
 
 let updated = 0;
 let created = 0;
@@ -42,12 +50,41 @@ for (const entry of entries) {
   const content = readFileSync(join(projectRoot, entry.file), "utf8");
   const fileName = entry.file.split("/").pop() ?? "";
   const draft = templateFileToDraft({ fileName, content });
+  const heading = readHeading(content);
+  if (heading) {
+    draft.title = heading;
+  }
   const existing = (database.listAssets() as AssetData[]).find(
     (asset) => asset.id === entry.id,
   );
 
   if (!existing) {
-    console.log(`  [空跑] 新增：${entry.id}（库里还没有，跑 import-local-content 也会建）`);
+    // 库里还没有这份：直接建。以前这里只提示一句就跳过，2026-10-01 加 method / rule-hits
+    // 两份起步模板时发现——不建的话它们永远进不了库。
+    const asset = templateDraftToAsset({
+      id: entry.id,
+      projectId: DEFAULT_PROJECT_ID,
+      draft,
+      originalFilename: entry.file.replace("templates/new-project/", ""),
+      now,
+    });
+
+    if (!isAssetData(asset as unknown)) {
+      throw new Error(`资产结构不合法，已拦下：${entry.id}`);
+    }
+
+    if (dryRun) {
+      console.log(`  [空跑] 新增：${entry.id}（${asset.title}）`);
+      created += 1;
+      continue;
+    }
+
+    const ok = database.createAsset({
+      asset,
+      versionId: asset.currentVersionId,
+      changeReason: `同步起步模板（${sourceNote}）`,
+    });
+    console.log(`${ok ? "  已新增" : "  跳过（库里已有）"}：${entry.id}（${asset.title}）`);
     created += 1;
     continue;
   }
