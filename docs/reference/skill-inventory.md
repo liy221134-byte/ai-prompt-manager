@@ -10,13 +10,21 @@
 
 ## 一、为什么看这个
 
-外部一手事实（Claude Code 官方文档）：技能列表占用**上下文窗口的 1%**。列表里始终有全部技能名，
-但溢出时会**按「最少调用」的顺序丢掉 description** —— 丢掉的正是最不常触发的技能，丢完就再也匹配不上。
+技能不是越多越好。**每轮都在为「技能清单」付费，付的是最不常用那批的触发能力。**
 
-官方给了三个开关：`disable-model-invocation`（只允许人工调用）、`user-invocable: false`（只允许模型调用）、
-`skillListingBudgetFraction`（调预算比例）。另有一个 `/skill-doctor` 用来找从没被用过的技能。
+两个工具各有自己的预算，**别混**（下面都是官方文档原文口径）：
 
-一句话：技能不是越多越好。**每轮都在付费，付的是最不常用那批的触发能力。**
+| 工具 | 预算 | 溢出时怎么办 | 出处 |
+| --- | --- | --- | --- |
+| Claude Code | 上下文窗口的 **1%** | 按「最少调用」顺序丢掉 description；给了 `disable-model-invocation` / `user-invocable: false` / `skillListingBudgetFraction` 三个开关 | Claude Code 官方文档 |
+| **Codex（我们的运行时）** | 上下文窗口的 **2%**，窗口未知时 **8,000 字符** | **先缩短 description**；技能很多时**可能直接把一些技能从清单里省掉，并打一条 warning** | `developers.openai.com/codex/skills` |
+
+Codex 还规定：清单里除了名字和 description，**还包括每个技能的文件路径**；显式调用走 `$技能名`
+（Codex CLI / IDE）或在 `/skills` 里挑。技能重名不会被合并，**两个都会出现在清单里**。
+
+> 本机实测（2026-10-01）：模型 `context_window = 1,048,576` → 预算 = 2% ≈ **20,972 tokens ≈ 73,400 字符**；
+> 实际技能清单占 **70,743 字符 = 96%**。已经贴顶，再装几个就会开始缩短 description。
+> 处置见第七节。
 
 ---
 
@@ -193,4 +201,73 @@ Agent Skills 规范只允许六个字段：`allowed-tools` / `compatibility` / `
 3. 解析每份的 YAML frontmatter：取 `description` 长度（`>` / `|` 这类多行写法要把后续缩进行拼上）
    与字段名集合；
 4. 字段集合减去规范允许的六个，剩下的就是非规范字段。
+
+---
+
+## 七、降级：关掉 27 个（2026-10-01 执行）
+
+**为什么动**：实测技能清单占预算的 **96%**（70,743 / 73,400 字符）。按官方口径，再装几个就会
+先缩短 description、再省略技能 —— 那是**静默降级**，不如主动清。
+
+**机制**：用官方给的 `[[skills.config]]` 关技能（**关掉，不删除本体**），写在
+`C:\Users\90402\.codex\config.toml`：
+
+```toml
+[[skills.config]]
+path = 'C:\Users\90402\.codex\skills\pre-mortem\SKILL.md'
+enabled = false
+```
+
+配置改动前先备份到 `config.toml.bak-2026-10-01-skills`。**改完要重启 Codex 才生效**
+（官方要求），所以本次会话看不到效果。
+
+### 关了哪 27 个
+
+**A 档 · 功能重复（6 个，1,720 字符）** —— 同一件事已经被保留的中文技能完整覆盖：
+
+| 关掉 | 为什么 |
+| --- | --- |
+| `pre-mortem` | 与 `premortem-cn` 同一功能，后者是中文 |
+| `strategy-red-team` | 与 `redteam-cn` 同一功能，后者是中文 |
+| `user-stories`、`job-stories`、`wwas` | 三个都是需求写法；`requirement-rewrite-cn` 一份就覆盖这三种格式 |
+| `test-scenarios` | 与 `acceptance-checklist-cn` 同一功能 |
+
+**B 档 · 与本机工作无关（21 个，5,835 字符）** —— 都在 vercel 插件里，本项目一样都不用：
+
+`chat-sdk`（Slack/Teams 机器人）、`marketplace`（电商/店铺）、`payments`（Stripe）、`cms`、
+`microfrontends`、`turborepo`、`ncc`、`micro`、`satori`、`geistdocs`、`next-forge`、`v0-dev`、
+`vercel-queues`、`vercel-sandbox`、`vercel-services`、`eve`、`sign-in-with-vercel`、`vercel-flags`、
+`vercel-connect`、`vercel-agent`、`ai-elements`。
+
+**合计省 7,555 字符 ≈ 预算的 10%**，从 96% 降到约 86%。
+
+### 没关的（保持可用）
+
+`vercel` 插件 54 个里，**33 个原样保留**，本项目真正会用到的都在：
+
+`nextjs`、`next-upgrade`、`next-cache-components`、`turbopack`、`deployments-cicd`、`vercel-cli`、
+`vercel-api`、`cdn-caching`、`runtime-cache`、`env-vars`、`vercel-functions`、`vercel-storage`、
+`observability`、`vercel-firewall`、`routing-middleware`、`bootstrap`、`investigation-mode`、
+`knowledge-update`、`ai-sdk`、`ai-gateway`、`ai-generation-persistence`、`json-render`、`workflow`、
+`geist`、`shadcn`、`swr`、`auth`、`email`、`react-best-practices`、`agent-browser`、
+`agent-browser-verify`、`verification`，以及插件自带的其余几项。
+
+**figma 全 12 个、supabase 全 2 个、`.agents/skills` 全 14 个、`.system` 全 4 个，一个没动。**
+（`$技能名` 显式调用不受影响 —— 关掉的那 27 个是彻底不出现在清单里，不是「只能手动调」。）
+
+### 怎么恢复
+
+1. 打开 `C:\Users\90402\.codex\config.toml`；
+2. 删掉对应的那一段 `[[skills.config]]`（或把 `enabled` 改成 `true`）；
+3. 重启 Codex。
+
+原始文件在 `C:\Users\90402\.codex\config.toml.bak-2026-10-01-skills`，整份还原就是
+`Copy-Item` 回去再重启。
+
+### 下一步（还没做，等你定）
+
+省下 10% 只是把 96% 拉到 86%。要真正腾出余量，下一批候选是：
+vercel 插件里剩下的边缘项（`micro` 类、`geistdocs` 类已关；还剩若干）、figma 12 个（5,722 字符，
+但源里本来就标了 `disable-model-invocation`）、`.agents/skills` 里 5 个 `next-*`（2,200 字符，
+只在改造 Next.js 缓存/预取时用得上）。**这批要不要动，等产品负责人定。**
 
