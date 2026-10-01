@@ -280,3 +280,23 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
   验完的结果（只读核对，推送后再跑 `npm run sync --dry-run`）：本机 373 / 云端 **373**、项目各 6，
   「推到云端 0、拉到本机 0、待裁决 0、两边一样 373」——两端完全一致。
   为什么没写成迁移：本次是数据同步、无 schema 变更；走 `npm run sync`（service role 直连）执行。
+
+- 2026-10-01（**本机库；云端这一跳待走**）：**把新项目起步模板的正文更新回公共资产库**。
+  对象：`.data/prompts.sqlite` 的 `assets` 更新 3 条——`template-readme`、`template-start-prompt`、
+  `template-document-system`（`template-agents` 无变化），走 `scripts/sync-new-project-templates.ts`
+  （按 id 精确更新，每次更新带一条版本记录，`changeReason` 为「同步起步模板」）。
+  改了什么：只换这 3 条的正文与 `currentVersionId`／`updatedAt`，标题、类型、元数据一个没动没删。
+  正文变化：README 1642 → 1701 字、START_PROMPT 1265 → 1375 字、DOCUMENT_SYSTEM 1046 → 1552 字。
+  为什么：`a05d574` 给新项目起步模板补上了需求链路四段，但公共资产库里那 4 份还是旧正文
+  （`import-local-content.ts` 只新增不覆盖，改了正文它不更新）。**不跑这个脚本，新项目从资产库
+  的起步模板装进来还是旧的**，链路修了也传不出去。
+  谁同意：产品负责人 2026-10-01 在对话里指示「里面你提到的问题按照你的建议改」。
+  怎么回滚：3 条改动各带版本记录，在资产详情里恢复到上一版即可；或整库回退到 `.data/backups/`
+  里的历史备份。
+  验完的结果（只读核对）：写库后再跑 `--dry-run`，**更新 0、无变化 4**（幂等成立）；
+  E 盘 `npm run check:fast` **600 条全过、0 失败**。
+  **云端这一跳没走完**：`npm run sync` 连不上 Supabase（TLS 握手被重置，间歇性——同一天早些
+  时候还通过一次）。已用 `--export-push-file` 重新导出全量本机备份 `sync-push-2026-10-01.json`
+  （6 个项目、373 条资产，含更新后的起步模板），可到线上站点「数据管理 → 导入备份」推上去
+  （只增不覆盖）；网络恢复后直接 `npm run sync` 也可。
+  为什么没写成迁移：本机库不走迁移体系；走起步模板专用同步脚本执行。
