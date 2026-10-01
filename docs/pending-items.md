@@ -284,7 +284,8 @@ Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后�
 
 | # | 事项 | 状态 | 依据 |
 | --- | --- | --- | --- |
-| 1 | `templates/new-project/AGENTS.md`（新项目起步母本）按 2026-10-01 的分层方式同步拆分 | **未做** —— 本轮**有意不动**：它是产品资产，改它要单独走产品流程并进资产库 | `docs/superpowers/specs/2026-10-01-体系治理-m0-design-and-tasks.md` 第五节 ③ |
+| 1 | `templates/new-project/`（新项目起步母本）按 2026-10-01 的分层方式同步拆分 | **已完成（2026-10-01）**：`AGENTS.md` 改成分层薄版，新增 `docs/method.md`（方法正本）与 `docs/rule-hits.md`（命中台账骨架），`START_PROMPT.md`/`README.md`/`docs/DOCUMENT_SYSTEM.md` 同步，测试加了一条锁住这套结构（601/601 通过）。**未做**：把这四份模板同步进资产库（要走「写库先点头」），命令是 `npx tsx scripts/sync-new-project-templates.ts`（先 `--dry-run`） | 同上 |
+| 1b | 新项目用 `docs/specs/`，本项目自己用 `docs/superpowers/specs/` | **有意分叉，不必对齐**：我们那个目录名是从外部采集借来的历史债（改名要动 38 个文件的引用），新项目不该继续背这个名字 | 同上 |
 | 2 | 交叉目录 8 个带非规范字段（`version` / `agent_created`）的技能 | **待回正本仓确认** —— 技能正本在 `E:/AI资产市场`，本仓改不了 | `docs/reference/skill-inventory.md` 第五节 C 档 |
 | 3 | 技能清单第五节的「可降级 / 可停用」建议要不要落地 | **等产品负责人定** —— 尤其 `vercel` 插件（54 个技能）与 `superpowers`（本就多数列在「默认不使用」） | `docs/reference/skill-inventory.md` 第五节 A/B 档 |
 

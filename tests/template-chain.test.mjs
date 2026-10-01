@@ -184,3 +184,49 @@ test("新项目起步模板指认需求链路与文档体系", () => {
     "起步提示词要把新项目指向 docs/DOCUMENT_SYSTEM.md，否则文档体系只是一份没人读的文件",
   );
 });
+
+// 2026-10-01：规则分成两层——项目层 AGENTS.md + 方法层 docs/method.md，
+// 命中另外记在一份 append-only 台账上。
+// 起步模板必须把这三样一起交给新项目：少了方法正本，AGENTS.md 里那张触发表就指向空处；
+// 少了台账，规则只会越写越多、不会退场。
+test("新项目起步模板带上方法层与命中台账", () => {
+  const method = readFileSync(join(newProjectDir, "docs", "method.md"), "utf8");
+  for (const section of [
+    "需求门",
+    "设计门",
+    "交付门细则",
+    "防过度设计",
+    "技能使用规则",
+  ]) {
+    assert.ok(
+      method.includes(section),
+      `起步模板的方法正本缺「${section}」——新项目的方法层就是空的`,
+    );
+  }
+
+  const ledger = readFileSync(join(newProjectDir, "docs", "rule-hits.md"), "utf8");
+  for (const section of ["判定口径", "退役与复盘阈值", "豁免清单"]) {
+    assert.ok(
+      ledger.includes(section),
+      `起步模板的命中台账缺「${section}」——记不下命中就没有退役依据`,
+    );
+  }
+
+  const agents = readFileSync(join(newProjectDir, "AGENTS.md"), "utf8");
+  assert.ok(
+    agents.includes("docs/method.md"),
+    "起步模板的 AGENTS.md 要指向 docs/method.md，否则方法层没有入口",
+  );
+  assert.ok(
+    agents.includes("docs/rule-hits.md"),
+    "起步模板的 AGENTS.md 要指向 docs/rule-hits.md，否则命中没地方记",
+  );
+
+  const prompt = readFileSync(join(newProjectDir, "START_PROMPT.md"), "utf8");
+  for (const file of ["docs/method.md", "docs/rule-hits.md"]) {
+    assert.ok(
+      prompt.includes(file),
+      `起步提示词要把 ${file} 一起复制进新项目，否则新项目第一天就缺一块`,
+    );
+  }
+});

@@ -14,6 +14,7 @@
 | `docs/product-brief.md` | 产品定位、范围和成功标准 | 产品范围变化时 |
 | `docs/roadmap.md` | 阶段目标 | 阶段调整时 |
 | `docs/decisions/` | 技术和产品决策 | 做重要选择时立即记录 |
+| `docs/specs/` | 设计文档的唯一正本（《设计 + 任务清单》） | 触发设计门时创建。判据见 `docs/method.md` 设计门 |
 | `docs/acceptance/` | 每阶段验收标准 | 阶段开始前创建，完成后更新 |
 | `docs/database-schema.md` | 数据表和字段 | 数据结构变化时 |
 | `docs/operations/release-rollback.md` | 发布和回滚 | 部署方式变化时 |
@@ -57,7 +58,7 @@ AGENTS.md
 -> product-brief.md
 -> roadmap.md
 -> 当前阶段 acceptance
--> 大需求时：当前 PRD / 实现规格 / 数据契约
+-> 大需求时：当前 PRD / 实现规格 / 数据契约 / 设计文档（`docs/specs/`）
 -> 相关 ADR、数据库和运维文档
 ```
 
