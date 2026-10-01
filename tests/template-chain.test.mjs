@@ -18,12 +18,14 @@ import {
 //   ② 模板之间互相引用的文件真实存在（别出现「指向一份不存在的 PRD」这种断链）；
 //   ③ 索引里写的模板路径存在、编号与模板头部一致；
 //   ④ 每份模板都能被导入机制转成合法资产——这一步才证明「改了模板，下次导入就生效」。
+//   ⑤ 新项目起步模板要指认这条链路——否则新项目从第一天起就不知道有这条链路。
 //
 // 一旦这条链路中任一环被改坏，这里会先红，而不是等到导入脚本跑到一半才发现。
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const templateDir = join(repoRoot, "templates", "engineering");
 const indexPath = join(repoRoot, "docs", "INDEX.md");
+const newProjectDir = join(repoRoot, "templates", "new-project");
 const now = "2026-10-01T00:00:00.000Z";
 
 // 链路四段与模板编号：这张表就是「设计意图」，编号或文件改了必须一起改这里
@@ -158,4 +160,27 @@ test("每份工程模板都能被导入机制转成合法资产", () => {
     assert.equal(asset.source.originalFilename, `engineering/${fileName}`);
     assert.ok(asset.content.trim().length > 0, `${fileName} 转成资产后正文为空`);
   }
+});
+
+// 起步模板是新项目的入口。链路四段如果在起步模板里不见踪影，
+// 新项目从第一天起就不知道有这条链路——所以这里也把它锁住。
+test("新项目起步模板指认需求链路与文档体系", () => {
+  const docSystem = readFileSync(
+    join(newProjectDir, "docs", "DOCUMENT_SYSTEM.md"),
+    "utf8",
+  );
+
+  for (const { segment } of chainSegments) {
+    assert.ok(
+      docSystem.includes(segment),
+      `起步模板的文档体系没提「${segment}」段——新项目起步就看不到这条链路`,
+    );
+  }
+
+  const startPrompt = readFileSync(join(newProjectDir, "START_PROMPT.md"), "utf8");
+
+  assert.ok(
+    startPrompt.includes("DOCUMENT_SYSTEM"),
+    "起步提示词要把新项目指向 docs/DOCUMENT_SYSTEM.md，否则文档体系只是一份没人读的文件",
+  );
 });

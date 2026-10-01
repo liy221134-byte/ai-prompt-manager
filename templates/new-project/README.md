@@ -77,6 +77,7 @@
 - `docs/acceptance/`：每个阶段的验收清单。
 - `docs/decisions/`：重要技术和产品决策记录。
 - `docs/INDEX.md`：文档入口和阅读顺序。
+- `docs/DOCUMENT_SYSTEM.md`：文档体系说明（最小文档集合、AI 读取顺序、需求链路四段）。
 
 ## 需求记录模板
 
