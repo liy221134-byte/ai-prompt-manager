@@ -308,6 +308,27 @@ Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后�
 
 **验证**：`npm run check:fast` 601/601 通过（含类型检查）；全仓 markdown 链接体检 0 处指不到文件。
 
+## 2026-10-02 技能接上调用入口与资产库同步（记录）
+
+起因：产品负责人「想让项目过程中的资产都在那里沉淀，供本机所有的智能体调用」。
+核查结论是**机制已建好、缺的是入口**，本轮补入口并把两条通道跑通。
+
+| 做了什么 | 落到哪 |
+| --- | --- |
+| 规则加技能入口：读取时机表新增一行；第五节补「技能从哪来（正本与挂载）」与「哪些动作该去翻技能」对照表 | `AGENTS.md`、`docs/method.md` |
+| **改用实际挂载的技能**：「默认使用」原点的 `brainstorming`／`test-driven-development`／`verification-before-completion` 只存在于 superpowers 插件缓存、**没有加载**，属规则指向幽灵技能。改为指向第五节「需求门」「交付门细则」与 `requirement-rewrite-cn`／`acceptance-checklist-cn`；三个幽灵名字移进「默认不使用」并注明原因（名字不丢） | `docs/method.md` 第五节 |
+| 补同步命令别名：此前只能手敲 `node scripts/sync-market-skills.ts` | `package.json` → `npm run sync:market-skills` |
+| 期限表登记 SkillSpector（观察期至 2026-11-01）；更正「存量（无期限）」那段过期结论 | `docs/rule-hits.md` |
+| **同步技能进本机资产库**：写库前用 `VACUUM INTO` 做一致快照（库里有 407KB WAL 没落盘，直接复制会漏数据），再跑同步——更新 5 条技能定义，复验 0 变化 | 本机库 `.data/prompts.sqlite`；快照 `.data/backups/prompts-pre-market-skills-sync-2026-10-02T22-51-31.sqlite` |
+| 技能正本侧：收进 `codex-session-doctor`（原只挂 WorkBuddy 挂载点），三处挂载点复核 10/10 一致、无断链；原目录备份在 `C:\Users\90402\.skill-mount-backup-2026-10-02\` | `E:\AI资产市场`（4 个提交；该仓库无远端，按产品负责人定不建） |
+
+**同步范围说明**：`scripts/sync-market-skills.ts` 里的技能名单是**写死的 5 个**（正文来自
+`E:\codeX项目` 的那批）。正本现在有 10 个技能，另外 5 个（4 个方法提炼 + `codex-session-doctor`）
+**没有进库**。要不要扩，等产品负责人定。
+
+**仍待定**：`markitdown-skill`（能力有独特价值，但 `markitdown` CLI 本机没装）、
+`web-access`（建议不收：与 `agent-browser` 重叠，且自称「所有联网操作必须通过此技能」）。
+
 ## 已经决定，不必再问
 
 - 种子资产包的四个缺口（协作边界、成本与额度、跨团队追踪、监管高敏条款）等 2.1.1 之后

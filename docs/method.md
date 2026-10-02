@@ -154,9 +154,11 @@ WorkBuddy 读 `~/.workbuddy/skills/`——这三处都是**符号链接**，指�
 
 ### 默认使用
 
-- 需求模糊时：使用 `brainstorming`。
-- 涉及逻辑、数据或接口时：使用 `test-driven-development`。
-- 交付前：使用 `verification-before-completion`。
+- 需求模糊时：先走本文件「一、需求门」（对话确认，不写代码）；要把模糊需求落成能开工的条目，
+  用 `requirement-rewrite-cn`。
+- 涉及逻辑、数据或接口时：按本文件「三、交付门细则」第 1 条「先写测试，再写实现」——
+  本机没有对应的技能，**这条不走技能**。
+- 交付前：走 `AGENTS.md` 的「交付门」；要一份能逐条勾的验收清单，用 `acceptance-checklist-cn`。
 
 ### 默认不使用
 
@@ -169,6 +171,10 @@ WorkBuddy 读 `~/.workbuddy/skills/`——这三处都是**符号链接**，指�
 - `requesting-code-review`、`receiving-code-review`：合并为交付门里的那一轮自查。
 - `finishing-a-development-branch`：只在整个版本合并时使用。
 - `using-superpowers`：不再作为每次对话的固定开场。
+- `brainstorming`、`test-driven-development`、`verification-before-completion`：只存在于
+  superpowers 插件的缓存里、**没有加载**（插件本身多数已列在上一行那批「默认不使用」里）。
+  这三件事分别由本文件「一、需求门」＋`requirement-rewrite-cn`、「三、交付门细则」第 1 条、
+  「交付门」＋`acceptance-checklist-cn` 覆盖，**别再按名字去找它们**（2026-10-02 核实并改写）。
 
 ### 使用边界
 
