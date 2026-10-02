@@ -6,6 +6,10 @@
 // 只同步 SKILL.md（技能定义）。references/ 里的模板多数已经在库里了
 // （template-premortem-md、template-redteam-md 等），不重复入库。
 //
+// 同步名单是**显式**的（见下面 skills 数组）：正本里多出来的技能不自动进库
+// （往库里加资产是有意动作），但脚本会提醒「名单之外还有几个」，免得名单悄悄落后。
+// 2026-10-02 从 5 个扩到 10 个。
+//
 // 来源统一标「腾讯 WorkBuddy」：这批技能是 WorkBuddy 会话里做出来的，
 // 但自同步进库之后，正本是 E:\AI资产市场\skills\，不是库里这份。
 //
@@ -14,7 +18,7 @@
 //   node scripts/sync-market-skills.ts             真写
 // 可选：MARKET_ROOT 指向市场仓库的别的路径；PROMPT_DB_PATH 指向别的库文件。
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { isAssetData, type AssetData } from "../src/data/assets.ts";
@@ -34,6 +38,11 @@ const skills: { id: string; dir: string; title: string }[] = [
   { id: "design-plan-cn", dir: "design-plan-cn", title: "技能：设计计划（含对照简报复查）" },
   { id: "requirement-rewrite-cn", dir: "requirement-rewrite-cn", title: "技能：需求改写成三种格式" },
   { id: "acceptance-checklist-cn", dir: "acceptance-checklist-cn", title: "技能：验收清单" },
+  { id: "internal-mcp-governance-cn", dir: "internal-mcp-governance-cn", title: "技能：内网 MCP 方案治理评审" },
+  { id: "spec-claim-audit-cn", dir: "spec-claim-audit-cn", title: "技能：技术指标依据审计" },
+  { id: "skillspector-scan-cn", dir: "skillspector-scan-cn", title: "技能：第三方技能安全体检" },
+  { id: "context-mode-codex-patch", dir: "context-mode-codex-patch", title: "技能：context-mode 断链补丁" },
+  { id: "codex-session-doctor", dir: "codex-session-doctor", title: "技能：Codex 会话卡死诊断" },
 ];
 
 let updated = 0;
@@ -138,6 +147,18 @@ for (const skill of skills) {
 console.log(
   `${dryRun ? "空跑（不写库）" : "写入本机库"}：新增 ${created}，更新 ${updated}，无变化 ${unchanged}，缺正本 ${missing}`,
 );
+
+// 名单之外的正本技能：只报告，不改任何东西。
+const listed = new Set(skills.map((skill) => skill.dir));
+const outsideList = readdirSync(join(marketRoot, "skills"), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !listed.has(entry.name))
+  .map((entry) => entry.name);
+if (outsideList.length > 0) {
+  console.log(
+    `提醒：正本里有 ${outsideList.length} 个技能不在这份名单里、没有同步：${outsideList.join("、")}`,
+  );
+  console.log("      要收进来，就在 skills 数组里补一行（标题用中文，和库里其他资产一致）。");
+}
 
 if (!dryRun) {
   database.close();

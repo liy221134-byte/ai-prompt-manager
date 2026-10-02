@@ -322,9 +322,13 @@ Vercel 生产部署失败——自 2026-09-28 起每次部署都失败，最后�
 | **同步技能进本机资产库**：写库前用 `VACUUM INTO` 做一致快照（库里有 407KB WAL 没落盘，直接复制会漏数据），再跑同步——更新 5 条技能定义，复验 0 变化 | 本机库 `.data/prompts.sqlite`；快照 `.data/backups/prompts-pre-market-skills-sync-2026-10-02T22-51-31.sqlite` |
 | 技能正本侧：收进 `codex-session-doctor`（原只挂 WorkBuddy 挂载点），三处挂载点复核 10/10 一致、无断链；原目录备份在 `C:\Users\90402\.skill-mount-backup-2026-10-02\` | `E:\AI资产市场`（4 个提交；该仓库无远端，按产品负责人定不建） |
 
-**同步范围说明**：`scripts/sync-market-skills.ts` 里的技能名单是**写死的 5 个**（正文来自
-`E:\codeX项目` 的那批）。正本现在有 10 个技能，另外 5 个（4 个方法提炼 + `codex-session-doctor`）
-**没有进库**。要不要扩，等产品负责人定。
+**同步范围说明**：`scripts/sync-market-skills.ts` 的名单原本写死 5 个（正文来自
+`E:\codeX项目` 的那批），而正本已有 10 个。2026-10-02 按产品负责人决定**扩到 10 个**，
+并加了一条漂移提醒：正本里出现名单之外的技能时报一行，**只报告、不改文件**。
+扩后写库一次——新增 5 条（`internal-mcp-governance-cn`、`spec-claim-audit-cn`、
+`skillspector-scan-cn`、`context-mode-codex-patch`、`codex-session-doctor`），
+复验 10 条全部无变化；写前快照
+`.data/backups/prompts-pre-market-skills-expand-2026-10-02T22-54-12.sqlite`。
 
 **仍待定**：`markitdown-skill`（能力有独特价值，但 `markitdown` CLI 本机没装）、
 `web-access`（建议不收：与 `agent-browser` 重叠，且自称「所有联网操作必须通过此技能」）。
