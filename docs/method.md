@@ -125,6 +125,33 @@ AI 默认会多写：加抽象、装依赖、顺手重构。动手写代码前�
 
 ## 五、技能使用规则
 
+### 技能从哪来（正本与挂载）
+
+技能的**唯一正本**在 `E:\AI资产市场\skills\<技能名>\`，四家工具共用一份：
+Codex 与 Cursor 读 `~/.agents/skills/`，Claude Code 读 `~/.claude/skills/`，
+WorkBuddy 读 `~/.workbuddy/skills/`——这三处都是**符号链接**，指回正本。
+
+- **要改技能内容，只改正本**；改挂载点里的文件，下次同步会丢。
+- 挂载点里还混着另一个来源（`~/.cc-switch/skills/`，第三方通用库），那不是本项目的，
+  不要在那边改。
+- 一致性核对：在正本仓库跑 `bash scripts/verify-mounts.sh`（只报告差异，不改文件）。
+- 本仓库侧有一条反向通道：`npm run sync:market-skills` 把正本技能写进公共资产库
+  （脚本 `scripts/sync-market-skills.ts`，加 `-- --dry-run` 只预演不写库）。
+
+**哪些动作该去翻技能**（先读对应 `SKILL.md`，再动手）：
+
+| 动作 | 技能 |
+| --- | --- |
+| 事前验尸、上线前风险识别 | `premortem-cn` |
+| 红队挑刺、验证承重假设 | `redteam-cn` |
+| 把模糊需求写成能开工的条目 | `requirement-rewrite-cn` |
+| 出一版能点一遍的验收清单 | `acceptance-checklist-cn` |
+| 动手前定视觉方向、防模板味 | `design-plan-cn` |
+| 内网／政务场景的 MCP 方案评审 | `internal-mcp-governance-cn` |
+| 技术方案里的硬指标回溯需求原文 | `spec-claim-audit-cn` |
+| 装／留第三方技能前的安全体检 | `skillspector-scan-cn` |
+| Codex 对话卡死、context-mode 断链 | `context-mode-codex-patch` |
+
 ### 默认使用
 
 - 需求模糊时：使用 `brainstorming`。

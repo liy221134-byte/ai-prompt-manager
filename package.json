@@ -10,6 +10,7 @@
     "dev:local": "node scripts/dev-local.mjs",
     "sync:from-cloud": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/sync-from-cloud.mjs",
     "sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/sync-cloud.mjs",
+    "sync:market-skills": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/sync-market-skills.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint --cache --cache-strategy content",
