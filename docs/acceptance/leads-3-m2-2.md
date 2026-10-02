@@ -1,7 +1,7 @@
 # 线索 3 M2.2（采集产出自动落库）验收清单
 
-关联设计：`docs/leads-3-m2-design-and-tasks.md` 第十四节
-关联需求：`docs/leads-3-m2-2-requirements-draft.md`（2026-09-30 确认：全自动 / 不加 dry-run / 话术分两支）
+关联设计：`docs/leads/leads-3-m2-design-and-tasks.md` 第十四节
+关联需求：`docs/leads/leads-3-m2-2-requirements-draft.md`（2026-09-30 确认：全自动 / 不加 dry-run / 话术分两支）
 
 - **状态**：**已签核（2026-09-30）**。第 8 条「真实来源端到端」由产品负责人实测通过——
   本地智能体按话术 A 支产出 .md 后自己跑了 `npm run collect:land`，**直接写入本机库**，

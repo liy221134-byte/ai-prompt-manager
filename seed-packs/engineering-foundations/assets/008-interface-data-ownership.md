@@ -26,7 +26,7 @@ lifecycle_phase:
 status: candidate
 confidence: provisional
 source_references:
-  - docs/v2-requirements-draft.md
+  - docs/requirements/v2-requirements-draft.md
   - docs/decisions/0005-cloud-architecture.md
 related_assets:
   - MTH-MODULE-001

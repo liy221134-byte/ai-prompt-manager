@@ -3,7 +3,7 @@
 - 状态：**已于 2026-09-30 由产品负责人签收**。
 
 日期：2026-09-29
-对应设计文档：`docs/leads-3-design-and-tasks.md`（v0.2.0）
+对应设计文档：`docs/leads/leads-3-design-and-tasks.md`（v0.2.0）
 分支：`feat/leads-3-m0`（基于 `main` `c8b99be`）
 
 ## 一、范围
@@ -26,7 +26,7 @@ M0 只做零代码文档活：S7 剩余技能处置落地 + 采集台账补四�
 **M0 全部 5 条验收标准通过，可签核。**
 
 - 交付物：采集台账四字段（23 条来源）、2 条规范化参考文档、7 个团队管理方法资产（独立片 `docs/team-methods/`）、3 个模板层资产核对完成。
-- 未决项：无。M1/M2 按立项留待后续版本；M1 已在 `docs/leads-3-4-requirements-draft.md` 立项定义（"进产品只读视图 + 检查"），本轮不做。
+- 未决项：无。M1/M2 按立项留待后续版本；M1 已在 `docs/leads/leads-3-4-requirements-draft.md` 立项定义（"进产品只读视图 + 检查"），本轮不做。
 - 备注：资产文件为仓库内文档（`docs/reference/`、`docs/team-methods/`），尚未导入本机/云端资产库；如需进库，走 `scripts/import-local-content.ts` 同步（只写本机，不碰云端），可另立一项做。
 
 ## 四、本次规则命中

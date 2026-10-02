@@ -459,7 +459,7 @@ const projectDocuments: { file: string; id: string; documentType: string }[] = [
   { file: "docs/product-brief.md", id: "document-product-brief", documentType: "PRD" },
   { file: "docs/user-stories.md", id: "document-user-stories", documentType: "PRD" },
   { file: "docs/roadmap.md", id: "document-roadmap", documentType: "参考资料" },
-  { file: "docs/v2-plan.md", id: "document-v2-plan", documentType: "实现规格" },
+  { file: "docs/requirements/v2-plan.md", id: "document-v2-plan", documentType: "实现规格" },
   { file: "docs/requirements-v2.md", id: "document-requirements-v2", documentType: "实现规格" },
   {
     file: "docs/project-lifecycle-gaps.md",

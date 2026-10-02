@@ -92,7 +92,7 @@
 - `v2.9.0` 验收证据链：验收记录（条件→步骤→结果→证据→提交版本），结论只能人改
 - `v2.10.0` 发布门禁与故障演练：发布记录（门禁清单、回滚目标）、演练记录模板
 
-资产管理底座（`v2.0.0` 起，计划见 `docs/v2-plan.md`）：
+资产管理底座（`v2.0.0` 起，计划见 `docs/requirements/v2-plan.md`）：
 
 - 项目工作区：新建、重命名、归档、重新激活和项目切换
 - 提示词、规则、文档统一进资产模型，每次正式保存产生一个不可变版本
@@ -178,7 +178,7 @@
 - [产品范围](docs/product-brief.md)
 - [项目文档索引](docs/INDEX.md)
 - [8 周路线图](docs/roadmap.md)
-- [2.0 需求草案](docs/v2-requirements-draft.md)
+- [2.0 需求草案](docs/requirements/v2-requirements-draft.md)
 - [工程能力学习计划](docs/learning/engineering-readiness.md)
 - [工程方法种子资产包](seed-packs/engineering-foundations/README.md)
 - [项目规则（AGENTS.md）](AGENTS.md)

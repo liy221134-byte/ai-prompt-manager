@@ -1,7 +1,7 @@
 # 线索 3 M1（采集台账只读视图 + 合规检查）验收清单
 
-关联设计：`docs/leads-3-m1-design-and-tasks.md`
-关联需求：`docs/leads-3-4-requirements-draft.md` 第一节「线索 3」的 M1
+关联设计：`docs/leads/leads-3-m1-design-and-tasks.md`
+关联需求：`docs/leads/leads-3-4-requirements-draft.md` 第一节「线索 3」的 M1
 待并入正式发布版本的验收清单（本文件为工作稿）。
 
 ## 验收标准

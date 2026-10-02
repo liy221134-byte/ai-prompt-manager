@@ -1,7 +1,7 @@
 {
   "type": "ai-prompt-manager-rule-pack",
   "version": 1,
-  "exportedAt": "2026-09-30T04:24:02.971Z",
+  "exportedAt": "2026-10-02T00:05:50.835Z",
   "note": "规则包包含包信息和成员资产。安装时按包内编号去重，只新增不覆盖已有内容。",
   "pack": {
     "id": "rule-pack-operator-training",
@@ -75,7 +75,7 @@
       "assetType": "rule",
       "title": "需求翻译：一次一个清晰目标",
       "summary": "把需求切成\"AI 能一次做完、并且能自己证明做完\"的小目标，**一次只给一个**， 每个目标都附验收标准。一次发十个需求，等于让 AI 自己决定先做哪个、做到什么程度算完。",
-      "content": "# 需求翻译：一次一个清晰目标\n\n## 核心结论\n\n把需求切成\"AI 能一次做完、并且能自己证明做完\"的小目标，**一次只给一个**，\n每个目标都附验收标准。一次发十个需求，等于让 AI 自己决定先做哪个、做到什么程度算完。\n\n## 使用条件\n\n- 任何要落成功能、改动或内容的需求。\n- 一轮迭代开始时，先把这一轮的清单摆出来，再逐个派。\n\n## 不适用场景\n\n- 还在探索阶段、只想让 AI 先给方案时：那是讨论，不是派活。\n- 一行文案、一个配置值这种看一眼就能判定的改动。\n\n## 派活四件套\n\n```text\n现状：现在是什么样、为什么不行\n目标：这次要做到什么样（一句话）\n不做什么：明确排除的范围\n验收标准：怎么点、看到什么算完成\n```\n\n派活时按这三个动作走：\n\n1. 先写四件套，再发任务；写不出来说明需求还没想清楚。\n2. 一个目标一个任务；互相依赖的分先后，别一起发。\n3. 做完先验收，再发下一个；验收没过就不往下叠。\n\n## 失败模式\n\n- 一口气描述十个需求，AI 挑简单的做。\n- 只给目标、不给验收标准，结果\"做完了\"但达不到你要的效果。\n- 前一个目标还没验收就发下一个，问题叠问题。\n\n## 验证证据\n\n- 版本拆分记录和每版的验收清单。\n- 每轮迭代的交付说明：改了哪些文件、怎么验证。\n\n## 相关资产\n\n- `MTH-REQ-001`（引用）：先把边界澄清清楚，再翻译成任务。\n- `OPS-ACCEPT-001`（引用）：验收标准要用黑盒验收的写法。\n- `OPS-SESSION-001`（引用）：任务跨度大时，先想想是不是该开新对话。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-TASK-001\ntitle: 需求翻译：一次一个清晰目标\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p0\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）\n  - AGENTS.md（\"一次提交只处理一个清晰目标\"）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Small, Focused Agents（一次只给一个清晰目标）\n  - 本项目 2.0 功能线的版本拆分与逐版交付记录\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-SESSION-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
+      "content": "# 需求翻译：一次一个清晰目标\n\n## 核心结论\n\n把需求切成\"AI 能一次做完、并且能自己证明做完\"的小目标，**一次只给一个**，\n每个目标都附验收标准。一次发十个需求，等于让 AI 自己决定先做哪个、做到什么程度算完。\n\n## 使用条件\n\n- 任何要落成功能、改动或内容的需求。\n- 一轮迭代开始时，先把这一轮的清单摆出来，再逐个派。\n\n## 不适用场景\n\n- 还在探索阶段、只想让 AI 先给方案时：那是讨论，不是派活。\n- 一行文案、一个配置值这种看一眼就能判定的改动。\n\n## 派活四件套\n\n```text\n现状：现在是什么样、为什么不行\n目标：这次要做到什么样（一句话）\n不做什么：明确排除的范围\n验收标准：怎么点、看到什么算完成\n```\n\n派活时按这三个动作走：\n\n1. 先写四件套，再发任务；写不出来说明需求还没想清楚。\n2. 一个目标一个任务；互相依赖的分先后，别一起发。\n3. 做完先验收，再发下一个；验收没过就不往下叠。\n\n## 失败模式\n\n- 一口气描述十个需求，AI 挑简单的做。\n- 只给目标、不给验收标准，结果\"做完了\"但达不到你要的效果。\n- 前一个目标还没验收就发下一个，问题叠问题。\n\n## 验证证据\n\n- 版本拆分记录和每版的验收清单。\n- 每轮迭代的交付说明：改了哪些文件、怎么验证。\n\n## 相关资产\n\n- `MTH-REQ-001`（引用）：先把边界澄清清楚，再翻译成任务。\n- `OPS-ACCEPT-001`（引用）：验收标准要用黑盒验收的写法。\n- `OPS-SESSION-001`（引用）：任务跨度大时，先想想是不是该开新对话。\n\n## 包内原始元数据\n\n```yaml\nid: OPS-TASK-001\ntitle: 需求翻译：一次一个清晰目标\nasset_type: method\naudience: human\nmodule: M2-派活\ndifficulty: L1\npurpose: collaboration\nlayer: project\nscope: global\nproject_scale:\n  - personal\n  - medium\ntech_context:\n  - generic\nlifecycle_phase:\n  - build\npriority: p0\noverride_allowed: true\ncompile_target:\n  - none\nverification: manual\nevidence:\n  - docs/requirements/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）\n  - AGENTS.md（\"一次提交只处理一个清晰目标\"）\nstatus: candidate\nconfidence: provisional\nsource_references:\n  - 12-Factor Agents：Small, Focused Agents（一次只给一个清晰目标）\n  - 本项目 2.0 功能线的版本拆分与逐版交付记录\nrelated_assets:\n  - OPS-ACCEPT-001\n  - OPS-SESSION-001\nversion: 0.3.0\nlast_reviewed: 2026-09-24\n```",
       "metadata": {
         "ruleType": "recommended",
         "scope": "global",
@@ -86,7 +86,7 @@
         "stage": "implement",
         "priority": "must",
         "overrideScope": "project",
-        "evidence": "- docs/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）\n- AGENTS.md（\"一次提交只处理一个清晰目标\"）\n- 12-Factor Agents：Small, Focused Agents（一次只给一个清晰目标）\n- 本项目 2.0 功能线的版本拆分与逐版交付记录",
+        "evidence": "- docs/requirements/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）\n- AGENTS.md（\"一次提交只处理一个清晰目标\"）\n- 12-Factor Agents：Small, Focused Agents（一次只给一个清晰目标）\n- 本项目 2.0 功能线的版本拆分与逐版交付记录",
         "verification": "人工核对",
         "confidence": "provisional",
         "compileTarget": [

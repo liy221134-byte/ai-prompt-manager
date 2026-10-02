@@ -111,7 +111,7 @@ WorkBuddy 做」的答案，原文五条：
   （自动部署、应用托管、认证、文件存储、邮件、证书、观测、备份……）。
 - `docs/learning/engineering-readiness.md`：数据库 → 证书 → 文件存储 → 邮件四块，当时定的是
   "等产品迭代完再补"，到现在没有练习记录。
-- `docs/v3-requirements-draft.md` 的 M1／M2（环境台账、交付制品包）依赖这套能力；
+- `docs/requirements/v3-requirements-draft.md` 的 M1／M2（环境台账、交付制品包）依赖这套能力；
   没有它，环境体检只能写"要补能力"，补不了。
 
 ### 做什么

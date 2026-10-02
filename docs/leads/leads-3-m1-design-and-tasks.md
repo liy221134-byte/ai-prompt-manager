@@ -1,8 +1,8 @@
 # 线索 3 M1（进产品只读视图 + 采集合规检查）设计 + 任务清单
 
 日期：2026-09-29。输入：
-- `docs/leads-3-4-requirements-draft.md` 第一节「线索 3」M1 定义（进产品只读视图 + 检查）。
-- `docs/leads-3-design-and-tasks.md` M0 收口结论（台账四字段已补、`docs/reference/` + `docs/team-methods/` 9 个外部资产已落库，全部 candidate/hypothesis）。
+- `docs/leads/leads-3-4-requirements-draft.md` 第一节「线索 3」M1 定义（进产品只读视图 + 检查）。
+- `docs/leads/leads-3-design-and-tasks.md` M0 收口结论（台账四字段已补、`docs/reference/` + `docs/team-methods/` 9 个外部资产已落库，全部 candidate/hypothesis）。
 - 2026-09-29 工作记录：M1 数据来源两个选项已拍板走 **A 方案**（继续读手维护的 `seed-packs/external-sources/README.md` 台账，不先结构化入表）。
 
 状态：**设计门已确认（2026-09-29 拍板，见第九节）；M1 已实现，验收见 docs/acceptance/leads-3-m1.md**。触发技术设计线 + 界面设计线。
@@ -17,7 +17,7 @@
 > - 第五档 `compiled_candidate` 的标签由「已编译候选（待你确认）」改为「已进编译候选（待确认发布）」
 >   —— 原措辞与事实不符（那时还没编译，只是够格进候选）。
 > - 合规第四约束判据已演进，见 `src/lib/external-sources-compliance.ts` 头部注释与
->   `docs/leads-3-m2-design-and-tasks.md` 第七节。
+>   `docs/leads/leads-3-m2-design-and-tasks.md` 第七节。
 >
 > 本稿其余内容（交互路径、验收标准的设计意图）仍是对 M1 那一版的准确记录，不改写。
 
@@ -181,7 +181,7 @@ M1 的数据从哪来，当时给你两个选项：
 | T3 「是否编译」派生 | 在 `external-sources-view.tsx` 内按第三节规则标注（读库内资产状态做只读关联） | T2 |
 | T4 采集合规检查脚本 | 新增 `scripts/check-external-sources-compliance.ts`（扫本机库验证四约束） | 确认设计门 |
 | T5 命令与测试 | `package.json` 加 `generate:leads3-ledger` 与 `check:leads3-compliance`；单测：表格→JSON 正确、违规样本被抓 | T1、T4 |
-| T6 文档同步 | `docs/user-map.md` 加视图入口；`docs/engineering-map.md` 加文件职责；`docs/leads-3-design-and-tasks.md` 把「M1 不在本版」改为「M1 设计中，见本文档」 | T2、T5 |
+| T6 文档同步 | `docs/user-map.md` 加视图入口；`docs/engineering-map.md` 加文件职责；`docs/leads/leads-3-design-and-tasks.md` 把「M1 不在本版」改为「M1 设计中，见本文档」 | T2、T5 |
 | T7 验收清单 | 新增 `docs/acceptance/leads-3-m1.md`（对应本第七节 8 条） | T5 |
 
 > 测试只新增 T5 两项单测（解析 + 合规），不强行给纯界面组件加测试；界面改动按 `AGENTS.md` 界面验证规矩起 `npm run dev:local` 在浏览器真看一遍。

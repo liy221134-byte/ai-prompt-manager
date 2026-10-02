@@ -21,7 +21,7 @@ compile_target:
   - none
 verification: manual
 evidence:
-  - docs/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）
+  - docs/requirements/v2-plan.md（2.0 拆成十来个版本，每版只做一个子系统）
   - AGENTS.md（"一次提交只处理一个清晰目标"）
 status: candidate
 confidence: provisional

@@ -2,7 +2,7 @@
 
 - 状态：**已于 2026-09-30 由产品负责人签收**。
 
-日期：2026-09-28 晚。分支：`feat/leads-4-practice`。关联设计：`docs/leads-4-cloud-practice-design.md`。
+日期：2026-09-28 晚。分支：`feat/leads-4-practice`。关联设计：`docs/leads/leads-4-cloud-practice-design.md`。
 
 ## 一、验收项
 
@@ -20,7 +20,7 @@
 1. **题目来源**：合计 **127 题**，分三批录入。第一批 19 题（6 题工程方法映射资产库规则：事前验尸 `RULE-PREMORTEM-001`、红队 `RULE-REDTEAM-001`、需求三格式 `MTH-REQ-FORMAT-001`、设计计划 `RULE-DESIGN-TEMPLATE-LOOK-001`、界面文案 `RULE-DESIGN-COPY-001`、单一真相源；+ 13 题通用 aicoding 常识：代码常识/git/AI 编码/Agent/验证）。第二批 55 题对齐**豆包 aicoding 学习大纲**（技术素养/LLM 认知/方法论/工程化），按“细分知识点 2–3 道类似题”成组。第三批 53 题补齐豆包大纲未覆盖的学习点（JSON/数据类型、前端三件套、库框架SDK、部署与域名、RAG 与向量、Agent 与工具调用、模型与成本、Prompt 进阶、AI 安全伦理、缓存性能、AI 评测、系统化调试、产品与 AI 协作）。仅首批 6 题 `asset_id` 绑定资产规则，其余 121 题均为通用常识（`asset_id` 为 null）。
 2. **题目全局可见、成绩仅本人可见**：照搬现有 per-user RLS，见上表 3/4。
 3. **路由 `/practice`**：已落地。
-4. **实操联动**：M0 不做（题库与实操先解耦），见 `docs/leads-4-design-and-tasks.md` 第十节。
+4. **实操联动**：M0 不做（题库与实操先解耦），见 `docs/leads/leads-4-design-and-tasks.md` 第十节。
 
 ## 三、已自动验证（本机）
 

@@ -1,6 +1,6 @@
 # 线索 4（内网基础能力练习项目）设计 + 任务清单
 
-日期：2026-09-28。输入：`docs/leads-3-4-requirements-draft.md`（已立项，产品负责人 2026-09-28 拍板）。
+日期：2026-09-28。输入：`docs/leads/leads-3-4-requirements-draft.md`（已立项，产品负责人 2026-09-28 拍板）。
 状态：**已确认（2026-09-28 产品负责人拍板：方案 A + 目录 E:\intranet-drill）**——设计门已过，可动文件。
 
 ## 这份文档回答什么
@@ -94,7 +94,7 @@
 | `docs/learning/engineering-readiness.md`（能力地图） | **练习记录回填到这里**，不新建文档。数据库/证书/文件存储/邮件四块本来就是它标着"等产品迭代完再补"的空位 |
 | `docs/project-map.md` 第五步环境差异表 | M1 的素材来源。**这版不动它** |
 | `seed-packs/delivery-readiness/assets/`（001 检查、002 画像、003 手册） | M1 抽成起步包时挂进**这个包**，不新建规则包 |
-| `docs/v3-requirements-draft.md` M1/M2（环境台账、制品包） | 这条练习是它的前置能力。**这版不动它** |
+| `docs/requirements/v3-requirements-draft.md` M1/M2（环境台账、制品包） | 这条练习是它的前置能力。**这版不动它** |
 
 ## 六、验收标准（每条一次命令或一次手工操作可判定）
 
@@ -156,7 +156,7 @@
 | 半边 | 形态 | 技术栈 | 落点 | 状态 |
 | --- | --- | --- | --- | --- |
 | 实操（本仓库） | 本机练数据库／证书／文件存储／邮件四块自建能力，模拟内网、不连公网 | Postgres 16 / Nginx(SSL) / MinIO / MailHog / Python 标准库 | `E:\intranet-drill`（本仓库） | T1~T6 已写文件，T7 真验收待 Docker |
-| 题库（复用现有系统） | 系统提供的题目云端可访问，且与现有系统共享账号与域名 | **复用现有 AI 开发资产管理系统（即本仓库 codeX）**（Next.js 16 + Supabase Auth + Vercel 域名）内部模块，**不新建独立项目/域名** | **本仓库（codeX）内开 feature 分支**；与实操半边 `E:\intranet-drill` 是两回事 | 设计稿见 `docs/leads-4-cloud-practice-design.md`（待产品负责人确认设计门） |
+| 题库（复用现有系统） | 系统提供的题目云端可访问，且与现有系统共享账号与域名 | **复用现有 AI 开发资产管理系统（即本仓库 codeX）**（Next.js 16 + Supabase Auth + Vercel 域名）内部模块，**不新建独立项目/域名** | **本仓库（codeX）内开 feature 分支**；与实操半边 `E:\intranet-drill` 是两回事 | 设计稿见 `docs/leads/leads-4-cloud-practice-design.md`（待产品负责人确认设计门） |
 
 要点：
 - 两半暂不强耦合：题库管题目与知识，实操管环境动手能力；后续若要「实操题从题库拉取并回传结果」，再定义接口。
@@ -195,11 +195,11 @@
 ### 当前状态
 
 - 实操半边：`E:\intranet-drill` T1~T6 已写文件，T7 真验收待产品负责人装 Docker（不在电脑旁、沙箱拦 WSL，我装不了）。
-- 题库半边：落点确认为**本仓库 codeX 内部模块**；设计稿见 `docs/leads-4-cloud-practice-design.md`（待产品负责人确认设计门后开 feature 分支动文件）。
+- 题库半边：落点确认为**本仓库 codeX 内部模块**；设计稿见 `docs/leads/leads-4-cloud-practice-design.md`（待产品负责人确认设计门后开 feature 分支动文件）。
 
 ## 版本
 
-- `0.5.0`（2026-09-28 晚）：**更正 0.4.0**——核实 `E:\Codex 项目`（本会话主分支）即 AI 开发资产管理系统（Next.js+Supabase+Vercel+Auth），"走 codex 分支开发合并"成立；撤销 0.4.0 中"找不到仓库 / fallback 不成立"的错误结论。题库半边设计见 `docs/leads-4-cloud-practice-design.md`。
+- `0.5.0`（2026-09-28 晚）：**更正 0.4.0**——核实 `E:\Codex 项目`（本会话主分支）即 AI 开发资产管理系统（Next.js+Supabase+Vercel+Auth），"走 codex 分支开发合并"成立；撤销 0.4.0 中"找不到仓库 / fallback 不成立"的错误结论。题库半边设计见 `docs/leads/leads-4-cloud-practice-design.md`。
 - `0.4.0`（2026-09-28 晚）：新需求——云端题库半边改为复用现有系统内部模块；记录"现有系统仓库本机未找到"与 fallback 不成立（**该结论已被 0.5.0 更正**）。
 - `0.3.0`（2026-09-28）：架构补充——练习系统拆为云端题库（Supabase+Vercel+Next.js，独立云组件）＋本地实操（本仓库），题库不在本版 M0 范围。
 - `0.2.0`（2026-09-28）：设计门关闭，记录五条拍板决定；状态改为已确认。

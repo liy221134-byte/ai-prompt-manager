@@ -1,7 +1,7 @@
 # 线索 3 M2.1（发起采集的两条入口）验收清单
 
-关联设计：`docs/leads-3-m2-design-and-tasks.md` 第十三节（M2.1 实现记录与偏离）
-关联需求：`docs/leads-3-4-requirements-draft.md` 第一节「线索 3」的 M2；本版对应 US-4
+关联设计：`docs/leads/leads-3-m2-design-and-tasks.md` 第十三节（M2.1 实现记录与偏离）
+关联需求：`docs/leads/leads-3-4-requirements-draft.md` 第一节「线索 3」的 M2；本版对应 US-4
 待并入正式发布版本的验收清单（本文件为工作稿）。
 
 ## 验收标准
@@ -118,4 +118,4 @@
   修复动见第 15 行。（这是交付/运维缺口，不是功能缺口：两个入口本身都验过。）
 - 云端模式的浏览器渲染未验（第 14 行）。
 - 现状说明（交互路径、用户故事）与 M2.2 评估见
-  [`leads-3-ledger-paths-and-m2.2.md`](../leads-3-ledger-paths-and-m2.2.md)。
+  [`leads-3-ledger-paths-and-m2.2.md`](../leads/leads-3-ledger-paths-and-m2.2.md)。

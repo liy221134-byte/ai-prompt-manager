@@ -4,12 +4,12 @@
 用来做两件事：M2.1 签核时逐条对照，以及决定 M2.2 做不做。
 
 关联：设计与实现记录见 [`leads-3-m2-design-and-tasks.md`](leads-3-m2-design-and-tasks.md)；
-M2.0 验收见 [`acceptance/leads-3-m2.md`](acceptance/leads-3-m2.md)（已签）；
-M2.1 验收见 [`acceptance/leads-3-m2-1.md`](acceptance/leads-3-m2-1.md)。
+M2.0 验收见 [`../acceptance/leads-3-m2.md`](../acceptance/leads-3-m2.md)（已签）；
+M2.1 验收见 [`../acceptance/leads-3-m2-1.md`](../acceptance/leads-3-m2-1.md)。
 
 **一个前置提醒**：采集记录目前**只存在于一份验证用的本地库**里，你打开产品看到的是空台账。
 这不是 bug，是交付时漏了「把迁移跑到你实际用的库上」这一步。原因、影响与修复动作单独写在
-[`pending-items.md`](pending-items.md) 的「2026-09-30 采集记录为什么是空的」一节，
+[`../pending-items.md`](../pending-items.md) 的「2026-09-30 采集记录为什么是空的」一节，
 读这份文档前建议先看那段——否则下面每条路径你点开都是空的。
 
 ---
@@ -146,7 +146,7 @@ M2.1 验收见 [`acceptance/leads-3-m2-1.md`](acceptance/leads-3-m2-1.md)。
 | M2 US-4 | 我想给个压缩包或说句需求就能拿到该做的事，不用抄话术 | 满足 | 两个入口都试一遍：ZIP 能提候选 + 填来源名后落库；说需求能生成含四段的可复制话术 |
 
 M2.1 相对 M2.0 只加了 US-4 这条的两个入口，其余七条是 M2.0／M1 已交付并已验的。
-所以 M2.1 的验收标准（[`acceptance/leads-3-m2-1.md`](acceptance/leads-3-m2-1.md)）
+所以 M2.1 的验收标准（[`../acceptance/leads-3-m2-1.md`](../acceptance/leads-3-m2-1.md)）
 只压在两件事上：**两条入口是否在场、是否正确**，加一条「不碰坏标准导入入口」。
 
 ---

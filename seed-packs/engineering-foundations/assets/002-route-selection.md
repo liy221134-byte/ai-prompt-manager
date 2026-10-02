@@ -26,7 +26,7 @@ status: candidate
 confidence: provisional
 source_references:
   - docs/roadmap.md
-  - docs/v2-requirements-draft.md
+  - docs/requirements/v2-requirements-draft.md
 related_assets:
   - MTH-PROJECT-001
   - MTH-DELIVERY-001

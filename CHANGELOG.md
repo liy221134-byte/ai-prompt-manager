@@ -47,7 +47,7 @@ role 是 `compiled`）。它们不是采来的，只是恰好带着这个默认�
 
 ## v2.28.1
 
-产品负责人试用采集任务后反馈的两处修正（回流链路实测详见 `docs/leads-3-collection-roundtrip.md`）。
+产品负责人试用采集任务后反馈的两处修正（回流链路实测详见 `docs/leads/leads-3-collection-roundtrip.md`）。
 
 - **采集话术写死产出物契约**：回填格式改为「一个或多个 .md 文件（多文件可打 .zip）、
   每个 .md 一条候选规则（`# 标题` 起头）、不要写 YAML frontmatter、不要写『去重说明／

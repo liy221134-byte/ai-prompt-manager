@@ -26,7 +26,7 @@ evidence:
   - CHANGELOG.md（每版开头一句话说清这一版解决什么，不混第二个主题）
   - AGENTS.md（"一个版本只做一个子系统；需要同时改数据和界面、或涉及多条链路时，拆成两次发布"）
 source_references:
-  - docs/v2-plan.md
+  - docs/requirements/v2-plan.md
   - docs/roadmap.md
 related_assets:
   - MTH-ROUTE-001

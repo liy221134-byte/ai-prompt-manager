@@ -13,7 +13,7 @@ compile_target:
 verification: manual
 evidence:
   - docs/project-map.md（第五步「环境差异」表：同一条流程的四种打法）
-  - docs/v3-requirements-draft.md（2026-09-25 与豆包那次 CI/CD 与 MCP 预研的核对结果）
+  - docs/requirements/v3-requirements-draft.md（2026-09-25 与豆包那次 CI/CD 与 MCP 预研的核对结果）
 scope: project
 project_scale:
   - personal
@@ -27,7 +27,7 @@ status: candidate
 confidence: hypothesis
 source_references:
   - docs/project-map.md
-  - docs/v3-requirements-draft.md
+  - docs/requirements/v3-requirements-draft.md
 related_assets:
   - TPL-DLV-001
   - TPL-DLV-002

@@ -711,7 +711,7 @@ AI 相关功能（智能采集、AI 优化、AI 合并）需要线上环境变�
 ## 相关文档
 
 - [产品范围](product-brief.md)
-- [2.0 资产管理底座计划](v2-plan.md)
+- [2.0 资产管理底座计划](requirements/v2-plan.md)
 - [待确认与待办事项](pending-items.md)
 - [本机 MCP 服务](operations/mcp-server.md)
 - [备份与恢复](operations/backup.md)

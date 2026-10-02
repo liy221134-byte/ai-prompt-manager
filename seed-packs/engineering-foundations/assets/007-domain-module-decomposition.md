@@ -23,7 +23,7 @@ lifecycle_phase:
 status: candidate
 confidence: hypothesis
 source_references:
-  - docs/v2-requirements-draft.md
+  - docs/requirements/v2-requirements-draft.md
   - docs/learning/engineering-readiness.md
 related_assets:
   - MTH-ARCH-001

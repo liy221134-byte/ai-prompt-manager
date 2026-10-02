@@ -1,7 +1,7 @@
 # 线索 3 M2（采集台账进库 + 走通到编译候选）验收清单
 
-关联设计：`docs/leads-3-m2-design-and-tasks.md`（第十节七条决策已确认，第十二节为实现记录与偏离）
-关联需求：`docs/leads-3-4-requirements-draft.md` 第一节「线索 3」的 M2
+关联设计：`docs/leads/leads-3-m2-design-and-tasks.md`（第十节七条决策已确认，第十二节为实现记录与偏离）
+关联需求：`docs/leads/leads-3-4-requirements-draft.md` 第一节「线索 3」的 M2
 待并入正式发布版本的验收清单（本文件为工作稿）。
 
 ## 验收标准

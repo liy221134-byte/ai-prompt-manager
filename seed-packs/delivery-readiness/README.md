@@ -12,7 +12,7 @@
 
 来源：本项目的 `docs/project-map.md` 第五步「环境差异」那张表（那份表自己标了「未验证假设」），
 以及 2026-09-25 与豆包那次 CI/CD 与 MCP 预研的核对结果（核对记录见
-`docs/v3-requirements-draft.md`）。
+`docs/requirements/v3-requirements-draft.md`）。
 
 ## 这个包不做什么
 

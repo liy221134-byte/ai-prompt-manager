@@ -33,20 +33,21 @@
 - [生产级项目指南地图](project-map.md)
 - [工程地图：文件职责与请求链路](engineering-map.md)
 - [待确认与待办事项](pending-items.md)
+- [合并与线上验证计划（2026-09-28，含生产部署失败根因）](merge-verify-plan-2026-09-28.md)
 
 ### 产品
 
 - [用户地图（功能在哪、点哪里）](user-map.md)
 - [从沉淀到立项：链路断点评估](project-lifecycle-gaps.md)
-- [两条线索的立项需求草案（生态采集沉淀 / 内网基础能力练习，已立项）](leads-3-4-requirements-draft.md)
-- [文档与资产口径收口需求草案（v2.25.0 暂定名，待确认）](v2.25.0-requirements-draft.md)
-- [零代码交付线需求草案（v3 暂定名，2026-09-30 已确认，下一步写 M0 设计）](v3-requirements-draft.md)
+- [两条线索的立项需求草案（生态采集沉淀 / 内网基础能力练习，已立项）](leads/leads-3-4-requirements-draft.md)
+- [文档与资产口径收口需求草案（v2.25.0 暂定名，待确认）](requirements/v2.25.0-requirements-draft.md)
+- [零代码交付线需求草案（v3 暂定名，2026-09-30 已确认，下一步写 M0 设计）](requirements/v3-requirements-draft.md)
 - [需求收敛：文档／模板边界、Spec 层与交互流程（待确认）](requirements-v2.md)
 - [产品范围](product-brief.md)
 - [8 周路线图](roadmap.md)
-- [2.0 资产管理底座计划](v2-plan.md)
-- [2.0 需求草案](v2-requirements-draft.md)
-- [2.0 需求池](v2-backlog.md)
+- [2.0 资产管理底座计划](requirements/v2-plan.md)
+- [2.0 需求草案](requirements/v2-requirements-draft.md)
+- [2.0 需求池](requirements/v2-backlog.md)
 
 ### 设计
 
@@ -57,13 +58,13 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [T6：技能仓库 references 标注资产库正本（2026-09-30，已启动）](superpowers/specs/2026-09-30-t6-skill-references-single-source-design.md)
 - [体系治理 M0：设计 + 任务清单（2026-10-01，已执行）](superpowers/specs/2026-10-01-体系治理-m0-design-and-tasks.md)
 - [零代码交付线 M0：设计 + 任务清单（2026-09-30，待确认）](superpowers/specs/2026-09-30-v3-m0-design-and-tasks.md)
-- [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads-3-ledger-paths-and-m2.2.md)
-- [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads-3-m2-2-requirements-draft.md)
-- [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads-3-collection-roundtrip.md)
-- [线索 3 M2 采集台账进库与进编译候选设计与任务清单（已实现；M2.1 两条入口见同文档第十三节）](leads-3-m2-design-and-tasks.md)
-- [线索 3 M1 采集台账设计与任务清单（已实现，数据源已被 M2 取代）](leads-3-m1-design-and-tasks.md)
-- [线索 3 生态采集沉淀设计与任务清单（M0，已完成）](leads-3-design-and-tasks.md)
-- [线索 4 内网练习项目设计与任务清单](leads-4-design-and-tasks.md)
+- [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads/leads-3-ledger-paths-and-m2.2.md)
+- [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads/leads-3-m2-2-requirements-draft.md)
+- [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads/leads-3-collection-roundtrip.md)
+- [线索 3 M2 采集台账进库与进编译候选设计与任务清单（已实现；M2.1 两条入口见同文档第十三节）](leads/leads-3-m2-design-and-tasks.md)
+- [线索 3 M1 采集台账设计与任务清单（已实现，数据源已被 M2 取代）](leads/leads-3-m1-design-and-tasks.md)
+- [线索 3 生态采集沉淀设计与任务清单（M0，已完成）](leads/leads-3-design-and-tasks.md)
+- [线索 4 内网练习项目设计与任务清单](leads/leads-4-design-and-tasks.md)
 - [v2.29.0 种子包状态口径与规则包重装设计（待确认）](superpowers/specs/2026-09-30-v2.29.0-seed-pack-status-and-reimport-design.md)
 - [v2.24.0 项目规模参与编译筛选设计（待确认）](superpowers/specs/2026-09-27-v2.24.0-project-scale-filter-design.md)
 - [v2.23.0 本机 MCP 自动接入设计（待确认）](superpowers/specs/2026-09-27-v2.23.0-local-mcp-setup-design.md)
@@ -201,3 +202,6 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 5. 每阶段开始前创建验收清单，完成后逐项验证。
 6. 部署、备份或回滚方式变化时更新运维文档。
 7. 文档必须描述当前真实状态，不能保留已经失效的“待配置”说明。
+8. 文档按类别归目录：线索专线放 `leads/`，需求与计划草案放 `requirements/`，
+   其余按既有子目录（`acceptance/`、`reviews/`、`decisions/`、`operations/` 等）归位；
+   根层只留还在被高频引用的稳定文档。

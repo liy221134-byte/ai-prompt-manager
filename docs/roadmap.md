@@ -47,12 +47,12 @@
 主题：文档与资产口径收口。解决外部评审 P0 第 3、4 条——
 `product-brief.md`／`roadmap.md` 升到当前真实范围；同一件事五到六份载体的定义收敛到唯一正本
 （规则／方法资产），模板留骨架、提示词留执行指令。需求草案与验收清单见
-[v2.25.0 需求草案](v2.25.0-requirements-draft.md)。
+[v2.25.0 需求草案](requirements/v2.25.0-requirements-draft.md)。
 
 ## 后续：v3 零代码交付线（待确认）
 
 把资产库本身做成可对外交付的零代码产品，尚未排期。设想与边界见
-[v3 需求草案](v3-requirements-draft.md)。
+[v3 需求草案](requirements/v3-requirements-draft.md)。
 
 ## 明确冻结的能力（不是漏做）
 

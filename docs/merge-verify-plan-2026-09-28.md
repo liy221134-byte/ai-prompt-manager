@@ -34,14 +34,14 @@ main ──(FF)──> feat/leads-4-practice   // 已在 main HEAD 之上，快�
 
 **理由**：
 - `feat/leads-4-practice` 的基底就是当前 `main`（HEAD `d3a9731`），合并是快进，先把真正改代码的部分落定。
-- `feat/leads-4` 与 `feat/leads-4-practice` 都新建了 `docs/leads-4-cloud-practice-design.md`，先合 practice（拿到"已确认/已实现"版），再合 leads-4 时只在这一个文件上冲突，保留 practice 版即可（leads-4 版是已被取代的草案）。
+- `feat/leads-4` 与 `feat/leads-4-practice` 都新建了 `docs/leads/leads-4-cloud-practice-design.md`，先合 practice（拿到"已确认/已实现"版），再合 leads-4 时只在这一个文件上冲突，保留 practice 版即可（leads-4 版是已被取代的草案）。
 - `feat/leads-3` 与另两个分支改的文件互不重叠，最后合，零冲突。
 
 ---
 
 ## 三、合并冲突与解决（唯一一处）
 
-**文件**：`docs/leads-4-cloud-practice-design.md`
+**文件**：`docs/leads/leads-4-cloud-practice-design.md`
 - `feat/leads-4` 版：状态为“草案（待确认设计门）”，含原始 T9 计划（新建 `/api/practice/*` 路由）。
 - `feat/leads-4-practice` 版：状态为“设计门已确认、T8–T12 已实施”，含**偏离说明**（实际复用浏览器 client 直读直写，不走独立 API 路由）。
 
@@ -49,8 +49,8 @@ main ──(FF)──> feat/leads-4-practice   // 已在 main HEAD 之上，快�
 2026-09-29 实际执行时用的是 `--ours`，**不是**上面这条命令：
 
 ```bash
-git checkout --ours docs/leads-4-cloud-practice-design.md   # 取 main 侧 = practice 定稿版
-git add docs/leads-4-cloud-practice-design.md
+git checkout --ours docs/leads/leads-4-cloud-practice-design.md   # 取 main 侧 = practice 定稿版
+git add docs/leads/leads-4-cloud-practice-design.md
 git commit   # 完成 merge
 ```
 
@@ -94,7 +94,7 @@ git commit   # 完成 merge
   答题写入本人记录、换账号看不到他人记录。
 
 ## 关联
-设计稿 docs/leads-4-cloud-practice-design.md；验收 docs/acceptance/practice-m0.md。
+设计稿 docs/leads/leads-4-cloud-practice-design.md；验收 docs/acceptance/practice-m0.md。
 ```
 
 ### PR 2 · `feat/leads-4` —— 线索 4 设计文档
@@ -109,8 +109,8 @@ git commit   # 完成 merge
 实操半边为独立仓库 E:\intranet-drill。两半 M0 各自独立交付。
 
 ## 改动
-- docs/leads-4-design-and-tasks.md（线索 4 主设计 + 任务清单）
-- docs/leads-4-cloud-practice-design.md（云端题库设计；实现后以 practice 分支版本为准，
+- docs/leads/leads-4-design-and-tasks.md（线索 4 主设计 + 任务清单）
+- docs/leads/leads-4-cloud-practice-design.md（云端题库设计；实现后以 practice 分支版本为准，
   合并时保留该分支版本）
 
 ## 关联
@@ -128,7 +128,7 @@ PR 1（feat/leads-4-practice）实现本设计中的云端半边。
 19 个来源 / 已采 3 技能（4 条资产）/ 剩余 16 个待处置，定稿处置表。
 
 ## 改动
-- docs/leads-3-design-and-tasks.md（M0 设计 + T1–T4 任务清单，设计门已确认）
+- docs/leads/leads-3-design-and-tasks.md（M0 设计 + T1–T4 任务清单，设计门已确认）
 - seed-packs/external-sources/README.md（订正 S7 行计数口径）
 
 ## 关联

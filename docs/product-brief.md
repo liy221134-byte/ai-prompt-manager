@@ -88,8 +88,8 @@
 ## 当前阶段与后续
 
 - **当前阶段**：2.0 产品线已收口（截至 `v2.24.0`）；本仓库正在做 `v2.25.0`
-  （文档与资产口径收口），见 [需求草案](v2.25.0-requirements-draft.md)。
-- **后续（待确认）**：`v3` 零代码交付线（见 [v3 需求草案](v3-requirements-draft.md)）——
+  （文档与资产口径收口），见 [需求草案](requirements/v2.25.0-requirements-draft.md)。
+- **后续（待确认）**：`v3` 零代码交付线（见 [v3 需求草案](requirements/v3-requirements-draft.md)）——
   把资产库本身做成可对外交付的零代码产品，尚未排期。
 - 版本与验收清单见 [文档索引](INDEX.md) 的「验收与测试」一节。
 

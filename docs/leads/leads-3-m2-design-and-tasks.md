@@ -2,8 +2,8 @@
 
 日期：2026-09-29。输入：
 
-- `docs/leads-3-4-requirements-draft.md` 第一节「线索 3」M2 定义（采腾讯生态 + 补双向同步）。
-- `docs/leads-3-m1-design-and-tasks.md` M1 收口结论（`/external-sources` 只读视图 + `check:leads3-compliance` 合规检查）。
+- `docs/leads/leads-3-4-requirements-draft.md` 第一节「线索 3」M2 定义（采腾讯生态 + 补双向同步）。
+- `docs/leads/leads-3-m1-design-and-tasks.md` M1 收口结论（`/external-sources` 只读视图 + `check:leads3-compliance` 合规检查）。
 - **产品负责人 2026-09-29 晚的口径修正（本版据此改写 M2 定义）**：
   1. 产品不应只对接腾讯——各家厂商（腾讯、阿里、字节、OpenAI、Anthropic、Google……）
      与开源社区（GitHub / npm / MCP registry / Skills 市场）的 MCP 与 Skills **都要能采**；
@@ -291,7 +291,7 @@ M1 走的是 A 方案（台账仍是 README，产品读构建期生成的 JSON �
 | M2.0 | T7 合规判据演进：第四约束改判「active 需有确认记录」 | `src/lib/external-sources-compliance.ts` | T1 |
 | M2.0 | T8 测试：记录解析与派生、生态筛选、确认记录判据、合规；退役 M1 快照类断言 | `tests/external-sources-ledger.test.mjs`、`tests/external-sources-compliance.test.mjs` | T1、T4、T7 |
 | M2.0 | T9 命令与门禁：摘掉 `generate:leads3-ledger`，加 `import:leads3-records` | `package.json` | T4 |
-| M2.0 | T10 文档同步：本文件、M1 设计稿标注演进、README 第六节、`docs/INDEX.md`、`docs/user-map.md`、`docs/engineering-map.md`、`docs/pending-items.md`、`docs/leads-3-design-and-tasks.md` | 各文档 | T3～T9 |
+| M2.0 | T10 文档同步：本文件、M1 设计稿标注演进、README 第六节、`docs/INDEX.md`、`docs/user-map.md`、`docs/engineering-map.md`、`docs/pending-items.md`、`docs/leads/leads-3-design-and-tasks.md` | 各文档 | T3～T9 |
 | M2.0 | T11 验收清单 | 新增 `docs/acceptance/leads-3-m2.md` | T8、T9 |
 | M2.0 | T12 走完全程（验收动作，一条真实外部技能） | 产出：1 条采集记录 + 若干候选资产 + 1 条确认记录 | T6 |
 | M2.1 | T13 生成采集任务单 | 新增 `src/components/collection-task-dialog.tsx` + `buildCollectionTaskPrompt`（话术模板，在 `src/lib/external-sources-ledger.ts`） | M2.0 收口 |
