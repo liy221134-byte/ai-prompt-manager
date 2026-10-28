@@ -9,10 +9,28 @@ import {
   type QuestionStatus,
   type StatusMap,
 } from "@/components/practice-quiz";
+import {
+  DiagnosticEntry,
+  DiagnosticReport,
+  readStoredDiagnostic,
+  type StoredDiagnostic,
+} from "@/components/diagnostic-panel";
 import { GoalSettingsDialog, type GoalSettingsValue } from "@/components/goal-settings-dialog";
 import { KnowledgeNoteDrawer } from "@/components/knowledge-note-drawer";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
+import {
+  buildDiagnosticPaper,
+  collectWrongAnswers,
+  inferLevels,
+  type DiagnosticInference,
+  type DiagnosticPaper,
+  type DiagnosticQuestion,
+} from "@/lib/learning/diagnostic";
+import {
+  normalizeLevelDefinition,
+  type DiagnosticAdvice,
+} from "@/lib/learning/diagnostic-prompt";
 import { goalId } from "@/lib/learning/goal-id";
 import { attachTopicNotes } from "@/lib/learning/topic-notes";
 import {
@@ -97,6 +115,27 @@ type GoalRow = {
 const QUESTION_COLUMNS =
   "id, category, title, difficulty, type, body_md, options, answer, explanation_md, module_id, level, knowledge_point";
 
+/**
+ * 从任意抛出物里取可读的错误信息。
+ *
+ * Supabase 的 PostgrestError 不是 Error 实例（只有 message / details / hint / code），
+ * 只判 `instanceof Error` 会把真实原因换成一句没用的「失败」——
+ * 2026-10-28 实测踩到：kind 违反 CHECK 约束，界面只显示「保存失败：保存失败。」，
+ * 只能回去翻库里的约束定义才知道是哪个字段。
+ */
+function readErrorMessage(caught: unknown, fallback = "操作失败。"): string {
+  if (caught instanceof Error && caught.message) return caught.message;
+  if (caught && typeof caught === "object") {
+    const record = caught as Record<string, unknown>;
+    for (const key of ["message", "details", "hint"]) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+  }
+  if (typeof caught === "string" && caught.trim()) return caught.trim();
+  return fallback;
+}
+
 export function LearningTopic({ topicId }: { topicId: string }) {
   const [topic, setTopic] = useState<TopicRow | null>(null);
   const [rows, setRows] = useState<MatrixRow[]>([]);
@@ -116,6 +155,27 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
   const [quizQueue, setQuizQueue] = useState<QuizQuestion[] | null>(null);
   const [quizLabel, setQuizLabel] = useState("");
+
+  // ---- 诊断（M4）----
+  // 最近一次已保存的诊断，给入口卡片显示「上次判到哪」
+  const [lastDiagnostic, setLastDiagnostic] = useState<StoredDiagnostic | null>(null);
+  // 本次正在做的卷子。开始诊断时快照一次，答题过程中不再重算——
+  // 重算会随着作答记录变化换题，等于边考边改卷。
+  const [diagnosticPaper, setDiagnosticPaper] = useState<DiagnosticPaper | null>(null);
+  const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<string, boolean>>({});
+  const [diagnosticSelected, setDiagnosticSelected] = useState<
+    Record<string, string | string[] | null>
+  >({});
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticInference, setDiagnosticInference] = useState<DiagnosticInference | null>(null);
+  const [diagnosticAdvice, setDiagnosticAdvice] = useState<DiagnosticAdvice | null>(null);
+  const [adviceError, setAdviceError] = useState<string | null>(null);
+  const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
+  const [isSavingDiagnostic, setIsSavingDiagnostic] = useState(false);
+  const [diagnosticSaved, setDiagnosticSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // 每次拿到新归因加一，用作报告组件的 key：让编辑草稿从新内容重新开始
+  const [adviceVersion, setAdviceVersion] = useState(0);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -199,8 +259,9 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
       let attemptRows: AttemptInput[] = [];
       let goalRow: GoalRow | null = null;
+      let diagnosticRow: StoredDiagnostic | null = null;
       if (user) {
-        const [attemptResult, goalResult] = await Promise.all([
+        const [attemptResult, goalResult, diagnosticResult] = await Promise.all([
           supabase
             .from("practice_attempts")
             .select("question_id, is_correct, created_at")
@@ -211,13 +272,29 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             .eq("user_id", user.id)
             .eq("topic_id", currentTopic.id)
             .maybeSingle(),
+          // 诊断记录只取最新一条：诊断是「当前判到哪一层」的快照，
+          // 历史记录留着是为了以后看变化趋势，现在页面只认最新。
+          supabase
+            .from("learning_diagnostics")
+            .select("id, taken_at, result")
+            .eq("user_id", user.id)
+            .eq("topic_id", currentTopic.id)
+            .order("taken_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
         attemptRows = (attemptResult.data ?? []) as AttemptInput[];
         goalRow = (goalResult.data as GoalRow | null) ?? null;
+        diagnosticRow = (diagnosticResult.data as StoredDiagnostic | null) ?? null;
+        // 诊断取不到不该拖垮整页——它只是附加信息，与知识点的处理同一个道理
+        if (diagnosticResult.error) {
+          console.warn("诊断记录取不到，按没做过处理：", diagnosticResult.error.message);
+        }
       }
 
       setGoal(goalRow);
       setAttempts(attemptRows);
+      setLastDiagnostic(diagnosticRow);
 
       // 5) 算三样东西：矩阵统计、每题状态、今日计划
       setRows(
@@ -361,13 +438,310 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     return { questions, done, unleveled };
   }, [rows]);
 
+  // ---------------- 诊断（M4） ----------------
+
+  /** 组卷要的模块列表。取矩阵行里的模块，顺序与页面上看到的一致 */
+  const diagnosticModules = useMemo(
+    () =>
+      rows.map((row) => ({
+        id: row.module.id,
+        name: row.module.name,
+        order_index: row.module.order_index,
+      })),
+    [rows],
+  );
+
+  const questionsById = useMemo(() => {
+    const map = new Map<string, QuizQuestion>();
+    for (const question of questions) map.set(question.id, question);
+    return map;
+  }, [questions]);
+
+  /**
+   * 诊断要的题目视图：模块与层级在这里归一成「有值或 null」。
+   *
+   * 不直接把 questionsById 传下去，是因为 QuizQuestion 里这两列是可选的
+   * （有些题库没有层级），而诊断的推断逻辑必须能区分「没标层级」和「标了 0」。
+   * 在边界上归一一次，比让推断函数到处处理 undefined 干净。
+   */
+  const diagnosticQuestionsById = useMemo(() => {
+    const map = new Map<string, DiagnosticQuestion>();
+    for (const question of questions) {
+      map.set(question.id, {
+        id: question.id,
+        module_id: question.module_id ?? null,
+        level: question.level ?? null,
+        type: question.type,
+        knowledge_point: question.knowledge_point ?? null,
+      });
+    }
+    return map;
+  }, [questions]);
+
+  /**
+   * 预览卷子。
+   *
+   * 只在「开始诊断」那一刻取快照。之后答题会写 practice_attempts，
+   * 而组卷规则里「优先没做过的题」依赖作答记录——若一路重算，
+   * 卷子会随着作答变化，等于边考边改卷。
+   */
+  const diagnosticPreview = useMemo(
+    () =>
+      buildDiagnosticPaper(
+        diagnosticModules,
+        questions.map((question) => {
+          const extra = question as QuizQuestion & {
+            module_id?: string | null;
+            level?: number | null;
+          };
+          return {
+            id: question.id,
+            module_id: extra.module_id ?? null,
+            level: extra.level ?? null,
+            type: question.type,
+            knowledge_point: question.knowledge_point ?? null,
+          };
+        }),
+        attempts.map((attempt) => attempt.question_id),
+      ),
+    [diagnosticModules, questions, attempts],
+  );
+
+  /** 抽不出可判分题的层号（去重）。中项是 L5——那一层全是实操题 */
+  const untestableLevels = useMemo(
+    () => Array.from(new Set(diagnosticPreview.gaps.map((gap) => gap.level))).sort(),
+    [diagnosticPreview],
+  );
+
+  const storedDiagnostic = useMemo(() => readStoredDiagnostic(lastDiagnostic), [lastDiagnostic]);
+
+  function startDiagnostic() {
+    if (diagnosticPreview.items.length === 0) return;
+    setDiagnosticPaper(diagnosticPreview);
+    setDiagnosticAnswers({});
+    setDiagnosticSelected({});
+    setDiagnosticInference(null);
+    setDiagnosticAdvice(null);
+    setAdviceError(null);
+    setSaveError(null);
+    setDiagnosticSaved(false);
+    setIsDiagnosing(true);
+  }
+
+  function handleDiagnosticAnswered(info: {
+    questionId: string;
+    correct: boolean;
+    selected: string | string[] | null;
+  }) {
+    setDiagnosticAnswers((prev) => ({ ...prev, [info.questionId]: info.correct }));
+    setDiagnosticSelected((prev) => ({ ...prev, [info.questionId]: info.selected }));
+  }
+
+  /** 中断诊断：卷子作废，已答的题仍留在练习记录里（那是事实，不该抹掉） */
+  function exitDiagnostic() {
+    setIsDiagnosing(false);
+    setDiagnosticPaper(null);
+    void load();
+  }
+
+  /** 归因材料：错题的题干、我选的、正确答案、所属知识点 */
+  function buildAdvicePayload(inference: DiagnosticInference) {
+    if (!diagnosticPaper) return null;
+
+    const detailMap = new Map<
+      string,
+      {
+        title: string;
+        type: string;
+        selected: string | null;
+        correct: string | null;
+        knowledgePointName: string | null;
+      }
+    >();
+
+    for (const question of questions) {
+      const selected = diagnosticSelected[question.id];
+      const kpId = question.knowledge_point ?? null;
+      const kpName = kpId
+        ? (knowledgePoints.find((item) => item.id === kpId)?.name ?? null)
+        : null;
+      detailMap.set(question.id, {
+        title: question.title,
+        type: question.type,
+        selected: Array.isArray(selected) ? selected.join("、") : selected,
+        // 正确答案由判分那套归一化保证一致，这里只负责展示
+        correct: question.answer,
+        knowledgePointName: kpName,
+      });
+    }
+
+    const wrong = collectWrongAnswers(inference, diagnosticPaper, diagnosticQuestionsById, detailMap);
+
+    const modules = inference.modules.map((verdict) => ({
+      moduleId: verdict.moduleId,
+      moduleName: verdict.moduleName,
+      reached: verdict.reached,
+      stoppedAt: verdict.stoppedAt,
+      wrongAnswers: wrong
+        .filter((item) => item.moduleId === verdict.moduleId)
+        .map((item) => ({
+          questionId: item.questionId,
+          level: item.level,
+          title: item.title,
+          selected: item.selected,
+          correct: item.correct,
+          knowledgePointName: item.knowledgePointName,
+        })),
+      // 候选知识点约束模型别自己编名字
+      knowledgePointNames: knowledgePoints
+        .filter((kp) => kp.module_id === verdict.moduleId)
+        .map((kp) => kp.name),
+    }));
+
+    return {
+      topicName: topic?.name ?? "",
+      levelDefinition: topic?.level_definition ?? normalizeLevelDefinition(undefined),
+      modules,
+    };
+  }
+
+  async function requestAdvice(inference: DiagnosticInference) {
+    const payload = buildAdvicePayload(inference);
+    if (!payload) return;
+
+    // 没有错题就不必花钱调模型：全对时归因无从谈起，结论本身就够了
+    const hasWrong = payload.modules.some((module) => module.wrongAnswers.length > 0);
+    if (!hasWrong) {
+      setDiagnosticAdvice(null);
+      setAdviceVersion((version) => version + 1);
+      return;
+    }
+
+    setIsLoadingAdvice(true);
+    setAdviceError(null);
+
+    try {
+      const response = await fetch("/api/learning/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await response.json()) as { advice?: DiagnosticAdvice; error?: string };
+
+      if (!response.ok || !body.advice) {
+        throw new Error(body.error ?? "归因生成失败。");
+      }
+
+      setDiagnosticAdvice(body.advice);
+      setAdviceVersion((version) => version + 1);
+    } catch (caught) {
+      setAdviceError(readErrorMessage(caught, "归因生成失败。"));
+    } finally {
+      setIsLoadingAdvice(false);
+    }
+  }
+
+  /**
+   * 整卷答完 → 判层级 → 要归因。
+   *
+   * 层级先算先显示：归因要调模型（几秒到几十秒），而层级是本地规则、瞬时出。
+   * 让人先看到「判到第几层」，再看归因，比等一个大 spinner 好。
+   */
+  async function finishDiagnostic() {
+    if (!diagnosticPaper) return;
+    const inference = inferLevels(diagnosticModules, diagnosticPaper, diagnosticAnswers);
+    setDiagnosticInference(inference);
+    setIsDiagnosing(false);
+    void load();
+    await requestAdvice(inference);
+  }
+
+  async function saveDiagnostic(edited: DiagnosticAdvice | null) {
+    if (!diagnosticInference || !diagnosticPaper || !topic) return;
+
+    setIsSavingDiagnostic(true);
+    setSaveError(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("登录状态失效，请重新登录。");
+
+      const payload = buildAdvicePayload(diagnosticInference);
+      const wrongList = payload
+        ? payload.modules.flatMap((module) =>
+            module.wrongAnswers.map((item) => ({
+              moduleId: module.moduleId,
+              level: item.level,
+              questionId: item.questionId,
+              title: item.title,
+            })),
+          )
+        : [];
+
+      const { error } = await supabase.from("learning_diagnostics").insert({
+        id: `diag-${user.id}-${topic.id}-${Date.now()}`,
+        user_id: user.id,
+        topic_id: topic.id,
+        // 取值受 learning_diagnostics_kind_check 约束：只能 baseline / module_gate / retest。
+        // 首次诊断 = baseline（基线）。以后加「阶段复测」用 retest，不必改表。
+        kind: "baseline",
+        result: {
+          version: 1,
+          takenAt: new Date().toISOString(),
+          paperSize: diagnosticPaper.items.length,
+          answered: diagnosticInference.answered,
+          repeatedCount: diagnosticInference.repeatedCount,
+          gapCount: diagnosticInference.gapCount,
+          inference: {
+            headline: diagnosticInference.headline,
+            modules: diagnosticInference.modules.map((module) => ({
+              moduleId: module.moduleId,
+              moduleName: module.moduleName,
+              reached: module.reached,
+              passedLevels: module.passedLevels,
+              stoppedAt: module.stoppedAt,
+            })),
+          },
+          // 答了哪几道、哪几道错了，原样留一份：结论可以改，事实不行
+          wrongAnswers: wrongList,
+          // 人改过的归因也存，所以下次打开看到的是「我确认过的版本」
+          advice: edited,
+        },
+      });
+
+      if (error) throw error;
+
+      setDiagnosticSaved(true);
+      await load();
+    } catch (caught) {
+      // Supabase 的 PostgrestError 不是 Error 实例（只有 message/details/hint），
+      // 用 `caught instanceof Error` 判断会把真实原因吞掉，只剩一句「保存失败」。
+      // 这次的教训很具体：kind 违反 CHECK 约束，界面却什么都没说，只能靠去库里翻约束。
+      setSaveError(readErrorMessage(caught));
+    } finally {
+      setIsSavingDiagnostic(false);
+    }
+  }
+
+  /** 结果不保存就退回入口。卷子作废，但已答记录保留 */
+  function discardDiagnostic() {
+    setDiagnosticInference(null);
+    setDiagnosticAdvice(null);
+    setAdviceError(null);
+    setSaveError(null);
+    setDiagnosticSaved(false);
+    setDiagnosticPaper(null);
+  }
+
   // 进练习：题池与标签都由调用方给，矩阵格子与今日计划共用这一条路
   function startQuiz(pool: QuizQuestion[], label: string) {
     if (pool.length === 0) return;
     setQuizQueue(pool);
     setQuizLabel(label);
   }
-
   // 点格子：只把该模块该层的题放进题池，按 id 排好保证顺序稳定
   function enterCell(moduleId: string, moduleName: string, level: Level) {
     const pool = questions.filter((question) => {
@@ -433,6 +807,34 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   const noteDrawer = openNote ? (
     <KnowledgeNoteDrawer note={openNote} onClose={() => setOpenNote(null)} />
   ) : null;
+
+  // 诊断进行中：整页交给答题组件，样式与练习一致——人已经熟悉这个界面了，
+  // 换一套版式只会让他重新找按钮在哪。
+  //
+  // 刻意**不传讲义**：诊断期间翻讲义等于查答案，测出来的是「翻找能力」不是「掌握程度」。
+  // 这也是诊断与练习的实质区别——练习是学，诊断是测。
+  if (isDiagnosing && diagnosticPaper) {
+    const pool = diagnosticPaper.items
+      .map((item) => questionsById.get(item.questionId))
+      .filter((question): question is QuizQuestion => Boolean(question));
+
+    return (
+      <>
+        <PracticeQuiz
+          questions={pool}
+          modeLabel="能力诊断"
+          variant="diagnostic"
+          attemptContext={{ kind: "diagnostic", topicId: topic?.id ?? null }}
+          onAnswered={handleDiagnosticAnswered}
+          onSubmitAll={{
+            label: "生成诊断结论",
+            onClick: () => void finishDiagnostic(),
+          }}
+          onExit={exitDiagnostic}
+        />
+      </>
+    );
+  }
 
   if (quizQueue) {
     return (
@@ -589,6 +991,35 @@ export function LearningTopic({ topicId }: { topicId: string }) {
               </p>
             ) : null}
           </section>
+
+          {/* 诊断：今日计划说「今天做什么」，这一块说「你现在到哪了」。
+              两块挨着放是刻意的——先看今天，再看位置，顺序反了会先被结论压住。 */}
+          {diagnosticInference ? (
+            <DiagnosticReport
+              key={`diagnostic-report-${adviceVersion}`}
+              inference={diagnosticInference}
+              advice={diagnosticAdvice}
+              adviceError={adviceError}
+              isLoadingAdvice={isLoadingAdvice}
+              levelLabels={levelLabels}
+              isSaving={isSavingDiagnostic}
+              saved={diagnosticSaved}
+              saveError={saveError}
+              onRetryAdvice={() => void requestAdvice(diagnosticInference)}
+              onSave={(edited) => void saveDiagnostic(edited)}
+              onDiscard={discardDiagnostic}
+            />
+          ) : (
+            <DiagnosticEntry
+              questionCount={diagnosticPreview.items.length}
+              moduleCount={diagnosticModules.length}
+              untestableLevels={untestableLevels}
+              lastDiagnostic={storedDiagnostic}
+              levelLabels={levelLabels}
+              isStarting={isDiagnosing}
+              onStart={startDiagnostic}
+            />
+          )}
 
           {/* 关键节点：报名是唯一不可挽回的节点，所以排在最前面 */}
           <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">

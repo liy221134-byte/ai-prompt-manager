@@ -28,6 +28,15 @@ export type QuizQuestion = {
   created_at?: string;
   /** 所属知识点（v4 主题包题目才有）。用来在解析旁挂「看这个知识点的讲义」入口 */
   knowledge_point?: string | null;
+  /**
+   * 归属模块与能力层级（v4 主题包题目才有）。
+   *
+   * 这两列本来就在 QUESTION_COLUMNS 里查出来了，之前类型上没写，
+   * 导致每处用它们都要 `as QuizQuestion & { module_id?: ... }` 强转一遍。
+   * 类型对齐查询结果，比在每个调用点重复断言可靠。
+   */
+  module_id?: string | null;
+  level?: number | null;
 };
 
 /** 讲义的最小形态。定义在这里而不是 import 抽屉组件，是为了让练习组件不依赖页面层的类型 */
@@ -44,6 +53,9 @@ export type StatusMap = Record<string, QuestionStatus>;
 
 type AttemptRecord = { selected: string | string[] | null; correct: boolean };
 
+/** 诊断模式只借用答题外壳：卷子固定、不许重做、不许追加题、不显示历史状态 */
+export type QuizVariant = "practice" | "diagnostic";
+
 // 两栏布局：左侧习题树（按分类分组、带状态色点、可点击跳转），右侧答题区。
 // questions 为本次可导航的题目集合；initialIndex 指定进入时定位到哪一道。
 export function PracticeQuiz({
@@ -54,6 +66,10 @@ export function PracticeQuiz({
   notes,
   onOpenNote,
   onExit,
+  variant = "practice",
+  attemptContext,
+  onAnswered,
+  onSubmitAll,
 }: {
   questions: QuizQuestion[];
   initialIndex?: number;
@@ -63,7 +79,20 @@ export function PracticeQuiz({
   notes?: Record<string, QuizNote>;
   onOpenNote?: (kpId: string) => void;
   onExit: () => void;
+  /** 诊断模式下隐藏「重做本题 / 同类再抽」，且不显示历史作答状态 */
+  variant?: QuizVariant;
+  /** 写进 practice_attempts.context。诊断作答靠它和日常练习分开 */
+  attemptContext?: Record<string, unknown>;
+  /** 每答完一题回调一次。诊断靠它收集本次作答 */
+  onAnswered?: (info: {
+    questionId: string;
+    correct: boolean;
+    selected: string | string[] | null;
+  }) => void;
+  /** 诊断专用：全部答完后在左栏出现的收口按钮 */
+  onSubmitAll?: { label: string; onClick: () => void };
 }) {
+  const isDiagnostic = variant === "diagnostic";
   // 内部队列（同类再抽时会往里追加），初始为传入的题目集合
   const [queue, setQueue] = useState<QuizQuestion[]>(questions);
   const [index, setIndex] = useState(initialIndex);
@@ -79,13 +108,14 @@ export function PracticeQuiz({
   const isMulti = current?.type === "多选";
   const isPractical = current?.type === "实操";
 
-  // 计算某题的当前状态：优先用本轮已答记录，否则用首页传来的历史状态
+  // 计算某题的当前状态：优先用本轮已答记录，否则用首页传来的历史状态。
+  // 诊断刻意不给历史状态——看到「这题以前做过、做错了」会影响本次作答的诚实度。
   function statusOf(id: string): QuestionStatus {
     const a = attempts[id];
     if (a) {
       return a.correct ? "已做" : "错题";
     }
-    return statusMap?.[id] ?? "未做";
+    return (isDiagnostic ? undefined : statusMap?.[id]) ?? "未做";
   }
 
   // 切到另一题：把答题区状态重置到目标题——本轮答过就回显该题的选项与对错，否则清空。
@@ -109,14 +139,19 @@ export function PracticeQuiz({
     setIndex(nextIndex);
   }
 
+  // 诊断模式只数本轮答的题：以前做过的不算进「已完成」，否则刚进来就显示 24/24，
+  // 人会以为卷子已经答完。
   const answeredCount = useMemo(
     () =>
       queue.filter(
         (q) =>
-          attempts[q.id] !== undefined || statusMap?.[q.id] !== undefined,
+          attempts[q.id] !== undefined ||
+          (!isDiagnostic && statusMap?.[q.id] !== undefined),
       ).length,
-    [queue, attempts, statusMap],
+    [queue, attempts, statusMap, isDiagnostic],
   );
+
+  const allAnswered = answeredCount === queue.length && queue.length > 0;
 
   // 左侧树：按分类分组（保持题目原有顺序）
   const grouped = useMemo(() => {
@@ -179,6 +214,9 @@ export function PracticeQuiz({
           question_id: current.id,
           selected: JSON.stringify(selected),
           is_correct: correct,
+          // 诊断作答靠这个标记与日常练习分开：矩阵怎么算不受影响，
+          // 但以后要单独统计「诊断得分率」或清理诊断记录时，没有这个标记就分不出来。
+          ...(attemptContext ? { context: attemptContext } : {}),
         });
 
       if (insertError) {
@@ -190,6 +228,7 @@ export function PracticeQuiz({
         ...prev,
         [current.id]: { selected, correct },
       }));
+      onAnswered?.({ questionId: current.id, correct, selected });
     } catch (caught) {
       setSubmitError(caught instanceof Error ? caught.message : "提交失败。");
     } finally {
@@ -279,12 +318,36 @@ export function PracticeQuiz({
               onClick={onExit}
               type="button"
             >
-              退出练习
+              {isDiagnostic ? "中断诊断" : "退出练习"}
             </button>
           </div>
           <p className="mt-1 text-xs text-slate-400">
             已完成 {answeredCount}/{queue.length} · 点击左侧题目可任意跳转
           </p>
+
+          {/* 诊断的收口口子。放在左栏而不是右侧答题区末尾：
+              人在第 12 题时看不到卷尾，但随时能在左栏看到「还差几题」，
+              知道还差 3 题就不会中途去干别的。 */}
+          {isDiagnostic && onSubmitAll ? (
+            <div className="mt-3 rounded-md bg-slate-50 px-3 py-2">
+              {allAnswered ? (
+                <>
+                  <p className="text-xs text-emerald-700">全部答完了</p>
+                  <button
+                    className="mt-1.5 inline-flex h-9 w-full items-center justify-center rounded-md bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700"
+                    onClick={onSubmitAll.onClick}
+                    type="button"
+                  >
+                    {onSubmitAll.label}
+                  </button>
+                </>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  还差 {queue.length - answeredCount} 题。诊断要整卷答完才判得准。
+                </p>
+              )}
+            </div>
+          ) : null}
 
           <nav className="mt-3 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
             {grouped.map(([category, items]) => (
@@ -487,24 +550,28 @@ export function PracticeQuiz({
               <MarkdownContent content={current.explanation_md} />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              {!result.correct && (
+            {/* 诊断卷固定：重做会改掉本次作答，再抽会把卷子变长、判不出该判的格子。
+                这两个按钮在练习里有用，在诊断里是污染。 */}
+            {isDiagnostic ? null : (
+              <div className="flex flex-wrap gap-3">
+                {!result.correct && (
+                  <button
+                    className="inline-flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-700"
+                    onClick={retryCurrent}
+                    type="button"
+                  >
+                    重做本题
+                  </button>
+                )}
                 <button
-                  className="inline-flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-700"
-                  onClick={retryCurrent}
+                  className="inline-flex h-11 items-center justify-center rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 hover:border-blue-300"
+                  onClick={appendSimilar}
                   type="button"
                 >
-                  重做本题
+                  同类随机再抽（2）
                 </button>
-              )}
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-lg border border-[#dbe7f5] bg-white px-5 text-sm font-semibold text-slate-700 hover:border-blue-300"
-                onClick={appendSimilar}
-                type="button"
-              >
-                同类随机再抽（2）
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         )}
 
