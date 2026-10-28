@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中项入学诊断 · v4 学习系统</title>
+<style>
+  :root {
+    --ink: #1c1d21;
+    --ink-2: #4a4d55;
+    --ink-3: #767a83;
+    --line: #e2e3e7;
+    --bg: #fbfbfc;
+    --card: #ffffff;
+    --accent: #2b5c8a;
+    --ok: #1f7a4d;
+    --bad: #a8322d;
+    --warn: #8a6a1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px 120px; }
+  header.bar {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(251,251,252,.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar-in {
+    max-width: 860px; margin: 0 auto; padding: 12px 24px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .bar h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .01em; }
+  .bar .meta { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .spacer { flex: 1; }
+  .timer { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); }
+  .timer.low { color: var(--bad); }
+
+  .lede { margin: 32px 0 8px; }
+  .lede h2 { font-size: 24px; margin: 0 0 10px; font-weight: 600; }
+  .lede p { color: var(--ink-2); margin: 8px 0; }
+  .rules { margin: 20px 0 0; padding: 16px 20px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  .rules ol { margin: 8px 0 0; padding-left: 22px; color: var(--ink-2); }
+  .rules li { margin: 6px 0; }
+
+  .mod-head {
+    margin: 44px 0 4px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  }
+  .mod-head h3 { font-size: 18px; margin: 0; font-weight: 600; }
+  .mod-head span { color: var(--ink-3); font-size: 13px; }
+
+  .q { padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .q-no { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; margin-bottom: 6px; }
+  .q-no b { color: var(--accent); font-weight: 600; }
+  .q-stem { margin: 0 0 14px; white-space: pre-wrap; }
+  .opts { display: grid; gap: 8px; }
+  .opt {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--card); cursor: pointer; transition: border-color .12s, background .12s;
+  }
+  .opt:hover { border-color: #c3c6cc; }
+  .opt input { margin: 5px 0 0; flex: none; accent-color: var(--accent); }
+  .opt.picked { border-color: var(--accent); background: #f2f6fa; }
+  .opt .key { font-weight: 600; color: var(--ink-2); flex: none; }
+  textarea {
+    width: 100%; min-height: 96px; padding: 12px 14px;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--card);
+    font: inherit; color: var(--ink); resize: vertical;
+  }
+  textarea:focus, .opt:focus-within { outline: 2px solid rgba(43,92,138,.35); outline-offset: 1px; }
+
+  .submit-bar { margin: 40px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  button {
+    font: inherit; padding: 10px 22px; border-radius: 6px; border: 1px solid var(--ink);
+    background: var(--ink); color: #fff; cursor: pointer;
+  }
+  button:hover { background: #33363c; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  button.ghost:hover { background: #f1f2f4; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .selfgrade { margin: 36px 0 0; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  .selfgrade h3 { margin: 0 0 6px; font-size: 16px; }
+  .selfgrade > p { color: var(--ink-3); font-size: 14px; margin: 0 0 18px; }
+  .sg-item { padding: 16px 0; border-top: 1px solid var(--line); }
+  .sg-item .ref { background: #f6f7f9; border-left: 3px solid var(--accent); padding: 10px 14px; margin: 10px 0; font-size: 14px; color: var(--ink-2); white-space: pre-wrap; }
+  .sg-item label { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; font-size: 14px; cursor: pointer; }
+  .sg-item input { margin: 6px 0 0; flex: none; accent-color: var(--ok); }
+
+  table.matrix { width: 100%; border-collapse: collapse; margin: 16px 0 8px; font-size: 14px; }
+  table.matrix th, table.matrix td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; }
+  table.matrix th:first-child, table.matrix td:first-child { text-align: left; }
+  table.matrix thead th { font-weight: 600; color: var(--ink-2); border-bottom: 2px solid var(--ink); }
+  td.pass { color: var(--ok); font-weight: 600; }
+  td.fail { color: var(--bad); }
+  td.none { color: #b9bcc2; }
+  td.cur { font-weight: 600; }
+
+  .verdict { margin: 24px 0; padding: 20px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--ink); border-radius: 6px; }
+  .verdict h3 { margin: 0 0 10px; font-size: 16px; }
+  .verdict ul { margin: 8px 0 0; padding-left: 20px; }
+  .verdict li { margin: 6px 0; color: var(--ink-2); }
+
+  pre.export { background: #f4f5f7; border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.7; white-space: pre; color: var(--ink-2); }
+  .hint { color: var(--ink-3); font-size: 14px; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 7px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-3); margin-left: 6px; vertical-align: 1px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <h1>中项入学诊断</h1>
+    <span class="meta" id="progress">0 / 40 已答</span>
+    <span class="spacer"></span>
+    <span class="timer" id="timer">90:00</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section id="intro">
+    <div class="lede">
+      <h2>这一次的目的是定位，不是考分。</h2>
+      <p>40 题，90 分钟。它要回答的只有一个问题：<strong>在 6 个内容模块上，你各自停在第几层能力。</strong></p>
+      <p>分数没有意义，所以不要为了好看去猜。<strong>不会就空着</strong> —— 空着也是信息，它代表根本没学过。</p>
+    </div>
+    <div class="rules">
+      <strong>作答规则</strong>
+      <ol>
+        <li>闭卷。不查资料、不问人、不用搜索。</li>
+        <li>90 分钟到点自动交卷，没答完的部分按未答计。</li>
+        <li>单选只有一个正确答案；简答题写关键词即可，不用凑字数。</li>
+        <li>提交后需要你给简答题做一次自评（勾出命中了哪几个要点）。这一步必须诚实——自己骗自己，这份矩阵就是废纸。</li>
+      </ol>
+    </div>
+    <div class="submit-bar">
+      <button id="start">开始作答（计时启动）</button>
+      <span class="hint">开始后计时不会暂停</span>
+    </div>
+  </section>
+
+  <main id="quiz" hidden></main>
+
+  <section id="selfgrade" hidden>
+    <div class="selfgrade">
+      <h3>客观题已判完。现在做简答题自评。</h3>
+      <p>下面每道题都给了参考答案和要点清单。<strong>只勾你真的写到了的要点</strong>，措辞不同但意思到了也算。</p>
+      <div id="sg-list"></div>
+      <div class="submit-bar">
+        <button id="finish">生成诊断矩阵</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="result" hidden></section>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+// 一、题目数据
+// 模块：S1—S6；层级：L1 认得 / L2 说得出 / L3 算得出 / L4 判得准 / L5 迁得动
+// 客观题（single/judge）自动判；主观题（text）给要点清单，自评勾选
+// ─────────────────────────────────────────────────────────
+
+const MODULES = [
+  { id: 'S1', name: '项目管理框架',        note: '教材第 9 章' },
+  { id: 'S2', name: '五大过程组实操',      note: '第 10—14 章' },
+  { id: 'S3', name: '信息技术基础',        note: '第 1—8 章' },
+  { id: 'S4', name: '组织保障与监理',      note: '第 15—16 章' },
+  { id: 'S5', name: '法规与职业道德',      note: '第 17—18 章' },
+  { id: 'S6', name: '应试专项',            note: '计算 / 案例 / 英文' },
+];
+
+const LEVEL_NAMES = { 1: 'L1 认得', 2: 'L2 说得出', 3: 'L3 算得出', 4: 'L4 判得准', 5: 'L5 迁得动' };
+
+const QUESTIONS = [
+  // ── S1 ──────────────────────────────────────────────
+  { id: 'Q1', m: 'S1', kp: 'KP-0101', level: 1, type: 'single',
+    stem: '下列关于项目与运营关系的说法，正确的是？',
+    options: [
+      '项目是持续重复的，运营是临时性的',
+      '项目的两个本质特征是临时性和独特性，运营是持续、重复的',
+      '项目与运营没有本质区别，只是叫法不同',
+      '项目必须有明确预算，运营不需要',
+    ], answer: 1 },
+
+  { id: 'Q2', m: 'S1', kp: 'KP-0101', level: 1, type: 'single',
+    stem: '项目特征中的「渐进明细」指的是？',
+    options: [
+      '项目范围在启动时就完全确定，此后不再变化',
+      '项目的相关信息和细节随着项目推进逐步明确、逐步细化',
+      '项目成本会逐步增加',
+      '项目团队规模会逐步扩大',
+    ], answer: 1 },
+
+  { id: 'Q3', m: 'S1', kp: 'KP-0102', level: 2, type: 'text',
+    stem: '不看资料，写出五大过程组的名称，并说明它们之间是时间顺序还是逻辑关系。',
+    ref: '启动、规划、执行、监控、收尾。\n\n它们是**逻辑分组**，不是严格的先后时序：在实际项目中高度交叠、循环往复——监控贯穿全程，收尾在每个阶段末都可能发生。',
+    points: [
+      '写全五个名称：启动、规划、执行、监控、收尾',
+      '指出是逻辑分组，不是严格的时间先后顺序',
+      '提到它们会重叠 / 循环（监控贯穿全程，或收尾在每个阶段末出现）',
+    ] },
+
+  { id: 'Q4', m: 'S1', kp: 'KP-0103', level: 2, type: 'single',
+    stem: '下列哪一组，全部属于项目管理的十大知识领域？',
+    options: [
+      '范围管理、进度管理、成本管理、质量管理',
+      '范围管理、进度管理、投资管理、安全管理',
+      '质量管理、合同管理、信息管理、组织协调',
+      '整合管理、风险管理、采购管理、监理管理',
+    ], answer: 0,
+    why: '投资与安全是监理的「四控」，合同与信息是「两管」，监理管理根本不是知识领域。' },
+
+  { id: 'Q5', m: 'S1', kp: 'KP-0104', level: 3, type: 'single',
+    stem: '项目经理对项目成员有较强的控制力，但成员的人事关系仍归属职能部门、项目结束后回归原部门。这属于哪种组织结构？',
+    options: ['职能型', '弱矩阵型', '强矩阵型', '项目型'],
+    answer: 2,
+    why: '「仍归属职能部门」排除项目型（项目型里成员完全脱离原部门）；「较强控制力」排除职能型与弱矩阵。' },
+
+  { id: 'Q6', m: 'S1', kp: 'KP-0104', level: 4, type: 'single',
+    stem: '某公司设立 PMO，提供模板与培训，要求各项目必须按模板执行、但方法细节可自行决定，不服从会被通报。这属于哪种类型的 PMO？',
+    options: ['支持型', '控制型', '指令型', '混合型'],
+    answer: 1,
+    why: '三者只差在「强制程度」这一个轴上：支持型＝顾问式不问；控制型＝要求遵守但不管方法；指令型＝直接接管项目管理。' },
+
+  { id: 'Q7', m: 'S1', kp: 'KP-0105', level: 4, type: 'single',
+    stem: '项目执行中，两名核心成员因分工问题长期冲突，已经影响交付。项目经理首先应该做的是？',
+    options: [
+      '立即上报高层，交由 HR 处理',
+      '调整组织架构，把两人分到不同项目',
+      '识别冲突的根源，按团队管理过程介入处理',
+      '要求双方各写一份检讨，先压下情绪',
+    ], answer: 2,
+    why: '冲突管理的顺序是「先识别、再选策略」。跳过识别直接上手段（调架构、上报、压情绪），是把症状当原因。' },
+
+  // ── S2 ──────────────────────────────────────────────
+  { id: 'Q8', m: 'S2', kp: 'KP-0201', level: 1, type: 'single',
+    stem: '项目章程通常由谁签发？',
+    options: ['项目经理', '项目发起人或高层管理者', '客户方的项目经理', 'PMO'],
+    answer: 1,
+    why: '项目章程的作用之一是**授权**项目经理，所以不能由项目经理自己签发——自己授权自己，形式上就不成立。' },
+
+  { id: 'Q9', m: 'S2', kp: 'KP-0202', level: 2, type: 'single',
+    stem: '创建工作分解结构（WBS）最核心的作用是？',
+    options: [
+      '确定项目总工期',
+      '把可交付成果逐层分解为可管理的工作包，界定项目范围',
+      '分配项目预算',
+      '识别项目风险',
+    ], answer: 1 },
+
+  { id: 'Q10', m: 'S2', kp: 'KP-0206', level: 1, type: 'single',
+    stem: '某项目 EV = 500，PV = 600。进度偏差 SV 及其含义是？',
+    options: [
+      'SV = +100，进度超前',
+      'SV = −100，进度落后',
+      'SV = −100，成本超支',
+      'SV = +100，成本节约',
+    ], answer: 1,
+    why: 'SV = EV − PV = −100 &lt; 0 ⇒ 进度落后。成本看 CV = EV − AC，这题没给 AC，所以「成本超支」无从判断。' },
+
+  { id: 'Q11', m: 'S2', kp: 'KP-0206', level: 3, type: 'text',
+    stem: '某项目 BAC = 1200 万元，EV = 400 万元，PV = 500 万元，AC = 450 万元。\n求 SV、CV、SPI、CPI、EAC（按 CPI 法），并判断进度与成本状态。',
+    ref: 'SV = 400 − 500 = −100（进度落后）\nCV = 400 − 450 = −50（成本超支）\nSPI = 400 / 500 = 0.8\nCPI = 400 / 450 ≈ 0.889\nEAC = BAC / CPI = 1200 / 0.889 ≈ 1350 万元\n\n结论：进度落后、成本超支，按当前绩效完工要多花约 150 万元。',
+    points: [
+      'SV = −100，判断进度落后',
+      'CV = −50，判断成本超支',
+      'SPI = 0.8',
+      'CPI ≈ 0.889',
+      'EAC ≈ 1350 万元',
+    ] },
+
+  { id: 'Q12', m: 'S2', kp: 'KP-0207', level: 3, type: 'text',
+    stem: '项目执行中客户提出一项范围变更。请按标准流程写出处理步骤（不少于 5 步）。',
+    ref: '提出书面变更申请 → 分析变更影响（范围 / 进度 / 成本 / 质量） → 提交 CCB 审批 → 批准后更新相关计划与基准 → 实施变更 → 验证并记录 → 通知干系人\n\n判分核心是 **CCB 审批** 和 **更新基准** 这两步。',
+    points: [
+      '提出书面变更申请（不能只是口头）',
+      '分析变更影响，覆盖范围 / 进度 / 成本 / 质量中的至少两项',
+      '提交 CCB（变更控制委员会）审批',
+      '批准后更新计划与基准',
+      '实施后验证、记录并通知干系人',
+    ] },
+
+  { id: 'Q13', m: 'S2', kp: 'KP-0207', level: 4, type: 'single',
+    stem: '客户口头要求增加一个报表，开发组长认为工作量不大，当天就改完上线，未通知测试与其他干系人。从变更管理角度，最严重的问题是？',
+    options: [
+      '没有提交书面变更申请',
+      '未做变更影响分析、未走 CCB 审批、未更新基准',
+      '没有做回归测试',
+      '没有让客户签字确认',
+    ], answer: 1,
+    why: 'A/C/D 都是流程枝节，B 是流程主干——影响分析、审批、更新基准这三步缺了，范围就已经失控，其它问题都是它的后果。' },
+
+  { id: 'Q14', m: 'S2', kp: 'KP-0204', level: 2, type: 'single',
+    stem: '关于质量保证与质量控制，下列说法正确的是？',
+    options: [
+      '两者都属于监控过程组',
+      '质量保证属于执行过程组，质量控制属于监控过程组',
+      '质量保证属于监控过程组，质量控制属于执行过程组',
+      '两者都属于执行过程组',
+    ], answer: 1,
+    why: '质量保证是「保证过程做对」（执行），质量控制是「检查结果对不对」（监控）。这两个放反是选择题的高频陷阱。' },
+
+  { id: 'Q15', m: 'S2', kp: 'KP-0205', level: 4, type: 'single',
+    stem: '某项目主体交付已完成、客户已验收，但合同尚未正式关闭、经验教训尚未归档。此时项目处于什么状态？',
+    options: [
+      '仍在执行过程组',
+      '已进入收尾过程组，但还有工作未完成',
+      '项目已经结束',
+      '已转入运维阶段',
+    ], answer: 1,
+    why: '验收 ≠ 收尾。合同关闭、经验教训归档、资源释放都属于收尾过程组，做完这些项目才算结束。' },
+
+  { id: 'Q16', m: 'S2', kp: 'KP-0206', level: 2, type: 'single',
+    stem: '某项目 CPI = 1.1，SPI = 0.9，说明？',
+    options: [
+      '成本超支，进度超前',
+      '成本节约，进度落后',
+      '成本节约，进度超前',
+      '成本超支，进度落后',
+    ], answer: 1,
+    why: 'CPI &gt; 1 表示花得比计划少（节约），SPI &lt; 1 表示干得比计划慢（落后）。' },
+
+  { id: 'Q17', m: 'S2', kp: 'KP-0201', level: 5, type: 'text',
+    stem: '任选一个你做过的真实项目，写出它经历过哪些过程组，并指出哪个过程组做得最弱、造成了什么后果。（150 字以内）',
+    ref: '这题没有标准答案，看的是「真实」和「具体」。\n\n合格的答案长这样：我做的数据共享平台项目，启动阶段有立项和章程，规划阶段做了 WBS 和进度计划，执行阶段开发与联调，监控阶段只有周报没有挣值分析，收尾阶段没做经验教训归档。最弱是监控——没有量化进度偏差，导致上线前两周才发现要延期，最后靠加班硬扛。\n\n不合格的答案：只把五个过程组名字列一遍，不落到具体项目；或者只写「监控做得不好」，不说后果。',
+    points: [
+      '列出了具体的过程组，且与这个项目的真实情况对得上（不是背概念）',
+      '明确指出一个做得最弱的环节',
+      '说明了这个弱环节造成的具体后果',
+      '提到了可以怎么补（加分项）',
+    ] },
+
+  // ── S3 ──────────────────────────────────────────────
+  { id: 'Q18', m: 'S3', kp: 'KP-0302', level: 1, type: 'single',
+    stem: '云服务商只提供虚拟化的计算、存储、网络资源，操作系统及以上全部由用户自行管理。这属于哪种服务模型？',
+    options: ['IaaS', 'PaaS', 'SaaS', 'DaaS'],
+    answer: 0,
+    why: '判断口诀：看操作系统归谁管。归自己 = IaaS，归服务商但应用归自己 = PaaS，连应用都归服务商 = SaaS。' },
+
+  { id: 'Q19', m: 'S3', kp: 'KP-0308', level: 1, type: 'single',
+    stem: '我国网络安全等级保护制度将信息系统分为几个安全保护等级？',
+    options: ['3 级', '4 级', '5 级', '6 级'],
+    answer: 2 },
+
+  { id: 'Q20', m: 'S3', kp: 'KP-0302', level: 2, type: 'single',
+    stem: '大数据的「5V」特征不包括下列哪一项？',
+    options: ['Volume（数据量大）', 'Velocity（产生速度快）', 'Veracity（真实性）', 'Virtualization（虚拟化）'],
+    answer: 3,
+    why: '5V = Volume / Velocity / Variety / Value / Veracity。虚拟化是技术手段，不是大数据的特征。' },
+
+  { id: 'Q21', m: 'S3', kp: 'KP-0305', level: 2, type: 'text',
+    stem: '软件测试按阶段分为哪几类？并说明「系统测试」与「验收测试」的核心区别。',
+    ref: '按阶段：单元测试 → 集成测试 → 系统测试 → 验收测试。\n\n区别：系统测试由开发方组织，验证系统是否满足需求规格说明；验收测试由用户方组织，验证系统是否满足业务需要、能否接收。',
+    points: [
+      '写全四个阶段：单元、集成、系统、验收',
+      '指出系统测试由开发方做、对照需求规格',
+      '指出验收测试由用户方做、对照业务需要',
+    ] },
+
+  { id: 'Q22', m: 'S3', kp: 'KP-0304', level: 3, type: 'single',
+    stem: '把系统拆成若干可独立部署的服务，每个服务围绕一项业务能力构建，服务之间通过轻量级通信协作。这属于哪种架构风格？',
+    options: ['单体架构', '分层架构', '微服务架构', '管道-过滤器架构'],
+    answer: 2 },
+
+  { id: 'Q23', m: 'S3', kp: 'KP-0308', level: 4, type: 'single',
+    stem: '某市级政务数据共享平台涉及大量自然人信息，一旦遭到破坏，会对社会秩序和公共利益造成严重损害。按等保要求，它最低应达到几级？',
+    options: ['一级', '二级', '三级', '四级'],
+    answer: 2,
+    why: '定级看两个维度：受侵害的客体 + 侵害程度。「严重损害社会秩序和公共利益」对应三级。答四级是把「严重」和「特别严重」混了。' },
+
+  { id: 'Q24', m: 'S3', kp: 'KP-0306', level: 1, type: 'single',
+    stem: '关于数据治理与数据管理，下列说法正确的是？',
+    options: [
+      '两者是同义词，可以互换使用',
+      '数据治理是决策权与问责机制的安排，数据管理是具体的执行活动',
+      '数据管理的层次高于数据治理',
+      '数据治理只关注数据质量',
+    ], answer: 1,
+    why: '治理管「谁来决定、谁负责」，管理管「具体怎么做」。类比：治理是董事会定规则，管理是部门按规则干活。' },
+
+  { id: 'Q25', m: 'S3', kp: 'KP-0307', level: 2, type: 'single',
+    stem: '信息系统系统集成通常不包括下列哪一项？',
+    options: ['硬件设备集成', '网络系统集成', '应用软件集成', '组织结构重组'],
+    answer: 3,
+    why: '系统集成是技术层面的整合（硬件、网络、软件、数据），组织架构调整属于管理变革，不是集成的内容。' },
+
+  { id: 'Q26', m: 'S3', kp: 'KP-0303', level: 2, type: 'single',
+    stem: '按信息技术服务标准（ITSS），IT 服务的生命周期应覆盖哪几个阶段？',
+    options: [
+      '规划设计、部署实施、服务运营、持续改进、监督管理',
+      '需求分析、概要设计、详细设计、编码、测试',
+      '立项、招标、实施、验收、结算',
+      '采集、存储、计算、分析、展示',
+    ], answer: 0 },
+
+  { id: 'Q27', m: 'S3', kp: 'KP-0301', level: 1, type: 'single',
+    stem: '国家信息化体系的六要素中，处于龙头（核心）地位的是？',
+    options: ['信息技术应用', '信息资源', '信息网络', '信息化人才'],
+    answer: 0,
+    why: '六要素是应用、资源、网络、产业、人才、政策法规标准，其中「信息技术应用」是龙头——其它要素都围绕应用展开。' },
+
+  // ── S4 ──────────────────────────────────────────────
+  { id: 'Q28', m: 'S4', kp: 'KP-0402', level: 1, type: 'single',
+    stem: '信息系统工程监理的「四控两管一协调」中，「四控」指的是？',
+    options: [
+      '质量、进度、投资、安全',
+      '范围、进度、成本、质量',
+      '质量、进度、合同、信息',
+      '投资、质量、风险、变更',
+    ], answer: 0,
+    why: 'B 是项目管理的四要素，不是监理的。监理的四控里是「投资」和「安全」，不是「范围」和「成本」。' },
+
+  { id: 'Q29', m: 'S4', kp: 'KP-0401', level: 2, type: 'single',
+    stem: '配置管理的核心活动不包括下列哪一项？',
+    options: ['配置项标识', '配置控制（变更控制）', '配置状态记录与报告', '项目团队绩效考核'],
+    answer: 3 },
+
+  { id: 'Q30', m: 'S4', kp: 'KP-0402', level: 4, type: 'single',
+    stem: '某政务项目中，甲方委托一家独立机构，对承建方的实施过程进行质量、进度、投资控制。这家机构的角色是？',
+    options: ['承建方的一部分', '独立第三方监理', '甲方的项目管理办公室', '总集成商'],
+    answer: 1,
+    why: '监理的关键特征是「独立第三方」——它既不归属甲方也不归属承建方，这正是它能有公信力的原因。' },
+
+  // ── S5 ──────────────────────────────────────────────
+  { id: 'Q31', m: 'S5', kp: 'KP-0501', level: 2, type: 'single',
+    stem: '根据《招标投标法》，中标通知书的法律性质是？',
+    options: ['要约邀请', '要约', '承诺', '意向书'],
+    answer: 2,
+    why: '三方链条：招标公告 = 要约邀请，投标文件 = 要约，中标通知书 = 承诺（合同成立）。记法：邀请你报价 → 你报价 → 我接受。' },
+
+  { id: 'Q32', m: 'S5', kp: 'KP-0501', level: 1, type: 'single',
+    stem: '使用财政性资金采购集中采购目录以内的货物，适用的主要法律是？',
+    options: ['《民法典》', '《政府采购法》', '《招标投标法》', '《数据安全法》'],
+    answer: 1,
+    why: '财政性资金采购货物与服务走《政府采购法》；工程建设的招标投标活动走《招标投标法》。这两部法的分野是常考点。' },
+
+  { id: 'Q33', m: 'S5', kp: 'KP-0502', level: 2, type: 'single',
+    stem: '我国标准体系中，团体标准和企业标准的性质是？',
+    options: ['强制性标准', '由市场自主制定，属于推荐性或自愿采用', '必须报政府批准的强制性标准', '国际标准的等效版本'],
+    answer: 1,
+    why: '国家标准才分强制性与推荐性；团标、企标由市场自主制定，但不得低于强制性国家标准的要求。' },
+
+  { id: 'Q34', m: 'S5', kp: 'KP-0501', level: 4, type: 'single',
+    stem: '某政务数据流通项目需要采集公民个人信息并跨部门共享。下列哪部法律对它约束最直接？',
+    options: ['《招标投标法》', '《个人信息保护法》', '《合同法》', '《产品质量法》'],
+    answer: 1 },
+
+  // ── S6 ──────────────────────────────────────────────
+  { id: 'Q35', m: 'S6', kp: 'KP-0602', level: 3, type: 'text',
+    stem: '某项目活动依赖如下：A（3 天）。A 之后并行两条：A→B（4 天）→D；A→C（2 天）→D。D 需 2 天。\n求关键路径与总工期。',
+    ref: '两条路径：A→B→D = 3+4+2 = 9 天；A→C→D = 3+2+2 = 7 天。\n\n关键路径 = 最长的路径 = **A→B→D**，总工期 9 天。',
+    points: [
+      '算出路径 A→B→D 为 9 天',
+      '算出路径 A→C→D 为 7 天',
+      '结论：关键路径 A→B→D，总工期 9 天',
+    ] },
+
+  { id: 'Q36', m: 'S6', kp: 'KP-0603', level: 1, type: 'single',
+    stem: 'In project management, "EVM" stands for:',
+    options: ['Enterprise Value Management', 'Earned Value Management', 'Estimated Value Method', 'Evaluation and Verification Model'],
+    answer: 1 },
+
+  { id: 'Q37', m: 'S6', kp: 'KP-0603', level: 1, type: 'single',
+    stem: 'In project management, "WBS" stands for:',
+    options: ['Work Breakdown Structure', 'Work Balance System', 'Weekly Budget Schedule', 'Workflow Business Standard'],
+    answer: 0 },
+
+  { id: 'Q38', m: 'S6', kp: 'KP-0601', level: 3, type: 'text',
+    stem: '某项目 BAC = 2000 万元，EV = 800 万元，AC = 900 万元。按 CPI 法预测完工估算 EAC，并说明这个数字意味着什么。',
+    ref: 'CPI = 800 / 900 ≈ 0.889\nEAC = BAC / CPI = 2000 / 0.889 ≈ 2250 万元\n\n意味着：如果按当前的成本绩效继续干下去，最终要比原预算多花约 250 万元。这是「预测」，不是「已经花了」。',
+    points: [
+      'CPI ≈ 0.889',
+      'EAC ≈ 2250 万元（公式写对即可）',
+      '解释了含义：按当前绩效外推，完工将超出预算约 250 万元',
+    ] },
+
+  { id: 'Q39', m: 'S6', kp: 'KP-0604', level: 4, type: 'text',
+    stem: '某项目进度严重滞后，团队连续加班三个月，但交付量没有增加。请写出 3 条可能原因，每条都必须落到具体的项目管理过程上（不能写「管理不到位」）。',
+    ref: '合格答案的样子：\n1. 进度计划未做资源平衡、未识别关键路径，非关键任务占用了关键资源（进度管理）\n2. 范围蔓延未控制，需求不断追加，实际工作量远超基线（范围管理）\n3. 质量问题导致大量返工，加班时间消耗在返工上（质量管理）\n\n不合格：人手不够 / 需求太多 / 沟通不好——这些是现象，不是过程。',
+    points: [
+      '第 1 条原因能对应到一个具体的知识领域（进度 / 范围 / 质量 / 资源 / 沟通任选）',
+      '第 2 条原因对应到另一个不同的知识领域（不是同一条换个说法）',
+      '第 3 条原因同样能对应到具体过程',
+      '每条都解释了「为什么加班但产出不增」的机理，而不只是罗列现象',
+    ] },
+
+  { id: 'Q40', m: 'S6', kp: 'KP-0604', level: 5, type: 'text',
+    stem: '接上题。针对你写出的每条原因，给出对应的改进动作。要求写具体动作，不写口号（「加强管理」这类不算）。',
+    ref: '好的动作长这样：\n• 重排 WBS、识别关键路径，对非关键任务削减投入（对应「资源占用错位」）\n• 建立变更控制流程，需求一律走 CCB 审批并更新基线（对应「范围蔓延」）\n• 在关键节点增加代码评审与自动化回归，把返工前置（对应「质量返工」）\n\n差的建议：加强沟通、提高效率、优化流程——这些是愿望，不是动作。',
+    points: [
+      '建议与上一题的问题一一对应（不是笼统给一堆办法）',
+      '每条建议都是可执行的具体动作（有人、有事、有对象）',
+      '至少一条说明了预期效果或怎么验证它有效',
+    ] },
+];
+
+// ─────────────────────────────────────────────────────────
+// 二、状态与渲染
+// ─────────────────────────────────────────────────────────
+
+const answers = {};       // qid -> 客观题选项下标
+const textAnswers = {};   // qid -> 作答文本
+const selfPoints = {};    // qid -> 勾中的要点数量
+const TOTAL_SECONDS = 90 * 60;
+let remaining = TOTAL_SECONDS;
+let tickTimer = null;
+let submitted = false;
+
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// 题目解析和参考答案里用 **强调** 标重点，这里做一层极简加粗转换。
+// 先 esc 再替换，所以不会把用户输入当成 HTML 执行。
+const md = (s) => esc(s).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+function renderQuiz() {
+  const quiz = $('#quiz');
+  const byModule = {};
+  for (const q of QUESTIONS) (byModule[q.m] ??= []).push(q);
+
+  let html = '';
+  for (const mod of MODULES) {
+    const list = byModule[mod.id] ?? [];
+    if (!list.length) continue;
+    html += `<div class="mod-head"><h3>${esc(mod.name)}</h3><span>${esc(mod.note)} · ${list.length} 题</span></div>`;
+    for (const q of list) html += renderQuestion(q);
+  }
+  html += `<div class="submit-bar">
+      <button id="submit">交卷</button>
+      <span class="hint">提交后会先判客观题，再请你给简答题自评</span>
+    </div>`;
+  quiz.innerHTML = html;
+
+  $('#submit').addEventListener('click', () => submitAll(false));
+
+  quiz.querySelectorAll('.opt').forEach((label) => {
+    label.addEventListener('click', () => {
+      if (submitted) return;
+      const qid = label.dataset.qid;
+      const idx = Number(label.dataset.idx);
+      answers[qid] = idx;
+      quiz.querySelectorAll(`.opt[data-qid="${qid}"]`).forEach((el) => el.classList.remove('picked'));
+      label.classList.add('picked');
+      label.querySelector('input').checked = true;
+      updateProgress();
+    });
+  });
+
+  quiz.querySelectorAll('textarea').forEach((area) => {
+    area.addEventListener('input', () => {
+      textAnswers[area.dataset.qid] = area.value;
+      updateProgress();
+    });
+  });
+}
+
+function renderQuestion(q) {
+  const head = `<div class="q" id="${q.id}">
+    <div class="q-no"><b>${q.id.replace('Q', '')}</b> · ${LEVEL_NAMES[q.level]}<span class="tag">${esc(q.kp)}</span></div>
+    <p class="q-stem">${esc(q.stem)}</p>`;
+
+  if (q.type === 'text') {
+    return head + `<textarea data-qid="${q.id}" placeholder="写出你的答案，写关键词即可"></textarea></div>`;
+  }
+
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  const opts = q.options.map((opt, i) =>
+    `<label class="opt" data-qid="${q.id}" data-idx="${i}">
+       <input type="radio" name="${q.id}" value="${i}">
+       <span class="key">${letters[i]}</span><span>${esc(opt)}</span>
+     </label>`).join('');
+
+  return head + `<div class="opts">${opts}</div></div>`;
+}
+
+function updateProgress() {
+  const answered = QUESTIONS.filter((q) =>
+    q.type === 'text' ? (textAnswers[q.id] ?? '').trim().length > 0 : answers[q.id] !== undefined
+  ).length;
+  $('#progress').textContent = `${answered} / ${QUESTIONS.length} 已答`;
+}
+
+function startTimer() {
+  tickTimer = setInterval(() => {
+    remaining -= 1;
+    const m = String(Math.max(0, Math.floor(remaining / 60))).padStart(2, '0');
+    const s = String(Math.max(0, remaining % 60)).padStart(2, '0');
+    const el = $('#timer');
+    el.textContent = `${m}:${s}`;
+    el.classList.toggle('low', remaining <= 600);
+    if (remaining <= 0) {
+      clearInterval(tickTimer);
+      submitAll(true);
+    }
+  }, 1000);
+}
+
+// ─────────────────────────────────────────────────────────
+// 三、判分与矩阵
+// ─────────────────────────────────────────────────────────
+
+function objectiveCorrect(q) {
+  return q.type !== 'text' && answers[q.id] === q.answer;
+}
+
+/** 主观题按「勾中要点比例 ≥ 60%」判为对；这比自评「大概算对吧」靠谱一点。 */
+function subjectiveCorrect(q) {
+  const hit = selfPoints[q.id] ?? 0;
+  const total = q.points.length;
+  return total > 0 && hit / total >= 0.6;
+}
+
+function buildMatrix() {
+  const cells = {};
+  for (const mod of MODULES) {
+    cells[mod.id] = {};
+    for (let lv = 1; lv <= 5; lv += 1) cells[mod.id][lv] = { correct: 0, total: 0 };
+  }
+  for (const q of QUESTIONS) {
+    const cell = cells[q.m][q.level];
+    cell.total += 1;
+    if (q.type === 'text' ? subjectiveCorrect(q) : objectiveCorrect(q)) cell.correct += 1;
+  }
+
+  const rows = MODULES.map((mod) => {
+    let current = 0;   // 0 表示连 L1 都没过
+    for (let lv = 1; lv <= 5; lv += 1) {
+      const c = cells[mod.id][lv];
+      // 这一层没出题 = 没测过，不等于通过。停在上一层，不许跳。
+      if (c.total === 0) break;
+      if (c.correct / c.total >= 0.6) current = lv;
+      else break;
+    }
+    return { mod, cells: cells[mod.id], current };
+  });
+  return rows;
+}
+
+function renderMatrix() {
+  const rows = buildMatrix();
+  const head = `<tr><th>内容模块</th>${[1, 2, 3, 4, 5].map((lv) => `<th>L${lv}</th>`).join('')}<th>当前</th></tr>`;
+  const body = rows.map(({ mod, cells, current }) => {
+    const tds = [1, 2, 3, 4, 5].map((lv) => {
+      const c = cells[lv];
+      if (!c.total) return `<td class="none">—</td>`;
+      const rate = c.correct / c.total;
+      const cls = rate >= 0.6 ? 'pass' : 'fail';
+      return `<td class="${cls}">${c.correct}/${c.total}</td>`;
+    }).join('');
+    const cur = current === 0 ? '<span class="fail">未过 L1</span>' : `<span>L${current}</span>`;
+    return `<tr><td>${esc(mod.name)}</td>${tds}<td class="cur">${cur}</td></tr>`;
+  }).join('');
+
+  const stuck = rows.filter((r) => r.current === 0).map((r) => r.mod.name);
+  const low = rows.filter((r) => r.current > 0 && r.current <= 2).map((r) => `${r.mod.name}（停在 L${r.current}）`);
+  const solid = rows.filter((r) => r.current >= 3).map((r) => `${r.mod.name}（L${r.current}）`);
+  const objectiveTotal = QUESTIONS.filter((q) => q.type !== 'text').length;
+  const objectiveHit = QUESTIONS.filter((q) => q.type !== 'text' && objectiveCorrect(q)).length;
+  const subjectiveTotal = QUESTIONS.filter((q) => q.type === 'text').length;
+  const subjectiveHit = QUESTIONS.filter((q) => q.type === 'text' && subjectiveCorrect(q)).length;
+
+  const lines = [];
+  for (const { mod, cells, current } of rows) {
+    const cellsText = [1, 2, 3, 4, 5].map((lv) => cells[lv].total ? `${cells[lv].correct}/${cells[lv].total}` : '-').join(' | ');
+    lines.push(`${mod.id} ${mod.name} | ${cellsText} | ${current === 0 ? '未过L1' : 'L' + current}`);
+  }
+
+  const exportText = [
+    `中项入学诊断 · ${new Date().toLocaleDateString('zh-CN')}`,
+    `客观题 ${objectiveHit}/${objectiveTotal}，简答（自评）${subjectiveHit}/${subjectiveTotal}`,
+    '',
+    '模块矩阵（达成 / 题数，单层 ≥60% 记为达成）',
+    ...lines,
+    '',
+    stuck.length ? `L1 未过：${stuck.join('、')}` : 'L1 全部通过',
+    low.length ? `停在 L2 及以下：${low.join('、')}` : '',
+    solid.length ? `已进 L3 以上：${solid.join('、')}` : '',
+    '',
+    '层级说明：L1 认得 / L2 说得出 / L3 算得出 / L4 判得准 / L5 迁得动',
+  ].filter(Boolean).join('\n');
+
+  $('#result').innerHTML = `
+    <div class="mod-head" style="margin-top:44px"><h3>诊断结果</h3><span>客观 ${objectiveHit}/${objectiveTotal} · 简答自评 ${subjectiveHit}/${subjectiveTotal}</span></div>
+
+    <table class="matrix">
+      <thead>${head}</thead>
+      <tbody>${body}</tbody>
+    </table>
+    <p class="hint">每格是「答对 / 题数」，单层达到 60% 记为达成。「当前」是连续达成的最高层：L1 断了记为未过；某层显示「—」表示这一层没有出题，<strong>未测不等于通过</strong>，所以会停在它的下一层。</p>
+
+    <div class="verdict">
+      <h3>怎么读这张表</h3>
+      <ul>
+        ${stuck.length ? `<li><strong>L1 未过：${stuck.join('、')}</strong> —— 这几块是空白区，必须从概念开始，不要直接刷题。</li>` : ''}
+        ${low.length ? `<li><strong>停在 L2 及以下：${low.join('、')}</strong> —— 能认、能背，但换问法或要算就会垮。这部分的练习应该是「场景题 + 计算题」，不是继续做单选。</li>` : ''}
+        ${solid.length ? `<li><strong>已进 L3 以上：${solid.join('、')}</strong> —— 已经能算、能判了，重点转向案例题和跨知识点串联。</li>` : ''}
+        <li>真实考试的及格线大致对应「L3 覆盖高频考点 + L4 能判场景」。L5 不是及格必需，是防换问法就废。</li>
+        <li>简答题用了自评扣分，如果用词不同但意思到了你却没勾，这张表会偏低 —— 反过来也一样。</li>
+      </ul>
+    </div>
+
+    <div class="mod-head"><h3>把这段贴回去</h3><span>我会按它回填主题包的缺口与工时</span></div>
+    <pre class="export" id="export-text">${esc(exportText)}</pre>
+    <div class="submit-bar">
+      <button class="ghost" id="copy">复制结果</button>
+      <button class="ghost" id="again">重新作答</button>
+    </div>
+  `;
+
+  $('#result').hidden = false;
+  $('#result').scrollIntoView({ behavior: 'smooth' });
+
+  $('#copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(exportText);
+      $('#copy').textContent = '已复制';
+    } catch {
+      $('#copy').textContent = '复制失败，请手动选中';
+    }
+  });
+  $('#again').addEventListener('click', () => location.reload());
+}
+
+// ─────────────────────────────────────────────────────────
+// 四、提交与自评流程
+// ─────────────────────────────────────────────────────────
+
+function submitAll(auto = false) {
+  if (submitted) return;
+  submitted = true;
+  if (tickTimer) clearInterval(tickTimer);
+
+  const unanswered = QUESTIONS.filter((q) =>
+    q.type === 'text' ? (textAnswers[q.id] ?? '').trim().length === 0 : answers[q.id] === undefined
+  ).length;
+
+  if (!auto && unanswered > 0 && !confirm(`还有 ${unanswered} 题没答，确定交卷吗？`)) {
+    submitted = false;
+    startTimer();
+    return;
+  }
+
+  // 客观题直接标出对错，主观题留给自评
+  for (const q of QUESTIONS) {
+    if (q.type === 'text') continue;
+    const box = document.getElementById(q.id);
+    if (!box) continue;
+    box.querySelectorAll('.opt').forEach((label) => {
+      const i = Number(label.dataset.idx);
+      if (i === q.answer) label.style.borderColor = 'var(--ok)';
+      if (answers[q.id] === i && i !== q.answer) label.style.borderColor = 'var(--bad)';
+    });
+    if (q.why) {
+      const p = document.createElement('p');
+      p.className = 'hint';
+      p.style.marginTop = '10px';
+      p.innerHTML = '解析：' + md(q.why);
+      box.appendChild(p);
+    }
+  }
+
+  renderSelfGrade();
+}
+
+function renderSelfGrade() {
+  const texts = QUESTIONS.filter((q) => q.type === 'text');
+  $('#sg-list').innerHTML = texts.map((q) => `
+    <div class="sg-item">
+      <div class="q-no"><b>${q.id.replace('Q', '')}</b> · ${LEVEL_NAMES[q.level]}<span class="tag">${esc(q.kp)}</span></div>
+      <p class="q-stem" style="font-size:14px;color:var(--ink-2)">${esc(q.stem)}</p>
+      <div class="ref"><strong>你的作答：</strong>\n${esc((textAnswers[q.id] ?? '').trim() || '（未作答）')}\n\n<strong>参考答案：</strong>\n${md(q.ref)}</div>
+      <div style="margin-top:10px;font-size:14px;color:var(--ink-2)">勾出你确实写到的要点：</div>
+      ${q.points.map((p, i) => `
+        <label><input type="checkbox" data-qid="${q.id}" data-idx="${i}"><span>${esc(p)}</span></label>
+      `).join('')}
+    </div>`).join('');
+
+  $('#sg-list').querySelectorAll('input[type=checkbox]').forEach((box) => {
+    box.addEventListener('change', () => {
+      const qid = box.dataset.qid;
+      selfPoints[qid] = $('#sg-list').querySelectorAll(`input[data-qid="${qid}"]:checked`).length;
+    });
+  });
+
+  $('#selfgrade').hidden = false;
+  $('#quiz').hidden = true;
+  $('#selfgrade').scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#start').addEventListener('click', () => {
+  $('#intro').hidden = true;
+  $('#quiz').hidden = false;
+  renderQuiz();
+  updateProgress();
+  startTimer();
+  window.scrollTo({ top: 0 });
+});
+
+$('#finish').addEventListener('click', () => {
+  $('#selfgrade').hidden = true;
+  renderMatrix();
+});
+</script>
+</body>
+</html>
