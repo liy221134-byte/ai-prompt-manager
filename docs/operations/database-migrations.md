@@ -29,7 +29,7 @@
 `add_practice_type` 是题库的交互优化，给 `practice_questions` 加一个 `type` 列（题型），
 同样只增不改。
 
-十条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
+十二条迁移已全部应用到线上，迁移历史与仓库**逐条对齐**（12 个文件对 12 条记录，双向无差异），没有待应用的迁移。
 
 ## 执行方式
 
@@ -38,7 +38,7 @@
 | **Management API + `scripts/db-sql.mjs`** | 本会话直接执行 | **首选**。只要 `.env.local` 里有 `SUPABASE_ACCESS_TOKEN`（`sbp_` 开头），就能执行任意 SQL，不需要数据库密码。token 在 [dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) 生成，可随时吊销 |
 | Supabase CLI（2026-10-28 已装，版本 2.122.0） | 手工 | **装了但缺凭据**。`db push` 要 `supabase login` 或 access token，`db push --db-url` 要数据库密码，本机两者都没有。CLI 本身不带凭据，装它不解决授权问题 |
 | Supabase MCP（2026-09-24 起可用过） | 会话里连上就能用 | 需要 `~/.workbuddy/mcp.json` 里配 supabase server，当前没配。配了也要 token |
-| GitHub 集成自动部署（已开启） | Supabase 自动执行 | **当前有阻塞，勿直接 push**：7 条迁移的 `create policy` 不带 `if not exists`，而手动在 SQL Editor 执行过的两条迁移不在 `supabase_migrations.schema_migrations` 里，push 后集成会重跑它们并在 `create policy` 处失败。要对齐历史后才能用 |
+| GitHub 集成自动部署（已开启） | Supabase 自动执行 | **2026-10-28 已解除阻塞，可用**。此前两条在 SQL Editor 手动执行过的迁移不在历史表里，push 后会被重跑并在 `create policy` 处失败；已于当日补记历史，现磁盘 12 个文件与库内 12 条记录完全对齐，推送不会再重跑任何迁移 |
 
 **为什么推荐 Management API 而不是数据库密码**：token 可以在 dashboard 里点几下生成、随时吊销、粒度细；数据库密码一旦存下来就是长期凭据，且改密码会连带影响所有连接串。跑几条迁移不值得换这个。
 
@@ -95,6 +95,18 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-10-28（晚）：**拿到 token，通道实跑通过，并补记两条迁移历史**（库内仅改迁移历史表，未改业务结构）。
+  ① 当事人给了 `sbp_` token，写进 `.env.local` 的 `SUPABASE_ACCESS_TOKEN`（该文件被 `.gitignore` 忽略）。
+  `node scripts/db-sql.mjs --sql "select 1"` 返回 1 行，**执行路径不再是「只验过 dry-run」**。
+  ② 顺手核对了手动执行过的那两条迁移的**实际落库结果**，与文件完全一致：
+  `learning_topics` 有 `kind` / `level_definition`，`knowledge_points` 仍是 7 列（**没有** `summary` / `note_md`，
+  印证讲义不落库的决定是对的），`learning_goals` 12 列齐全，5 个索引都在
+  （含 `learning_goals_one_focus_per_user` 这个 `(user_id) where is_focus` 的部分唯一索引），9 条 RLS 策略全在。
+  ③ **补记迁移历史**：`20261027160000_add_learning_foundation` 与 `20261028150000_add_learning_goals`
+  当时是在 SQL Editor 手动执行的，不进 `schema_migrations`，导致 GitHub 自动部署会重跑它们、
+  在 9 条不带 `if not exists` 的 `create policy` 处报错。已 insert 两行（`created_by='manual-backfill'`），
+  现存 12 个文件与库内 12 条记录**双向无差异**，自动部署这条路恢复可用。
+  ④ 事实：中项题库线上 **118 题**（84 单选 + 34 实操）、知识点 29、主题 1。
 - 2026-10-28：**核实执行通道，新增 token-only 的 `scripts/db-sql.mjs`**（无库结构改动）。
   背景：M3 一度需要一次 DDL，当事人不在电脑前，本会话自己去打通。核实结论：
   ① 本机没有 `sbp_` token，也没有数据库密码（全盘搜过；本文档原「CLI + 数据库密码当前可用」
@@ -107,7 +119,7 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
   ④ 用假 token 探测 Management API 返回 `401 JWT could not be decoded`，
   说明端点与 project ref 都正确，**只差一个有效 token**。
   处置：讲义改为不落库（这次 DDL 本就不必要），并新增 `scripts/db-sql.mjs`。
-  **未完成**：脚本目前只验过 dry-run 与「缺凭据」提示，真正执行路径等一次 `sbp_` token 才能实跑。
+  **未完成 → 同日已补**：脚本真正执行路径见上一条（拿到 token 后实跑通过）。
 - 2026-10-27：**应用 `20261027160000_add_learning_foundation.sql` 并导入中项主题包**（v4 学习系统 M0）。
   迁移由**产品负责人本人在 Supabase SQL Editor 执行**（本机没有 supabase CLI，也没有数据库密码；
   service_role key 只能走 PostgREST，执行不了 DDL）。导入由本会话用 service_role key 完成。
