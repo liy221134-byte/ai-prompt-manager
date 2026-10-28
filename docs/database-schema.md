@@ -245,7 +245,7 @@ prompt_versions_user_expires_idx (user_id, expires_at)
 
 ### `learning_diagnostics` 表（诊断记录，仅本人可见）
 
-M0 只建表，业务逻辑在 M2。
+M0 只建表，业务逻辑在 M3（诊断闭环）。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |

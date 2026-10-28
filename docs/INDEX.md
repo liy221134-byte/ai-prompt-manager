@@ -47,7 +47,7 @@
 - [学习系统需求草案（v4，2026-10-27，**已被 PRD 取代**，仅留决策过程）](requirements/v4-learning-system-requirements-draft.md)
 - [中项主题包（v4 首个真实主题：软考中级·系统集成，6 模块 / 29 知识点 / 118 题）](learning/topics/rk-mid-integration.yaml)
 - [v4 全线规划（路线评估 + 里程碑 + 380 小时落日历 + 首次诊断卷，2026-10-27 已确认）](learning/v4-plan.md)
-- [主题包 schema（AI 与产品之间的接口契约，唯一正本，v1.0）](learning/topic-pack-schema.md)
+- [主题包 schema（AI 与产品之间的接口契约，唯一正本，v2：阶梯定义随主题走）](learning/topic-pack-schema.md)
 - [**中项入学诊断卷（40 题 / 90 分钟，离线单页 HTML，自动出矩阵）**](learning/diagnostic-baseline.html)
 - [首次诊断结果分析（2026-10-27，客观 19/31、简答 0/9，含主题包校准结论）](learning/diagnostic-2026-10-27.md)
 - [需求收敛：文档／模板边界、Spec 层与交互流程（待确认）](requirements-v2.md)
@@ -195,7 +195,8 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [线索 3 M0 验收清单（生态采集沉淀，已签核）](acceptance/leads-3-m0.md)
 - [练习题库 M0 验收清单](acceptance/practice-m0.md)
 - [v4 学习系统 M0 验收清单（数据地基，本地与真库均已验）](acceptance/m0-learning-foundation.md)
-- [v4 学习系统 M1 验收清单（按模块 × 层级出题，仅剩「答一题后已做 +1」未验）](acceptance/v4-m1.md)
+- [v4 学习系统 M1 验收清单（按模块 × 层级出题，验收项全过）](acceptance/v4-m1.md)
+- [v4 学习系统 M2 验收清单（多学习目标，阶梯随目标走，含两个真错修复）](acceptance/v4-m2.md)
 
 ### 云端部署
 
