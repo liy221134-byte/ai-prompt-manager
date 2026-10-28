@@ -99,6 +99,9 @@
 - 两边都要时走完整的 `next-dev-loop` 流程。
 - 开始前先清一遍旧浏览器会话（`agent-browser close --all`）；否则会撞上上一次留下的残骸卡住。
 - 用本机数据模式起服务（`npm run dev:local`）验证界面，不用云端模式。
+- **执行者若是 WorkBuddy（不是 Codex）**：上述工具名的等价物见
+  [`docs/reference/workbuddy-tool-mapping.md`](docs/reference/workbuddy-tool-mapping.md)。
+  那一份只做工具名映射，不含规则正文；本段其余各条与判据全部不变。
 
 ## 版本与提交
 
