@@ -9,12 +9,16 @@ import {
   type QuestionStatus,
   type StatusMap,
 } from "@/components/practice-quiz";
+import { GoalSettingsDialog, type GoalSettingsValue } from "@/components/goal-settings-dialog";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
+import { goalId } from "@/lib/learning/goal-id";
 import {
   buildLevelLabels,
   buildPracticeMatrix,
   daysUntil,
   upcomingMilestones,
+  type AttemptInput,
   type Level,
   type MatrixRow,
   type Milestone,
@@ -47,6 +51,27 @@ const KIND_LABELS: Record<string, string> = {
   behavior: "行为型",
 };
 
+/** 「今天来不来得及」的结论怎么着色：紧的用琥珀，已过的用红，判断不了的用灰 */
+const STATUS_STYLE: Record<DailyPlanStatus, string> = {
+  finished: "text-emerald-700",
+  overdue: "text-red-600",
+  "no-deadline": "text-slate-500",
+  "no-hours-set": "text-slate-500",
+  "on-track": "text-emerald-700",
+  tight: "text-amber-700",
+};
+
+/** 个人对某个主题的安排。主题是公共内容，这份是「我的」 */
+type GoalRow = {
+  id: string;
+  is_focus: boolean;
+  status: string;
+  weekly_hours: number | null;
+  target_date: string | null;
+  /** 启用这个目标的那天，今日计划拿它当第 1 天 */
+  started_at: string | null;
+};
+
 const QUESTION_COLUMNS =
   "id, category, title, difficulty, type, body_md, options, answer, explanation_md, module_id, level";
 
@@ -55,8 +80,12 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   const [rows, setRows] = useState<MatrixRow[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [statusMap, setStatusMap] = useState<StatusMap>({});
+  // 今日计划要用原始作答记录，所以除了 statusMap 还留一份
+  const [attempts, setAttempts] = useState<AttemptInput[]>([]);
+  const [goal, setGoal] = useState<GoalRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const [quizQueue, setQuizQueue] = useState<QuizQuestion[] | null>(null);
   const [quizLabel, setQuizLabel] = useState("");
@@ -80,6 +109,8 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         setTopic(null);
         setRows([]);
         setQuestions([]);
+        setAttempts([]);
+        setGoal(null);
         return;
       }
 
@@ -109,22 +140,36 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       const qs = (questionRows ?? []) as QuizQuestion[];
       setQuestions(qs);
 
-      // 4) 本人答题记录：先拉全部再在内存里过滤。
-      //    现在量很小（单用户、每题最新一次即生效），超过千条再改成按题 id 分批查。
+      // 4) 本人的东西：答题记录 + 对这个主题的个人设置（每周几小时、打算哪次考）。
+      //    先拉全部再在内存里过滤。现在量很小（单用户、每题最新一次即生效），
+      //    超过千条再改成按题 id 分批查。
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      let attempts: { question_id: string; is_correct: boolean; created_at: string }[] = [];
+      let attemptRows: AttemptInput[] = [];
+      let goalRow: GoalRow | null = null;
       if (user) {
-        const { data: attemptRows } = await supabase
-          .from("practice_attempts")
-          .select("question_id, is_correct, created_at")
-          .eq("user_id", user.id);
-        attempts = attemptRows ?? [];
+        const [attemptResult, goalResult] = await Promise.all([
+          supabase
+            .from("practice_attempts")
+            .select("question_id, is_correct, created_at")
+            .eq("user_id", user.id),
+          supabase
+            .from("learning_goals")
+            .select("id, is_focus, status, weekly_hours, target_date, started_at")
+            .eq("user_id", user.id)
+            .eq("topic_id", currentTopic.id)
+            .maybeSingle(),
+        ]);
+        attemptRows = (attemptResult.data ?? []) as AttemptInput[];
+        goalRow = (goalResult.data as GoalRow | null) ?? null;
       }
 
-      // 5) 算两样东西：给矩阵用的统计、给练习组件用的每题状态
+      setGoal(goalRow);
+      setAttempts(attemptRows);
+
+      // 5) 算三样东西：矩阵统计、每题状态、今日计划
       setRows(
         buildPracticeMatrix(
           (moduleRows ?? []) as ModuleInput[],
@@ -133,12 +178,12 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             module_id: (q as QuizQuestion & { module_id?: string | null }).module_id ?? null,
             level: (q as QuizQuestion & { level?: number | null }).level ?? null,
           })),
-          attempts,
+          attemptRows,
         ),
       );
 
       const latest = new Map<string, { correct: boolean; at: string }>();
-      for (const attempt of attempts) {
+      for (const attempt of attemptRows) {
         const prev = latest.get(attempt.question_id);
         if (!prev || attempt.created_at > prev.at) {
           latest.set(attempt.question_id, { correct: attempt.is_correct, at: attempt.created_at });
@@ -176,6 +221,27 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
   const daysToExam = topic?.deadline ? daysUntil(topic.deadline) : null;
 
+  // 今日计划：把工时和天数压成「今天做这几道」。
+  //
+  // 起点用个人目标的 started_at（启用那天），终点用 target_date（打算哪次考），
+  // 都留空时由 buildDailyPlan 兜底成「今天起、无终点」——不猜一个日期出来。
+  const plan = useMemo(
+    () =>
+      buildDailyPlan({
+        modules: rows.map((row) => row.module),
+        questions: questions.map((question) => {
+          const extra = question as QuizQuestion & { module_id?: string | null; level?: number | null };
+          return { id: question.id, module_id: extra.module_id ?? null, level: extra.level ?? null };
+        }),
+        attempts,
+        totalHours: topic?.total_hours ?? null,
+        startedAt: goal?.started_at ?? null,
+        endsAt: goal?.target_date ?? topic?.deadline ?? null,
+        weeklyHours: goal?.weekly_hours ?? null,
+      }),
+    [rows, questions, attempts, topic, goal],
+  );
+
   const totals = useMemo(() => {
     let questions = 0;
     let done = 0;
@@ -188,6 +254,13 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     return { questions, done, unleveled };
   }, [rows]);
 
+  // 进练习：题池与标签都由调用方给，矩阵格子与今日计划共用这一条路
+  function startQuiz(pool: QuizQuestion[], label: string) {
+    if (pool.length === 0) return;
+    setQuizQueue(pool);
+    setQuizLabel(label);
+  }
+
   // 点格子：只把该模块该层的题放进题池，按 id 排好保证顺序稳定
   function enterCell(moduleId: string, moduleName: string, level: Level) {
     const pool = questions.filter((question) => {
@@ -197,8 +270,54 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
     if (pool.length === 0) return;
 
-    setQuizQueue(pool);
-    setQuizLabel(`${moduleName} · ${levelLabels[level]}（${pool.length}）`);
+    startQuiz(pool, `${moduleName} · ${levelLabels[level]}（${pool.length}）`);
+  }
+
+  /**
+   * 今日计划里的「开始」。
+   *
+   * 顺序按计划给的来（错题在前），不按题库顺序——计划说先复错题，
+   * 进到练习里却是新题打头，两处口径就分叉了。
+   */
+  function startDaily() {
+    if (!plan.focus) return;
+    const byId = new Map(questions.map((question) => [question.id, question]));
+    const pool = plan.focus.questionIds
+      .map((id) => byId.get(id))
+      .filter((question): question is QuizQuestion => Boolean(question));
+
+    const levelText = levelLabels[plan.focus.level];
+    startQuiz(pool, `今日 · ${plan.focus.moduleName} · ${levelText}（${pool.length}）`);
+  }
+
+  /** 保存个人设置。只写 learning_goals 的两列，不动状态与主攻。 */
+  async function saveSettings(next: GoalSettingsValue) {
+    if (!topic) throw new Error("主题还没加载完。");
+
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("登录状态失效，请重新登录。");
+
+    const { error: upsertError } = await supabase.from("learning_goals").upsert(
+      {
+        // 已有记录沿用它的 id，没有才按「人 + 主题」生成——与设主攻同一口径
+        id: goal?.id ?? goalId(user.id, topic.id),
+        user_id: user.id,
+        topic_id: topic.id,
+        is_focus: goal?.is_focus ?? false,
+        status: goal?.status ?? "active",
+        weekly_hours: next.weeklyHours,
+        target_date: next.targetDate,
+      },
+      { onConflict: "user_id,topic_id" },
+    );
+
+    if (upsertError) throw upsertError;
+
+    setShowSettings(false);
+    await load();
   }
 
   if (quizQueue) {
@@ -259,6 +378,82 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         </p>
       ) : (
         <>
+          {/* 今日计划：这一块排最前。倒计时说「还有多少时间」，这一块说「今天做什么」——
+              人打开页面要的是后者。 */}
+          <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div className="flex items-baseline gap-x-2">
+                <h2 className="text-base font-semibold text-slate-900">今日计划</h2>
+                <span className="text-xs text-slate-400">
+                  第 {plan.dayIndex} 天
+                  {plan.totalDays ? ` / 共 ${plan.totalDays} 天` : ""}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="text-xs font-medium text-blue-600 hover:underline"
+                onClick={() => setShowSettings(true)}
+              >
+                改设置
+              </button>
+            </div>
+
+            {plan.focus ? (
+              <div className="mt-3">
+                <p className="text-lg font-semibold text-slate-900">
+                  {plan.focus.moduleName} · {levelLabels[plan.focus.level]}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {plan.focus.questionIds.length} 道题
+                  {plan.focus.hasWrongOnes ? "，错题排前面，先复" : ""}
+                  <span className="text-slate-400"> · 全主题还剩 {plan.remainingQuestions} 道</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={startDaily}
+                  className="mt-3 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                >
+                  开始做题
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600">
+                {plan.remainingQuestions === 0 ? (
+                  "题都做完了，接下来复错题、做整套模拟。"
+                ) : (
+                  <>
+                    还有 {plan.remainingQuestions} 道题没归到任何模块，
+                    <Link href="/practice" className="text-blue-600 hover:underline">
+                      去题库里做
+                    </Link>
+                    。
+                  </>
+                )}
+              </p>
+            )}
+
+            <p className={`mt-3 text-sm ${STATUS_STYLE[plan.status]}`}>{plan.headline}</p>
+
+            {goal && !goal.is_focus ? (
+              <p className="mt-1.5 text-xs leading-5 text-amber-700">
+                这个目标是排队状态，今日计划只服务主攻那个。要推它，去
+                <Link href="/learning" className="mx-0.5 text-blue-600 hover:underline">
+                  目标列表
+                </Link>
+                把它设为主攻。
+              </p>
+            ) : null}
+
+            {plan.plannedModuleName &&
+            plan.actualModuleName &&
+            plan.plannedModuleId !== plan.actualModuleId ? (
+              <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                按计划今天该在「{plan.plannedModuleName}」，练习还停在「{plan.actualModuleName}」。
+                顺序学，先把手上这块收口，别跳到后面去。
+              </p>
+            ) : null}
+          </section>
+
           {/* 关键节点：报名是唯一不可挽回的节点，所以排在最前面 */}
           <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
@@ -391,6 +586,19 @@ export function LearningTopic({ topicId }: { topicId: string }) {
           </section>
         </>
       )}
+
+      {showSettings && topic ? (
+        <GoalSettingsDialog
+          topicName={topic.name}
+          topicDeadline={topic.deadline}
+          initial={{
+            targetDate: goal?.target_date ?? null,
+            weeklyHours: goal?.weekly_hours ?? null,
+          }}
+          onSubmit={saveSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      ) : null}
     </main>
   );
 }
