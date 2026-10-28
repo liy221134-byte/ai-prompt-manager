@@ -70,6 +70,7 @@ export function PracticeQuiz({
   attemptContext,
   onAnswered,
   onSubmitAll,
+  onProbe,
 }: {
   questions: QuizQuestion[];
   initialIndex?: number;
@@ -91,6 +92,14 @@ export function PracticeQuiz({
   }) => void;
   /** 诊断专用：全部答完后在左栏出现的收口按钮 */
   onSubmitAll?: { label: string; onClick: () => void };
+  /**
+   * 答错后可以追问「我当时是怎么想的」。
+   *
+   * 做成可选回调而不是内置按钮：追问的结论要归到「主题 → 模块 → 知识点」，
+   * 题库页（/practice）没有这层上下文，那里出现这个按钮只会得到一个归不进去的结论。
+   * 父组件不传，按钮就不渲染。
+   */
+  onProbe?: (info: { question: QuizQuestion; selected: string | string[] | null }) => void;
 }) {
   const isDiagnostic = variant === "diagnostic";
   // 内部队列（同类再抽时会往里追加），初始为传入的题目集合
@@ -554,6 +563,23 @@ export function PracticeQuiz({
                 这两个按钮在练习里有用，在诊断里是污染。 */}
             {isDiagnostic ? null : (
               <div className="flex flex-wrap gap-3">
+                {/* 追问放在最前面：刚答错那一刻记忆最鲜，隔三天再回头问，
+                    人会重新猜一遍「我当时大概怎么想的」，而不是回忆。
+                    只在答错时出现——答对了去追问「为什么对」，容易变成给自己编理由。 */}
+                {!result.correct && onProbe ? (
+                  <button
+                    className="inline-flex h-11 items-center justify-center rounded-lg border border-blue-300 bg-blue-50 px-5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                    onClick={() =>
+                      onProbe({
+                        question: current,
+                        selected: attempts[current.id]?.selected ?? (isMulti ? selectedMulti : selectedSingle),
+                      })
+                    }
+                    type="button"
+                  >
+                    讲讲为什么错
+                  </button>
+                ) : null}
                 {!result.correct && (
                   <button
                     className="inline-flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-700"

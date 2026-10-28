@@ -17,6 +17,11 @@ import {
 } from "@/components/diagnostic-panel";
 import { GoalSettingsDialog, type GoalSettingsValue } from "@/components/goal-settings-dialog";
 import { KnowledgeNoteDrawer } from "@/components/knowledge-note-drawer";
+import { ProbeDrawer, type ProbeSavePayload } from "@/components/probe-panel";
+import { readStoredProbe, type ProbeRow } from "@/lib/learning/probe";
+import { SheetBoard, SheetDrawer, type SheetRow } from "@/components/sheet-panel";
+import type { ProbeKnowledgePoint, ProbeQuestionInput } from "@/lib/learning/probe-prompt";
+import { normalizeSections, type SheetSections } from "@/lib/learning/sheet";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
 import {
@@ -136,6 +141,43 @@ function readErrorMessage(caught: unknown, fallback = "操作失败。"): string
   return fallback;
 }
 
+/**
+ * 拼一份追问用的题目上下文。
+ *
+ * **刻意不带解析**：解析里写的就是「为什么这个选项对」，模型看到就会念出来，
+ * 追问立刻变成讲题。它知道正确答案是哪项就够了（不给就没法判断我错在哪）。
+ */
+function buildProbeQuestion(
+  question: QuizQuestion,
+  selected: string | string[] | null,
+  knowledgePoints: KnowledgePointRow[],
+): ProbeQuestionInput {
+  const kpId = question.knowledge_point ?? null;
+  const kp = kpId ? knowledgePoints.find((item) => item.id === kpId) : undefined;
+  return {
+    id: question.id,
+    title: question.title,
+    type: question.type,
+    level: question.level ?? null,
+    options: Array.isArray(question.options) ? question.options : [],
+    answer: question.answer,
+    selected: Array.isArray(selected) ? selected.join("、") : selected,
+    knowledgePointId: kpId,
+    knowledgePointName: kp?.name ?? null,
+  };
+}
+
+/** 候选知识点只取同一模块的：结论归到别的模块，比不归更糟 */
+function knowledgePointsInModule(
+  moduleId: string | null | undefined,
+  knowledgePoints: KnowledgePointRow[],
+): ProbeKnowledgePoint[] {
+  if (!moduleId) return [];
+  return knowledgePoints
+    .filter((kp) => kp.module_id === moduleId)
+    .map((kp) => ({ id: kp.id, name: kp.name }));
+}
+
 export function LearningTopic({ topicId }: { topicId: string }) {
   const [topic, setTopic] = useState<TopicRow | null>(null);
   const [rows, setRows] = useState<MatrixRow[]>([]);
@@ -155,6 +197,21 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
   const [quizQueue, setQuizQueue] = useState<QuizQuestion[] | null>(null);
   const [quizLabel, setQuizLabel] = useState("");
+
+  // 正在追问的那道错题。null 表示抽屉关着。
+  // 存题目 + 当时选的项：追问要拿「我选了什么」当上下文，事后再从作答记录里查容易串题。
+  const [probeTarget, setProbeTarget] = useState<{
+    question: QuizQuestion;
+    selected: string | string[] | null;
+  } | null>(null);
+
+  // 一页素材表：已写的纸 + 正在写哪个模块（null 表示抽屉关着）
+  const [sheets, setSheets] = useState<SheetRow[]>([]);
+  const [openSheetModuleId, setOpenSheetModuleId] = useState<string | null>(null);
+
+  // 追问记录。按时间倒序存着，打开抽屉时取这道题最新的一条带出来——
+  // 只写不读的记录等于日志，人看不到「我上次是怎么说的」。
+  const [probes, setProbes] = useState<ProbeRow[]>([]);
 
   // ---- 诊断（M4）----
   // 最近一次已保存的诊断，给入口卡片显示「上次判到哪」
@@ -260,8 +317,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       let attemptRows: AttemptInput[] = [];
       let goalRow: GoalRow | null = null;
       let diagnosticRow: StoredDiagnostic | null = null;
+      let sheetRows: SheetRow[] = [];
+      let probeRows: ProbeRow[] = [];
       if (user) {
-        const [attemptResult, goalResult, diagnosticResult] = await Promise.all([
+        const [attemptResult, goalResult, diagnosticResult, sheetResult, probeResult] = await Promise.all([
           supabase
             .from("practice_attempts")
             .select("question_id, is_correct, created_at")
@@ -282,19 +341,42 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             .order("taken_at", { ascending: false })
             .limit(1)
             .maybeSingle(),
+          supabase
+            .from("learning_sheets")
+            .select("module_id, sections, updated_at")
+            .eq("user_id", user.id)
+            .eq("topic_id", currentTopic.id),
+          supabase
+            .from("learning_probes")
+            .select("id, question_id, transcript, verdict, created_at")
+            .eq("user_id", user.id)
+            .eq("topic_id", currentTopic.id)
+            .order("created_at", { ascending: false }),
         ]);
         attemptRows = (attemptResult.data ?? []) as AttemptInput[];
         goalRow = (goalResult.data as GoalRow | null) ?? null;
         diagnosticRow = (diagnosticResult.data as StoredDiagnostic | null) ?? null;
+        sheetRows = (sheetResult.data ?? []) as SheetRow[];
+        probeRows = (probeResult.data ?? []) as ProbeRow[];
         // 诊断取不到不该拖垮整页——它只是附加信息，与知识点的处理同一个道理
         if (diagnosticResult.error) {
           console.warn("诊断记录取不到，按没做过处理：", diagnosticResult.error.message);
+        }
+        // 素材表同理：这张表比页面晚建（M5 的迁移），迁移没跟上时
+        // 页面其余部分要照常能用，不能因为一张附加的表整页白屏。
+        if (sheetResult.error) {
+          console.warn("素材表取不到，按没写过处理：", sheetResult.error.message);
+        }
+        if (probeResult.error) {
+          console.warn("追问记录取不到，按没追问过处理：", probeResult.error.message);
         }
       }
 
       setGoal(goalRow);
       setAttempts(attemptRows);
       setLastDiagnostic(diagnosticRow);
+      setSheets(sheetRows);
+      setProbes(probeRows);
 
       // 5) 算三样东西：矩阵统计、每题状态、今日计划
       setRows(
@@ -790,8 +872,85 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   }
 
   /** 保存个人设置。只写 learning_goals 的两列，不动状态与主攻。 */
-  async function saveSettings(next: GoalSettingsValue) {
-    if (!topic) throw new Error("主题还没加载完。");
+  // 追问记录的保存。只在人确认结论后调用——AI 说什么就存什么，等于把结论的判断权
+  // 交出去，而这一版的前提恰好是「人说了算」。
+  async function saveProbe(payload: ProbeSavePayload) {
+    if (!probeTarget || !topic) throw new Error("题目或主题丢了，关掉重开一次。");
+
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("登录状态失效，请重新登录。");
+
+    const id = `probe-${user.id}-${probeTarget.question.id}-${Date.now()}`;
+    const { error: insertError } = await supabase.from("learning_probes").insert({
+      id,
+      user_id: user.id,
+      topic_id: topic.id,
+      question_id: probeTarget.question.id,
+      // 以人改过的结论为准。选不到就留空，不拿题目的知识点顶上——
+      // 那会把「说不清」伪装成「确定是这个」，以后按知识点统计时全错。
+      knowledge_point: payload.verdict?.knowledgePointId ?? null,
+      transcript: payload.transcript,
+      verdict: payload.verdict ?? {},
+    });
+
+    if (insertError) throw new Error(readErrorMessage(insertError, "追问记录保存失败。"));
+
+    // 存完把这条挂到最前面：关掉抽屉再打开，要能看到「上次」就是刚才这次，
+    // 不必重跑 load() 去查一遍。
+    setProbes((prev) => [
+      {
+        id,
+        question_id: probeTarget.question.id,
+        transcript: payload.transcript,
+        verdict: payload.verdict ?? {},
+        created_at: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+  }
+
+  // 素材表的保存：一个模块一张纸，所以是 upsert 而不是 insert。
+  // 冲突键用库里那条唯一约束 (user_id, topic_id, module_id)，与建表语句一字不差。
+  async function saveSheet(moduleId: string, sections: SheetSections) {
+    if (!topic) throw new Error("主题还没加载完，等一会儿再存。");
+
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("登录状态失效，请重新登录。");
+
+    const { error: upsertError } = await supabase.from("learning_sheets").upsert(
+      {
+        id: `sheet-${user.id}-${topic.id}-${moduleId}`,
+        user_id: user.id,
+        topic_id: topic.id,
+        module_id: moduleId,
+        sections,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,topic_id,module_id" },
+    );
+
+    if (upsertError) throw new Error(readErrorMessage(upsertError, "素材表保存失败。"));
+
+    // 存完立刻把本地那一份替换掉：列表上的「写了 X/6 段」要跟着变，
+    // 但不必重跑整个 load()——为一个字数变化重查六张表不值当。
+    setSheets((prev) => {
+      const next = prev.filter((sheet) => sheet.module_id !== moduleId);
+      next.push({
+        module_id: moduleId,
+        sections,
+        updated_at: new Date().toISOString(),
+      });
+      return next;
+    });
+  }
+
+  async function saveSettings(next: GoalSettingsValue) {    if (!topic) throw new Error("主题还没加载完。");
 
     const supabase = getSupabaseBrowserClient();
     const {
@@ -824,6 +983,48 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   // 表现就是点了没反应（2026-10-28 实测踩到）。
   const noteDrawer = openNote ? (
     <KnowledgeNoteDrawer note={openNote} onClose={() => setOpenNote(null)} />
+  ) : null;
+
+  // 追问抽屉同样要在两个 return 之前定义，理由与讲义抽屉一样：
+  // 练习模式是提前 return 的分支，只在主 return 里挂它，练习页里点「讲讲为什么错」会点了没反应。
+  const probeDrawer = probeTarget ? (
+    <ProbeDrawer
+      knowledgePoints={knowledgePointsInModule(probeTarget.question.module_id, knowledgePoints)}
+      onClose={() => setProbeTarget(null)}
+      onSave={saveProbe}
+      // 这道题最新一次追问。probes 已按时间倒序查回来，第一条命中就是最近的。
+      previous={readStoredProbe(
+        probes.find((probe) => probe.question_id === probeTarget.question.id),
+      )}
+      question={buildProbeQuestion(probeTarget.question, probeTarget.selected, knowledgePoints)}
+    />
+  ) : null;
+
+  // 素材表抽屉。key 用模块 id：换一个模块必须整套重挂，
+  // 否则 SheetDrawer 里那份草稿还是上一个模块的（state 只在挂载时初始化一次）。
+  const sheetDrawer = openSheetModuleId ? (
+    <SheetDrawer
+      key={openSheetModuleId}
+      initialSections={normalizeSections(
+        sheets.find((sheet) => sheet.module_id === openSheetModuleId)?.sections ?? {},
+      )}
+      knowledgePoints={knowledgePoints
+        .filter((kp) => kp.module_id === openSheetModuleId)
+        .map((kp) => kp.name)}
+      moduleName={
+        rows.find((row) => row.module.id === openSheetModuleId)?.module.name ?? openSheetModuleId
+      }
+      onClose={() => setOpenSheetModuleId(null)}
+      onSave={(sections) => saveSheet(openSheetModuleId, sections)}
+      wrongQuestionTitles={questions
+        .filter(
+          (question) =>
+            (question.module_id ?? null) === openSheetModuleId &&
+            statusMap[question.id] === "错题",
+        )
+        .map((question) => question.title)
+        .slice(0, 20)}
+    />
   ) : null;
 
   // 诊断进行中：整页交给答题组件，样式与练习一致——人已经熟悉这个界面了，
@@ -871,8 +1072,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             // 答完题回到矩阵，数字要跟着变
             void load();
           }}
+          onProbe={setProbeTarget}
         />
         {noteDrawer}
+        {probeDrawer}
       </>
     );
   }
@@ -1043,6 +1246,15 @@ export function LearningTopic({ topicId }: { topicId: string }) {
               onStart={startDiagnostic}
             />
           )}
+
+          {/* 一页素材表：排在诊断之后、考试信息之前。
+              理由：它属于「每天都能做的事」，与今日计划同类；但它不是每天必做，
+              所以放在诊断（一次性的动作）后面，不抢第一屏。 */}
+          <SheetBoard
+            modules={rows.map((row) => row.module)}
+            onOpen={(moduleId) => setOpenSheetModuleId(moduleId)}
+            sheets={sheets}
+          />
 
           {/* 关键节点：报名是唯一不可挽回的节点，所以排在最前面 */}
           <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
@@ -1255,6 +1467,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       ) : null}
 
       {noteDrawer}
+      {sheetDrawer}
     </main>
   );
 }
