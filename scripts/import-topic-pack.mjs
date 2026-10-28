@@ -487,13 +487,13 @@ export function toQuestionRow(q, topicId) {
  * 把一个知识点翻译成 knowledge_points 表的一行。
  *
  * 抽出理由与 toQuestionRow 同源：字段映射漏一项，导入日志照样报成功。
- * 讲义两个字段（summary / note_md）是可空的，所以要显式去掉首尾空白再判空，
- * 只写空格的 summary 等于没写。
+ *
+ * 讲义（note）不写库：讲义是随主题包分发的静态内容，有读无写，
+ * 由 scripts/build-topic-notes.mjs 编译成常量给前端用（理由见那个脚本顶部）。
+ * 但讲义格式照样在这里校验（validateTopicPack 里调 validateNote）——
+ * 内容质量门要拦在生成之前，别让一份缺「怎么考」的讲义混进 bundle。
  */
 export function toKnowledgePointRow(kp, topicId, orderIndex) {
-  const summary = typeof kp.note?.summary === "string" ? kp.note.summary.trim() : "";
-  const body = typeof kp.note?.body === "string" ? kp.note.body.trim() : "";
-
   return {
     topic_id: topicId,
     id: kp.id,
@@ -502,8 +502,6 @@ export function toKnowledgePointRow(kp, topicId, orderIndex) {
     name: kp.name,
     ref: kp.ref ?? null,
     order_index: orderIndex,
-    summary: summary || null,
-    note_md: body || null,
   };
 }
 

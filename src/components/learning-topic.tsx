@@ -14,6 +14,7 @@ import { KnowledgeNoteDrawer } from "@/components/knowledge-note-drawer";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
 import { goalId } from "@/lib/learning/goal-id";
+import { attachTopicNotes } from "@/lib/learning/topic-notes";
 import {
   buildLevelLabels,
   buildPracticeMatrix,
@@ -55,7 +56,10 @@ const KIND_LABELS: Record<string, string> = {
 /**
  * 一个知识点，含讲义。
  *
- * summary 与 note_md 都可空：讲义是渐进补的，29 个知识点现在只有 S1 的五份。
+ * 库里只有前五个字段（id / 模块 / 名字 / 教材位置 / 次序），
+ * summary 与 note_md 由 attachTopicNotes 从主题包补上，不来自数据库。
+ *
+ * 两者都可空：讲义是渐进补的，29 个知识点现在只有 S1 的五份。
  * 页面要能区分「这个知识点没讲义」和「有讲义但没加载出来」——
  * 前者显示「讲义待补」，后者不该假装没讲义。
  */
@@ -140,7 +144,9 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       const currentTopic = topicRow as TopicRow;
       setTopic(currentTopic);
 
-      // 2) 模块 + 知识点：知识点带讲义（summary / note_md），供「学」区块和今日计划的讲义入口用。
+      // 2) 模块 + 知识点：库里只存「有哪些知识点」（id / 名字 / 教材位置），
+      //    讲义随主题包编译进 bundle，取完由 attachTopicNotes 贴上来。
+      //    讲义为什么不落库见 lib/learning/topic-notes.ts 顶部。
       //    两条一起发，互不依赖。
       const [moduleResult, kpResult] = await Promise.all([
         supabase
@@ -150,7 +156,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
           .order("order_index"),
         supabase
           .from("knowledge_points")
-          .select("id, module_id, name, ref, order_index, summary, note_md")
+          .select("id, module_id, name, ref, order_index")
           .eq("topic_id", currentTopic.id)
           .order("order_index"),
       ]);
@@ -158,13 +164,17 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       if (moduleResult.error) throw moduleResult.error;
       const moduleRows = moduleResult.data;
 
-      // 讲义是附加内容，取不到就当没有——不让它拖垮矩阵与今日计划。
-      // 真会发生的场景：迁移还没执行（summary / note_md 列不存在），
-      // 这时整页报错就等于「学」区块把主功能一起带下水。
+      // 知识点取不到时按「没有知识点」处理，不让它拖垮矩阵与今日计划——
+      // 缺讲义是缺内容，矩阵覆盖与今日计划是主功能，不该被一起带下水。
       if (kpResult.error) {
-        console.warn("知识点或讲义取不到，按无讲义处理：", kpResult.error.message);
+        console.warn("知识点取不到，按无知识点处理：", kpResult.error.message);
       }
-      setKnowledgePoints((kpResult.data ?? []) as KnowledgePointRow[]);
+      setKnowledgePoints(
+        attachTopicNotes(
+          currentTopic.id,
+          (kpResult.data ?? []) as Array<Omit<KnowledgePointRow, "summary" | "note_md">>,
+        ),
+      );
 
       // 3) 题目：该主题下的全部题（含层级与所属模块）
       const { data: questionRows, error: questionError } = await supabase
@@ -417,23 +427,33 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     await load();
   }
 
+  // 抽屉提到两个 return 之前定义：练习模式是提前 return 的独立分支，
+  // 若只在主 return 里挂抽屉，练习页里点「看讲义」会设了状态却没有节点可渲染——
+  // 表现就是点了没反应（2026-10-28 实测踩到）。
+  const noteDrawer = openNote ? (
+    <KnowledgeNoteDrawer note={openNote} onClose={() => setOpenNote(null)} />
+  ) : null;
+
   if (quizQueue) {
     return (
-      <PracticeQuiz
-        questions={quizQueue}
-        modeLabel={quizLabel}
-        statusMap={statusMap}
-        notes={notesById}
-        onOpenNote={(kpId) => {
-          const kp = notesById[kpId];
-          if (kp) setOpenNote(kp);
-        }}
-        onExit={() => {
-          setQuizQueue(null);
-          // 答完题回到矩阵，数字要跟着变
-          void load();
-        }}
-      />
+      <>
+        <PracticeQuiz
+          questions={quizQueue}
+          modeLabel={quizLabel}
+          statusMap={statusMap}
+          notes={notesById}
+          onOpenNote={(kpId) => {
+            const kp = notesById[kpId];
+            if (kp) setOpenNote(kp);
+          }}
+          onExit={() => {
+            setQuizQueue(null);
+            // 答完题回到矩阵，数字要跟着变
+            void load();
+          }}
+        />
+        {noteDrawer}
+      </>
     );
   }
 
@@ -716,7 +736,8 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
             {knowledgePoints.length === 0 ? (
               <p className="mt-3 text-sm text-slate-500">
-                知识点没加载出来。若刚执行过迁移，刷新一次试试。
+                知识点没加载出来。主题包还没导入时会是这个状态：跑一次
+                scripts/import-topic-pack.mjs 再刷新。
               </p>
             ) : (
               <div className="mt-4 space-y-4">
@@ -779,7 +800,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         />
       ) : null}
 
-      {openNote ? <KnowledgeNoteDrawer note={openNote} onClose={() => setOpenNote(null)} /> : null}
+      {noteDrawer}
     </main>
   );
 }

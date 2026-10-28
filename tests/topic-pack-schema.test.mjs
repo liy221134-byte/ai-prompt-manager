@@ -335,33 +335,21 @@ test("note 写成数组或字符串被拦下，而不是静默当成没写", () 
   }
 });
 
-test("知识点行映射：讲义两个字段落到 summary 与 note_md，不是漏掉", () => {
+// 讲义不再写库（2026-10-28 晚改）：线上库没有 summary / note_md 两列，
+// 讲义改由 scripts/build-topic-notes.mjs 编译成前端常量。这条测试守的是
+// 「映射函数别偷偷把讲义塞回去」——塞回去就是一列不存在的字段，写库报错。
+test("知识点行只含库里的列，讲义不进表", () => {
   const row = toKnowledgePointRow(
     { id: "KP-X", module_id: "S1", name: "某个知识点", ref: "第9章", note: GOOD_NOTE },
     "topic-1",
     3,
   );
-  assert.equal(row.summary, GOOD_NOTE.summary);
-  assert.equal(row.note_md, GOOD_NOTE.body);
+  assert.equal(row.summary, undefined, "库里没有 summary 列，映射出来就是 undefined");
+  assert.equal(row.note_md, undefined, "库里没有 note_md 列，映射出来就是 undefined");
   assert.equal(row.topic_id, "topic-1");
+  assert.equal(row.name, "某个知识点");
   assert.equal(row.order_index, 3);
   assert.equal(row.parent_id, null, "parent 要第二趟补，第一趟必须显式 null");
-});
-
-test("没有讲义的知识点，两列是 null 而不是空字符串", () => {
-  const row = toKnowledgePointRow({ id: "KP-Y", module_id: "S1", name: "没讲义" }, "t", 1);
-  assert.equal(row.summary, null);
-  assert.equal(row.note_md, null);
-});
-
-test("只写空白的讲义等同没写，不能把空格存进库", () => {
-  const row = toKnowledgePointRow(
-    { id: "KP-Z", module_id: "S1", name: "空讲义", note: { summary: "   ", body: "\n\n" } },
-    "t",
-    1,
-  );
-  assert.equal(row.summary, null);
-  assert.equal(row.note_md, null);
 });
 
 test("真实主题包：S1 五个知识点都有讲义，且每份四段齐全", () => {
