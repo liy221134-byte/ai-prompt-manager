@@ -32,6 +32,7 @@
 - [两套体系对比调研（2026-10-01，WB 侧体系 vs 本仓，六维度评估与四档建议）](reviews/2026-10-01-两套体系对比调研.md)
 - [生产级项目指南地图](project-map.md)
 - [工程地图：文件职责与请求链路](engineering-map.md)
+- [WorkBuddy 侧执行工具映射（工具名对照，不含规则正文）](reference/workbuddy-tool-mapping.md)
 - [待确认与待办事项](pending-items.md)
 - [合并与线上验证计划（2026-09-28，含生产部署失败根因）](merge-verify-plan-2026-09-28.md)
 
@@ -42,6 +43,13 @@
 - [两条线索的立项需求草案（生态采集沉淀 / 内网基础能力练习，已立项）](leads/leads-3-4-requirements-draft.md)
 - [文档与资产口径收口需求草案（v2.25.0 暂定名，待确认）](requirements/v2.25.0-requirements-draft.md)
 - [零代码交付线需求草案（v3 暂定名，2026-09-30 已确认，下一步写 M0 设计）](requirements/v3-requirements-draft.md)
+- [**v4 学习系统 PRD（产品需求正本，2026-10-27 已确认）**](requirements/v4-learning-system-prd.md)
+- [学习系统需求草案（v4，2026-10-27，**已被 PRD 取代**，仅留决策过程）](requirements/v4-learning-system-requirements-draft.md)
+- [中项主题包（v4 首个真实主题：软考中级·系统集成，6 模块 / 29 知识点 / 118 题）](learning/topics/rk-mid-integration.yaml)
+- [v4 全线规划（路线评估 + 里程碑 + 380 小时落日历 + 首次诊断卷，2026-10-27 已确认）](learning/v4-plan.md)
+- [主题包 schema（AI 与产品之间的接口契约，唯一正本，v1.0）](learning/topic-pack-schema.md)
+- [**中项入学诊断卷（40 题 / 90 分钟，离线单页 HTML，自动出矩阵）**](learning/diagnostic-baseline.html)
+- [首次诊断结果分析（2026-10-27，客观 19/31、简答 0/9，含主题包校准结论）](learning/diagnostic-2026-10-27.md)
 - [需求收敛：文档／模板边界、Spec 层与交互流程（待确认）](requirements-v2.md)
 - [产品范围](product-brief.md)
 - [8 周路线图](roadmap.md)
@@ -58,6 +66,8 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [T6：技能仓库 references 标注资产库正本（2026-09-30，已启动）](superpowers/specs/2026-09-30-t6-skill-references-single-source-design.md)
 - [体系治理 M0：设计 + 任务清单（2026-10-01，已执行）](superpowers/specs/2026-10-01-体系治理-m0-design-and-tasks.md)
 - [零代码交付线 M0：设计 + 任务清单（2026-09-30，待确认）](superpowers/specs/2026-09-30-v3-m0-design-and-tasks.md)
+- [v4 学习系统 M0：数据地基设计与任务清单（2026-10-27，已执行）](superpowers/specs/2026-10-27-v4-m0-learning-foundation-design-and-tasks.md)
+- [v4 学习系统 M1：按「模块 × 层级」出题设计与任务清单（2026-10-27，已执行）](superpowers/specs/2026-10-27-v4-m1-module-level-practice-design-and-tasks.md)
 - [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads/leads-3-ledger-paths-and-m2.2.md)
 - [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads/leads-3-m2-2-requirements-draft.md)
 - [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads/leads-3-collection-roundtrip.md)
@@ -184,6 +194,8 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [v2.26.0 验收清单（线索 3 M1 采集台账，已签核 8/8）](acceptance/leads-3-m1.md)
 - [线索 3 M0 验收清单（生态采集沉淀，已签核）](acceptance/leads-3-m0.md)
 - [练习题库 M0 验收清单](acceptance/practice-m0.md)
+- [v4 学习系统 M0 验收清单（数据地基，本地与真库均已验）](acceptance/m0-learning-foundation.md)
+- [v4 学习系统 M1 验收清单（按模块 × 层级出题，仅剩「答一题后已做 +1」未验）](acceptance/v4-m1.md)
 
 ### 云端部署
 
