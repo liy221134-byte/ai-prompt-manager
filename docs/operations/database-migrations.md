@@ -79,6 +79,29 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-10-27：**应用 `20261027160000_add_learning_foundation.sql` 并导入中项主题包**（v4 学习系统 M0）。
+  迁移由**产品负责人本人在 Supabase SQL Editor 执行**（本机没有 supabase CLI，也没有数据库密码；
+  service_role key 只能走 PostgREST，执行不了 DDL）。导入由本会话用 service_role key 完成。
+  改了什么：
+  ① `public.practice_questions` 新增 6 列 `knowledge_point / source / source_url / topic_id / module_id / level`
+  （`source` 带 `not null default 'manual'`，存量 135 题自动归位；`level` 带 `check (level is null or level between 1 and 5)`）；
+  ② `public.practice_attempts` 新增 `duration_ms / context`；
+  ③ 新建四张表 `learning_topics / learning_modules / knowledge_points / learning_diagnostics`
+  + 索引 + RLS 策略 + **显式表级 grant**（不依赖 Supabase 的隐式默认授权）；
+  ④ 导入 `rk-mid-integration` 主题包：主题 1 / 模块 6 / 知识点 29 / 题 12。
+  **不改动任何现有列、不删任何数据、不动现有 RLS。**
+  为什么要写：v4 学习系统要按「内容模块 × 能力层级」出题与诊断，现在只有固定题库，没有主题、
+  模块、知识点层级，题目也没有知识归因。
+  谁同意：产品负责人 2026-10-27 在对话里明确「我都同意你继续往下走」。
+  怎么回滚：
+  `delete from public.practice_questions where topic_id = 'rk-mid-integration';`
+  `drop table if exists public.learning_diagnostics, public.knowledge_points, public.learning_modules, public.learning_topics;`
+  `alter table public.practice_questions drop constraint if exists practice_questions_level_check;`
+  `alter table public.practice_questions drop column if exists knowledge_point, drop column if exists source, drop column if exists source_url, drop column if exists topic_id, drop column if exists module_id, drop column if exists level;`
+  `alter table public.practice_attempts drop column if exists duration_ms, drop column if exists context;`
+  验完的结果（service_role 只读核对）：四张表存在；导入行数 1/6/29/12；按模块 S1=2 · S2=3 · S3=3 ·
+  S4=1 · S5=1 · S6=2；按层级 L1=5 · L2=4 · L3=2 · L4=1；12 题 `knowledge_point` / `level` 全非空、
+  `source` 全为 `manual`；**再次执行导入行数不变（幂等）**；存量 135 题 `level` 全为 null。
 - 2026-09-29（第三次写入）：**应用 `20260929000000_add_practice_type.sql`**（随 `main` 推送由
   Supabase GitHub 集成自动执行）。对应提交 `5121e8e`（迁移文件本身在 `73692f8`）。
   改了什么：`public.practice_questions` 新增 `type text not null default '单选'`（现有 127 题

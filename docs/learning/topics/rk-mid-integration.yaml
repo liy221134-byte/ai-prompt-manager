@@ -1,0 +1,2900 @@
+# 中项主题包 · 系统集成项目管理工程师（中级·软考）
+#
+# 用途：v4 学习系统的第一个真实主题，用来反向验证主题包 schema 是否够用。
+# 不是完整题库：示例题只用于验证「题目挂知识点 + 按 stage 出题」这条链路。
+#
+# 事实来源：
+#   考试科目/合格线/机考时长 —— 官方批次通告 + 山东省 2026 年报考须知
+#   教材章节结构 —— 《系统集成项目管理工程师教程（第3版）》清华社 2024.1，共 18 章
+#   分值分布 —— 培训机构基于历年真题的统计（非官方），标为 estimate
+#
+schema_version: 1.1
+# 1.1（2026-10-27，M0.5 校准）：expected_gap 与 planned_hours 用首次诊断结果覆盖、order 按「缺口×分值」重排。
+# 依据：docs/learning/diagnostic-2026-10-27.md（客观题 19/31、简答 0/9）。
+# weight 仍是 estimate，未动——缺历年真题分值统计，没有依据的改动比不改更糟。
+
+topic:
+  id: rk-mid-integration
+  name: 系统集成项目管理工程师（中级·软考）
+  goal: 2027-05-22 一次通过，两科同次均 ≥45 分
+  deadline: "2027-05-22"
+  exam_date_predicted: "2027-05-22"      # 官方年度计划未发布，此为按近三年规律推算
+  registration_expected: "2027-03下旬"    # 山东窗口约 10-20 天，无补报
+  total_hours: 380
+  start_date: "2026-10-27"
+  exam_facts:
+    subjects: ["基础知识（75 单选，含 5 道英文）", "应用技术（3 简答 + 1 计算）"]
+    full_score_per_subject: 75
+    pass_score_per_subject: 45
+    pass_rule: 一次通过全部科目，不保留单科成绩
+    format: 机考，两科连考，作答总时长 240 分钟
+    fee: 山东每人每科 68 元，两科 136 元
+    textbook: 《系统集成项目管理工程师教程（第3版）》，清华大学出版社 2024-01
+    # 关键节点：主题页据此显示倒计时。日期为推算值（官方年度计划未发布），报名窗口以官方通告为准。
+    # 格式见 docs/learning/topic-pack-schema.md 3.1 节。
+    milestones:
+      - { name: 报名开放, date: "2027-03-20", note: "山东窗口约 10-20 天，无补报。错过等一年" }
+      - { name: 准考证打印, date: "2027-05-10", note: "考前约一周" }
+      - { name: 考试, date: "2027-05-22", note: "两科连考，作答总时长 240 分钟" }
+
+# ── 内容模块（按教材章节归并，**不是能力阶梯**）──────────────
+# 命名来由：这两者曾经混为一谈，改名的判据见 v4-plan 第一节判断 1。
+# 能力层级 L1—L5 是产品常量，定义在 docs/learning/topic-pack-schema.md，不写进主题包。
+#
+# weight        ：该模块在考试中的占分权重（**estimate**，待 M0.5 用真题/错题分布校准）
+# expected_gap  ：基于已知画像预判的缺口（1=很熟 5=空白）。首次诊断后以诊断结果覆盖
+# planned_hours ：按缺口校正后的计划投入，合计 = total_hours
+#
+modules:
+  - id: S1
+    order: 1
+    name: 项目管理框架
+    scope_chapters: [9]
+    weight: 0.30
+    expected_gap: 2
+    planned_hours: 90
+    entry_criteria: 能说出项目与运营的区别；知道项目管理管的是"临时性 + 独特性"这件事
+    exit_criteria: 不看资料说清五大过程组各自产出什么；拿到任一知识点能归到某个知识领域
+    common_mistakes:
+      - 把五大过程组当成时间先后顺序，实际是逻辑分组，可交叠
+      - 把十大知识领域和阶段搞混
+    min_project: 用自己做过的可信数据空间项目，画出它的五大过程组映射，并标出哪个过程组做得最弱
+
+  - id: S2
+    order: 3
+    name: 五大过程组实操
+    scope_chapters: [10, 11, 12, 13, 14]
+    weight: 0.20
+    expected_gap: 3
+    planned_hours: 100
+    entry_criteria: 不看资料说出五大过程组各自产出什么；拿任一知识点能归到某个知识领域
+    exit_criteria: 给一个场景能判断落在哪个过程组；能独立算完一道挣值分析题；能写出变更管理完整流程
+    common_mistakes:
+      - 挣值公式记混（SV 对应进度、CV 对应成本）
+      - 把"质量保证"（执行）和"质量控制"（监控）放错过程组
+      - 变更控制流程漏掉 CCB 审批环节
+    min_project: 把自己项目里一次真实的变更，按标准变更流程重写一遍
+
+  - id: S3
+    order: 2
+    name: 信息技术基础
+    scope_chapters: [1, 2, 3, 4, 5, 6, 7, 8]
+    weight: 0.28
+    expected_gap: 3
+    planned_hours: 90
+    entry_criteria: 无。诊断显示已有实战接触（云、等保、数据治理），不是零基础，从概念校准开始
+    exit_criteria: 能用一句话解释云计算三层服务模型的区别；能说清等保分几级、每级管什么；能给一个业务场景选出合适的集成技术
+    common_mistakes:
+      - IaaS/PaaS/SaaS 边界记混（记住：谁管操作系统）
+      - 把数据治理和数据管理当成同义词
+      - 等保级别与业务重要性对应关系记错
+    min_project: 用自己项目的沙箱平台，画出它涉及的技术栈，标注每一项对应教材哪一章
+    note: 实测客观题 6/9、L4 场景题全对 ⇒ 原有「零基础」判断作废，工时从 130 减到 90。这一块靠日常项目已在接触，缺的是标准表述，不是理解
+
+  - id: S4
+    order: 5
+    name: 组织保障与监理
+    scope_chapters: [15, 16]
+    weight: 0.07
+    expected_gap: 3
+    planned_hours: 25
+    entry_criteria: 能独立算完一道挣值分析题；写得出变更管理的完整流程（含 CCB 审批）
+    exit_criteria: 说清 PMO 三种类型区别；说清监理「四控两管一协调」具体指什么
+    common_mistakes:
+      - 把监理和项目管理混为一谈（监理是第三方）
+      - PMO 类型记混（支持型/控制型/指令型）
+    min_project: 用自己的项目说清：谁是建设方、谁是承建方、有没有第三方监理
+
+  - id: S5
+    order: 4
+    name: 法规与职业道德
+    scope_chapters: [17, 18]
+    weight: 0.10
+    expected_gap: 4
+    planned_hours: 45
+    entry_criteria: 无
+    exit_criteria: 能判断一个采购场景适用招标投标法还是政府采购法；说清数据安全法对数据流通项目的约束
+    common_mistakes:
+      - 招标公告 / 投标文件 / 中标通知书三者的法律性质搞混
+      - 混淆《网络安全法》与《数据安全法》的管辖范围
+    min_project: 用自己的项目写一段合规说明：这个数据流通场景受哪几部法规约束
+
+  - id: S6
+    order: 6
+    name: 应试专项
+    scope_chapters: []
+    weight: 0.05
+    expected_gap: 4
+    planned_hours: 30
+    entry_criteria: 能独立算完挣值题；能说清等保分级与云计算三层服务模型的区别
+    exit_criteria: 机考模拟两套卷均在 45 分以上；计算题单题耗时 ≤15 分钟
+    common_mistakes:
+      - 案例题只写结论不写过程（计算题给分看点）
+      - 英文题直接放弃（5 分也是分）
+    min_project: 完整做一套机考模拟，记录每部分耗时
+
+# ── 知识点树 ─────────────────────────────────────────────
+# 题目挂 kp_id，kp 挂 module_id；parent 支持层级，用于根因归因（错题向上归因）
+#
+knowledge_points:
+  - {id: KP-0101, module_id: S1, parent: null,    name: 项目与项目管理的基本概念, ref: "第9章"}
+  - {id: KP-0102, module_id: S1, parent: null,    name: 五大过程组,               ref: "第9章"}
+  - {id: KP-0103, module_id: S1, parent: null,    name: 十大知识领域,             ref: "第9章"}
+  - {id: KP-0104, module_id: S1, parent: null,    name: 项目生命周期与组织结构,   ref: "第9章"}
+  - {id: KP-0105, module_id: S1, parent: null,    name: 项目经理的角色与职责,     ref: "第9章"}
+
+  - {id: KP-0201, module_id: S2, parent: null,    name: 启动过程组,               ref: "第10章"}
+  - {id: KP-0202, module_id: S2, parent: null,    name: 规划过程组,               ref: "第11章"}
+  - {id: KP-0203, module_id: S2, parent: null,    name: 执行过程组,               ref: "第12章"}
+  - {id: KP-0204, module_id: S2, parent: null,    name: 监控过程组,               ref: "第13章"}
+  - {id: KP-0205, module_id: S2, parent: null,    name: 收尾过程组,               ref: "第14章"}
+  - {id: KP-0206, module_id: S2, parent: KP-0204, name: 挣值分析（EVM）,          ref: "第13章"}
+  - {id: KP-0207, module_id: S2, parent: KP-0204, name: 变更控制流程,             ref: "第13章"}
+
+  - {id: KP-0301, module_id: S3, parent: null,    name: 信息化发展,               ref: "第1章"}
+  - {id: KP-0302, module_id: S3, parent: null,    name: 信息技术发展（云大物移智区）, ref: "第2章"}
+  - {id: KP-0303, module_id: S3, parent: null,    name: 信息技术服务,             ref: "第3章"}
+  - {id: KP-0304, module_id: S3, parent: null,    name: 信息系统架构,             ref: "第4章"}
+  - {id: KP-0305, module_id: S3, parent: null,    name: 软件工程,                 ref: "第5章"}
+  - {id: KP-0306, module_id: S3, parent: null,    name: 数据工程,                 ref: "第6章"}
+  - {id: KP-0307, module_id: S3, parent: null,    name: 软硬件系统集成,           ref: "第7章"}
+  - {id: KP-0308, module_id: S3, parent: null,    name: 信息安全工程,             ref: "第8章"}
+
+  - {id: KP-0401, module_id: S4, parent: null,    name: 组织保障（PMO/配置管理）, ref: "第15章"}
+  - {id: KP-0402, module_id: S4, parent: null,    name: 监理基础知识,             ref: "第16章"}
+
+  - {id: KP-0501, module_id: S5, parent: null,    name: 法律法规,                 ref: "第17章"}
+  - {id: KP-0502, module_id: S5, parent: null,    name: 标准规范,                 ref: "第17章"}
+  - {id: KP-0503, module_id: S5, parent: null,    name: 职业道德规范,             ref: "第18章"}
+
+  - {id: KP-0601, module_id: S6, parent: null,    name: 计算题专项,               ref: "第13章"}
+  - {id: KP-0602, module_id: S6, parent: null,    name: 关键路径与网络图,         ref: "第11章"}
+  - {id: KP-0603, module_id: S6, parent: null,    name: 英文专业术语,             ref: "全篇"}
+  - {id: KP-0604, module_id: S6, parent: null,    name: 案例题答题结构,           ref: "第10-14章"}
+
+question_policy:
+  source_policy: [ai, web, manual]
+  per_kp_min: 3
+  types: [单选, 多选, 判断, 实操]
+  # 每个 kp 至少 1 道非选择题（判断/实操），否则诊断会退化成"认题"
+  require_open_question_per_kp: true
+
+# ── 示例题（12 道，用于验证链路，不是完整题库）────────────────
+# 字段对齐现有 practice_questions 表，导入时无需转换
+#
+questions:
+  - id: RK-S1-001
+    module_id: S1
+    kp_id: KP-0101
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 项目与运营的区别
+    body_md: |
+      下列关于项目与运营的说法，正确的是？
+    options:
+      - 项目是持续性的，运营是临时性的
+      - 项目具有临时性和独特性，运营是持续重复的
+      - 项目不需要明确目标，运营需要
+      - 项目和运营都由同一套组织流程管理，无区别
+    answer: "B"
+    explanation_md: |
+      项目的两个本质特征是**临时性**（有明确起止）和**独特性**（产出物唯一）。运营是持续、重复、以维持业务为目的。这是全书最基础的一对概念，后续所有过程组都建立在这个区分上。
+    source: manual
+
+  - id: RK-S1-002
+    module_id: S1
+    kp_id: KP-0102
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 五大过程组的逻辑关系
+    body_md: |
+      关于五大过程组，下列说法错误的是？
+    options:
+      - 启动过程组的输出之一是项目章程
+      - 五大过程组在项目生命周期中会重复出现
+      - 五大过程组必须严格按顺序执行，前一阶段不结束不能进入下一阶段
+      - 收尾过程组可能出现在项目的每个阶段末
+    answer: "C"
+    explanation_md: |
+      五大过程组是**逻辑分组**，不是时间顺序。它们在实际项目中高度交叠、循环往复——监控过程组贯穿全程，收尾在每个阶段末都会发生。选 C 的错误在于把逻辑分组当成了瀑布式时序。
+    source: manual
+
+  - id: RK-S2-001
+    module_id: S2
+    kp_id: KP-0206
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 挣值分析：进度偏差的含义
+    body_md: |
+      某项目 EV=800，PV=1000，AC=900。关于该项目当前状态，正确的是？
+    options:
+      - 进度超前，成本节约
+      - 进度落后，成本超支
+      - 进度落后，成本节约
+      - 进度超前，成本超支
+    answer: "B"
+    explanation_md: |
+      SV = EV − PV = 800 − 1000 = **−200**，小于 0 ⇒ 进度落后。CV = EV − AC = 800 − 900 = **−100**，小于 0 ⇒ 成本超支。记忆锚点：SV 看进度、CV 看成本，两个都是「EV 减后面那个」。
+    source: manual
+
+  - id: RK-S2-002
+    module_id: S2
+    kp_id: KP-0206
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 3
+    title: 挣值分析：完整指标计算
+    body_md: |
+      某项目当前状态：EV=800 万元，PV=1000 万元，AC=900 万元，BAC=2000 万元。
+
+      请计算并写出过程：
+      1. 进度偏差 SV、成本偏差 CV
+      2. 进度绩效指数 SPI、成本绩效指数 CPI
+      3. 按当前绩效预测完工估算 EAC（用 CPI 法）
+      4. 逐项判断进度与成本状态
+    options: []
+    answer: "SV=-200万元（进度落后）；CV=-100万元（成本超支）；SPI=0.8；CPI≈0.889；EAC=BAC/CPI≈2250万元"
+    explanation_md: |
+      1. SV = EV − PV = 800 − 1000 = −200（<0 进度落后）
+      2. CV = EV − AC = 800 − 900 = −100（<0 成本超支）
+      3. SPI = EV / PV = 800 / 1000 = 0.8
+      4. CPI = EV / AC = 800 / 900 ≈ 0.889
+      5. EAC = BAC / CPI = 2000 / 0.889 ≈ **2250 万元**（按当前成本绩效外推，完工要多花 250 万）
+
+      **给分点**：每项写公式 + 代值 + 结论。案例题只写数字不写过程会大量丢分，这是最常见的失分原因。
+    source: manual
+
+  - id: RK-S2-003
+    module_id: S2
+    kp_id: KP-0207
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: medium
+    level: 3
+    title: 变更管理流程
+    body_md: |
+      项目执行中，客户提出一项范围变更。请按标准流程写出处理步骤（不少于 5 步）。
+    options: []
+    answer: "提出变更申请 → 分析变更影响（范围/进度/成本/质量）→ 提交 CCB 审批 → 批准后更新相关计划与基准 → 实施变更 → 验证并记录 → 通知干系人"
+    explanation_md: |
+      关键是要出现 **CCB（变更控制委员会）审批** 和 **更新基准** 两步，这两步是判分核心。
+      常见错误：直接从"客户提出"跳到"开始改"，跳过影响分析和审批——这在真实项目里就是范围失控的起点。
+
+      对照你自己的项目想一遍：上次客户临时加需求，有没有走完这个流程？
+    source: manual
+
+  - id: RK-S3-001
+    module_id: S3
+    kp_id: KP-0302
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 云计算三层服务模型
+    body_md: |
+      用户只需管理自己的应用和数据，操作系统及以下由云服务商负责。这属于哪种服务模型？
+    options:
+      - IaaS
+      - PaaS
+      - SaaS
+      - DaaS
+    answer: "B"
+    explanation_md: |
+      判断口诀——**看操作系统归谁管**：
+      IaaS = 只给基础设施（虚拟机/存储/网络），操作系统以上自己管；
+      PaaS = 平台也给，操作系统和运行时由服务商管，用户只管应用和数据；
+      SaaS = 连应用都是别人的，用户只管用。
+
+      本题「操作系统由服务商负责、用户管应用和数据」⇒ PaaS。
+    source: manual
+
+  - id: RK-S3-002
+    module_id: S3
+    kp_id: KP-0308
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 网络安全等级保护分级
+    body_md: |
+      我国网络安全等级保护制度将信息系统分为几个安全保护等级？
+    options:
+      - "3 级"
+      - "4 级"
+      - "5 级"
+      - "6 级"
+    answer: "C"
+    explanation_md: |
+      等保分为**五级**，从第一级（自主保护）到第五级（专控保护），级别越高监管越严。
+      政务类系统通常要求三级及以上——这一条和你手上的数据空间项目直接相关，甲方验收会查等保测评报告。
+    source: manual
+
+  - id: RK-S3-003
+    module_id: S3
+    kp_id: KP-0306
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 2
+    title: 数据治理与数据管理的区别
+    body_md: |
+      下列关于数据治理与数据管理的说法，正确的是？
+    options:
+      - 两者是同义词，可以互换使用
+      - 数据治理是决策权与问责机制的安排，数据管理是具体执行活动
+      - 数据管理层次高于数据治理
+      - 数据治理只关注数据质量
+    answer: "B"
+    explanation_md: |
+      **治理管"谁来决定、谁负责"，管理管"具体怎么做"。**
+      类比：治理是董事会定规则，管理是部门按规则干活。数据中台项目里最容易出的问题就是只有管理动作、没有治理机制，
+      结果各部门口径不一致，对不上数。
+    source: manual
+
+  - id: RK-S4-001
+    module_id: S4
+    kp_id: KP-0402
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: medium
+    level: 1
+    title: 信息系统监理的职责范围
+    body_md: |
+      信息系统工程监理的"四控两管一协调"中，"四控"指的是？
+    options:
+      - 质量、进度、投资、安全
+      - 范围、进度、成本、质量
+      - 质量、进度、合同、信息
+      - 投资、质量、风险、变更
+    answer: "A"
+    explanation_md: |
+      四控 = **质量、进度、投资、安全**；两管 = 合同管理、信息管理；一协调 = 组织协调。
+      注意别和项目管理的"范围/进度/成本/质量"搞混——那是项目管理的四要素，监理的四控里是**投资和安全**，不是范围和成本。
+    source: manual
+
+  - id: RK-S5-001
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 2
+    title: 招标投标中的法律性质
+    body_md: |
+      根据《招标投标法》，中标通知书的法律性质是？
+    options:
+      - 要约邀请
+      - 要约
+      - 承诺
+      - 意向书
+    answer: "C"
+    explanation_md: |
+      三方链条要记牢：
+      **招标公告 = 要约邀请**（请别人来报价）
+      **投标文件 = 要约**（正式报价）
+      **中标通知书 = 承诺**（接受报价，合同成立）
+      这条几乎年年考，也是最容易记反的一组。
+    source: manual
+
+  - id: RK-S6-001
+    module_id: S6
+    kp_id: KP-0603
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 英文专业术语（EVM）
+    body_md: |
+      In project management, "EVM" stands for:
+    options:
+      - Enterprise Value Management
+      - Earned Value Management
+      - Estimated Value Method
+      - Evaluation and Verification Model
+    answer: "B"
+    explanation_md: |
+      EVM = **Earned Value Management**（挣值管理）。英文题只考术语原义，不考语法。
+      备考方式：把十大知识领域、五大过程组的英文对照表过一遍即可，5 道题能拿 3-4 分就是赚的。
+    source: manual
+
+  - id: RK-S6-002
+    module_id: S6
+    kp_id: KP-0604
+    category: 中项·S6 应试专项
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 案例题答题结构训练
+    body_md: |
+      某项目进度严重滞后，客户投诉频繁，团队加班严重但产出不增。
+      请从项目管理角度分析存在的问题，并提出改进建议。
+
+      要求：问题不少于 4 条，建议必须与问题一一对应。
+    options: []
+    answer: "问题可从范围/进度/质量/沟通/资源五个方面拆解；建议须一一对应，且要写出具体动作，不能只写「加强管理」"
+    explanation_md: |
+      **答题结构**（这类题有固定套路，练模板比练知识更有效）：
+      1. 先分类，不要一锅端——范围、进度、成本、质量、资源、沟通、风险，逐项扫
+      2. 每条问题写成「现象 + 对应管理过程缺失」，例如：
+         「加班多但产出不增 ⇒ 进度计划未做资源平衡，未识别关键路径」
+      3. 建议必须与问题**一一对应**，且是具体动作：
+         ✗「加强进度管理」 → ✓「重排 WBS，识别关键路径，对非关键任务削减投入」
+      4. 字数控制：问题 4-5 条、建议 4-5 条，宁少勿滥
+
+      **失分点**：只写问题不写建议、建议与问题不对应、写大词不写动作。
+    source: manual
+
+  # ── 第一批补题（2026-10-27）：S1 补齐到每层 3 题 ──────────────
+  - id: RK-S1-003
+    module_id: S1
+    kp_id: KP-0103
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 十大知识领域：范围管理
+    body_md: |
+      十大知识领域中，负责「确保项目包含且仅包含成功完成项目所需的工作」的是？
+    options:
+      - 范围管理
+      - 进度管理
+      - 质量管理
+      - 整合管理
+    answer: "A"
+    explanation_md: |
+      范围管理管的是「做什么、不做什么」，核心产出是需求文件与 WBS。
+      进度管理管「什么时候做完」，质量管理管「合格不合格」，整合管理管「各条线怎么拧成一股」。
+    source: manual
+
+  - id: RK-S1-004
+    module_id: S1
+    kp_id: KP-0105
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 项目经理的核心作用
+    body_md: |
+      关于项目经理在项目中的核心作用，下列描述最准确的是？
+    options:
+      - 完成技术方案设计与关键代码实现
+      - 通过整合资源、协调干系人，达成项目目标
+      - 监督团队成员的考勤与日常纪律
+      - 签署项目涉及的全部合同
+    answer: "B"
+    explanation_md: |
+      项目经理的核心是**整合**——把不同专业、不同部门、不同利益的人组织起来达成目标。
+      技术方案由技术负责人做，合同签署通常由授权代表或商务负责，考勤属于职能管理。
+    source: manual
+
+  - id: RK-S1-005
+    module_id: S1
+    kp_id: KP-0101
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 衡量项目成功的标准
+    body_md: |
+      关于衡量项目是否成功，下列说法最正确的是？
+    options:
+      - 只要在预算内完成就算成功
+      - 在范围、进度、成本、质量等约束下达成目标，并使关键干系人满意
+      - 团队没有加班就算成功
+      - 交付的功能数量越多越成功
+    answer: "B"
+    explanation_md: |
+      项目成功不等于「没超预算」。传统三约束（范围 / 进度 / 成本）之外还要看质量与干系人满意度——
+      交付物再准时，如果客户不用、不认，项目仍然失败。这一条在案例题里经常作为失分点出现。
+    source: manual
+
+  - id: RK-S1-006
+    module_id: S1
+    kp_id: KP-0102
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 项目章程的归属与作用
+    body_md: |
+      项目章程在哪个过程组制定？它的核心作用是什么？
+    options:
+      - 启动过程组；正式授权项目存在，并授权项目经理动用组织资源
+      - 规划过程组；确定详细的项目范围
+      - 执行过程组；给团队成员分配具体任务
+      - 监控过程组；控制变更是否被批准
+    answer: "A"
+    explanation_md: |
+      项目章程属于**启动过程组**，是项目的「出生证明」，同时是项目经理的「授权书」。
+      因为它要授权项目经理，所以不能由项目经理自己签发——这是判断题的高频陷阱。
+    source: manual
+
+  - id: RK-S1-007
+    module_id: S1
+    kp_id: KP-0104
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: medium
+    level: 3
+    title: 职能型组织里的项目经理
+    body_md: |
+      在职能型组织中，项目经理通常扮演什么角色？
+    options:
+      - 对项目成员拥有完全指挥权
+      - 协调员或联络员，主要靠沟通推动，对资源没有直接控制权
+      - 直接管理项目预算与人员绩效
+      - 与职能经理权限完全相同
+    answer: "B"
+    explanation_md: |
+      职能型组织里，资源与考核都在职能经理手上，项目经理只能「协调」。
+      这也是为什么职能型组织下项目经理常常「责任大、权力小」——这个矛盾是案例题的常客。
+    source: manual
+
+  - id: RK-S1-008
+    module_id: S1
+    kp_id: KP-0104
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: medium
+    level: 3
+    title: 项目型组织的特点
+    body_md: |
+      与职能型组织相比，项目型组织的主要特点是？
+    options:
+      - 项目经理权力最小，由职能经理主导
+      - 项目经理拥有最大权限，但团队成员在项目结束后需要重新安置
+      - 资源可以在多个项目之间高效共享
+      - 不需要设置项目管理办公室
+    answer: "B"
+    explanation_md: |
+      项目型组织里，人和资源都归项目，项目经理权力最大，代价是**资源利用率低**——
+      项目一结束，团队就要重新找归属。这正好和职能型组织的优缺点互为镜像，常成对考。
+    source: manual
+
+  - id: RK-S1-009
+    module_id: S1
+    kp_id: KP-0103
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: medium
+    level: 3
+    title: 把高层需求拆成工作包属于哪个领域
+    body_md: |
+      某项目需要把客户的概括性需求逐层分解为可管理、可估算的工作包。这个动作属于哪个知识领域？
+    options:
+      - 范围管理
+      - 进度管理
+      - 资源管理
+      - 质量管理
+    answer: "A"
+    explanation_md: |
+      逐层分解形成 WBS（工作分解结构），是**范围管理**的核心工具。
+      容易混的是进度管理——进度管理用的是 WBS 的产物（工作包）来排活动，但「拆 WBS」这一步属于范围。
+    source: manual
+
+  - id: RK-S1-010
+    module_id: S1
+    kp_id: KP-0104
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 从资源申请方式反推组织结构
+    body_md: |
+      某公司项目经理要为本项目申请一名测试工程师，必须向测试部经理提出申请、由测试部经理安排人员，
+      且项目经理无权考核该成员的绩效。这最可能是什么组织结构？
+    options:
+      - 项目型
+      - 强矩阵型
+      - 职能型
+      - 复合型
+    answer: "C"
+    explanation_md: |
+      判据是「资源怎么来、考核在谁手上」：要**申请**、且**无权考核** ⇒ 资源完全在职能经理手里 ⇒ 职能型。
+      强矩阵里项目经理对资源有实质调配权，不需要逐次申请；项目型里人本来就归项目。
+    source: manual
+
+  - id: RK-S1-011
+    module_id: S1
+    kp_id: KP-0105
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 关键干系人不参与怎么办
+    body_md: |
+      项目进入执行阶段，一名关键干系人（业务部门负责人）始终不参加需求评审，导致需求反复变更。
+      项目经理首先应该做的是？
+    options:
+      - 把该干系人从干系人名单中剔除
+      - 识别其对项目的影响与真实诉求，制定针对性的沟通策略
+      - 直接上报高层投诉其不配合
+      - 先按现有需求开发，出了问题再说
+    answer: "B"
+    explanation_md: |
+      干系人管理的顺序是「识别 → 分析（权力 / 利益）→ 制定策略 → 执行」。跳过分析直接上手段，
+      无论是剔除、上报还是硬推，都是把症状当原因。
+      案例题里，凡是「首先应该做什么」，答案几乎都落在识别与分析这一步。
+    source: manual
+
+  - id: RK-S1-012
+    module_id: S1
+    kp_id: KP-0102
+    category: 中项·S1 项目管理框架
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 判断工作落在哪个过程组
+    body_md: |
+      团队正在制定 WBS、估算工期与成本、识别风险，并汇总形成项目管理计划。这些工作属于哪个过程组？
+    options:
+      - 启动
+      - 规划
+      - 执行
+      - 监控
+    answer: "B"
+    explanation_md: |
+      「制定计划类」的工作都在**规划过程组**：范围、进度、成本、风险各条线的计划都在这里生成，
+      最后整合成项目管理计划。判断口诀：还在「想清楚要怎么做」= 规划；已经「动手做」= 执行。
+    source: manual
+
+  - id: RK-S1-013
+    module_id: S1
+    kp_id: KP-0103
+    category: 中项·S1 项目管理框架
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 十大知识领域落回自己的项目
+    body_md: |
+      从十大知识领域中挑 4 个，各写出你手上某个真实项目在对应领域的一项**具体产出物**。
+
+      要求：不要写「范围管理计划」这类空名，要写实际的东西，例如「需求清单 37 条，含优先级」。
+    options: []
+    answer: "四个领域各自的真实产出物；每条都能看出具体内容；能对应回知识领域"
+    explanation_md: |
+      这道题的目的不是背十大领域，而是**把你项目里已有的东西挂到标准框架上**。
+      例如：范围 →「需求清单 37 条带优先级」；进度 →「甘特图，含 5 个里程碑」；
+      风险 →「风险登记册 12 条，3 条高」；沟通 →「周报 + 双周评审会」。
+
+      凡是写不出来的领域，就是你项目里真实缺失的管理动作——这比背书有用得多。
+    source: manual
+
+  - id: RK-S1-014
+    module_id: S1
+    kp_id: KP-0101
+    category: 中项·S1 项目管理框架
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 用自己项目解释「渐进明细」
+    body_md: |
+      举一个你项目里「渐进明细」的例子：开始时以为什么、后来明确成什么、是什么触发了这次细化。
+    options: []
+    answer: "有初始的粗略判断；有明确化之后的具体结果；说清了触发细化的原因"
+    explanation_md: |
+      合格答案的样子：立项时以为「就是做一个数据看板」，做完需求调研才发现要对接三个部门的异构数据源，
+      范围从「一个页面」变成「一套数据接入 + 治理 + 展示」，触发点是需求评审时发现口径对不上。
+
+      不合格的答案：把「渐进明细」的定义再解释一遍，不落到自己的项目。
+      这题考的是「能不能用概念解释经验」，正是案例题的核心能力。
+    source: manual
+
+  - id: RK-S1-015
+    module_id: S1
+    kp_id: KP-0105
+    category: 中项·S1 项目管理框架
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 没有人事权怎么推动跨部门
+    body_md: |
+      你在项目中没有直接人事权，但需要推动三个部门配合。写出你会用的 3 个**具体动作**。
+
+      要求：要能落地，不写「加强沟通」「提高意识」这类话。
+    options: []
+    answer: "用正式授权；建立共同利益点；用机制固化协作；保留升级路径"
+    explanation_md: |
+      参考方向（答到 3 条即可）：
+      1. **用正式授权**：把配合事项写进项目章程或高层签发的任务书，让「配合」有出处；
+      2. **找共同利益**：把项目目标翻译成对方部门的考核指标（例如帮他们减少手工报表）；
+      3. **机制固化**：指定各部门接口人、固定双周接口会、把交付物写进里程碑；
+      4. **保留升级路径**：明确「什么情况下升级到项目指导委员会」，而不是私下抱怨。
+
+      这题练的正是案例题里「没有权力怎么做事」的答法——要写动作，不写态度。
+    source: manual
+
+  # ── 第一批补题（2026-10-27）：S3 补齐到每层 5 题 ──────────────
+  - id: RK-S3-004
+    module_id: S3
+    kp_id: KP-0301
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 国家信息化体系的龙头
+    body_md: |
+      国家信息化体系的六要素中，处于龙头（核心）地位的是？
+    options:
+      - 信息技术应用
+      - 信息资源
+      - 信息网络
+      - 信息化人才
+    answer: "A"
+    explanation_md: |
+      六要素：信息技术应用、信息资源、信息网络、信息技术和产业、信息化人才、信息化政策法规和标准规范。
+      其中**信息技术应用**是龙头——其它要素都围绕「用起来」展开。
+    source: manual
+
+  - id: RK-S3-005
+    module_id: S3
+    kp_id: KP-0307
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 系统集成不包括什么
+    body_md: |
+      信息系统系统集成通常不包括下列哪一项？
+    options:
+      - 硬件设备集成
+      - 网络系统集成
+      - 应用软件集成
+      - 组织结构重组
+    answer: "D"
+    explanation_md: |
+      系统集成是技术层面的整合（硬件、网络、软件、数据），组织架构调整属于管理变革，不是集成的内容。
+      这条容易和「业务流程重组」混——后者是管理咨询范畴，不是系统集成。
+    source: manual
+
+  - id: RK-S3-006
+    module_id: S3
+    kp_id: KP-0303
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: IT 服务的生命周期
+    body_md: |
+      按信息技术服务标准，IT 服务的生命周期应覆盖哪几个阶段？
+    options:
+      - 规划设计、部署实施、服务运营、持续改进、监督管理
+      - 需求分析、概要设计、详细设计、编码、测试
+      - 立项、招标、实施、验收、结算
+      - 采集、存储、计算、分析、展示
+    answer: "A"
+    explanation_md: |
+      ITSS 的服务生命周期是五个阶段：规划设计 → 部署实施 → 服务运营 → 持续改进 → 监督管理。
+      注意 B 是**软件开发**的生命周期，两者极易混淆——一个管「服务」，一个管「软件」。
+    source: manual
+
+  - id: RK-S3-007
+    module_id: S3
+    kp_id: KP-0304
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 分层架构里的表示层
+    body_md: |
+      在典型的分层架构中，负责「用户交互与信息展示」的是哪一层？
+    options:
+      - 表示层
+      - 业务逻辑层
+      - 数据访问层
+      - 基础设施层
+    answer: "A"
+    explanation_md: |
+      分层架构常见三层：表示层（界面 / 交互）→ 业务逻辑层（规则 / 计算）→ 数据访问层（读写数据）。
+      分层的目的把「界面变化」和「业务变化」隔开，改界面不牵动业务代码。
+    source: manual
+
+  - id: RK-S3-008
+    module_id: S3
+    kp_id: KP-0302
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 大数据 5V
+    body_md: |
+      大数据的「5V」特征不包括下列哪一项？
+    options:
+      - Volume（数据量大）
+      - Velocity（产生速度快）
+      - Veracity（真实性）
+      - Virtualization（虚拟化）
+    answer: "D"
+    explanation_md: |
+      5V = Volume / Velocity / Variety（多样）/ Value（价值）/ Veracity（真实性）。
+      虚拟化是一种技术手段，不是大数据的特征——它常和云计算放在一起考，注意别串。
+    source: manual
+
+  - id: RK-S3-009
+    module_id: S3
+    kp_id: KP-0305
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 系统测试与验收测试的区别
+    body_md: |
+      关于系统测试与验收测试，下列说法正确的是？
+    options:
+      - 系统测试由开发方组织、对照需求规格进行；验收测试由用户方组织、对照业务需要进行
+      - 两者都由开发方组织，只是阶段不同
+      - 验收测试在系统测试之前进行
+      - 两者没有区别，只是叫法不同
+    answer: "A"
+    explanation_md: |
+      关键差别有两个：**谁来做**（开发方 vs 用户方）和**对照什么**（需求规格 vs 业务需要）。
+      顺序上一定是系统测试在前、验收测试在后。这一组混淆是选择题的高频陷阱。
+    source: manual
+
+  - id: RK-S3-010
+    module_id: S3
+    kp_id: KP-0308
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 数字签名用的是哪把钥匙
+    body_md: |
+      在非对称加密体系中，数字签名的正确做法是？
+    options:
+      - 用发送方的私钥签名，接收方用发送方的公钥验签
+      - 用发送方的公钥签名，接收方用发送方的私钥验签
+      - 用对称密钥签名，双方共享同一把钥匙
+      - 签名不需要密钥
+    answer: "A"
+    explanation_md: |
+      非对称体系里一对钥匙各有分工：**私钥自己留着**、公钥公开。
+      数字签名是「用私钥签、用公钥验」，解决的是**不可否认性**；而加密传输是「用对方公钥加密、对方私钥解密」，
+      解决的是**机密性**。两者方向相反，这是最容易记混的一点。
+    source: manual
+
+  - id: RK-S3-011
+    module_id: S3
+    kp_id: KP-0305
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: medium
+    level: 3
+    title: 软件测试的执行顺序
+    body_md: |
+      按软件测试的执行顺序，下列排列正确的是？
+    options:
+      - 单元测试 → 集成测试 → 系统测试 → 验收测试
+      - 集成测试 → 单元测试 → 验收测试 → 系统测试
+      - 系统测试 → 单元测试 → 集成测试 → 验收测试
+      - 单元测试 → 系统测试 → 集成测试 → 验收测试
+    answer: "A"
+    explanation_md: |
+      顺序的逻辑是「先小后大」：单个模块（单元）→ 模块之间（集成）→ 整个系统（系统）→ 用户验收（验收）。
+      记住这条链，判断题里把「验收」放在前面的一定错。
+    source: manual
+
+  - id: RK-S3-012
+    module_id: S3
+    kp_id: KP-0306
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 数据仓库的分层顺序
+    body_md: |
+      典型数据仓库分层中，贴源层（ODS）之后、面向应用之前，承担「清洗与轻度汇总」的是？
+    options:
+      - 数据明细层（DWD）
+      - 数据应用层（ADS）
+      - 维度层（DIM）
+      - 操作数据层（ODS）
+    answer: "A"
+    explanation_md: |
+      常见四层：**ODS**（贴源，几乎不做加工）→ **DWD**（明细，清洗与规范化）→
+      **DWS**（汇总，按主题聚合）→ **ADS**（应用，直接供报表 / 接口）。
+      判断口诀：越往下越「原始」，越往上越「面向某个具体应用」。
+    source: manual
+
+  - id: RK-S3-013
+    module_id: S3
+    kp_id: KP-0304
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: SOA 与微服务的区别
+    body_md: |
+      关于面向服务的架构（SOA）与微服务架构，下列说法最准确的是？
+    options:
+      - SOA 通常依赖企业服务总线做集中式集成，微服务强调去中心化、服务自治与独立部署
+      - 两者完全等价，只是名字不同
+      - 微服务必须使用 ESB 进行通信
+      - SOA 只能用于内部系统，微服务只能用于互联网系统
+    answer: "A"
+    explanation_md: |
+      关键差别在「集成方式」与「自治程度」：SOA 常通过 ESB 做集中编排，服务可以较粗粒度；
+      微服务强调每个服务独立部署、独立演化，通信走轻量协议，不要中心总线。
+      考试里常见错误选项就是「微服务用 ESB」——正好说反了。
+    source: manual
+
+  - id: RK-S3-014
+    module_id: S3
+    kp_id: KP-0302
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 容器与虚拟机的本质区别
+    body_md: |
+      容器与虚拟机最本质的区别是？
+    options:
+      - 容器共享宿主机内核、以进程级隔离运行；虚拟机各自运行完整的客户操作系统
+      - 容器必须有独立操作系统，虚拟机不需要
+      - 虚拟机启动速度比容器快
+      - 容器不能做资源限制
+    answer: "A"
+    explanation_md: |
+      一句话记牢：**容器共享内核，虚拟机各带一套系统**。
+      由此推出所有结果：容器更轻、启动更快、密度更高；虚拟机隔离更彻底、能跑不同内核。
+      B 和 C 正好说反，D 不符合事实（容器可以做 CPU / 内存限制）。
+    source: manual
+
+  - id: RK-S3-015
+    module_id: S3
+    kp_id: KP-0308
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 等保五级的监管强度
+    body_md: |
+      关于网络安全等级保护的五个等级，下列说法正确的是？
+    options:
+      - 第一级为自主保护，级别越高监管越严，第五级为专控保护
+      - 第一级监管最严，第五级仅需自主保护
+      - 五个等级的监管要求完全相同
+      - 第三级以上只需备案，不需要测评
+    answer: "A"
+    explanation_md: |
+      从第一级到第五级，受侵害客体与侵害程度逐级加重，监管也逐级加严：一级自主保护、二级指导保护、
+      三级监督保护、四级强制保护、五级专控保护。
+      第三级及以上通常需要**测评**（不只是备案）——这一条在政务项目里是硬要求。
+    source: manual
+
+  - id: RK-S3-016
+    module_id: S3
+    kp_id: KP-0308
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 从业务影响反推等保级别
+    body_md: |
+      某市级政务数据共享平台涉及大量自然人信息，一旦遭到破坏，会对社会秩序和公共利益造成严重损害。
+      按等保要求，它最低应达到几级？
+    options:
+      - 一级
+      - 二级
+      - 三级
+      - 四级
+    answer: "C"
+    explanation_md: |
+      定级看两个维度：**受侵害的客体** + **侵害程度**。
+      「损害社会秩序和公共利益」且程度为「严重」⇒ 三级。
+      答四级是把「严重」和「特别严重」混了；答二级是只按数据量猜，没看客体。
+    source: manual
+
+  - id: RK-S3-017
+    module_id: S3
+    kp_id: KP-0304
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 异构老系统怎么集成
+    body_md: |
+      某企业内部有 8 个不同年代、不同技术栈的老系统，要求既能复用已有能力，又要让新系统方便接入。
+      最合适的架构方向是？
+    options:
+      - 把 8 个系统全部推倒，重建为一个单体应用
+      - 将各系统能力服务化，通过标准接口进行集成，逐步替换
+      - 各系统独立建设，彼此不集成
+      - 只做一个前端门户，后台数据靠人工同步
+    answer: "B"
+    explanation_md: |
+      老系统改造的核心约束是「不能停摆」，所以答案一定是「渐进式」而不是「推倒重来」。
+      服务化 + 标准接口能让新老系统并存、逐块替换，是这类场景的标准解。
+      A 风险最高、C 等于没解决、D 会制造新的数据不一致。
+    source: manual
+
+  - id: RK-S3-018
+    module_id: S3
+    kp_id: KP-0303
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 运维服务该补哪个阶段
+    body_md: |
+      某单位的系统已上线运行两年，运维团队每天忙于救火：故障频发、反复处理同类问题、没有服务记录。
+      按 IT 服务生命周期看，最该补的是？
+    options:
+      - 规划设计阶段，重新做一遍架构设计
+      - 部署实施阶段，重装一遍系统
+      - 持续改进阶段，建立问题管理与知识沉淀机制
+      - 不需要补，多招人就行
+    answer: "C"
+    explanation_md: |
+      「反复处理同类问题 + 没有记录」是典型的**缺少持续改进**：问题没有从「事件」升级为「问题」被根治。
+      正确动作是建立问题管理、根因分析与知识库。加人只能提高救火速度，不能减少火情。
+    source: manual
+
+  - id: RK-S3-019
+    module_id: S3
+    kp_id: KP-0301
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 一网通办真正的瓶颈
+    body_md: |
+      某市要建「一网通办」平台，需要打通 20 个委办局的业务系统。从项目实践看，最关键的制约因素通常是？
+    options:
+      - 服务器性能不足
+      - 前端界面不够美观
+      - 数据共享与业务协同的机制（权责、标准、审批链条）
+      - 编程语言选型不当
+    answer: "C"
+    explanation_md: |
+      这类跨部门项目的瓶颈几乎从来不是技术，而是**机制**：数据谁负责、按什么标准提供、出了问题谁担责。
+      技术方案再漂亮，机制不通就落不了地。这条经验在案例分析里非常好用——遇到「政务 / 跨部门」，
+      优先往机制上找原因，而不是往技术上找。
+    source: manual
+
+  - id: RK-S3-020
+    module_id: S3
+    kp_id: KP-0307
+    category: 中项·S3 信息技术基础
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 集成项目里的接口争议
+    body_md: |
+      系统集成项目中，甲方认为乙方提供的接口「不好用」，乙方认为按合同已经交付。双方争执不下。
+      从项目管理角度看，问题的根源最可能是？
+    options:
+      - 乙方技术水平不够
+      - 接口的技术标准与验收标准在合同 / 需求阶段没有定义清楚
+      - 甲方要求太高
+      - 服务器配置太低
+    answer: "B"
+    explanation_md: |
+      交付争议的根源基本都在**验收标准没有可判定**。接口算不算「好用」，必须在需求阶段就写成
+      可验证的条件（响应时间、错误码、字段完整性、并发能力）。
+      这也正是 v4 这套东西为什么要给每条验收标准写「能一次判定」——判不了的验收，一定吵架。
+    source: manual
+
+  - id: RK-S3-021
+    module_id: S3
+    kp_id: KP-0302
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 自己项目的云服务落位
+    body_md: |
+      看你手上某个项目用到的云服务，逐项判断它们分别属于 IaaS / PaaS / SaaS 的哪一层，并说明判断依据。
+    options: []
+    answer: "能逐项归类；判断依据用「谁管操作系统」这条轴，而不是凭名字猜"
+    explanation_md: |
+      合格答案的样子：ECS 云主机 = IaaS（操作系统自己装自己管）；云数据库 RDS = PaaS
+      （数据库引擎服务商维护，数据自己管）；对象存储 = IaaS / PaaS 边界（按是否托管运维判断）；
+      企业邮箱 = SaaS（开箱即用）。
+
+      关键是**说出判断轴**：谁的运维责任到哪一层。写不出依据、只报名字，等于没掌握。
+    source: manual
+
+  - id: RK-S3-022
+    module_id: S3
+    kp_id: KP-0306
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 项目里的数据治理到底有没有
+    body_md: |
+      描述你项目中数据治理的实际状况：谁对数据质量负责？口径不一致时谁裁决？有没有落成制度？
+    options: []
+    answer: "能说清责任归属与裁决机制；能区分「有管理动作」和「有治理机制」"
+    explanation_md: |
+      这一题是照妖镜。多数项目的真实答案是没有治理、只有管理：各部门各自做报表，口径对不上时靠开会吵。
+
+      合格答案会说清三件事：**谁负责**（数据 owner）、**怎么裁决**（有争议时的决策路径）、
+      **有没有落到制度**（写进流程还是靠人情）。三件都缺，就说明治理是空的——这正好可以作为你项目里的改进项。
+    source: manual
+
+  - id: RK-S3-023
+    module_id: S3
+    kp_id: KP-0308
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 给自己的系统定级
+    body_md: |
+      为你手上的一个系统写一段定级说明：定几级、依据是受侵害的客体和程度分别是什么、需要做什么测评。
+    options: []
+    answer: "级数、客体、程度三者对得上；知道三级及以上要测评"
+    explanation_md: |
+      合格答案要出现三个要素：**业务信息 / 系统服务被破坏后侵害谁**（公民法人权益 / 社会秩序公共利益 / 国家安全）、
+      **侵害程度**（一般 / 严重 / 特别严重）、**由此得出的级别**。
+
+      最常见的错误是只说「我们数据多所以要三级」——数据量不是定级依据，客体和程度才是。
+    source: manual
+
+  - id: RK-S3-024
+    module_id: S3
+    kp_id: KP-0301
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 把项目拆到信息化六要素上
+    body_md: |
+      用国家信息化体系六要素，逐项说明你项目里对应的具体内容（哪一项缺失也照实写）。
+    options: []
+    answer: "六要素逐项落位；缺的那几项要照实写，不硬凑"
+    explanation_md: |
+      六要素：信息技术应用、信息资源、信息网络、信息技术和产业、信息化人才、政策法规与标准规范。
+
+      实操价值在于：**缺什么一眼就看出来**。多数业务项目缺的是「信息资源」（数据资产没盘清）和
+      「政策法规与标准规范」（没有数据标准）。照实写缺失项，比硬凑成六项都有用。
+    source: manual
+
+  - id: RK-S3-025
+    module_id: S3
+    kp_id: KP-0305
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 你的项目打算怎么测
+    body_md: |
+      给你手上正在做的系统写一份最小测试策略：测哪几个阶段、每个阶段谁来做、准入与准出的判据是什么。
+    options: []
+    answer: "阶段划分清楚；每个阶段的责任方明确；准入准出判据可判定"
+    explanation_md: |
+      合格答案要能回答三个问题：**测到哪一步为止**（阶段与范围）、**谁签字**（责任方）、
+      **什么条件才算过**（判据）。
+
+      最常缺的是「准出判据」——写「测试通过后上线」等于没写。可判定的写法是
+      「遗留缺陷中无严重及以上、一般缺陷 ≤5 个且均有规避方案」。
+    source: manual
+
+  # ── 第二批补题（2026-10-27）：S2 主战场，补齐到每层 4 题 ──────
+  - id: RK-S2-004
+    module_id: S2
+    kp_id: KP-0201
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 项目章程的签发人
+    body_md: |
+      项目章程通常由谁签发？
+    options:
+      - 项目经理
+      - 项目发起人或高层管理者
+      - 客户方的项目经理
+      - 项目管理办公室
+    answer: "B"
+    explanation_md: |
+      项目章程的作用之一是**授权**项目经理动用组织资源，所以不能由项目经理自己签发——
+      自己给自己授权，形式上不成立。这一点在判断题里几乎必考。
+    source: manual
+
+  - id: RK-S2-005
+    module_id: S2
+    kp_id: KP-0202
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: WBS 的最底层
+    body_md: |
+      工作分解结构（WBS）分解到最底层，得到的单元称为什么？
+    options:
+      - 工作包
+      - 里程碑
+      - 活动
+      - 控制账户
+    answer: "A"
+    explanation_md: |
+      WBS 分解到**工作包**为止；工作包再往下拆才是「活动」（进度管理做的事）。
+      这个层级的区别常被考：WBS 管「交付什么」，活动管「怎么一步步做出来」。
+    source: manual
+
+  - id: RK-S2-006
+    module_id: S2
+    kp_id: KP-0204
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 监控过程组干什么
+    body_md: |
+      监控过程组的主要作用是？
+    options:
+      - 制定项目计划
+      - 跟踪、审查和调整项目进展与绩效，识别变更并启动相应变更
+      - 分配任务给团队成员
+      - 关闭项目合同
+    answer: "B"
+    explanation_md: |
+      监控 = **看偏差 + 动手纠正**。注意「识别变更并启动变更」也在监控里——
+      很多人以为监控只是"看"，其实发现问题后推动变更同样是监控的职责。
+    source: manual
+
+  - id: RK-S2-007
+    module_id: S2
+    kp_id: KP-0203
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 质量保证属于哪个过程组
+    body_md: |
+      质量保证（Quality Assurance）属于哪个过程组？它管的是什么？
+    options:
+      - 监控过程组；检查最终产品是否合格
+      - 执行过程组；保证做事的**过程**符合质量要求
+      - 规划过程组；制定质量目标
+      - 收尾过程组；验收质量
+    answer: "B"
+    explanation_md: |
+      口诀：**质量保证管过程（执行），质量控制管结果（监控）**。
+      这一组是选择题的高频陷阱 —— 上一版首次诊断你就栽在这里，所以单独列一题反复练。
+    source: manual
+
+  - id: RK-S2-008
+    module_id: S2
+    kp_id: KP-0204
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 质量控制属于哪个过程组
+    body_md: |
+      质量控制（Quality Control）属于哪个过程组？
+    options:
+      - 执行过程组
+      - 监控过程组
+      - 规划过程组
+      - 启动过程组
+    answer: "B"
+    explanation_md: |
+      质量控制是「检查结果对不对」，属于**监控**。
+      与上一题成对记：保证管过程在执行，控制管结果在监控。
+    source: manual
+
+  - id: RK-S2-009
+    module_id: S2
+    kp_id: KP-0206
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 从 CPI 与 SPI 读出状态
+    body_md: |
+      某项目 CPI = 1.1，SPI = 0.9。下列关于该项目状态的说法，正确的是？
+    options:
+      - 成本超支，进度超前
+      - 成本节约，进度落后
+      - 成本节约，进度超前
+      - 成本超支，进度落后
+    answer: "B"
+    explanation_md: |
+      两个指数都拿 1 当基准：**>1 是好事，<1 是坏事**。
+      CPI > 1 ⇒ 花得比计划少（成本节约）；SPI < 1 ⇒ 干得比计划慢（进度落后）。
+      记不住就把「CPI 管钱、SPI 管时间」先钉死，再判方向。
+    source: manual
+
+  - id: RK-S2-010
+    module_id: S2
+    kp_id: KP-0205
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 收尾过程组要做的事
+    body_md: |
+      下列哪一组工作全部属于收尾过程组？
+    options:
+      - 确认范围、控制质量
+      - 合同关闭、经验教训归档、资源释放
+      - 制定 WBS、估算成本
+      - 组建团队、管理冲突
+    answer: "B"
+    explanation_md: |
+      收尾不等于「交付完」。客户验收属于监控过程组里的「确认范围」，
+      合同关闭、经验教训归档、资源释放、归档项目文件才是收尾。
+    source: manual
+
+  - id: RK-S2-011
+    module_id: S2
+    kp_id: KP-0206
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 算完 CPI 再判断
+    body_md: |
+      某项目 EV = 600 万元，AC = 500 万元，PV = 700 万元。关于成本绩效，下列说法正确的是？
+    options:
+      - CPI = 1.2，成本节约
+      - CPI = 0.83，成本超支
+      - CPI = 1.4，成本节约
+      - 信息不足，无法判断
+    answer: "A"
+    explanation_md: |
+      CPI = EV / AC = 600 / 500 = **1.2**，大于 1 ⇒ 成本节约（同样的钱创造了更多价值）。
+
+      干扰项 B 是拿 EV / PV 算出来的（那是 SPI ≈ 0.857，管进度不是管成本）；
+      干扰项 C 是 AC / EV 的反向算法。**公式方向记错是这一章最常见的失分点。**
+    source: manual
+
+  - id: RK-S2-012
+    module_id: S2
+    kp_id: KP-0202
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 关键路径怎么算
+    body_md: |
+      某项目活动：A（2 天）。A 之后并行两条路径：A→B（5 天）→D；A→C（4 天）→D。D 需 3 天。
+      关键路径与总工期分别是？
+    options:
+      - A→C→D，9 天
+      - A→B→D，10 天
+      - A→B→D，12 天
+      - A→C→D，7 天
+    answer: "B"
+    explanation_md: |
+      两条路径：A→B→D = 2+5+3 = **10 天**；A→C→D = 2+4+3 = 9 天。
+      关键路径 = **最长**的那条 = A→B→D，总工期取最长路径 10 天。
+
+      常见错误是把中间某条段相加（得出 12）、或把关键路径当成最短路径。
+      记住：关键路径最长，因为它决定了项目最早能什么时候完工。
+    source: manual
+
+  - id: RK-S2-013
+    module_id: S2
+    kp_id: KP-0207
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 变更场景里什么才是主干问题
+    body_md: |
+      客户口头要求增加一个报表，开发组长认为工作量不大，当天改完直接上线，未通知测试与其他干系人。
+      从变更管理角度，最严重的问题是？
+    options:
+      - 没有提交书面变更申请
+      - 未做变更影响分析、未走 CCB 审批、未更新基准
+      - 没有做回归测试
+      - 没有让客户签字确认
+    answer: "B"
+    explanation_md: |
+      A / C / D 都是流程枝节，B 是**流程主干**：影响分析、审批、更新基准这三步缺了，
+      范围就已经失控，其余问题都是它的后果。
+
+      案例题里遇到「哪个是最主要的问题」，先问自己：哪一条缺了会让整件事失控？
+    source: manual
+
+  - id: RK-S2-014
+    module_id: S2
+    kp_id: KP-0205
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 验收了是不是就结束了
+    body_md: |
+      某项目主体交付已完成、客户已签字验收，但合同尚未正式关闭、经验教训尚未归档。
+      此时项目处于什么状态？
+    options:
+      - 仍在执行过程组
+      - 已进入收尾过程组，但还有工作未完成
+      - 项目已经结束
+      - 已转入运维阶段
+    answer: "B"
+    explanation_md: |
+      验收 ≠ 收尾。合同关闭、经验教训归档、资源释放都属于收尾过程组，
+      做完这些项目才算真正结束。这个判断在案例题里经常作为"项目管理不到位"的论据。
+    source: manual
+
+  - id: RK-S2-015
+    module_id: S2
+    kp_id: KP-0201
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 只有一句话的项目目标
+    body_md: |
+      某项目刚立项，项目经理拿到的只有一句「做个数据看板」的口头目标，领导要求下周开始开发。
+      项目经理首先应该做的是？
+    options:
+      - 立刻排开发计划并安排人手
+      - 推动签发正式项目章程，明确目标、边界、关键干系人与授权
+      - 先做技术选型
+      - 先招人，边做边想
+    answer: "B"
+    explanation_md: |
+      没有章程就没有授权、没有边界、没有验收依据——后面所有计划都建在沙子上。
+      这一步是启动过程组的核心动作。
+      **实务提示**：内网/政务项目里这一步常被跳过，最后扯皮全从这里开始。
+    source: manual
+
+  - id: RK-S2-016
+    module_id: S2
+    kp_id: KP-0203
+    category: 中项·S2 五大过程组实操
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 开发与测试互撕
+    body_md: |
+      项目执行中，开发组认为测试组报的缺陷太多、影响进度；测试组认为开发质量差、返工多。
+      双方在例会上争执不下。项目经理首先应该做的是？
+    options:
+      - 要求测试组放宽缺陷判定标准
+      - 要求开发组加班修复
+      - 识别冲突根源（是缺陷标准不清，还是质量确实不达标），再按团队管理过程处理
+      - 立即上报高层，由领导裁决
+    answer: "C"
+    explanation_md: |
+      这道题考的是**先归因、再处置**。如果是「标准不清」，动作是统一定义缺陷分级；
+      如果是「质量确实差」，动作是查根因（评审缺失、测试左移）。
+      两者的解法完全不同——不先分清就动手，一定会返工。
+    source: manual
+
+  - id: RK-S2-017
+    module_id: S2
+    kp_id: KP-0206
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 用自己项目算一次挣值
+    body_md: |
+      拿你手上一个真实项目（可以是粗估数），写出 EV、PV、AC、BAC，算出 SV、CV、SPI、CPI，
+      并说明它反映出的真实情况。
+
+      要求：数字可以是估的，但**要写出结论和你打算怎么应对**。
+    options: []
+    answer: "四个基础量齐全；四个派生量公式正确；结论与应对能对上"
+    explanation_md: |
+      这题的目的不是算对，是**把公式套到真实项目上**。
+
+      合格答案会自然暴露出两件事：① 你项目里到底有没有 PV（基准）；
+      ② 没有基准的话，挣值根本算不了——这本身就是项目管理的一个缺口。
+
+      如果你发现「PV 说不出来」，那比算错更有价值：说明没有基线，进度和成本都没法量化控制。
+    source: manual
+
+  - id: RK-S2-018
+    module_id: S2
+    kp_id: KP-0207
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 把一次真实变更重写一遍
+    body_md: |
+      回忆你项目里一次真实的变更（客户加需求、领导改方向都算），按标准流程把它重写一遍：
+      每一步你实际做了什么、标准要求做什么、差在哪。
+    options: []
+    answer: "对照标准流程逐步骤写；能明确指出自己漏了哪一步及后果"
+    explanation_md: |
+      合格答案会呈现「实际 vs 标准」的对照，并指出漏的那一步造成了什么后果。
+
+      最常见的是漏 **CCB 审批** 和 **更新基准**——真实项目里往往是「领导一句话就改了」。
+      把这层差写出来，案例题里就有素材了：案例分析考的正是「你觉得哪里有问题、该怎么改」。
+    source: manual
+
+  - id: RK-S2-019
+    module_id: S2
+    kp_id: KP-0202
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 给自己项目画三层 WBS
+    body_md: |
+      给你手上的项目画出三层 WBS：第一层按可交付成果分，第二层拆到子系统/模块，第三层拆到工作包。
+      并说明你的分解依据是什么。
+    options: []
+    answer: "三层分解完整；第一层是可交付成果而不是部门/阶段；能说出分解依据"
+    explanation_md: |
+      最常见的错误是**按部门或按阶段拆**（"开发部、测试部"或"需求、设计、开发"）。
+      WBS 必须按**可交付成果**拆：用户管理模块、订单模块、报表模块……
+
+      因为 WBS 要回答的是「项目要交出哪些东西」，不是「谁来做、按什么顺序做」。
+    source: manual
+
+  - id: RK-S2-020
+    module_id: S2
+    kp_id: KP-0205
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一份项目收尾清单
+    body_md: |
+      为你手上的项目写一份收尾清单（不少于 6 项），每项要写清「谁负责、交付什么、怎么算完成」。
+    options: []
+    answer: "条目覆盖合同/验收/资料/经验/资源/移交；每项责任人与完成判据清楚"
+    explanation_md: |
+      合格清单通常包含：客户验收签字、合同/尾款结算、文档归档、经验教训总结、
+      资源释放与人员回归、运维移交、账号与权限回收。
+
+      **最容易漏的是「账号与权限回收」**——政务/内网项目里这属于安全问题，验收时会被追问。
+    source: manual
+
+  - id: RK-S4-002
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: PMO 的三种类型
+    body_md: |
+      关于项目管理办公室（PMO）的三种类型，下列说法正确的是？
+    options:
+      - 支持型 PMO 对项目拥有最强的控制力
+      - 控制型 PMO 要求项目遵循既定流程，控制力中等
+      - 指令型 PMO 只提供模板和培训，不介入项目
+      - 三种类型的区别只在于配备人员的数量
+    answer: "B"
+    explanation_md: |
+      控制力由弱到强：**支持型**（顾问角色，提供模板、最佳实践、培训，控制力弱）→
+      **控制型**（要求遵循流程，控制力中等）→ **指令型**（直接管理项目，控制力最强）。
+      这个顺序不能记反，案例题里问「PMO 该不该直接指挥项目经理」，答案取决于它是哪一种。
+    source: manual
+
+  - id: RK-S4-003
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 配置项与基线
+    body_md: |
+      关于配置项和基线，下列理解正确的是？
+    options:
+      - 项目中的所有文档和代码自动都是配置项，无需识别
+      - 基线是经过评审确认的配置项集合，建立后变更须走变更控制
+      - 基线一经建立就永久冻结，任何情况下都不允许变更
+      - 只有可执行程序才能作为配置项
+    answer: "B"
+    explanation_md: |
+      配置项是「**纳入**配置管理的工作产品」，需要主动识别和标识，不是自动全算（A 错）。
+      基线可以变更，但必须走正式变更控制（C 错）——「受控」不等于「冻结」。
+      文档、代码、数据、环境配置参数都可以是配置项（D 错）。
+    source: manual
+
+  - id: RK-S4-004
+    module_id: S4
+    kp_id: KP-0402
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 监理单位的角色定位
+    body_md: |
+      信息系统工程监理单位的角色定位是？
+    options:
+      - 承建方的质量管理部门
+      - 建设方的内部审计部门
+      - 独立于建设方和承建方的第三方
+      - 政府主管部门的派出机构
+    answer: "C"
+    explanation_md: |
+      监理是**受建设方委托**、独立于建设方与承建方的第三方。
+      它替建设方管项目，但不是建设方的内设部门（B 错）；与承建方是监理与被监理关系，
+      不是上下级（A 错）；它不是行政机构，没有行政处罚权（D 错）。
+    source: manual
+
+  - id: RK-S4-005
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 配置库的三库划分
+    body_md: |
+      配置管理中的三个库，按工作产品的流转顺序排列，正确的是？
+    options:
+      - 开发库（动态库）→ 受控库（主库）→ 产品库（静态库）
+      - 产品库 → 受控库 → 开发库
+      - 受控库 → 开发库 → 产品库
+      - 三个阶段共用同一个库，靠目录区分
+    answer: "A"
+    explanation_md: |
+      开发库存开发过程中的工作产品，修改相对自由；受控库存**基线**，改动须走变更控制；
+      产品库存最终交付版本，只读。流向是单向的：开发 → 受控 → 产品。
+
+      **最容易记反的是「受控库≠产品库」**：受控库存的是过程中的基线（可能有好几个），
+      产品库才是最终交付物。
+    source: manual
+
+  - id: RK-S4-006
+    module_id: S4
+    kp_id: KP-0402
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 监理的三种现场工作方式
+    body_md: |
+      监理工程师在关键工序、关键部位实施全过程现场监督，这种方式称为？
+    options:
+      - 巡视
+      - 旁站
+      - 平行检验
+      - 抽查
+    answer: "B"
+    explanation_md: |
+      **旁站**＝在关键部位、关键工序**全过程**现场监督；
+      **巡视**＝定期或不定期到现场查看（不保证全程）；
+      **平行检验**＝监理方用自有设备独立检测，与承建方的数据比对。
+
+      三者的区别就一条：**是否全程在场、是否有独立数据**。监理实施细则里要写清哪些工序必须旁站，
+      否则事后无法证明监理履职。
+    source: manual
+
+  - id: RK-S4-007
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 配置管理员的职责边界
+    body_md: |
+      下列哪一项**不属于**配置管理员的职责？
+    options:
+      - 建立和维护配置库
+      - 标识配置项并记录其状态
+      - 审批变更申请是否符合项目目标
+      - 执行配置审计并记录结果
+    answer: "C"
+    explanation_md: |
+      审批变更是**变更控制委员会（CCB）**的职责。配置管理员只负责受理、登记、分发、归档，
+      **不判定这个变更该不该做**。
+
+      这条区分是案例题的高频考点：配置管理员＝执行者，CCB＝决策者，项目经理＝变更的提出者或推动者。
+      三者混淆是答错的主要原因。
+    source: manual
+
+  - id: RK-S4-008
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: medium
+    level: 3
+    title: 配置项数量核算
+    body_md: |
+      某项目初始有配置项 120 个。建立基线后共发生 3 次变更，每次新增配置项 15 个、废止 5 个。
+      当前有效配置项数量是多少？
+    options:
+      - "135"
+      - "150"
+      - "165"
+      - "120"
+    answer: "B"
+    explanation_md: |
+      每次净增 15−5＝10 个，3 次共净增 30 个，120＋30＝**150**。
+
+      **「废止」不等于「删除」**：废止的配置项在配置库中仍要保留记录以备追溯，只是不再计入有效配置项。
+      如果题目问的是「配置库中的记录总数」，那就该算 120＋45＝165（新增全算、废止不删）——
+      看清题目问的是「有效」还是「记录总数」。
+    source: manual
+
+  - id: RK-S4-009
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: medium
+    level: 3
+    title: 质量保证金的返还
+    body_md: |
+      某项目合同价 800 万元，约定质量保证金比例为 5%。缺陷责任期满且期间未发生应由承建方承担的
+      质量问题，建设方应返还的质量保证金是多少？
+    options:
+      - 20 万元
+      - 40 万元
+      - 80 万元
+      - 不返还，作为项目节余留存
+    answer: "B"
+    explanation_md: |
+      800×5%＝**40 万元**。
+
+      **质保金是「预留」不是「扣罚」**：只要缺陷责任期内没有发生应由承建方承担的质量问题，
+      就应全额返还，不能以「没出问题所以不用给」为由扣下。这个认知错误在实际项目结算里很常见。
+    source: manual
+
+  - id: RK-S4-010
+    module_id: S4
+    kp_id: KP-0402
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 监理费的计算口径
+    body_md: |
+      某信息系统工程投资额 2000 万元，合同约定监理费按投资额的 3% 计取，监理服务期 6 个月。
+      监理费总额是多少？
+    options:
+      - 30 万元
+      - 60 万元
+      - 120 万元
+      - 200 万元
+    answer: "B"
+    explanation_md: |
+      2000×3%＝**60 万元**。
+
+      **服务期 6 个月是干扰项**——按投资额比例计取时，服务成本已包含在费率里，不再另乘月份。
+      只有当合同改成「按人月计费」（多少人 × 多少月 × 单价）时，服务期才进入计算。
+      这类题考的不是算术，是**看清计费口径**。
+    source: manual
+
+  - id: RK-S4-011
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 绕过变更控制直接改受控库
+    body_md: |
+      项目已建立基线。开发组长发现一个严重缺陷，为赶进度直接在受控库中修改了代码并提交测试。
+      作为配置管理员，你**首先**应该做什么？
+    options:
+      - 认可这次修改，因为缺陷确实严重，改对了就行
+      - 立即冻结该配置项，补充变更申请并提交 CCB 追溯评审
+      - 直接把代码回滚到修改前，不做任何记录
+      - 把这次修改直接记为下一个基线的正常内容
+    answer: "B"
+    explanation_md: |
+      关键动作是「**先止血 + 补流程**」，既不是一票否决，也不是默认接受。
+
+      严重缺陷不能不改（所以不能简单回滚了事），但也不能不备案：冻结 → 补变更申请 →
+      CCB 追溯评审 → 按结论决定保留或回退，全过程留痕。
+      选 C 的毛病是**没有留痕**，事后无法审计，也无法解释基线为什么和记录对不上。
+    source: manual
+
+  - id: RK-S4-012
+    module_id: S4
+    kp_id: KP-0402
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 隐蔽工程未验收即覆盖
+    body_md: |
+      监理在巡检中发现承建方已将隐蔽工程的管线敷设覆盖，且此前未通知监理验收。
+      监理的正确做法是？
+    options:
+      - 要求剥离覆盖层重新验收，由此产生的费用与工期延误由承建方承担
+      - 视为验收合格，在监理日志中补记一笔
+      - 直接下达停工令并上报政府主管部门
+      - 要求承建方补拍现场照片即可通过
+    answer: "A"
+    explanation_md: |
+      隐蔽工程必须**先验收、后覆盖**。未经验收即覆盖的，监理有权要求剥离复验，
+      费用与工期责任由承建方承担。
+
+      **不要一上来就选停工令**：停工适用于重大质量或安全隐患，本题属于程序违规，
+      先剥离复验、据结果再定；补拍照片无法证明覆盖前的状态，不构成验收依据。
+    source: manual
+
+  - id: RK-S4-013
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: PMO 的介入边界
+    body_md: |
+      某矩阵型组织中，项目经理与职能经理在人员调配上的冲突已影响关键路径。
+      PMO 是控制型 PMO，它恰当的介入方式是？
+    options:
+      - 直接替项目经理决定人员如何分配
+      - 依据组织级资源管理流程组织协调，并记录冲突处理结论
+      - 不介入，这属于项目经理与职能经理之间的事
+      - 上报客户，由客户裁定人员分配
+    answer: "B"
+    explanation_md: |
+      **控制型 PMO 是「建规则 + 促遵循」，不是「代人决策」**——直接决定人员分配是指令型 PMO 的做法。
+
+      不介入是失职：跨部门资源冲突正是 PMO 该协调的组织级问题。
+      上报客户更不对：内部管理问题上交客户，等于把矛盾转移给甲方，还会损害信任。
+    source: manual
+
+  - id: RK-S4-014
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一份配置管理计划要点
+    body_md: |
+      为你手上的项目写一份配置管理计划要点（不少于 5 项），每项写清「做什么、谁负责、产出什么」。
+    options: []
+    answer: "覆盖配置项识别、库与权限、基线划分、变更控制流程、配置审计与状态报告；每项有责任人与产出物"
+    explanation_md: |
+      合格要点通常包含：① 配置项识别与命名规则 ② 三库划分及访问权限 ③ 基线划分时点
+      （需求基线、设计基线、产品基线）④ 变更控制流程与 CCB 组成 ⑤ 配置审计
+      （功能配置审计 FCA、物理配置审计 PCA）⑥ 配置状态报告机制。
+
+      **最容易漏的是「权限」**——只写「建三个库」而不写谁能写、谁只能读，
+      等于没做控制，评审时会被直接打回。
+    source: manual
+
+  - id: RK-S4-015
+    module_id: S4
+    kp_id: KP-0402
+    category: 中项·S4 组织保障与监理
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一份旁站监理记录要点
+    body_md: |
+      写一份旁站监理记录的要点（不少于 5 项）。假设旁站对象是机房综合布线的线缆敷设。
+    options: []
+    answer: "覆盖时间地点、旁站部位与工序、施工依据、现场实测数据、问题与处理、双方签认"
+    explanation_md: |
+      合格记录包含：① 旁站时间、地点 ② 旁站的具体部位与工序 ③ 施工依据（图纸号、规范号）
+      ④ 现场实测数据（线缆型号、长度、弯曲半径、牵引力）⑤ 发现的问题、处理意见与整改结果
+      ⑥ 承建方与监理方签认。
+
+      **没有实测数据的旁站记录等于没去现场**。这是监理资料审查最常见的退回原因——
+      只写「已旁站，情况正常」的记录，事后无法作为履职证据。
+    source: manual
+
+  - id: RK-S4-016
+    module_id: S4
+    kp_id: KP-0401
+    category: 中项·S4 组织保障与监理
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一份项目立项评审清单
+    body_md: |
+      写一份项目立项评审清单（不少于 6 项），用于判断一个立项申请是否应该批准。
+      每项要有可判断的判据，不要写「很重要」这类无法验证的表述。
+    options: []
+    answer: "覆盖业务价值、目标可衡量、范围边界、可行性、预算与资源、里程碑、风险、验收标准"
+    explanation_md: |
+      合格清单：① 业务价值与战略一致性 ② 目标可衡量（SMART）③ 范围边界清晰
+      ④ 技术与实施可行性 ⑤ 预算与资源落实 ⑥ 里程碑与关键路径 ⑦ 主要风险与应对
+      ⑧ 验收标准与责任主体。
+
+      **最容易漏的是「不做什么」**——范围里只写要做什么、不写排除项，后期必然扯皮。
+      评审清单的价值不在条目多，而在每条都能给出「过 / 不过」的判定。
+    source: manual
+
+  - id: RK-S5-002
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 中标通知书的法律效力
+    body_md: |
+      关于中标通知书的法律效力，下列说法正确的是？
+    options:
+      - 中标通知书发出后，招标人改变中标结果只需退还投标保证金
+      - 中标通知书对招标人和中标人均具有法律效力，发出后改变结果须承担法律责任
+      - 中标通知书在签订书面合同后才生效
+      - 中标通知书属于要约邀请，不具有约束力
+    answer: "B"
+    explanation_md: |
+      《招标投标法》明确：**中标通知书对招标人和中标人具有法律效力**。
+      发出后，招标人改变中标结果、或中标人放弃中标的，都要依法承担法律责任。
+
+      法律定性链条：招标公告＝**要约邀请**，投标＝**要约**，中标通知书＝**承诺**。
+      既然它是承诺，就自**发出**时生效，不是等到签合同才生效（C 错）。
+    source: manual
+
+  - id: RK-S5-003
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 软件著作权的保护期
+    body_md: |
+      某公司 2020 年开发完成一套软件并首次发表。该软件著作权的保护期是？
+    options:
+      - 自开发完成起 10 年
+      - 自首次发表起 50 年
+      - 自首次发表起 20 年
+      - 永久保护
+    answer: "B"
+    explanation_md: |
+      法人或其他组织的软件著作权，保护期为 **50 年**，截止于软件**首次发表后**第 50 年的 12 月 31 日。
+      自然人的软件著作权保护期为**自然人终生及其死亡后 50 年**。
+
+      注意区分主体：单位开发看「首次发表起 50 年」，个人开发看「终生加死后 50 年」。
+      另外，**开发完成但未发表**的，保护期自开发完成起算 50 年。
+    source: manual
+
+  - id: RK-S5-004
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: medium
+    level: 1
+    title: 必须招标的金额门槛
+    body_md: |
+      按现行规定，使用国有资金投资的项目，其**施工**单项合同估算价达到多少，必须招标？
+    options:
+      - 100 万元人民币以上
+      - 200 万元人民币以上
+      - 400 万元人民币以上
+      - 1000 万元人民币以上
+    answer: "C"
+    explanation_md: |
+      三个门槛要分开记，**别混成一个数**：
+      施工 **400 万**；重要设备、材料等货物 **200 万**；勘察、设计、监理等服务 **100 万**。
+
+      记忆锚点：**服务最低、货物居中、施工最高**。三者都是「单项合同估算价」，
+      不是项目总投资——这是最常见的理解错误。
+    source: manual
+
+  - id: RK-S5-005
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 招标投标中的要约与承诺
+    body_md: |
+      在招标投标过程中，下列对应关系正确的是？
+    options:
+      - 招标公告是要约，投标是承诺
+      - 招标公告是要约邀请，投标是要约，中标通知书是承诺
+      - 招标公告是承诺，中标通知书是要约
+      - 三者都属要约邀请，均无法律约束力
+    answer: "B"
+    explanation_md: |
+      **招标公告＝要约邀请**（邀请别人来提条件，自己不受约束）；
+      **投标＝要约**（提出具体条件，一旦被接受就受约束）；
+      **中标通知书＝承诺**（接受该要约，合同成立）。
+
+      这条链决定了「投标截止后能不能撤标」这类题的答案：投标是要约，撤回有严格时间限制。
+    source: manual
+
+  - id: RK-S5-006
+    module_id: S5
+    kp_id: KP-0502
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 标准的五个层级
+    body_md: |
+      按《标准化法》，我国标准的层级不包括下列哪一项？
+    options:
+      - 国家标准
+      - 行业标准
+      - 项目标准
+      - 团体标准
+    answer: "C"
+    explanation_md: |
+      五个层级：**国家标准、行业标准、地方标准、团体标准、企业标准**。
+      「项目标准」是编出来的干扰项，标准化法里没有这个层级。
+
+      常见的混淆点：把「团体标准、企业标准」当成非正式标准——它们都是法定层级，
+      只是**团体标准和企业标准不得低于强制性国家标准的相关技术要求**。
+    source: manual
+
+  - id: RK-S5-007
+    module_id: S5
+    kp_id: KP-0502
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 强制性标准与推荐性标准
+    body_md: |
+      关于强制性国家标准和推荐性国家标准，下列说法正确的是？
+    options:
+      - 强制性标准代号为 GB/T，推荐性标准代号为 GB
+      - 推荐性标准一经发布，相关方必须执行
+      - 强制性标准必须执行，推荐性标准国家鼓励采用
+      - 行业标准一律为强制性标准
+    answer: "C"
+    explanation_md: |
+      代号别记反：**GB＝强制性**，**GB/T＝推荐性**（T 即「推」）。
+      强制性标准必须执行，推荐性标准国家鼓励采用（合同约定采用后即对当事方有约束力）。
+
+      行业标准、地方标准**都是推荐性的**（D 错）；只有国家标准可以是强制性标准。
+      判断某标准是否强制，看代号和是否属于保障人身健康、生命财产安全等范围。
+    source: manual
+
+  - id: RK-S5-008
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 投标保证金的上限
+    body_md: |
+      某依法必须招标的项目，招标项目估算价为 5000 万元。招标文件要求投标人提交投标保证金，
+      其最高限额是多少？
+    options:
+      - 50 万元
+      - 80 万元
+      - 100 万元
+      - 500 万元
+    answer: "B"
+    explanation_md: |
+      两个上限**取小**：① 不得超过招标项目估算价的 **2%**（5000×2%＝100 万）；
+      ② 最高不得超过 **80 万元**。所以答案是 **80 万元**。
+
+      这是典型的「双重限额」题——只算 2% 会得出 100 万，正好落在干扰项上。
+      看到「不得超过……且最高不超过……」这种表述，一定要两个条件都过一遍。
+    source: manual
+
+  - id: RK-S5-009
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 定金的法定上限
+    body_md: |
+      甲乙双方签订合同，合同标的额为 200 万元。双方约定定金担保，依法可以产生定金效力的
+      最高金额是多少？
+    options:
+      - 20 万元
+      - 40 万元
+      - 60 万元
+      - 200 万元
+    answer: "B"
+    explanation_md: |
+      定金不得超过主合同标的额的 **20%**：200×20%＝**40 万元**。
+
+      关键细节：**超过 20% 的部分不产生定金效力**，不是整个约定无效。比如约定 60 万定金，
+      其中 40 万有定金效力，多出的 20 万按预付款处理。
+
+      另外记住定金罚则的方向：**给付方违约不得请求返还，收受方违约应双倍返还**。
+    source: manual
+
+  - id: RK-S5-010
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 履约保证金的上限
+    body_md: |
+      某项目中标合同金额为 1200 万元。招标文件要求中标人提交履约保证金，
+      该履约保证金的最高限额是多少？
+    options:
+      - 24 万元
+      - 60 万元
+      - 120 万元
+      - 240 万元
+    answer: "C"
+    explanation_md: |
+      履约保证金**不得超过中标合同金额的 10%**：1200×10%＝**120 万元**。
+
+      三个「保证金」要分清，别串：
+      **投标保证金**＝估算价 2%，最高 80 万；**履约保证金**＝合同金额 10%；
+      **质量保证金**＝结算价 5% 左右（按合同约定）。考试常把它们混在一个选项里考。
+    source: manual
+
+  - id: RK-S5-011
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 招标文件指定品牌
+    body_md: |
+      某政务项目招标文件中写明「投标产品数据库必须为某国外品牌」。作为投标方，
+      你对该条款的正确判断是？
+    options:
+      - 合理，招标人有权规定技术路线
+      - 不合理，招标人不得以不合理条件限制、排斥潜在投标人
+      - 合理，只要在招标公告中提前公示即可
+      - 不合理，但只能在中标后再提异议
+    answer: "B"
+    explanation_md: |
+      《招标投标法》禁止招标人以不合理条件限制或排斥潜在投标人、实行歧视待遇。
+
+      技术需求应当写**性能指标和功能要求**（如「支持 SQL-92、单表千万级查询响应 ≤2 秒」），
+      而不是指定品牌。确实无法用其他方式准确描述时，才可写「参照某品牌」并注明「相当于或优于」。
+
+      **异议要在投标截止前提出**（D 错）——中标后再提，程序上已经晚了。
+    source: manual
+
+  - id: RK-S5-012
+    module_id: S5
+    kp_id: KP-0503
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 客户环境中的第三方代码
+    body_md: |
+      你在为客户做系统运维时，在客户服务器上发现一段源码，明显是竞争对手产品的核心算法，
+      且没有任何授权说明。你的正确做法是？
+    options:
+      - 直接复用，代码在客户服务器上就属于客户资产
+      - 记录备案后暂不处理，等客户主动说明
+      - 立即停止使用该代码，书面报告客户并建议核查来源与授权，未获合法授权前予以隔离
+      - 删除该文件，避免给自己带来风险
+    answer: "C"
+    explanation_md: |
+      正确处理是三件事：**停用、报告、核查授权**。
+
+      选 A 是侵权——部署位置不改变著作权归属；选 B 是消极不作为，知情后仍继续使用会扩大风险；
+      选 D 更糟，**擅自删除客户环境中的文件本身就是越权操作**，还破坏了证据链。
+
+      这题测的是职业道德里最难的一条：**遇到可能违法的事，要留痕上报，而不是自己处理掉**。
+    source: manual
+
+  - id: RK-S5-013
+    module_id: S5
+    kp_id: KP-0502
+    category: 中项·S5 法规与职业道德
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 未生效标准作为验收依据
+    body_md: |
+      客户要求把一项尚未发布实施的国家标准草案写入合同，作为项目验收依据。
+      作为承建方，恰当的处理方式是？
+    options:
+      - 直接同意，客户的要求优先
+      - 拒绝写入合同，验收只能依据现行有效标准
+      - 明确草案的版本与条款范围并写入合同作为约定依据，同时声明涉及强制性要求仍执行现行有效标准
+      - 口头答应，验收时再按现行标准执行
+    answer: "C"
+    explanation_md: |
+      两个层面要分开：
+      **约定层面**——合同可以约定采用某个技术文件（含草案），但必须写清**版本号和适用范围**，
+      否则将来草案改了，双方对「按哪一版验收」必然吵架。
+      **强制层面**——涉及人身健康、生命财产安全的强制性要求，只能执行**现行有效**的强制性标准，
+      不能拿草案替代。
+
+      选 B 过于绝对（合同自由允许约定技术依据），选 D 是埋雷。
+    source: manual
+
+  - id: RK-S5-014
+    module_id: S5
+    kp_id: KP-0501
+    category: 中项·S5 法规与职业道德
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一份合同关键条款风险清单
+    body_md: |
+      写一份信息系统集成合同的关键条款风险清单（不少于 6 项）。每项写清「哪条容易出问题、
+      出问题后的后果、怎么在合同里写死」。
+    options: []
+    answer: "覆盖范围与变更、验收标准、付款节点、工期与顺延、知识产权归属、保密与违约、质保与运维"
+    explanation_md: |
+      高风险条款通常集中在：① 范围与变更（未约定变更计价方式）② 验收标准（写「满足客户需求」
+      这类不可判定的表述）③ 付款节点（与验收脱钩，导致干完收不到钱）④ 工期顺延条件
+      （未约定客户原因导致的延误如何处理）⑤ 知识产权归属（定制开发成果归谁）
+      ⑥ 保密与数据安全责任 ⑦ 质保期起算点与响应时限 ⑧ 违约责任的封顶与例外。
+
+      **最致命的一条是验收标准**：写「达到客户满意」等于把验收权完全交给对方。
+      合格写法是「按 GB/T 8566 及本合同附件《验收测试用例》全部通过」。
+    source: manual
+
+  - id: RK-S5-015
+    module_id: S5
+    kp_id: KP-0502
+    category: 中项·S5 法规与职业道德
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一份项目应遵循的标准清单
+    body_md: |
+      为「政务数据共享交换平台」项目列出应遵循的标准清单（不少于 6 项），
+      每项写明「标准类别（强制/推荐）、适用环节、为什么必须遵循」。
+    options: []
+    answer: "覆盖安全等级保护、数据分类分级、接口与数据交换、文档编制、质量与测试、验收；区分强制与推荐"
+    explanation_md: |
+      合格清单应覆盖：① 网络安全等级保护相关标准（定级、设计、测评）② 数据分类分级与
+      个人信息保护相关要求 ③ 数据交换接口规范（如政务信息资源目录与交换体系标准）
+      ④ 软件文档编制规范（GB/T 8567）⑤ 软件工程与质量相关标准（GB/T 8566、GB/T 25000 系列）
+      ⑥ 系统验收与测评要求。
+
+      **答题关键是分清强制与推荐**：等保相关要求属必须执行，文档编制类多为推荐但合同约定后即成义务。
+      只列一串标准号而不说「适用哪个环节」，是这类题的常见失分点。
+    source: manual
+
+  - id: RK-S5-016
+    module_id: S5
+    kp_id: KP-0503
+    category: 中项·S5 法规与职业道德
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一段利益冲突情形的处理说明
+    body_md: |
+      情形：你是某项目的技术负责人，该项目正在评标。你配偶所在的公司也参与了本次投标。
+      请写出你的处理说明（不少于 4 条），说明你怎么做、依据是什么。
+    options: []
+    answer: "主动申报、申请回避、不接触评审信息、留存书面记录、服从组织安排"
+    explanation_md: |
+      合格答案包含：① **主动书面申报**该关联关系（不等人来问）② **申请回避**与评标相关的
+      一切工作 ③ 在回避决定做出前，**不接触、不传递任何评审信息** ④ 不对外讨论该项目投标情况
+      ⑤ 留存申报与回避的书面记录 ⑥ 服从单位的回避安排，不因回避影响正常工作交接。
+
+      **这道题的分水岭在「主动」二字**：等被发现再说明，性质就从「合规申报」变成「隐瞒关联」。
+      职业道德考的是这个区别，不是背条款。
+    source: manual
+
+  - id: RK-S6-003
+    module_id: S6
+    kp_id: KP-0603
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 英文术语 WBS
+    body_md: |
+      项目管理中的 WBS 指的是？
+    options:
+      - 工作分解结构
+      - 工作说明书
+      - 挣值管理
+      - 关键路径法
+    answer: "A"
+    explanation_md: |
+      **WBS＝Work Breakdown Structure，工作分解结构**。它把项目范围逐层分解为可管理的工作包，
+      是范围管理的核心输出，也是估算工期和成本的依据。
+
+      容易混的三个：**SOW**（Statement of Work，工作说明书，属于采购/合同文件）、
+      **WBS**（分解结构，属于范围基准）、**OBS**（Organizational Breakdown Structure，组织分解结构）。
+    source: manual
+
+  - id: RK-S6-004
+    module_id: S6
+    kp_id: KP-0603
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: easy
+    level: 1
+    title: 英文术语 SPI 与 CPI
+    body_md: |
+      EVM 体系中，SPI 和 CPI 分别表示？
+    options:
+      - 进度绩效指数、成本绩效指数
+      - 成本绩效指数、进度绩效指数
+      - 计划价值、实际成本
+      - 完工估算、完工尚需估算
+    answer: "A"
+    explanation_md: |
+      **SPI＝Schedule Performance Index，进度绩效指数**＝EV/PV；
+      **CPI＝Cost Performance Index，成本绩效指数**＝EV/AC。
+
+      对应记忆：**S 打头管进度（Schedule），C 打头管成本（Cost）**。
+      另外三个值：PV 计划价值、EV 挣值、AC 实际成本；两个预测：EAC 完工估算、ETC 完工尚需估算。
+    source: manual
+
+  - id: RK-S6-005
+    module_id: S6
+    kp_id: KP-0603
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: medium
+    level: 1
+    title: 英文术语 CCB 与 RFP
+    body_md: |
+      CCB 和 RFP 分别指？
+    options:
+      - 变更控制委员会、建议邀请书
+      - 配置控制基线、需求建议书
+      - 变更控制委员会、工作说明书
+      - 质量保证、请求批准
+    answer: "A"
+    explanation_md: |
+      **CCB＝Change Control Board，变更控制委员会**——变更的决策机构。
+      **RFP＝Request for Proposal，建议邀请书**（也译需求建议书），采购中邀请卖方提交方案的正式文件。
+
+      与采购相关的三个别混：**RFI**（信息邀请书，先摸底）、**RFQ**（报价邀请书，问价格）、
+      **RFP**（建议邀请书，要方案）。**IFB**（Invitation for Bid，招标书）用于价格为主要因素的采购。
+    source: manual
+
+  - id: RK-S6-006
+    module_id: S6
+    kp_id: KP-0602
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 关键路径的判定标准
+    body_md: |
+      关于关键路径，下列说法正确的是？
+    options:
+      - 关键路径是网络图中活动数量最多的路径
+      - 关键路径是网络图中总工期最长的路径，其上活动总时差为 0
+      - 关键路径是网络图中总工期最短的路径
+      - 一个项目网络中可能存在多条关键路径，但总工期不同
+    answer: "B"
+    explanation_md: |
+      **关键路径＝最长路径**，它决定项目最短工期；其上活动**总时差为 0**，任何延误都会直接推迟工期。
+
+      干扰项逐个看：A 错在「活动数量最多」——关键路径看**工期之和**，不看活动个数（一个 1 天活动
+      和三个 3 天活动，后者路径更长但数量少）。
+      C 把最长记成最短，是最常见的记反。
+      D 前半句对（可以有多条），后半句错——多条关键路径的**总工期必然相同**，否则长的才算关键。
+    source: manual
+
+  - id: RK-S6-007
+    module_id: S6
+    kp_id: KP-0601
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: medium
+    level: 2
+    title: 挣值的三个基本值
+    body_md: |
+      关于 PV、EV、AC 三个基本值，下列说法正确的是？
+    options:
+      - PV 是「实际花了多少钱」，AC 是「应该花多少钱」
+      - EV 是「实际完成工作的预算价值」，不是实际花费
+      - 三者都按实际支出统计，区别只在统计口径
+      - EV 一定等于 PV，因为都按预算计算
+    answer: "B"
+    explanation_md: |
+      **EV 是「干了多少活，按预算折算成钱」**，不是实际花了多少钱——这是挣值法最关键、
+      也最容易错的一点。
+
+      三个值的口径：
+      **PV**＝按计划到此刻应该完成的工作，值多少预算；
+      **EV**＝实际已完成的工作，值多少预算；
+      **AC**＝完成这些工作实际花了多少钱。
+
+      只有 AC 是真实支出，PV 和 EV 都是**预算口径**。A 把 PV 和 AC 说反了。
+    source: manual
+
+  - id: RK-S6-008
+    module_id: S6
+    kp_id: KP-0603
+    category: 中项·S6 应试专项
+    type: 实操
+    difficulty: medium
+    level: 2
+    title: 写一份中英术语对照表
+    body_md: |
+      写一份中项考试常用的中英术语对照表（不少于 10 组）。每组写上英文全称、缩写、中文，
+      并在括号里标一句「在哪个过程用到」。
+    options: []
+    answer: "覆盖 WBS、SOW、CCB、EVM、PV/EV/AC、SPI/CPI、EAC/ETC、RFP、QA/QC、CPM 等，且标明使用场景"
+    explanation_md: |
+      高频 10 组：① WBS 工作分解结构 ② SOW 工作说明书 ③ CCB 变更控制委员会
+      ④ EVM 挣值管理 ⑤ PV/EV/AC 计划价值/挣值/实际成本 ⑥ SPI/CPI 进度/成本绩效指数
+      ⑦ EAC/ETC 完工估算/完工尚需估算 ⑧ RFP 建议邀请书 ⑨ QA/QC 质量保证/质量控制
+      ⑩ CPM 关键路径法。
+
+      **光背缩写没用**——上午题常给一个项目经理的邮件或报告片段，让你判断「他在做什么」。
+      能说出「这个术语出现在哪个过程」才算真认得。
+    source: manual
+
+  - id: RK-S6-009
+    module_id: S6
+    kp_id: KP-0601
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 挣值指标计算与判定
+    body_md: |
+      某项目当前 PV＝100 万元，EV＝80 万元，AC＝90 万元。下列关于项目状态的说法正确的是？
+    options:
+      - 成本节约 10 万元，进度提前
+      - 成本超支 10 万元，进度落后，CPI＝0.89，SPI＝0.80
+      - 成本超支 20 万元，进度落后，CPI＝0.80，SPI＝0.89
+      - 进度落后 20 万元，成本节约 10 万元
+    answer: "B"
+    explanation_md: |
+      四个公式走一遍：
+      **CV＝EV−AC＝80−90＝−10 万**（负＝成本超支）
+      **SV＝EV−PV＝80−100＝−20 万**（负＝进度落后）
+      **CPI＝EV/AC＝80/90≈0.89**（＜1＝成本超支）
+      **SPI＝EV/PV＝80/100＝0.80**（＜1＝进度落后）
+
+      判定口诀：**差值看正负，指数看是否小于 1**。两者必然一致，如果算出来不一致，
+      就是公式记错了——这是自查的好办法。C 把 CPI 和 SPI 的分子分母调换了。
+    source: manual
+
+  - id: RK-S6-010
+    module_id: S6
+    kp_id: KP-0602
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 关键路径与最短工期
+    body_md: |
+      某项目活动及依赖关系如下（工期单位：周）：
+      A 无前置，工期 3；B 前置 A，工期 4；C 前置 A，工期 6；D 前置 B、C，工期 5。
+      项目的最短工期是多少？
+    options:
+      - 12 周
+      - 14 周
+      - 15 周
+      - 18 周
+    answer: "B"
+    explanation_md: |
+      把所有路径列出来算总长：
+      **A→B→D＝3＋4＋5＝12 周**
+      **A→C→D＝3＋6＋5＝14 周**
+
+      最长的是 14 周，所以**最短工期＝14 周**，关键路径是 **A→C→D**。
+
+      注意「最短工期」和「最长路径」是同一件事的两个说法——项目工期由最长的路径决定，
+      这是网络图题的第一原理，也是 12 这个错误选项的来源。
+    source: manual
+
+  - id: RK-S6-011
+    module_id: S6
+    kp_id: KP-0602
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: hard
+    level: 3
+    title: 总时差的计算
+    body_md: |
+      沿用上题：A 无前置工期 3；B 前置 A 工期 4；C 前置 A 工期 6；D 前置 B、C 工期 5。
+      活动 B 的总时差是多少？
+    options:
+      - 0 周
+      - 2 周
+      - 4 周
+      - 6 周
+    answer: "B"
+    explanation_md: |
+      **总时差＝关键路径工期 − 该活动所在最长路径工期**。
+      B 所在的最长路径是 A→B→D＝12 周，关键路径 14 周，所以总时差＝**2 周**。
+
+      换个算法验证：B 最早完成＝3＋4＝7 周；D 最早开始＝max(3+4, 3+6)＝9 周；
+      B 有 9−7＝2 周的活动空间。两种算法结果一致。
+
+      **关键路径上的活动总时差为 0**（C 是 0），这是快速自查的方法。
+    source: manual
+
+  - id: RK-S6-012
+    module_id: S6
+    kp_id: KP-0601
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 进度落后且成本超支的处置
+    body_md: |
+      某项目 CPI＝0.85，SPI＝0.90，客户要求工期不能延后。作为项目经理，你**首先**应该做什么？
+    options:
+      - 立即增加人员赶工，把进度追回来
+      - 核实挣值数据的准确性并分析偏差原因，再评估可选措施及其成本影响
+      - 直接向客户申请延长工期
+      - 缩减测试范围，把时间让给开发
+    answer: "B"
+    explanation_md: |
+      先**核实数据、分析原因**，再谈措施——这是所有偏差处置题的第一动作。
+
+      **为什么不选赶工**：CPI 已经 0.85（成本超支），赶工通常要加钱，会让成本进一步恶化，
+      属于「用一个问题换另一个更大的问题」。赶工只能作为分析后的可选项之一，且要先评估
+      「加多少成本、能追回多少天」。
+
+      不选 C：客户已明确工期不能延后，直接申请延期等于没回应约束。
+      不选 D：缩减测试范围是**降低质量**，在政务/金融类项目里往往直接违约。
+    source: manual
+
+  - id: RK-S6-013
+    module_id: S6
+    kp_id: KP-0604
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 案例背景信息互相矛盾时的答法
+    body_md: |
+      案例背景写「项目启动时已完成需求确认」，但后面又写「开发期间客户多次提出新需求，
+      项目经理均安排开发人员直接实现」。作答时应当？
+    options:
+      - 指出背景描述有矛盾，拒绝作答该问
+      - 以「需求已确认」为准，说明问题出在客户不守约
+      - 抓住「直接实现」这一事实，指出变更未走控制流程、需求未形成基线，并给出对应措施
+      - 只回答后半段的措施，不分析前因
+    answer: "C"
+    explanation_md: |
+      案例题**永远按「事实行为」判，不按「说法」判**。「已确认需求」是一句声明，
+      「多次提出新需求且直接实现」是可观察的行为——后者才是问题所在。
+
+      正确的分析链：需求确认后**未建立基线** → 新需求**未走变更控制** → 变更**未评估影响**
+      → 导致范围蔓延。对应措施要落到动作上：建立需求基线、补变更流程、设 CCB、变更必须评估
+      对进度成本的影响后再实施。
+
+      选 A 直接丢分（案例题没有「拒绝作答」这个选项）；选 B 把责任推给客户，不解决自己的管理问题，
+      阅卷按「归因错误」扣分。
+    source: manual
+
+  - id: RK-S6-014
+    module_id: S6
+    kp_id: KP-0604
+    category: 中项·S6 应试专项
+    type: 单选
+    difficulty: hard
+    level: 4
+    title: 上午卷的时间分配
+    body_md: |
+      上午基础知识卷共 75 道单选题，考试时间 150 分钟。关于时间分配，下列做法最合理的是？
+    options:
+      - 严格按顺序作答，每题不限时，确保每题都想透
+      - 平均每题 2 分钟，超过 3 分钟仍无思路的先标记跳过，最后统一回看并留足涂卡时间
+      - 先做最后 20 道题，因为后面的题通常更难、分值更高
+      - 全部做完后再统一涂卡，不预留检查时间
+    answer: "B"
+    explanation_md: |
+      75 题 / 150 分钟＝**平均 2 分钟一题**。合理策略是：**先拿稳分，再攻难题，留足涂卡时间**。
+
+      不选 A：一道题卡 8 分钟，等于挤掉 4 道会做的题，这是上午卷最常见的失分方式。
+      不选 C：中项上午卷每题**分值相同**（各 1 分），不存在「后面题分值高」这回事。
+      不选 D：全部做完再涂卡，一旦时间不够就是整卷作废——**边做边涂或分段涂卡**。
+
+      记住一条：上午卷是「75 分制、45 分及格」，**容错空间有 30 分**，
+      不需要每题都做对，需要的是把会做的都拿到。
+    source: manual
+
+  - id: RK-S6-015
+    module_id: S6
+    kp_id: KP-0602
+    category: 中项·S6 应试专项
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 画网络图并标出关键路径
+    body_md: |
+      已知活动与依赖：A 无前置（5 天）；B 前置 A（8 天）；C 前置 A（4 天）；
+      D 前置 B（6 天）；E 前置 C（10 天）；F 前置 D、E（3 天）。
+      请画出单代号网络图，列出全部路径及各自长度，标出关键路径与总工期，
+      并说明活动 C 的总时差。
+    options: []
+    answer: "路径 A-B-D-F=22、A-C-E-F=22，两条关键路径，总工期 22 天，C 总时差为 0"
+    explanation_md: |
+      路径枚举：
+      **A→B→D→F＝5＋8＋6＋3＝22 天**
+      **A→C→E→F＝5＋4＋10＋3＝22 天**
+
+      两条路径**等长**，所以有**两条关键路径**，总工期 22 天。C 在关键路径上，**总时差＝0**。
+
+      这题的陷阱是「两条关键路径」——很多人只找到一条就下结论。**多条关键路径意味着
+      任何一条上的任何活动延误都会推迟工期，风险是成倍放大的**，案例题里问「该项目的主要风险」
+      就该答这一点。答题时必须把路径逐条列出来，只写答案不给路径过程，过程分会全丢。
+    source: manual
+
+  - id: RK-S6-016
+    module_id: S6
+    kp_id: KP-0604
+    category: 中项·S6 应试专项
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一道案例题的完整答案
+    body_md: |
+      案例：某政务平台项目合同工期 12 个月。实施到第 8 个月时，客户新增 3 项功能要求，
+      项目经理安排开发直接实现，未办理任何手续。第 11 个月系统进入测试，发现部分模块与
+      原设计不符，客户拒绝验收，项目延期 2 个月。
+      请写出完整答案：指出问题（不少于 4 条）+ 对应改进措施（每条对应一个问题）。
+    options: []
+    answer: "问题与措施一一对应，覆盖变更控制、范围基线、需求确认、测试与验收、进度管理"
+    explanation_md: |
+      **问题**：① 新增需求未走变更控制流程（无申请、无评审、无批准）
+      ② 需求未形成基线，范围边界不清 ③ 变更未评估对进度、成本、质量的影响
+      ④ 开发直接实现需求，缺少设计与需求的双向追溯 ⑤ 测试阶段才发现与原设计不符，
+      说明缺少阶段评审和过程质量控制 ⑥ 进度无缓冲，变更影响未纳入进度计划。
+
+      **措施（一一对应）**：① 建立变更控制流程并设 CCB，任何变更须书面申请、评审、批准
+      ② 建立需求基线，明确范围与排除项 ③ 变更前做影响分析，输出对工期/成本/质量的评估结论
+      ④ 建立需求-设计-代码-测试的追溯矩阵 ⑤ 在关键节点设阶段评审，测试前做设计符合性检查
+      ⑥ 重排进度计划，为变更预留缓冲。
+
+      **答题铁律：问题与措施必须编号对应**。只写一堆措施不对应问题，阅卷只给一半分——
+      这是案例题最普遍的丢分方式。
+    source: manual
+
+  - id: RK-S6-017
+    module_id: S6
+    kp_id: KP-0601
+    category: 中项·S6 应试专项
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写挣值分析题的解题步骤
+    body_md: |
+      写出你在考场上解一道挣值计算题的完整步骤（不少于 5 步），
+      要能直接照着做，包括怎么自查结果对不对。
+    options: []
+    answer: "列已知量、写公式、代入计算、判定正负与大小、用差值指数交叉验证、给结论"
+    explanation_md: |
+      可执行步骤：① 从题干摘出 PV、EV、AC（注意单位统一，别把万元和元混用）
+      ② 先写公式再代入，不要跳步：CV=EV−AC、SV=EV−PV、CPI=EV/AC、SPI=EV/PV
+      ③ 算出数值并保留两位小数 ④ 判定：差值**负为不利**，指数**小于 1 为不利**
+      ⑤ **交叉自查**：CV<0 必须对应 CPI<1，SV<0 必须对应 SPI<1，不一致就是公式错了
+      ⑥ 落到结论句：成本超支/节约多少，进度提前/落后多少。
+
+      **第 ⑤ 步是保命动作**——考场上没时间重算一遍，但用差值和指数互相验证只要 10 秒，
+      能拦住绝大多数公式记反的错误。另外注意 EAC 类题要看清是「按当前绩效继续」
+      （EAC=BAC/CPI）还是「剩余工作按计划绩效」（EAC=AC+BAC−EV）。
+    source: manual
+
+  - id: RK-S1-016
+    module_id: S1
+    kp_id: KP-0102
+    category: 中项·S1 项目管理框架
+    type: 实操
+    difficulty: medium
+    level: 2
+    title: 写出五大过程组各自的产出
+    body_md: |
+      不看资料，写出五大过程组（启动、规划、执行、监控、收尾）各自的核心产出。
+      每个过程组至少写 2 项，并说明「这一步不做会出什么问题」。
+    options: []
+    answer: "五组各≥2项产出，且每组都说明缺失后果；监控要写变更控制，收尾要写验收与归档"
+    explanation_md: |
+      参考答案：**启动**→项目章程、干系人登记册（缺了就没有授权，项目经理名不正言不顺）；
+      **规划**→项目管理计划、范围/进度/成本基准、风险登记册（缺了就没有基准，后面无处对比偏差）；
+      **执行**→可交付成果、团队建设成果、质量数据（缺了就没有产出）；
+      **监控**→绩效报告、变更请求及控制结果（缺了偏差无人发现，范围无声蔓延）；
+      **收尾**→验收文件、最终产品移交、经验教训、资源释放（缺了项目关不掉，尾款收不回）。
+
+      **这题的价值在「缺了会怎样」这一列**：只背产出清单是 L2 的记忆，
+      能说出后果才证明你真的理解每个过程组的作用。
+    source: manual
+
+  - id: RK-S1-017
+    module_id: S1
+    kp_id: KP-0104
+    category: 中项·S1 项目管理框架
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 选组织结构并说明理由
+    body_md: |
+      场景：某公司同时承接 12 个政务项目，各项目共用一批数据库和安全工程师。
+      公司希望统一调配专家资源、又要保证每个项目有人对结果负责。
+      请判断该用哪种组织结构（职能型/项目型/矩阵型，矩阵型还要说明弱、平衡、强），
+      并写出你的判断依据与这种结构的两个主要风险。
+    options: []
+    answer: "选强矩阵或平衡矩阵，依据是资源共享需求+项目经理需对结果负责；风险是双重汇报与资源争夺"
+    explanation_md: |
+      判断链条：**需要跨项目共享稀缺专家**（否定项目型——那会按项目切分资源，专家无法复用）；
+      **又要求有人对项目结果负责**（否定职能型——职能型里项目经理没有实权）。
+
+      落到**强矩阵或平衡矩阵**：项目经理对进度成本负责，职能经理管人与技术标准。
+
+      两个主要风险：① **双重汇报**——成员同时听项目经理和职能经理，冲突时不知道该听谁；
+      ② **资源争夺**——12 个项目抢同一批专家，必须有组织级优先级机制（这正是 PMO 该管的）。
+
+      答题要点：结论 + 依据 + 风险三段齐全，只写「选强矩阵」不写依据，最多得三分之一的分。
+    source: manual
+
+  - id: RK-S2-021
+    module_id: S2
+    kp_id: KP-0201
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: medium
+    level: 2
+    title: 写项目章程的要点
+    body_md: |
+      写一份项目章程应包含的要点（不少于 6 项）。假设项目是「某市政务数据共享平台建设」。
+      每项写清「写什么内容」，不要只写标题。
+    options: []
+    answer: "覆盖项目目的、可交付成果、里程碑、预算、项目经理授权、主要干系人、审批要求"
+    explanation_md: |
+      合格章程包含：① 项目目的与业务背景 ② 可测量的项目目标（范围/进度/成本/质量）
+      ③ 主要可交付成果 ④ 总体里程碑 ⑤ 总体预算 ⑥ **项目经理的授权范围**（能签多少、能调动什么）
+      ⑦ 主要干系人与发起人 ⑧ 审批要求与批准人。
+
+      **最容易漏也最关键的是第 ⑥ 项「授权」**——章程的本质是**授权文件**，不是项目简介。
+      没有授权条款，项目经理在跨部门协调时没有任何依据，这是很多项目一开局就卡住的原因。
+    source: manual
+
+  - id: RK-S2-022
+    module_id: S2
+    kp_id: KP-0203
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 写团队冲突的处理行动清单
+    body_md: |
+      场景：项目进入联调阶段，开发和测试两个小组互相指责——开发说测试用例不合理、
+      测试说开发提交质量差。冲突已经影响每日站会。
+      写出你的处理行动清单（不少于 5 条），每条要写「谁做什么、什么时候、达到什么效果」。
+    options: []
+    answer: "先隔离情绪再对事实、共同评审用例与准入标准、定缺陷分级与回归规则、设升级机制、跟踪验证"
+    explanation_md: |
+      可执行清单：① **分别听取双方事实**（不是先开会互怼），各 30 分钟，产出问题清单
+      ② 组织**共同评审测试用例与提测准入标准**，把「什么叫可提测」写成可判定条目
+      ③ 明确**缺陷分级标准**与回归责任，避免互相推诿 ④ 设**升级机制**：争议超过 1 天由项目经理裁定
+      ⑤ 一周后复盘，看站会是否恢复正常节奏。
+
+      处理冲突的关键顺序是**先对事实、再对规则、最后才谈态度**。一上来就讲「大家要团结」，
+      问题一件没解决，两周后照旧。
+    source: manual
+
+  - id: RK-S2-023
+    module_id: S2
+    kp_id: KP-0204
+    category: 中项·S2 五大过程组实操
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 写一份项目状态报告要点
+    body_md: |
+      写一份月度项目状态报告的要点（不少于 6 项）。要求：读报告的人能在 3 分钟内判断
+      「项目现在到底什么状态、需不需要他做决定」。
+    options: []
+    answer: "结论前置、进度成本偏差及原因、风险与问题、需决策事项、下月计划、附数据口径"
+    explanation_md: |
+      合格结构：① **一句话结论**（绿灯/黄灯/红灯 + 核心理由）② 进度与成本的偏差数据
+      （用挣值：SPI/CPI 或实际 vs 基准）③ 偏差原因分析 ④ 主要风险与已发生问题及应对
+      ⑤ **需要上级决策的事项**（写清「请你决定什么、什么时候要答复」）⑥ 下月关键计划
+      ⑦ 数据口径与截止日期。
+
+      **两个最常见的问题**：一是结论藏在最后，领导读三屏还不知道项目好坏；
+      二是只报状态不提决策请求，报告变成了「通知」，等出事后才说「当时报过」。
+    source: manual
+
+  - id: RK-S3-026
+    module_id: S3
+    kp_id: KP-0303
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 写一份 IT 服务目录与 SLA 要点
+    body_md: |
+      为某单位写一份 IT 服务目录与 SLA 的要点（不少于 6 项）。
+      要区分「哪些服务必须有 SLA、哪些不必」，并说明理由。
+    options: []
+    answer: "覆盖服务分类、服务级别指标、响应与解决时限、可用性、计费、评价；区分核心与一般服务"
+    explanation_md: |
+      合格内容：① 服务分类（基础设施/应用/桌面/安全等）② **服务级别指标**（可用性、响应时间、
+      解决时限、恢复时间 RTO）③ 服务时间与除外情形 ④ 双方责任边界 ⑤ 计费或成本分摊方式
+      ⑥ 服务评价与违约处理。
+
+      **必须区分轻重**：核心业务系统（如审批、支付）要有明确 SLA 和赔付条款；
+      一般办公类服务写清「尽力而为」即可。给所有服务都套最高 SLA，等于没有 SLA——
+      成本扛不住，承诺也无法兑现。
+    source: manual
+
+  - id: RK-S3-027
+    module_id: S3
+    kp_id: KP-0304
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 写一份架构决策记录
+    body_md: |
+      场景：团队在「单体应用」与「微服务拆分」之间争论了两周。请写出你的架构决策记录（ADR）
+      要点（不少于 5 项），要求让三个月后接手的人能看懂「为什么这么选」。
+    options: []
+    answer: "覆盖背景与约束、备选方案、决策结论、理由与取舍、影响与后续条件"
+    explanation_md: |
+      ADR 标准结构：① **背景与约束**（团队规模、交付周期、运维能力、预算）
+      ② **备选方案**（至少两个，写清各自代价）③ **决策结论**（选哪个）
+      ④ **理由与取舍**（选了它放弃了什么）⑤ **影响**（对开发、部署、运维、后续演进的影响）
+      ⑥ **失效条件**（什么情况下该重新评估这个决策）。
+
+      **最容易被跳过的是第 ⑥ 项**——不写「什么时候该推翻它」，这个决策就会变成永久包袱。
+      比如「团队超过 15 人且模块间独立发布需求强烈时，重新评估拆分」，这一句能省掉未来半年的争论。
+    source: manual
+
+  - id: RK-S3-028
+    module_id: S3
+    kp_id: KP-0307
+    category: 中项·S3 信息技术基础
+    type: 实操
+    difficulty: hard
+    level: 4
+    title: 写一份系统集成测试方案要点
+    body_md: |
+      为「机房改造 + 网络设备 + 服务器 + 应用系统」的一体化项目写集成测试方案要点（不少于 6 项）。
+      要说明「为什么集成测试不能由各厂商各测各的」。
+    options: []
+    answer: "覆盖测试范围与边界、环境与数据、接口测试、性能与压力、故障切换、责任划分与准出判据"
+    explanation_md: |
+      合格方案：① 测试范围与接口清单（谁和谁对接）② 测试环境与数据准备 ③ **接口联调测试**
+      （协议、字段、时序、异常返回）④ 性能与压力测试 ⑤ **故障切换与回退验证**
+      ⑥ 各方责任划分与问题定界方法 ⑦ **准出判据**（缺陷等级与数量门槛）。
+
+      **为什么不能各测各的**：每个厂商只验证「自己的设备在实验室正常」，而系统故障
+      绝大多数出在**交界处**——接口字段不一致、时序不匹配、单点故障无人负责。
+      集成测试的核心价值就是**把责任边界上的灰区暴露出来并提前定责**，否则上线后互相推诿。
+    source: manual
+
+  - id: RK-S5-017
+    module_id: S5
+    kp_id: KP-0503
+    category: 中项·S5 法规与职业道德
+    type: 实操
+    difficulty: hard
+    level: 5
+    title: 写一段拒绝隐瞒延期的说明
+    body_md: |
+      情形：项目已确定延期 3 周，客户方对接人私下要求你「先别说，等他向上汇报完再提」。
+      请写出你的应对说明（不少于 4 条）：你怎么回应、依据是什么、后续怎么留痕。
+    options: []
+    answer: "说明必须如实报告、给出缓冲时间但不隐瞒、书面留痕、按合同约定渠道通报"
+    explanation_md: |
+      合格答案：① **明确拒绝隐瞒**，但给对方留出沟通窗口（如「今天内我不发正式函，
+      但最迟明天下班前必须按合同约定通报」）② 说明依据：延期属重大事项，合同通常约定
+      知情与通报义务，隐瞒会扩大双方损失，也违反职业诚信 ③ **书面留痕**：把沟通结果邮件确认
+      （「按今日沟通，于 X 时前正式通报延期情况」）④ 按约定渠道向客户项目负责人与监理报告
+      ⑤ 同步内部，让公司知晓风险。
+
+      **这道题的关键是「不全盘顺从、也不硬刚」**：直接翻脸会把关系搞僵，
+      完全照办则把职业风险全揽到自己身上。正确做法是**给出有限的缓冲 + 明确截止 + 全程留痕**。
+      留痕不是防人，是让事后能说清「谁在什么时候知道了什么」。
+    source: manual

@@ -159,6 +159,112 @@ prompt_versions_user_expires_idx (user_id, expires_at)
 
 主键：`(user_id, version_id)`。
 
+## v4 学习系统
+
+> `practice_questions` / `practice_attempts` 自 2026-09-29 上线后一直没登记进本文件，
+> 2026-10-27 随学习地基迁移一并补记。主题包格式（AI 侧写什么、导入器怎么校验）不在这里，
+> 见 `docs/learning/topic-pack-schema.md`。
+
+### `practice_questions` 表（题库，全局可读）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | text PK | 题目 id，如 `RK-S1-001` |
+| `asset_id` | text | 早期绑定资产规则的题才有，其余为 null |
+| `category` | text not null | 题库分类，界面按它分组 |
+| `title` | text not null | 题目标题 |
+| `body_md` | text not null | 题干（markdown） |
+| `options` | jsonb not null | 选项数组；实操题为空数组 |
+| `answer` | text not null | 答案（单选 `"B"`、多选 `"ABD"`、实操为参考答案文本） |
+| `explanation_md` | text not null | 解析 |
+| `difficulty` | text not null default `'medium'` | 题目难度（旧口径） |
+| `type` | text | 题型：单选 / 多选 / 判断 / 实操 |
+| `knowledge_point` | text | **新**。所挂知识点 id（对应 `knowledge_points.id`） |
+| `source` | text not null default `'manual'` | **新**。`ai` / `web` / `manual` |
+| `source_url` | text | **新**。来源链接 |
+| `topic_id` | text | **新**。所属主题 |
+| `module_id` | text | **新**。所属内容模块 |
+| `level` | smallint | **新**。能力层级 1—5，`check (level is null or between 1 and 5)` |
+
+`difficulty` 与 `level` 并存不是冗余：前者说「题目难不难」，后者说「答对它需要什么能力」。
+存量 135 题（AI 编程主题）的 `level` 为空，它们的中项无关，打标另立任务。
+
+### `practice_attempts` 表（答题记录，仅本人可见）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | text PK | |
+| `user_id` | uuid not null | 外键 `auth.users`，级联删除 |
+| `question_id` | text not null | 外键 `practice_questions`，级联删除 |
+| `selected` | text not null | 用户选的答案 |
+| `is_correct` | boolean not null | |
+| `created_at` | timestamptz | |
+| `duration_ms` | integer | **新**。作答耗时，用于诊断时区分「会但慢」和「不会」 |
+| `context` | jsonb | **新**。追问上下文、改答案记录等 |
+
+### `learning_topics` 表（主题，一个主题包一行）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | text PK | 主题 id，如 `rk-mid-integration` |
+| `name` / `goal` | text | 主题名与目标 |
+| `deadline` / `start_date` | date | 考试日与开始日 |
+| `total_hours` | numeric | 计划总投入，必须等于各模块 `planned_hours` 之和 |
+| `exam_facts` | jsonb | 考试事实（科目、合格线、费用、教材），纯展示 |
+| `schema_version` | numeric | 对应主题包 `schema_version` |
+| `raw` | jsonb | 主题包 `topic` 原文，便于回溯与重导入 |
+
+### `learning_modules` 表（内容模块，6 行/主题）
+
+主键是 **`(topic_id, id)`** 复合键——`S1` 这类短 id 换个主题就会撞。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `topic_id` | text not null | 外键 `learning_topics`，级联删除 |
+| `id` | text not null | `S1`—`S6` |
+| `order_index` | integer not null | 学习顺序 |
+| `name` | text not null | |
+| `scope_chapters` | integer[] | 对应教材章节号 |
+| `weight` | numeric | 占分权重（**当前为估算值**，M0.5 校准） |
+| `expected_gap` | smallint | 预判缺口 1—5，首次诊断后覆盖 |
+| `planned_hours` | numeric | 计划投入 |
+| `entry_criteria` / `exit_criteria` | text | **必须是可观察行为**，不能写「S1 达标」 |
+| `common_mistakes` | jsonb | 常见错误列表，诊断归因直接引用 |
+| `min_project` | text | 最小产出物，区分「学过」与「会用」 |
+| `note` | text | |
+
+### `knowledge_points` 表（知识点树，29 行/主题）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `topic_id` + `id` | 复合 PK | |
+| `module_id` | text not null | 复合外键 → `learning_modules(topic_id, id)` |
+| `parent_id` | text | 自引用，可空；用于错题向上归因，不要求每层都填 |
+| `name` / `ref` | text | 名称、教材章节 |
+| `order_index` | integer | |
+
+### `learning_diagnostics` 表（诊断记录，仅本人可见）
+
+M0 只建表，业务逻辑在 M2。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | text PK | |
+| `user_id` | uuid not null | 外键 `auth.users` |
+| `topic_id` | text not null | 外键 `learning_topics` |
+| `kind` | text not null | `baseline` / `module_gate` / `retest` |
+| `taken_at` | timestamptz | |
+| `result` | jsonb | 原始答题结果 |
+| `matrix` | jsonb | 算好的「模块 × 层级」矩阵 |
+| `notes` | text | |
+
+### 这四张表的行级安全
+
+- `learning_topics` / `learning_modules` / `knowledge_points`：登录用户可读，写入只走迁移与导入脚本。
+- `learning_diagnostics`：只看自己、只写自己（`auth.uid() = user_id`）。
+- **表级 grant 在迁移里显式写死**，不依赖 Supabase 平台的隐式默认授权——那只是平台行为，
+  本地库 / PGlite 上跑会直接 `permission denied`。
+
 ## `health_checks` 表
 
 | 字段 | 类型 | 说明 |
