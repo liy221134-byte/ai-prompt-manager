@@ -220,12 +220,14 @@ export function PracticeHome() {
             按分类自测掌握程度，支持题型 / 状态筛选与错题重练。
           </p>
         </div>
-        <Link
-          href="/"
-          className="shrink-0 text-sm font-medium text-blue-600 hover:underline"
-        >
-          返回首页
-        </Link>
+        <div className="shrink-0 space-x-4 text-sm font-medium">
+          <Link href="/learning" className="text-blue-600 hover:underline">
+            学习计划
+          </Link>
+          <Link href="/" className="text-blue-600 hover:underline">
+            返回首页
+          </Link>
+        </div>
       </header>
 
       {/* 两组筛选：习题类型 + 习题状态 */}
