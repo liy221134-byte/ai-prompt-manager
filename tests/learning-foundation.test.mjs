@@ -220,3 +220,109 @@ test("整条迁移重复执行不报错（幂等）", async () => {
     1,
   );
 });
+
+// ── M2：多学习目标（2026-10-28 补）────────────────────────
+// 目标从「一个考试主题」变成「多条学习目标并存」，所以拆出 learning_goals。
+// 这一组重点验两件容易做错的事：主攻唯一靠数据库兜住、个人目标不串号。
+
+test("主题表补了 kind 与 level_definition，存量主题默认考试型、阶梯待导入时补", async () => {
+  const row = await db.query(
+    `select kind, level_definition from public.learning_topics where id = 'rls-topic'`,
+  );
+  assert.equal(row.rows[0].kind, "exam");
+  assert.deepEqual(row.rows[0].level_definition, []);
+});
+
+test("主题的 kind 只接受四类，填别的被数据库挡住", async () => {
+  await assert.rejects(
+    () =>
+      db.query(
+        `insert into public.learning_topics (id, name, kind) values ('bad-kind','乱填','hobby')`,
+      ),
+    /learning_topics_kind_check/,
+  );
+});
+
+test("学习目标表挂得上主题，每周投入必须为正", async () => {
+  await db.query(
+    `insert into public.learning_goals (id, user_id, topic_id, is_focus, weekly_hours, target_note)
+     values ('goal-a', $1, 'rls-topic', true, 13, '两科同次 ≥45 分')`,
+    [USER_A],
+  );
+  assert.equal(await scalar(`select count(*)::int from public.learning_goals`), 1);
+
+  await assert.rejects(
+    () =>
+      db.query(
+        `insert into public.learning_goals (id, user_id, topic_id, weekly_hours)
+         values ('goal-zero', $1, 'rls-topic', 0)`,
+        [USER_B],
+      ),
+    /learning_goals_weekly_hours_check/,
+  );
+});
+
+test("同一个人的主攻只能有一个，第二个会被数据库直接拒绝", async () => {
+  await db.query(`insert into public.learning_topics (id, name) values ('topic-2','第二个主题')`);
+
+  // 界面上忘了互斥也拦得住——这是把「一天只有一份计划」这条产品判断落到数据结构上
+  await assert.rejects(
+    () =>
+      db.query(
+        `insert into public.learning_goals (id, user_id, topic_id, is_focus)
+         values ('goal-a2', $1, 'topic-2', true)`,
+        [USER_A],
+      ),
+    /learning_goals_one_focus_per_user/,
+  );
+
+  // 但换一个人可以有他自己的主攻，互不影响
+  await db.query(
+    `insert into public.learning_goals (id, user_id, topic_id, is_focus)
+     values ('goal-b', $1, 'topic-2', true)`,
+    [USER_B],
+  );
+  assert.equal(await scalar(`select count(*)::int from public.learning_goals`), 2);
+});
+
+test("同一个人对同一主题只能有一条目标，重复启用被挡住", async () => {
+  await assert.rejects(
+    () =>
+      db.query(
+        `insert into public.learning_goals (id, user_id, topic_id)
+         values ('goal-a-dup', $1, 'rls-topic')`,
+        [USER_A],
+      ),
+    /learning_goals_user_id_topic_id_key|duplicate key/,
+  );
+});
+
+test("学习目标只对本人可见", async () => {
+  try {
+    await asUser(USER_A);
+    assert.equal(await scalar(`select count(*)::int from public.learning_goals`), 1);
+    assert.equal(
+      await scalar(`select count(*)::int from public.learning_goals where id = 'goal-b'`),
+      0,
+      "不该看到别人的目标",
+    );
+
+    await asUser(USER_B);
+    assert.equal(
+      await scalar(`select count(*)::int from public.learning_goals where id = 'goal-a'`),
+      0,
+    );
+  } finally {
+    await db.exec(`reset role`);
+  }
+});
+
+test("删主题会连带删掉挂在它上面的学习目标，不留孤儿", async () => {
+  await db.query(`delete from public.learning_topics where id = 'topic-2'`);
+  assert.equal(
+    await scalar(`select count(*)::int from public.learning_goals where topic_id = 'topic-2'`),
+    0,
+  );
+  // USER_A 的目标挂在 rls-topic 上，不受影响
+  assert.equal(await scalar(`select count(*)::int from public.learning_goals`), 1);
+});

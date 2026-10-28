@@ -51,6 +51,37 @@ export type MatrixRow = {
 
 const LEVELS: Level[] = [1, 2, 3, 4, 5];
 
+/**
+ * 五层的显示名，按主题自带的阶梯定义来（M2 起）。
+ *
+ * 为什么不能写死「L1 认得」：考试型的五层是认得/说得出/算得出/判得准/迁得动，
+ * 技能型是看得懂/改得动/写得出/调得通/能设计。写死一套，量 Python 的时候列头会骗人。
+ *
+ * 库里存的是导入时写进 learning_topics.level_definition 的那份。
+ * 读不到就退化成 L1—L5 纯编号——宁可少显示一个名字，也不假装知道它叫什么。
+ */
+export function buildLevelLabels(definition: unknown): Record<Level, string> {
+  const labels = { 1: "L1", 2: "L2", 3: "L3", 4: "L4", 5: "L5" } as Record<Level, string>;
+  if (!Array.isArray(definition)) return labels;
+
+  for (const item of definition) {
+    if (!item || typeof item !== "object") continue;
+    const level = Number((item as { level?: unknown }).level);
+    const name = (item as { name?: unknown }).name;
+    if (
+      Number.isInteger(level) &&
+      level >= 1 &&
+      level <= 5 &&
+      typeof name === "string" &&
+      name.trim()
+    ) {
+      labels[level as Level] = `L${level} ${name.trim()}`;
+    }
+  }
+
+  return labels;
+}
+
 function emptyCell(): LevelCell {
   return { total: 0, done: 0, correct: 0, enoughQuestions: false };
 }

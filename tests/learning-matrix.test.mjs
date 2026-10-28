@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   MIN_QUESTIONS_FOR_LEVEL,
+  buildLevelLabels,
   buildPracticeMatrix,
   daysUntil,
   upcomingMilestones,
@@ -115,4 +116,52 @@ test("关键节点按日期升序，并标出是否已过", () => {
   assert.equal(result[0].passed, true);
   assert.equal(result[1].passed, false);
   assert.ok(result[1].daysLeft > 0);
+});
+
+// ── 层级列头（2026-10-28 随 M2 多目标补）──────────────────────
+// 阶梯定义随主题走之后，列头不能写死。写死会让 Python 主题显示「L3 算得出」。
+
+test("列头按主题自带的阶梯定义渲染", () => {
+  const labels = buildLevelLabels([
+    { level: 1, name: "看得懂" },
+    { level: 2, name: "改得动" },
+    { level: 3, name: "写得出" },
+    { level: 4, name: "调得通" },
+    { level: 5, name: "能设计" },
+  ]);
+  assert.equal(labels[3], "L3 写得出");
+  assert.equal(labels[5], "L5 能设计");
+});
+
+test("没有阶梯定义时退化成纯编号，不假装知道名字", () => {
+  for (const value of [null, undefined, [], "乱码", 42]) {
+    assert.deepEqual(buildLevelLabels(value), {
+      1: "L1",
+      2: "L2",
+      3: "L3",
+      4: "L4",
+      5: "L5",
+    });
+  }
+});
+
+test("只给了部分层时，缺的层保持编号，其余照常显示", () => {
+  const labels = buildLevelLabels([
+    { level: 1, name: "认得" },
+    { level: 5, name: "迁得动" },
+  ]);
+  assert.equal(labels[1], "L1 认得");
+  assert.equal(labels[3], "L3");
+  assert.equal(labels[5], "L5 迁得动");
+});
+
+test("层级越界或名字为空的条目被忽略，不污染列头", () => {
+  const labels = buildLevelLabels([
+    { level: 0, name: "越界" },
+    { level: 6, name: "越界" },
+    { level: 2, name: "   " },
+    { level: 3, name: "算得出" },
+  ]);
+  assert.equal(labels[3], "L3 算得出");
+  assert.equal(labels[2], "L2", "名字是空白就当没给");
 });

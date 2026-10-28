@@ -28,6 +28,135 @@ const WEIGHT_SUM = 1;
 const EPSILON = 1e-6;
 
 /**
+ * 四类目标性质。选哪一类不看「想要什么」，看「这个目标拿什么判成败」。
+ * 这条分类决定用哪套阶梯模板，所以校验时必须拦住乱填的值。
+ */
+export const VALID_KINDS = ["exam", "skill", "system", "behavior"];
+
+/**
+ * 内置阶梯模板：主题包没写 level_definition 时按 kind 取这一套。
+ *
+ * 为什么把模板放在代码里而不是只写在文档里：
+ *   文档给人看，这里给机器用。两边不一致时，机器的行为才是真的。
+ *   文档与这张表必须同步改（契约 docs/learning/topic-pack-schema.md 第一节）。
+ *
+ * 所有判据都遵守同一条规则：看「做到这件事需要什么」，不看「难不难」。
+ * 也都不含「理解 / 掌握 / 熟悉 / 了解」这类不可判词——校验器会禁这几个词，
+ * 模板自己当然不能违反。
+ */
+export const BUILTIN_LEVEL_TEMPLATES = {
+  exam: [
+    { level: 1, name: "认得", criteria: "给选项能挑对，但说不出为什么", evidence: "单选 easy" },
+    { level: 2, name: "说得出", criteria: "不看资料，用自己的话讲清它是什么、几个要素", evidence: "判断 / 简答" },
+    { level: 3, name: "算得出", criteria: "套公式、走流程，能一次做对", evidence: "计算 / 流程默写" },
+    { level: 4, name: "判得准", criteria: "给没见过的场景，判断属于哪个过程组、该走哪条流程", evidence: "场景题 / 案例" },
+    { level: 5, name: "迁得动", criteria: "错题能归因到哪个概念错；能拿自己的项目对着讲一遍", evidence: "实操 / 案例改写" },
+  ],
+  skill: [
+    { level: 1, name: "看得懂", criteria: "读别人的代码能说出它在干嘛", evidence: "能复述一段代码的作用" },
+    { level: 2, name: "改得动", criteria: "在现有代码上改一行并跑通", evidence: "改动后能运行" },
+    { level: 3, name: "写得出", criteria: "给需求，能独立写出可运行的代码", evidence: "不照抄教程写出来的脚本" },
+    { level: 4, name: "调得通", criteria: "报错能定位、能改对、能说清原因", evidence: "自己修掉一个真 bug" },
+    { level: 5, name: "能设计", criteria: "能自己拆结构、选方案，不只跟着教程走", evidence: "从零起一个小工具" },
+  ],
+  system: [
+    { level: 1, name: "有框架", criteria: "知道这个领域分哪几块", evidence: "能画出分类骨架" },
+    { level: 2, name: "能分类", criteria: "任给一条素材，能归到某一块", evidence: "随手素材能归类" },
+    { level: 3, name: "能填满", criteria: "每一块都有实际素材，不空着", evidence: "每块至少一条真实记录" },
+    { level: 4, name: "能互相支撑", criteria: "块与块之间能引用、能解释关系", evidence: "能说出 A 块怎么支撑 B 块" },
+    { level: 5, name: "能教人", criteria: "能讲给不懂的人听懂", evidence: "一次真实讲解" },
+  ],
+  behavior: [
+    { level: 1, name: "知道有这回事", criteria: "能复述概念，但举不出自己的例子", evidence: "复述" },
+    { level: 2, name: "能识别处境", criteria: "能判断自己现在处在哪种情形", evidence: "对上自己的一个真实场景" },
+    { level: 3, name: "能设计动作", criteria: "能写出一次具体要说什么、做什么", evidence: "一份可执行的对话脚本" },
+    { level: 4, name: "做过有反馈", criteria: "真做过，并拿到了对方的反应", evidence: "一次真实发生的交互" },
+    { level: 5, name: "稳定复用", criteria: "换了场景还能用同一套做法", evidence: "第二次以上成功" },
+  ],
+};
+
+/** 判据里出现这些词就等于没写判据——跟 entry_criteria 同一条规矩。 */
+const VAGUE_CRITERIA_WORDS = ["理解", "掌握", "熟悉", "了解"];
+
+/** 主题包的 kind，缺省按考试型（v1 的包都是考试型）。 */
+export function resolveKind(pack) {
+  return pack?.topic?.kind ?? "exam";
+}
+
+/**
+ * 得到这份主题包最终该用的五层定义。
+ * 包里有就用自己的，没有按 kind 取内置模板——v1/v1.1 的旧包因此不用改就能导。
+ */
+export function resolveLevelDefinition(pack) {
+  const declared = pack?.level_definition;
+  if (Array.isArray(declared) && declared.length > 0) {
+    return declared.map((item) => ({
+      level: item.level,
+      name: item.name,
+      criteria: item.criteria,
+      evidence: item.evidence ?? null,
+    }));
+  }
+  return BUILTIN_LEVEL_TEMPLATES[resolveKind(pack)] ?? BUILTIN_LEVEL_TEMPLATES.exam;
+}
+
+/**
+ * 校验 level_definition。只在主题包显式写了的时候才校验——
+ * 没写就是走内置模板，而模板本身在单测里已经钉住了。
+ */
+function validateLevelDefinition(declared, errors) {
+  if (!Array.isArray(declared) || declared.length === 0) return;
+
+  if (declared.length !== 5) {
+    errors.push(`level_definition 必须是 5 条（实际 ${declared.length} 条）`);
+  }
+
+  const seenLevels = new Set();
+  const seenNames = new Set();
+
+  declared.forEach((item, index) => {
+    const path = `level_definition[${index}]`;
+
+    if (!Number.isInteger(item?.level) || item.level < LEVEL_MIN || item.level > LEVEL_MAX) {
+      errors.push(`${path}.level 必须是 ${LEVEL_MIN}—${LEVEL_MAX} 的整数（实际：${item?.level}）`);
+    } else if (seenLevels.has(item.level)) {
+      errors.push(`${path}.level 重复：${item.level}`);
+    } else {
+      seenLevels.add(item.level);
+    }
+
+    const name = typeof item?.name === "string" ? item.name.trim() : "";
+    if (!name) {
+      errors.push(`${path}.name 必填`);
+    } else if (seenNames.has(name)) {
+      // 两层叫同一个名字，说明这两层没想清区别
+      errors.push(`${path}.name 与前面某一层重名（${name}），五层的名字必须各不相同`);
+    } else {
+      seenNames.add(name);
+    }
+
+    const criteria = typeof item?.criteria === "string" ? item.criteria.trim() : "";
+    if (!criteria) {
+      errors.push(`${path}.criteria 必填——这一层怎么算达到了，必须能出题验证`);
+    } else {
+      const vague = VAGUE_CRITERIA_WORDS.find((word) => criteria.includes(word));
+      if (vague) {
+        errors.push(
+          `${path}.criteria 含不可判词「${vague}」。改写成可观察的行为，` +
+            `例如「给一个没见过的场景能判断落在哪个过程组」`,
+        );
+      }
+    }
+  });
+
+  for (let level = LEVEL_MIN; level <= LEVEL_MAX; level += 1) {
+    if (!seenLevels.has(level)) {
+      errors.push(`level_definition 缺第 ${level} 层（五层必须齐全，缺一层矩阵就塌一格）`);
+    }
+  }
+}
+
+/**
  * 校验主题包。返回错误字符串数组，空数组代表通过。
  * 报错一律带上「在哪、哪个字段、差多少」，让人不用读代码就知道改哪。
  */
@@ -55,6 +184,13 @@ export function validateTopicPack(pack) {
   } else {
     for (const field of ["id", "name", "goal", "deadline"]) {
       if (!topic[field]) errors.push(`topic.${field} 必填`);
+    }
+    // kind 可缺省（缺省按考试型），填了就必须是四类之一——它决定用哪套阶梯模板
+    if (topic.kind != null && !VALID_KINDS.includes(topic.kind)) {
+      errors.push(
+        `topic.kind 只能是 ${VALID_KINDS.join(" / ")}（实际：${topic.kind}）。` +
+          `它决定用哪套阶梯模板，填错会拿错模板去量`,
+      );
     }
     if (!Number.isFinite(topic.total_hours)) {
       errors.push("topic.total_hours 必填且必须是数字");
@@ -225,12 +361,14 @@ export function validateTopicPack(pack) {
     }
   });
 
+  // ── level_definition（v2，可缺省）──
+  validateLevelDefinition(pack.level_definition, errors);
+
   return errors;
 }
 
 /** 把 YAML 解析错误翻成人话：文件、行列、原始信息都保留，不吞掉细节。 */
-function parseYamlFile(path) {
-  const raw = readFileSync(path, "utf8");
+function parseYamlFile(path) {  const raw = readFileSync(path, "utf8");
   try {
     return yaml.load(raw);
   } catch (error) {
@@ -304,9 +442,62 @@ async function mustWrite(result, what) {
   }
 }
 
+/**
+ * 阶梯定义入库后不许改。
+ *
+ * 为什么这条要硬拦：重导入是常态（补题、改工时都会重导）。如果重导时顺手把
+ * 「L3 算得出」改成「L3 会用」，库里的历史答题记录还带着旧 level 数字，
+ * 同一个 3 在两段时间里含义不同——趋势图会静默变成假的，且看不出哪里错。
+ *
+ * 比较只看 level / name / criteria 三项，evidence 和顺序不影响判读，不参与比对。
+ */
+async function assertLevelDefinitionUnchanged(supabase, topicId, next) {
+  const { data, error } = await supabase
+    .from("learning_topics")
+    .select("level_definition")
+    .eq("id", topicId)
+    .maybeSingle();
+
+  if (error) {
+    // 列不存在（迁移未执行）会走这里。报清楚是哪一步，别让人猜。
+    throw new Error(
+      `读取已有阶梯定义失败：${error.message}\n` +
+        `  如果是「column doesn't exist」，说明 M2 迁移还没执行：` +
+        `supabase/migrations/20261028150000_add_learning_goals.sql`,
+    );
+  }
+
+  const existing = data?.level_definition;
+  if (!Array.isArray(existing) || existing.length === 0) return;
+
+  const fingerprint = (definition) =>
+    JSON.stringify(
+      [...definition]
+        .sort((a, b) => a.level - b.level)
+        .map((item) => [item.level, item.name, item.criteria]),
+    );
+
+  if (fingerprint(existing) === fingerprint(next)) return;
+
+  const before = existing.map((i) => `L${i.level} ${i.name}`).join(" / ");
+  const after = next.map((i) => `L${i.level} ${i.name}`).join(" / ");
+  throw new Error(
+    `阶梯定义与库里已有的不一致，拒绝写入。\n` +
+      `  库里：${before}\n` +
+      `  本次：${after}\n` +
+      `  阶梯是历史趋势的基准，不能原地改。真要换判据，请给主题换一个新 id 另存。`,
+  );
+}
+
 /** 按外键顺序写：主题 → 模块 → 知识点（先不带 parent）→ 补 parent → 题目。 */
 async function importPack(supabase, pack) {
   const topic = pack.topic;
+  const kind = resolveKind(pack);
+  const levelDefinition = resolveLevelDefinition(pack);
+
+  // 阶梯定义一旦入库就不再接受改动：今天的 L3 和三个月后的 L3 必须是同一件事，
+  // 否则历史答题记录和趋势全废。要改判据只能新开一个主题 id。
+  await assertLevelDefinitionUnchanged(supabase, topic.id, levelDefinition);
 
   await mustWrite(
     await supabase.from("learning_topics").upsert(
@@ -319,6 +510,8 @@ async function importPack(supabase, pack) {
         start_date: topic.start_date ?? null,
         exam_facts: topic.exam_facts ?? {},
         schema_version: pack.schema_version,
+        kind,
+        level_definition: levelDefinition,
         raw: topic,
         updated_at: new Date().toISOString(),
       },
@@ -429,8 +622,11 @@ async function main() {
     return;
   }
 
+  const levelDefinition = resolveLevelDefinition(pack);
   const summary = {
     topic: pack.topic.id,
+    kind: resolveKind(pack),
+    levels: levelDefinition.map((item) => `L${item.level}${item.name}`).join(" "),
     modules: pack.modules.length,
     knowledge_points: (pack.knowledge_points ?? []).length,
     questions: (pack.questions ?? []).length,

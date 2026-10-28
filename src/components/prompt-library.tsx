@@ -2967,6 +2967,8 @@ function readAssetTypeLabel(assetType: EditableAssetType) {
           projects={projectViewProjects}
           showPractice={dataMode === "supabase"}
           onOpenPractice={() => router.push("/practice")}
+          showLearning={dataMode === "supabase"}
+          onOpenLearning={() => router.push("/learning")}
           onOpenExternalSources={() => router.push("/external-sources")}
           view={workspaceView}
         />

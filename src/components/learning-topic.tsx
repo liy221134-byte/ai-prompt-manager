@@ -11,6 +11,7 @@ import {
 } from "@/components/practice-quiz";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
+  buildLevelLabels,
   buildPracticeMatrix,
   daysUntil,
   upcomingMilestones,
@@ -30,23 +31,26 @@ type TopicRow = {
   id: string;
   name: string;
   goal: string | null;
+  /** 目标性质：exam / skill / system / behavior。决定阶梯怎么搭、进度怎么判 */
+  kind: string | null;
   deadline: string | null;
   total_hours: number | null;
   exam_facts: { milestones?: Milestone[] } | null;
+  /** 五层的名字与判据，导入时随主题写库。列头按它渲染，不再硬编码 */
+  level_definition: unknown;
 };
 
-const LEVEL_LABELS: Record<Level, string> = {
-  1: "L1 认得",
-  2: "L2 说得出",
-  3: "L3 算得出",
-  4: "L4 判得准",
-  5: "L5 迁得动",
+const KIND_LABELS: Record<string, string> = {
+  exam: "考试型",
+  skill: "技能型",
+  system: "体系型",
+  behavior: "行为型",
 };
 
 const QUESTION_COLUMNS =
   "id, category, title, difficulty, type, body_md, options, answer, explanation_md, module_id, level";
 
-export function LearningTopic() {
+export function LearningTopic({ topicId }: { topicId: string }) {
   const [topic, setTopic] = useState<TopicRow | null>(null);
   const [rows, setRows] = useState<MatrixRow[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -64,22 +68,22 @@ export function LearningTopic() {
     try {
       const supabase = getSupabaseBrowserClient();
 
-      // 1) 主题：v4 只有中项一个主题，取第一条。将来多主题时改成路由参数。
-      const { data: topicRows, error: topicError } = await supabase
+      // 1) 主题：按路由参数取。M2 起多主题并存，不再「取第一条」
+      const { data: topicRow, error: topicError } = await supabase
         .from("learning_topics")
-        .select("id, name, goal, deadline, total_hours, exam_facts")
-        .order("created_at")
-        .limit(1);
+        .select("id, name, goal, kind, deadline, total_hours, exam_facts, level_definition")
+        .eq("id", topicId)
+        .maybeSingle();
 
       if (topicError) throw topicError;
-      if (!topicRows || topicRows.length === 0) {
+      if (!topicRow) {
         setTopic(null);
         setRows([]);
         setQuestions([]);
         return;
       }
 
-      const currentTopic = topicRows[0] as TopicRow;
+      const currentTopic = topicRow as TopicRow;
       setTopic(currentTopic);
 
       // 2) 模块
@@ -150,7 +154,7 @@ export function LearningTopic() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [topicId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -161,6 +165,12 @@ export function LearningTopic() {
 
   const milestones = useMemo(
     () => upcomingMilestones(topic?.exam_facts?.milestones ?? null),
+    [topic],
+  );
+
+  // 列头跟着主题的阶梯定义走：中项显示「L3 算得出」，Python 会显示「L3 写得出」
+  const levelLabels = useMemo(
+    () => buildLevelLabels(topic?.level_definition),
     [topic],
   );
 
@@ -188,7 +198,7 @@ export function LearningTopic() {
     if (pool.length === 0) return;
 
     setQuizQueue(pool);
-    setQuizLabel(`${moduleName} · ${LEVEL_LABELS[level]}（${pool.length}）`);
+    setQuizLabel(`${moduleName} · ${levelLabels[level]}（${pool.length}）`);
   }
 
   if (quizQueue) {
@@ -216,8 +226,17 @@ export function LearningTopic() {
           <p className="mt-1 text-sm text-slate-500">
             {topic?.goal ?? "按内容模块和能力层级安排练习，看到自己缺在哪一层。"}
           </p>
+          {topic?.kind ? (
+            <p className="mt-2 text-xs text-slate-400">
+              {KIND_LABELS[topic.kind] ?? topic.kind}
+              {topic.total_hours ? ` · 计划 ${topic.total_hours} 小时` : ""}
+            </p>
+          ) : null}
         </div>
         <div className="shrink-0 space-x-4 text-sm font-medium">
+          <Link href="/learning" className="text-blue-600 hover:underline">
+            全部目标
+          </Link>
           <Link href="/practice" className="text-blue-600 hover:underline">
             题库
           </Link>
@@ -233,7 +252,10 @@ export function LearningTopic() {
         <p className="mt-10 text-sm text-red-600">{error}</p>
       ) : !topic ? (
         <p className="mt-10 text-sm text-slate-500">
-          还没有导入任何学习主题。用主题包导入脚本导入后再回来看。
+          这个学习目标不存在，可能已被删除。
+          <Link href="/learning" className="ml-1 text-blue-600 hover:underline">
+            回到目标列表
+          </Link>
         </p>
       ) : (
         <>
@@ -302,7 +324,7 @@ export function LearningTopic() {
                     <th className="py-2 pr-3 text-left font-semibold text-slate-600">内容模块</th>
                     {([1, 2, 3, 4, 5] as Level[]).map((lv) => (
                       <th key={lv} className="px-2 py-2 text-center font-semibold text-slate-600">
-                        {LEVEL_LABELS[lv]}
+                        {levelLabels[lv]}
                       </th>
                     ))}
                   </tr>

@@ -8,7 +8,10 @@
 #   教材章节结构 —— 《系统集成项目管理工程师教程（第3版）》清华社 2024.1，共 18 章
 #   分值分布 —— 培训机构基于历年真题的统计（非官方），标为 estimate
 #
-schema_version: 1.1
+schema_version: 2
+# 2（2026-10-28，M2 多目标）：加 topic.kind，标明这是考试型目标。
+#   阶梯定义不写进本文件，按 kind 取内置 exam 模板——与 v1 的五层定义是同一套判据，
+#   只是从「产品常量」改成「随主题走、可被覆盖」，见 docs/learning/topic-pack-schema.md 第一节。
 # 1.1（2026-10-27，M0.5 校准）：expected_gap 与 planned_hours 用首次诊断结果覆盖、order 按「缺口×分值」重排。
 # 依据：docs/learning/diagnostic-2026-10-27.md（客观题 19/31、简答 0/9）。
 # weight 仍是 estimate，未动——缺历年真题分值统计，没有依据的改动比不改更糟。
@@ -16,6 +19,7 @@ schema_version: 1.1
 topic:
   id: rk-mid-integration
   name: 系统集成项目管理工程师（中级·软考）
+  kind: exam
   goal: 2027-05-22 一次通过，两科同次均 ≥45 分
   deadline: "2027-05-22"
   exam_date_predicted: "2027-05-22"      # 官方年度计划未发布，此为按近三年规律推算
@@ -39,7 +43,8 @@ topic:
 
 # ── 内容模块（按教材章节归并，**不是能力阶梯**）──────────────
 # 命名来由：这两者曾经混为一谈，改名的判据见 v4-plan 第一节判断 1。
-# 能力层级 L1—L5 是产品常量，定义在 docs/learning/topic-pack-schema.md，不写进主题包。
+# 能力层级 L1—L5：五层结构与四类模板见 docs/learning/topic-pack-schema.md 第一节。
+# 本包不写 level_definition，按 kind=exam 取内置模板（与 v1 的五层定义是同一套判据）。
 #
 # weight        ：该模块在考试中的占分权重（**estimate**，待 M0.5 用真题/错题分布校准）
 # expected_gap  ：基于已知画像预判的缺口（1=很熟 5=空白）。首次诊断后以诊断结果覆盖
