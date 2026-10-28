@@ -197,6 +197,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [v4 学习系统 M0 验收清单（数据地基，本地与真库均已验）](acceptance/m0-learning-foundation.md)
 - [v4 学习系统 M1 验收清单（按模块 × 层级出题，验收项全过）](acceptance/v4-m1.md)
 - [v4 学习系统 M2 验收清单（多学习目标，阶梯随目标走，含两个真错修复）](acceptance/v4-m2.md)
+- [v4 学习系统 M2.5 验收清单（今日计划 + 目标设置，含每周投入是否够的结论）](acceptance/v4-m25.md)
 
 ### 云端部署
 
