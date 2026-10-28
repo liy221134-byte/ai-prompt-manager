@@ -22,6 +22,8 @@
 
 # local prompt database
 /.data/
+# 工作台工具的项目记忆（会话日志、长期笔记），属本机产物，不进版本库
+/.workbuddy/
 # 同步用的本机全量备份（含个人数据，不进版本库）
 /sync-push-*.json
 
