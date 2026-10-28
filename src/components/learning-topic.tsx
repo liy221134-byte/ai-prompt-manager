@@ -20,6 +20,8 @@ import { KnowledgeNoteDrawer } from "@/components/knowledge-note-drawer";
 import { ProbeDrawer, type ProbeSavePayload } from "@/components/probe-panel";
 import { readStoredProbe, type ProbeRow } from "@/lib/learning/probe";
 import { SheetBoard, SheetDrawer, type SheetRow } from "@/components/sheet-panel";
+import { GraphBoard, GraphDrawer } from "@/components/graph-panel";
+import { buildReferencePoints } from "@/lib/learning/graph";
 import type { ProbeKnowledgePoint, ProbeQuestionInput } from "@/lib/learning/probe-prompt";
 import { normalizeSections, type SheetSections } from "@/lib/learning/sheet";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -209,6 +211,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   // 一页素材表：已写的纸 + 正在写哪个模块（null 表示抽屉关着）
   const [sheets, setSheets] = useState<SheetRow[]>([]);
   const [openSheetModuleId, setOpenSheetModuleId] = useState<string | null>(null);
+
+  // 手绘知识图谱：抽屉开没开。不存任何历史——检查结论是一次性的，
+  // 说明见 api/learning/graph-check/route.ts 顶部。
+  const [graphOpen, setGraphOpen] = useState(false);
 
   // 追问记录。按时间倒序存着，打开抽屉时取这道题最新的一条带出来——
   // 只写不读的记录等于日志，人看不到「我上次是怎么说的」。
@@ -1028,6 +1034,21 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     />
   ) : null;
 
+  // 手绘知识图谱抽屉。和上面两个一样要在两个 return 之前定义。
+  // 参照清单每次开抽屉时按「全部模块」算一遍，抽屉内部再按他勾的模块二次过滤——
+  // 勾选是抽屉里的局部状态，没必要为了它把 scopeIds 提到页面级。
+  const graphDrawer = graphOpen ? (
+    <GraphDrawer
+      modules={rows.map((row) => row.module)}
+      points={buildReferencePoints(
+        knowledgePoints,
+        rows.map((row) => row.module),
+        rows.map((row) => row.module.id),
+      )}
+      onClose={() => setGraphOpen(false)}
+    />
+  ) : null;
+
   // 诊断进行中：整页交给答题组件，样式与练习一致——人已经熟悉这个界面了，
   // 换一套版式只会让他重新找按钮在哪。
   //
@@ -1257,6 +1278,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             sheets={sheets}
           />
 
+          {/* 手绘知识图谱：紧挨着素材表。两者是同一层的「输出型」动作——
+              素材表是把一个模块压成一页纸，图谱是把几个模块连成一张网，
+              都排在做题与诊断之后（做题是输入，这两件是检验输出）。 */}
+          <GraphBoard onOpen={() => setGraphOpen(true)} />
+
           {/* 关键节点：报名是唯一不可挽回的节点，所以排在最前面 */}
           <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
@@ -1469,6 +1495,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
       {noteDrawer}
       {sheetDrawer}
+      {graphDrawer}
     </main>
   );
 }
