@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import yaml from "js-yaml";
 
-import { validateTopicPack, toQuestionRow, resolveKind, resolveLevelDefinition, BUILTIN_LEVEL_TEMPLATES, VALID_KINDS } from "../scripts/import-topic-pack.mjs";
+import { validateTopicPack, validateNote, toQuestionRow, toKnowledgePointRow, resolveKind, resolveLevelDefinition, BUILTIN_LEVEL_TEMPLATES, VALID_KINDS, NOTE_SECTIONS, SUMMARY_MAX_CHARS } from "../scripts/import-topic-pack.mjs";
 
 // 主题包是这个产品的输入契约：AI 按它写、导入器按它校验。
 // 这一组测试有两个作用：
@@ -260,4 +260,122 @@ test("阶梯定义里 level 重复或越界会被拦下", () => {
   const errors = validateTopicPack(pack);
   assert.ok(errors.some((error) => error.includes("level 重复")));
   assert.ok(errors.some((error) => error.includes("缺第 4 层")));
+});
+
+// ── 知识点讲义（2026-10-28 随 M3 补）──────────────────────────
+// 讲义最容易退化的方式不是写错，是「只写了一段还能通过」。
+// 只写要素就成了笔记，只写例题就成了题解，缺「怎么考」就不知道它在卷面上长什么样。
+// 这组测试守的就是「四段缺一段必须被拒」。
+
+const GOOD_NOTE = {
+  summary: "五大过程组是逻辑分组，不是时间顺序。",
+  body: "### 要素\n在这里。\n\n### 例题\n一道题。\n\n### 怎么考\n这样考。",
+};
+
+test("完整的讲义通过校验", () => {
+  assert.deepEqual(validateNote(GOOD_NOTE, "kp"), []);
+});
+
+test("没写讲义不是错误——讲义是渐进补的，不该逼人一次写完 29 个知识点", () => {
+  for (const value of [null, undefined]) {
+    assert.deepEqual(validateNote(value, "kp"), []);
+  }
+});
+
+test("缺 summary 被拦下，并说明这个字段放什么", () => {
+  const errors = validateNote({ body: GOOD_NOTE.body }, "kp");
+  const hit = errors.find((error) => error.includes("summary 必填"));
+  assert.ok(hit);
+  assert.match(hit, /一句话/);
+});
+
+test("summary 超过上限被拦下，并报出实际字数", () => {
+  const errors = validateNote(
+    { ...GOOD_NOTE, summary: "很长".repeat(SUMMARY_MAX_CHARS) },
+    "kp",
+  );
+  const hit = errors.find((error) => error.includes("超过"));
+  assert.ok(hit, "应当拦下超长 summary");
+  assert.match(hit, new RegExp(`${SUMMARY_MAX_CHARS} 字上限`));
+});
+
+test("summary 恰好等于上限不算超——边界不能被差一位判掉", () => {
+  const exact = "字".repeat(SUMMARY_MAX_CHARS);
+  assert.deepEqual(validateNote({ ...GOOD_NOTE, summary: exact }, "kp"), []);
+});
+
+test("中文按字数算而不是按码元算，否则中文的上限会变成一半", () => {
+  // 30 个汉字若按码元算就是 30，按 UTF-16 长度算也是 30；
+  // 这条守的是实现别退化成 summary.length（对基本汉字等价，对 emoji/生僻字不等价）
+  const note = { ...GOOD_NOTE, summary: "项".repeat(SUMMARY_MAX_CHARS) };
+  assert.deepEqual(validateNote(note, "kp"), []);
+});
+
+test("四段里少任意一段都被拦下，且报出缺的是哪一段", () => {
+  for (const section of NOTE_SECTIONS) {
+    const body = GOOD_NOTE.body.split(section).join("### 别的小标题");
+    const errors = validateNote({ ...GOOD_NOTE, body }, "kp");
+    const hit = errors.find((error) => error.includes(section));
+    assert.ok(hit, `缺「${section}」应当被拦下`);
+    assert.match(hit, /退化/, "报错要讲清为什么不能缺");
+  }
+});
+
+test("body 为空被拦下，且不再逐段报缺——空文件只该有一条错", () => {
+  const errors = validateNote({ summary: "有 summary", body: "   " }, "kp");
+  assert.equal(errors.length, 1, `空 body 只该报一条，实际：${errors.join(" / ")}`);
+  assert.match(errors[0], /body 必填/);
+});
+
+test("note 写成数组或字符串被拦下，而不是静默当成没写", () => {
+  for (const value of [["a"], "一段文字", 42]) {
+    const errors = validateNote(value, "kp");
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /必须是对象/);
+  }
+});
+
+test("知识点行映射：讲义两个字段落到 summary 与 note_md，不是漏掉", () => {
+  const row = toKnowledgePointRow(
+    { id: "KP-X", module_id: "S1", name: "某个知识点", ref: "第9章", note: GOOD_NOTE },
+    "topic-1",
+    3,
+  );
+  assert.equal(row.summary, GOOD_NOTE.summary);
+  assert.equal(row.note_md, GOOD_NOTE.body);
+  assert.equal(row.topic_id, "topic-1");
+  assert.equal(row.order_index, 3);
+  assert.equal(row.parent_id, null, "parent 要第二趟补，第一趟必须显式 null");
+});
+
+test("没有讲义的知识点，两列是 null 而不是空字符串", () => {
+  const row = toKnowledgePointRow({ id: "KP-Y", module_id: "S1", name: "没讲义" }, "t", 1);
+  assert.equal(row.summary, null);
+  assert.equal(row.note_md, null);
+});
+
+test("只写空白的讲义等同没写，不能把空格存进库", () => {
+  const row = toKnowledgePointRow(
+    { id: "KP-Z", module_id: "S1", name: "空讲义", note: { summary: "   ", body: "\n\n" } },
+    "t",
+    1,
+  );
+  assert.equal(row.summary, null);
+  assert.equal(row.note_md, null);
+});
+
+test("真实主题包：S1 五个知识点都有讲义，且每份四段齐全", () => {
+  const s1 = realPack.knowledge_points.filter((kp) => kp.module_id === "S1");
+  assert.equal(s1.length, 5);
+  for (const kp of s1) {
+    assert.ok(kp.note?.body, `${kp.id} 缺讲义`);
+    assert.deepEqual(validateNote(kp.note, kp.id), [], `${kp.id} 的讲义过不了校验`);
+  }
+});
+
+test("讲义内容里出现「理解 / 掌握」不拦——那是对判据的约束，不是对讲解的约束", () => {
+  // 这一条守的是别把规矩套错地方：判据必须可观察，但讲义正文当然可以写
+  // 「这个知识点常被误理解为……」。校验器只查结构，不查正文措辞。
+  const note = { ...GOOD_NOTE, body: GOOD_NOTE.body + "\n初学者常错误理解为它有时间顺序。" };
+  assert.deepEqual(validateNote(note, "kp"), []);
 });

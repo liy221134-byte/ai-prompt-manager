@@ -78,6 +78,22 @@ export const BUILTIN_LEVEL_TEMPLATES = {
 /** 判据里出现这些词就等于没写判据——跟 entry_criteria 同一条规矩。 */
 const VAGUE_CRITERIA_WORDS = ["理解", "掌握", "熟悉", "了解"];
 
+/**
+ * 讲义的固定三段（外加 summary 一句话，共四段）。
+ *
+ * 为什么把这三段写在校验器里而不是只写在文档里：
+ *   讲义最容易退化的方式不是写错，是「只写了一段还能通过」。
+ *   只写「要素」就成了笔记，只写「例题」就成了题解，缺「怎么考」
+ *   就不知道这个知识点在卷面上长什么样。机械检查这三段，比事后靠自觉补回来便宜。
+ *
+ * 只检查小标题存在，不检查每段多少字——长度这类事交给写的人判断，
+ * 机器去管它反而会逼出凑字数的填充段。
+ */
+export const NOTE_SECTIONS = ["### 要素", "### 例题", "### 怎么考"];
+
+/** 一句话定义的上限。超过就不是一句话了，是摘要。 */
+export const SUMMARY_MAX_CHARS = 60;
+
 /** 主题包的 kind，缺省按考试型（v1 的包都是考试型）。 */
 export function resolveKind(pack) {
   return pack?.topic?.kind ?? "exam";
@@ -154,6 +170,53 @@ function validateLevelDefinition(declared, errors) {
       errors.push(`level_definition 缺第 ${level} 层（五层必须齐全，缺一层矩阵就塌一格）`);
     }
   }
+}
+
+/**
+ * 校验一个知识点的讲义（note）。可选——没写讲义的主题包照样能导入。
+ *
+ * 返回错误数组，不改入参。抽成独立函数是为了能被单测直接调，
+ * 不用为了试一条规则去造一整份主题包。
+ */
+export function validateNote(note, at) {
+  const errors = [];
+
+  if (note == null) return errors;
+
+  if (typeof note !== "object" || Array.isArray(note)) {
+    errors.push(`${at}.note 必须是对象（含 summary 与 body 两个字段）`);
+    return errors;
+  }
+
+  const summary = typeof note.summary === "string" ? note.summary.trim() : "";
+  if (!summary) {
+    errors.push(`${at}.note.summary 必填——一句话讲清这个知识点是什么`);
+  } else {
+    const length = [...summary].length; // 按字符数算，不按码元，中文才不会被算成两倍
+    if (length > SUMMARY_MAX_CHARS) {
+      errors.push(
+        `${at}.note.summary 有 ${length} 字，超过 ${SUMMARY_MAX_CHARS} 字上限。` +
+          `这里的定位是「一句话」，写长就是摘要，摘要放 body`,
+      );
+    }
+  }
+
+  const body = typeof note.body === "string" ? note.body : "";
+  if (!body.trim()) {
+    errors.push(`${at}.note.body 必填`);
+    return errors;
+  }
+
+  for (const section of NOTE_SECTIONS) {
+    if (!body.includes(section)) {
+      errors.push(
+        `${at}.note.body 缺「${section}」。讲义固定四段（summary + 要素 / 例题 / 怎么考），` +
+          `少一段会退化：只有要素是笔记，只有例题是题解，缺「怎么考」就不知道它在卷面上长什么样`,
+      );
+    }
+  }
+
+  return errors;
 }
 
 /**
@@ -315,6 +378,7 @@ export function validateTopicPack(pack) {
     } else if (!moduleIds.has(kp.module_id)) {
       errors.push(at(`${path}.module_id "${kp.module_id}" 在 modules 里不存在`, kp.id));
     }
+    errors.push(...validateNote(kp.note, at(path, kp.id)));
   });
   // parent 要在全部 id 收集完之后再校验
   kps.forEach((kp, index) => {
@@ -388,7 +452,6 @@ function parseYamlFile(path) {  const raw = readFileSync(path, "utf8");
 // ────────────────────────────────────────────────────────
 // 行映射
 // ────────────────────────────────────────────────────────
-
 /**
  * 把主题包里的一道题翻译成 practice_questions 表的一行。
  *
@@ -420,10 +483,33 @@ export function toQuestionRow(q, topicId) {
   };
 }
 
+/**
+ * 把一个知识点翻译成 knowledge_points 表的一行。
+ *
+ * 抽出理由与 toQuestionRow 同源：字段映射漏一项，导入日志照样报成功。
+ * 讲义两个字段（summary / note_md）是可空的，所以要显式去掉首尾空白再判空，
+ * 只写空格的 summary 等于没写。
+ */
+export function toKnowledgePointRow(kp, topicId, orderIndex) {
+  const summary = typeof kp.note?.summary === "string" ? kp.note.summary.trim() : "";
+  const body = typeof kp.note?.body === "string" ? kp.note.body.trim() : "";
+
+  return {
+    topic_id: topicId,
+    id: kp.id,
+    module_id: kp.module_id,
+    parent_id: null, // 自引用外键，第二趟再补，见 importPack
+    name: kp.name,
+    ref: kp.ref ?? null,
+    order_index: orderIndex,
+    summary: summary || null,
+    note_md: body || null,
+  };
+}
+
 // ────────────────────────────────────────────────────────
 // 二、写库
 // ────────────────────────────────────────────────────────
-
 async function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -547,15 +633,7 @@ async function importPack(supabase, pack) {
   if (kps.length > 0) {
     await mustWrite(
       await supabase.from("knowledge_points").upsert(
-        kps.map((kp, index) => ({
-          topic_id: topic.id,
-          id: kp.id,
-          module_id: kp.module_id,
-          parent_id: null,
-          name: kp.name,
-          ref: kp.ref ?? null,
-          order_index: index + 1,
-        })),
+        kps.map((kp, index) => toKnowledgePointRow(kp, topic.id, index + 1)),
         { onConflict: "topic_id,id" },
       ),
       "knowledge_points",
@@ -623,12 +701,15 @@ async function main() {
   }
 
   const levelDefinition = resolveLevelDefinition(pack);
+  const kps = pack.knowledge_points ?? [];
   const summary = {
     topic: pack.topic.id,
     kind: resolveKind(pack),
     levels: levelDefinition.map((item) => `L${item.level}${item.name}`).join(" "),
     modules: pack.modules.length,
-    knowledge_points: (pack.knowledge_points ?? []).length,
+    // 讲义条数单独报：有内容的和没内容的知识点，页面上是两种状态，
+    // 导入日志不区分的话，写完一批也看不出到底落库了几份
+    knowledge_points: `${kps.length}（含讲义 ${kps.filter((kp) => kp.note?.body).length}）`,
     questions: (pack.questions ?? []).length,
   };
 
