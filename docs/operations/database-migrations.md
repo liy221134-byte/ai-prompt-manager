@@ -31,13 +31,29 @@
 
 十条迁移已全部应用到线上，迁移历史与仓库一致，没有待应用的迁移。
 
-## 三种执行方式
+## 执行方式
 
-| 方式 | 谁执行 | 说明 |
+| 方式 | 谁执行 | 现状 |
 | --- | --- | --- |
-| Supabase CLI + 数据库密码（当前可用） | Codex 直接执行 | `migration list --db-url` 看历史、`db push --db-url` 应用、`db lint --db-url` 检查函数。连接串里的密码必须 URL 编码；不需要个人访问令牌 |
-| Supabase MCP（2026-09-24 起可用） | Codex 执行，写生产库前要先得到同意 | 会话里连上 MCP 就不需要密码，能直接查结构、读日志、应用迁移。2026-09-24 重新授权后连上（29 个工具），写权限保留，约束见下面「生产库写入约定」 |
-| GitHub 集成自动部署（已开启并验证） | Supabase 自动执行 | 推送到 `main` 自动应用新迁移。2026-09-20 用一条真实迁移验证过：推送后无需任何人工操作，Supabase 自动执行并写入历史表 |
+| **Management API + `scripts/db-sql.mjs`** | 本会话直接执行 | **首选**。只要 `.env.local` 里有 `SUPABASE_ACCESS_TOKEN`（`sbp_` 开头），就能执行任意 SQL，不需要数据库密码。token 在 [dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) 生成，可随时吊销 |
+| Supabase CLI（2026-10-28 已装，版本 2.122.0） | 手工 | **装了但缺凭据**。`db push` 要 `supabase login` 或 access token，`db push --db-url` 要数据库密码，本机两者都没有。CLI 本身不带凭据，装它不解决授权问题 |
+| Supabase MCP（2026-09-24 起可用过） | 会话里连上就能用 | 需要 `~/.workbuddy/mcp.json` 里配 supabase server，当前没配。配了也要 token |
+| GitHub 集成自动部署（已开启） | Supabase 自动执行 | **当前有阻塞，勿直接 push**：7 条迁移的 `create policy` 不带 `if not exists`，而手动在 SQL Editor 执行过的两条迁移不在 `supabase_migrations.schema_migrations` 里，push 后集成会重跑它们并在 `create policy` 处失败。要对齐历史后才能用 |
+
+**为什么推荐 Management API 而不是数据库密码**：token 可以在 dashboard 里点几下生成、随时吊销、粒度细；数据库密码一旦存下来就是长期凭据，且改密码会连带影响所有连接串。跑几条迁移不值得换这个。
+
+### 用 `scripts/db-sql.mjs` 执行 SQL
+
+```bash
+# 先看目标与 SQL，不发请求
+node scripts/db-sql.mjs --file supabase/migrations/xxx.sql --dry-run
+# 真跑
+node scripts/db-sql.mjs --file supabase/migrations/xxx.sql
+# 临时查询
+node scripts/db-sql.mjs --sql "select count(*) from public.practice_questions"
+```
+
+**走这条路的迁移要另记一笔**：脚本不写 `supabase_migrations.schema_migrations`，GitHub 自动部署会认为它没应用过。要么在执行后补一条 insert，要么在「事实记录」里写明「该迁移未进历史表」。
 
 ## 新增一条迁移的步骤
 
@@ -79,6 +95,19 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-10-28：**核实执行通道，新增 token-only 的 `scripts/db-sql.mjs`**（无库结构改动）。
+  背景：M3 一度需要一次 DDL，当事人不在电脑前，本会话自己去打通。核实结论：
+  ① 本机没有 `sbp_` token，也没有数据库密码（全盘搜过；本文档原「CLI + 数据库密码当前可用」
+  一行是 9 月状态，已更正）；
+  ② 浏览器里也没有可用的登录态——Chrome `Default` 与 Edge `Profile 3` 的 supabase cookie
+  只有 `organization_slug` / `session_id` / `_ga` 这类短值匿名 cookie，**没有 auth token**，
+  localStorage 里也没有 `sb-*-auth-token`；
+  ③ 已安装 supabase CLI 2.122.0，但 **CLI 自身不携带凭据**，`db push` 仍要密码或 token——
+  「装个 CLI」不解决授权；
+  ④ 用假 token 探测 Management API 返回 `401 JWT could not be decoded`，
+  说明端点与 project ref 都正确，**只差一个有效 token**。
+  处置：讲义改为不落库（这次 DDL 本就不必要），并新增 `scripts/db-sql.mjs`。
+  **未完成**：脚本目前只验过 dry-run 与「缺凭据」提示，真正执行路径等一次 `sbp_` token 才能实跑。
 - 2026-10-27：**应用 `20261027160000_add_learning_foundation.sql` 并导入中项主题包**（v4 学习系统 M0）。
   迁移由**产品负责人本人在 Supabase SQL Editor 执行**（本机没有 supabase CLI，也没有数据库密码；
   service_role key 只能走 PostgREST，执行不了 DDL）。导入由本会话用 service_role key 完成。
