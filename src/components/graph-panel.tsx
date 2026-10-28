@@ -110,10 +110,9 @@ export function GraphDrawer({
   }
 
   async function run() {
-    if (!imageDataUrl) {
-      setError("先选一张图。");
-      return;
-    }
+    // 按钮在没图时是 disabled，这里判一手只是为了收窄类型
+    // （`imageDataUrl` 是 string | null，不判的话下面 JSON.stringify 里要再多一层）
+    if (!imageDataUrl) return;
     setBusy(true);
     setError(null);
     setCheck(null);
