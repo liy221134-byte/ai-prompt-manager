@@ -286,3 +286,193 @@ test("同一道题多条记录只留最新一次", () => {
   ]);
   assert.equal(latest.get("Q1")?.correct, true);
 });
+
+// ── 诊断结论接入排题（M4.5） ──────────────────────────────
+//
+// 这一组守的是「诊断与今日计划不是两条线」：
+// 诊断说 L1 过了，今天就不该再从 L1 递题；诊断过期了，就该退回从第一层起。
+// 豁免只改排题，不改事实——所以还要盯住「矩阵里的完成数没被改写」。
+
+test("诊断过了第 1 层，今日从第 2 层起，第 1 层的题不计入剩余", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 1 } },
+  });
+
+  assert.equal(plan.diagnosticApplied, true);
+  assert.equal(plan.focus?.moduleId, "S1");
+  assert.equal(plan.focus?.level, 2, "起点应抬到第 2 层");
+  assert.deepEqual(plan.focus?.questionIds, ["Q3"]);
+  // Q1、Q2 被豁免；剩余是 S1 的 Q3 + S3 的 Q4
+  assert.equal(plan.skippedQuestions, 2);
+  assert.equal(plan.remainingQuestions, 2);
+  // 豁免不是「做完」，完成数保持 0
+  assert.equal(plan.doneQuestions, 0);
+});
+
+test("诊断没过的模块不受影响，仍从第 1 层起", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    // 只判了 S3，S1 一个字没提
+    diagnostic: { takenAt: "2026-10-27", reached: { S3: 3 } },
+  });
+
+  // S1 没有诊断 ⇒ 起点还是第 1 层，今天照旧从 Q1 开始
+  assert.equal(plan.focus?.moduleId, "S1");
+  assert.equal(plan.focus?.level, 1);
+  // 只有 S3 那道第 1 层的题被它自己的诊断豁免
+  assert.equal(plan.skippedQuestions, 1);
+});
+
+test("reached 为 0 说明第 1 层就没过，不豁免任何题", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 0 } },
+  });
+
+  assert.equal(plan.diagnosticApplied, true);
+  assert.equal(plan.skippedQuestions, 0);
+  assert.equal(plan.focus?.level, 1);
+  assert.equal(plan.remainingQuestions, 4);
+  // 生效但一层都没跳时不写说明，免得每次打开都多一行无用信息
+  assert.equal(plan.diagnosticNote, null);
+});
+
+test("诊断超过 30 天不再参与排题，并提示复测", () => {
+  // 2026-09-01 到 2026-10-28 是 57 天
+  const plan = buildDailyPlan({
+    ...BASE,
+    diagnostic: { takenAt: "2026-09-01", reached: { S1: 4 } },
+  });
+
+  assert.equal(plan.diagnosticApplied, false);
+  assert.equal(plan.skippedQuestions, 0);
+  assert.equal(plan.focus?.level, 1, "过期后回落到从第 1 层起");
+  assert.equal(plan.remainingQuestions, 4);
+  assert.match(plan.diagnosticNote ?? "", /复测/);
+});
+
+test("正好满 30 天算在有效期内", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    diagnostic: { takenAt: "2026-09-28", reached: { S1: 1 } },
+  });
+
+  assert.equal(plan.diagnosticApplied, true);
+  assert.equal(plan.focus?.level, 2);
+});
+
+test("判到最高层时整块跳过，练习位置顺延到下一个模块", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 5 } },
+  });
+
+  // S1 的 Q1、Q2、Q3 全在第 5 层以下，整块豁免
+  assert.equal(plan.skippedQuestions, 3);
+  assert.equal(plan.actualModuleId, "S3");
+  assert.equal(plan.focus?.moduleId, "S3");
+  assert.deepEqual(plan.focus?.questionIds, ["Q4"]);
+});
+
+test("整块都被豁免且没有别的模块时，结论是「做完了」而不是空转", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    questions: [
+      { id: "Q1", module_id: "S1", level: 1 },
+      { id: "Q3", module_id: "S1", level: 2 },
+    ],
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 5 } },
+  });
+
+  assert.equal(plan.remainingQuestions, 0);
+  assert.equal(plan.skippedQuestions, 2);
+  assert.equal(plan.focus, null);
+  assert.equal(plan.status, "finished");
+});
+
+test("诊断生效后，没标层级的题仍然不进今日口袋", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    questions: [
+      { id: "Q1", module_id: "S1", level: 1 },
+      { id: "Q9", module_id: "S1", level: null },
+    ],
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 1 } },
+  });
+
+  // Q1 被豁免；Q9 归不进任何一层，不该被塞进「第 2 层」的口袋里冒充
+  assert.equal(plan.skippedQuestions, 1);
+  assert.equal(plan.focus, null);
+});
+
+test("豁免的题不会重复计入「已做」", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    attempts: [{ question_id: "Q1", is_correct: true, created_at: "2026-10-20T09:00:00Z" }],
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 1 } },
+  });
+
+  // Q1 已做对，Q2 被豁免，Q3 在第 2 层（起点）——三者互不重叠
+  assert.equal(plan.doneQuestions, 1);
+  assert.equal(plan.skippedQuestions, 1);
+  assert.equal(plan.focus?.level, 2);
+  assert.equal(plan.remainingQuestions, 2);
+});
+
+test("没有诊断时行为与从前一致", () => {
+  const plan = buildDailyPlan({ ...BASE, diagnostic: null });
+  assert.equal(plan.diagnosticApplied, false);
+  assert.equal(plan.diagnosticNote, null);
+  assert.equal(plan.skippedQuestions, 0);
+  assert.equal(plan.focus?.level, 1);
+});
+
+test("答错过的低层题不被豁免，并且会抢回今天的焦点", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    // Q2 在第 1 层，练习时答错过
+    attempts: [{ question_id: "Q2", is_correct: false, created_at: "2026-10-20T09:00:00Z" }],
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 2 } },
+  });
+
+  // Q1、Q3 没做过且在第 3 层以下 ⇒ 豁免；Q2 是错题，留在必做里
+  assert.equal(plan.skippedQuestions, 2);
+  assert.equal(plan.remainingQuestions, 2);
+  // 焦点必须退回到错题所在的那一层，否则「从第 3 层起找」永远碰不到它
+  assert.equal(plan.focus?.level, 1);
+  assert.deepEqual(plan.focus?.questionIds, ["Q2"]);
+  assert.equal(plan.focus?.hasWrongOnes, true);
+});
+
+test("低层错题补完后，焦点回到起练层，不顺手把低层新题捞回来", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    attempts: [
+      // 低层唯一的错题这次做对了，不再是「该补的」
+      { question_id: "Q2", is_correct: true, created_at: "2026-10-27T09:00:00Z" },
+      { question_id: "Q2", is_correct: false, created_at: "2026-10-20T09:00:00Z" },
+    ],
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 1 } },
+  });
+
+  // Q1 没做过、第 1 层 < 第 2 层 ⇒ 豁免；Q2 最新一次已对 ⇒ 已完成
+  assert.equal(plan.skippedQuestions, 1);
+  assert.equal(plan.doneQuestions, 1);
+  assert.equal(plan.focus?.level, 2);
+  assert.deepEqual(plan.focus?.questionIds, ["Q3"]);
+});
+
+test("已豁免的层里没做过的题不会因为低层有错题而被一起捞回来", () => {
+  const plan = buildDailyPlan({
+    ...BASE,
+    // Q2 在第 1 层答错，说明第 1 层还有坑；Q1 同样在第 1 层但没做过
+    attempts: [{ question_id: "Q2", is_correct: false, created_at: "2026-10-20T09:00:00Z" }],
+    diagnostic: { takenAt: "2026-10-27", reached: { S1: 1 } },
+  });
+
+  // 焦点退回第 1 层，但口袋里只有错题 Q2，没有顺手加进没做过的 Q1
+  assert.equal(plan.focus?.level, 1);
+  assert.deepEqual(plan.focus?.questionIds, ["Q2"]);
+  assert.equal(plan.skippedQuestions, 1, "Q1 仍豁免");
+});

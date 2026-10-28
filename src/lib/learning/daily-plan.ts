@@ -13,10 +13,30 @@ import type { AttemptInput, Level, ModuleInput } from "./matrix";
 // 落后时会算出很大的数，但不该让人一晚上面对 40 道题。
 export const MAX_DAILY_QUESTIONS = 10;
 
+// 诊断结论最多用这么多天。
+//
+// 诊断是一张快照，不是永久标签：基线诊断做在备考初期，半年后还按它排题等于
+// 「拿三个月前的体检报告决定今天吃什么药」。超过这个天数就回落到从第一层起排，
+// 并在页面上说清为什么，而不是悄悄换一套规则。
+export const DIAGNOSTIC_TTL_DAYS = 30;
+
 export type DailyQuestion = {
   id: string;
   module_id: string | null;
   level: number | null;
+};
+
+/**
+ * 诊断结论的排题视图。
+ *
+ * 只带「每个模块判到第几层」，不带原因、不带错题——今日计划要的只是一个起点，
+ * 归因那些是诊断结果卡片的事，混进来会让这个纯函数依赖一堆用不上的字段。
+ */
+export type DailyDiagnostic = {
+  /** 诊断完成时间（ISO 字符串） */
+  takenAt: string;
+  /** 每模块判到第几层。0 表示第 1 层就没过；键缺哪个模块就是没测到 */
+  reached: Record<string, number>;
 };
 
 export type DailyPlanInput = {
@@ -31,6 +51,8 @@ export type DailyPlanInput = {
   endsAt?: string | null;
   /** 每周可投入小时。个人安排，没设就没法判断时间来不来得及 */
   weeklyHours?: number | null;
+  /** 上次诊断结论。没做过就不传，行为与从前一致 */
+  diagnostic?: DailyDiagnostic | null;
   now?: Date;
 };
 
@@ -73,6 +95,12 @@ export type DailyPlan = {
   actualModuleName: string | null;
   doneQuestions: number;
   remainingQuestions: number;
+  /** 被诊断豁免的题数：诊断已证明的层，那些题不计入今日必做 */
+  skippedQuestions: number;
+  /** 诊断结论这次有没有真的参与排题 */
+  diagnosticApplied: boolean;
+  /** 诊断与排题的关系，一句话。没有诊断或诊断完全没影响排题时为 null */
+  diagnosticNote: string | null;
   /** 今天建议做几道 */
   dailyQuota: number;
   focus: DailyFocus | null;
@@ -165,6 +193,28 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
   const latest = latestAttempts(input.attempts);
   const modules = input.modules.slice().sort((a, b) => a.order_index - b.order_index);
 
+  // ── 诊断结论：每个模块今天从哪一层起练 ────────────────
+  //
+  // 语义：reached = N 表示第 N 层及以下已由诊断证明通过 ⇒ 从 N+1 层起练。
+  // 跳过的只是「排题」，不是「事实」——矩阵页的对错统计一概不动，
+  // 这里只决定今天把哪几道题递到手上。
+  const diagnosticDate = input.diagnostic ? toYmdString(input.diagnostic.takenAt) : null;
+  const rawAge = diagnosticDate ? diffDays(diagnosticDate, today) : null;
+  // 日期解析失败会得到 NaN。这里顺手归一成 null，否则后面会写出「已过 NaN 天」。
+  const diagnosticAge = rawAge != null && Number.isFinite(rawAge) ? rawAge : null;
+  // 日期算出来是负数（时区或手改过系统时间）说明就是刚做的，按生效处理，
+  // 不因为差了一天就让整份结论作废。
+  const diagnosticApplied =
+    Boolean(input.diagnostic) && diagnosticAge != null && diagnosticAge <= DIAGNOSTIC_TTL_DAYS;
+
+  const floors = new Map<string, number>();
+  if (diagnosticApplied && input.diagnostic) {
+    for (const [moduleId, reached] of Object.entries(input.diagnostic.reached)) {
+      // 裁到 1—5：reached=0 时仍是第 1 层（没有可跳的），reached=5 时没有第 6 层
+      floors.set(moduleId, Math.min(5, Math.max(1, (Number(reached) || 0) + 1)));
+    }
+  }
+
   // 每题归到哪个模块，以及它算不算「已完成」。
   // 做错过又重做对了，以最新一次为准——错题不是终身标签。
   const byModule = new Map<string, DailyQuestion[]>();
@@ -179,10 +229,31 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
     return Boolean(attempt?.correct);
   };
 
+  /**
+   * 这道题今天算不算「不用做」。
+   *
+   * 只对诊断已证明的层生效，且题目必须标了层级：没标层级的题归不进任何一层，
+   * 宁可多做一道，也不凭空跳过一道——那等于拿「不知道」当「已经会了」。
+   */
+  const isSkipped = (question: DailyQuestion) => {
+    if (!diagnosticApplied || !question.module_id) return false;
+    const floor = floors.get(question.module_id);
+    if (!floor || floor <= 1) return false;
+    if (question.level == null) return false;
+    // 答错过的题不豁免。诊断是抽样结论，错题是确凿发生过的事实——
+    // 两者冲突时以错题为准：诊断说这层整体过了，但这一道确实错了，
+    // 恰恰是没过的地方，把它一起跳掉等于把最该复的题藏起来。
+    const attempt = latest.get(question.id);
+    if (attempt && !attempt.correct) return false;
+    return question.level < floor;
+  };
+
   let doneQuestions = 0;
   let remainingQuestions = 0;
+  let skippedQuestions = 0;
   for (const question of input.questions) {
     if (isDone(question.id)) doneQuestions += 1;
+    else if (isSkipped(question)) skippedQuestions += 1;
     else remainingQuestions += 1;
   }
 
@@ -201,12 +272,13 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
   }
 
   // ── 练习位置 ──────────────────────────────────────────
-  // 第一个还有未做题的模块。做题顺序从低层到高层，模块做完才往后走。
+  // 第一个还有「真该做」的题的模块。做题顺序从低层到高层，模块做完才往后走。
+  // 判的是「未做 且 未被诊断豁免」：整块都被豁免的模块等于今天没活，该往后走。
   let actualModule: ModuleInput | null = null;
-  for (const module of modules) {
-    const pool = byModule.get(module.id) ?? [];
-    if (pool.some((q) => !isDone(q.id))) {
-      actualModule = module;
+  for (const currentModule of modules) {
+    const pool = byModule.get(currentModule.id) ?? [];
+    if (pool.some((q) => !isDone(q.id) && !isSkipped(q))) {
+      actualModule = currentModule;
       break;
     }
   }
@@ -217,13 +289,33 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
 
   if (actualModule) {
     const pool = (byModule.get(actualModule.id) ?? []).slice().sort((a, b) => a.id.localeCompare(b.id));
-    const moduleRemaining = pool.filter((q) => !isDone(q.id)).length;
+    const moduleRemaining = pool.filter((q) => !isDone(q.id) && !isSkipped(q)).length;
     const range = dayRanges.get(actualModule.id);
     // 模块的日历窗口已经走完时，按「今天必须补完」算，配额顶到上限
     const daysLeftInModule = range ? Math.max(1, range.end - dayIndex + 1) : Math.max(1, daysLeft ?? 1);
     dailyQuota = Math.min(MAX_DAILY_QUESTIONS, Math.max(1, Math.ceil(moduleRemaining / daysLeftInModule)));
 
+    // 诊断说这一块已经过了几层，就从下一层起找题。
+    // 只有「这一块有诊断」才抬高起点，别的模块照旧从第 1 层起。
+    const startLevel = floors.get(actualModule.id) ?? 1;
+
+    // 起练层以下还压着答错过的题：它们不豁免（见 isSkipped），
+    // 所以焦点得能退回那一层，否则永远是「从第 3 层起找、错题在第 1 层、一辈子轮不到」。
+    const owedWrongLevels = pool
+      .filter((q) => !isDone(q.id) && q.level != null && q.level < startLevel)
+      .filter((q) => {
+        const attempt = latest.get(q.id);
+        return Boolean(attempt) && !attempt!.correct;
+      })
+      .map((q) => q.level as number);
+    const fromLevel = (owedWrongLevels.length > 0
+      ? Math.min(...owedWrongLevels)
+      : startLevel) as Level;
+
     for (const level of [1, 2, 3, 4, 5] as Level[]) {
+      if (level < fromLevel) continue;
+      // 没标层级的题仍然不进口袋：层号是「今天在练第几层」的唯一依据，
+      // 把归不进层级的题混进来，这个层号就说不清是什么了。
       const inLevel = pool.filter((q) => q.level === level);
       if (inLevel.length === 0) continue;
 
@@ -231,7 +323,8 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
         const attempt = latest.get(q.id);
         return Boolean(attempt) && !attempt!.correct;
       });
-      const fresh = inLevel.filter((q) => !latest.has(q.id));
+      // 起练层以下只收错题：那一层没做过的题已被诊断豁免，不能顺着一起捞回来
+      const fresh = level < startLevel ? [] : inLevel.filter((q) => !latest.has(q.id));
       if (wrong.length + fresh.length === 0) continue;
 
       focus = {
@@ -251,11 +344,11 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
   // 它只用来说明「按现在的推进速度，剩下的时间够不够」。
   let hoursCovered = 0;
   if (input.totalHours) {
-    for (const module of modules) {
-      const pool = byModule.get(module.id) ?? [];
-      const planned = module.planned_hours ?? 0;
+    for (const currentModule of modules) {
+      const pool = byModule.get(currentModule.id) ?? [];
+      const planned = currentModule.planned_hours ?? 0;
       if (planned <= 0 || pool.length === 0) continue;
-      const done = pool.filter((q) => isDone(q.id)).length;
+      const done = pool.filter((q) => isDone(q.id) || isSkipped(q)).length;
       hoursCovered += planned * (done / pool.length);
     }
   }
@@ -300,6 +393,20 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
       (weeklyHoursNeeded != null ? `；要赶上每周得投约 ${weeklyHoursNeeded} 小时` : "");
   }
 
+  // ── 诊断与排题的关系，说清一句 ────────────────────────
+  // 只说两种会改变行为的情况：跳题、过期。诊断生效但一层都没跳时不写，
+  // 否则每次打开都多一行无信息量的说明。
+  let diagnosticNote: string | null = null;
+  if (diagnosticApplied && skippedQuestions > 0) {
+    diagnosticNote =
+      `按 ${diagnosticDate} 的诊断，已通过的层有 ${skippedQuestions} 道没做过的题不再计入今日必做` +
+      "（矩阵里照样看得见，想巩固随时能做）。";
+  } else if (input.diagnostic && !diagnosticApplied && diagnosticAge != null) {
+    diagnosticNote =
+      `上次诊断是 ${diagnosticDate}，已经 ${diagnosticAge} 天，排题先回到从第一层起；` +
+      "建议做完这一轮再复测一次。";
+  }
+
   return {
     startedAt,
     endsAt,
@@ -312,6 +419,9 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
     actualModuleName: actualModule?.name ?? null,
     doneQuestions,
     remainingQuestions,
+    skippedQuestions,
+    diagnosticApplied,
+    diagnosticNote,
     dailyQuota,
     focus,
     hoursNeeded,

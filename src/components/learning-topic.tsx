@@ -348,10 +348,18 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
   const daysToExam = topic?.deadline ? daysUntil(topic.deadline) : null;
 
+  // 上次诊断的结论，先解析出来给今日计划用。
+  // 放在今日计划之前是刻意的：读到哪一层决定今天从哪一层起练，
+  // 两者是同一件事的两半，中间夹别的逻辑会让人以为它们无关。
+  const storedDiagnostic = useMemo(() => readStoredDiagnostic(lastDiagnostic), [lastDiagnostic]);
+
   // 今日计划：把工时和天数压成「今天做这几道」。
   //
   // 起点用个人目标的 started_at（启用那天），终点用 target_date（打算哪次考），
   // 都留空时由 buildDailyPlan 兜底成「今天起、无终点」——不猜一个日期出来。
+  //
+  // 诊断结论在这里只传「每模块判到第几层」：它把起点从第一层抬到「刚卡住的那层」。
+  // 有效期与豁免规则都在 buildDailyPlan 里判，这一层不重复实现一遍策略。
   const plan = useMemo(
     () =>
       buildDailyPlan({
@@ -365,8 +373,20 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         startedAt: goal?.started_at ?? null,
         endsAt: goal?.target_date ?? topic?.deadline ?? null,
         weeklyHours: goal?.weekly_hours ?? null,
+        diagnostic: storedDiagnostic
+          ? {
+              takenAt: storedDiagnostic.takenAt,
+              // 只收认得出模块、且确实判过的条目。moduleId 为空串的老数据丢掉，
+              // 否则会以空键进 map，永远匹配不上任何题目，等于白算一遍。
+              reached: Object.fromEntries(
+                storedDiagnostic.modules
+                  .filter((module) => module.moduleId)
+                  .map((module) => [module.moduleId, module.reached]),
+              ),
+            }
+          : null,
       }),
-    [rows, questions, attempts, topic, goal],
+    [rows, questions, attempts, topic, goal, storedDiagnostic],
   );
 
   /**
@@ -512,8 +532,6 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     () => Array.from(new Set(diagnosticPreview.gaps.map((gap) => gap.level))).sort(),
     [diagnosticPreview],
   );
-
-  const storedDiagnostic = useMemo(() => readStoredDiagnostic(lastDiagnostic), [lastDiagnostic]);
 
   function startDiagnostic() {
     if (diagnosticPreview.items.length === 0) return;
@@ -971,6 +989,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             )}
 
             <p className={`mt-3 text-sm ${STATUS_STYLE[plan.status]}`}>{plan.headline}</p>
+
+            {/* 诊断影响排题时只说一句。不说清的话，「还剩 X 道」突然变少会像丢题。 */}
+            {plan.diagnosticNote ? (
+              <p className="mt-1.5 text-xs leading-5 text-slate-500">{plan.diagnosticNote}</p>
+            ) : null}
 
             {goal && !goal.is_focus ? (
               <p className="mt-1.5 text-xs leading-5 text-amber-700">

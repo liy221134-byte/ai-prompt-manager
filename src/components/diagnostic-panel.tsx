@@ -24,7 +24,7 @@ type LevelLabels = Record<Level, string>;
 export function readStoredDiagnostic(stored: StoredDiagnostic | null): {
   headline: string;
   takenAt: string;
-  modules: Array<{ moduleName: string; reached: number; stopped: string }>;
+  modules: Array<{ moduleId: string; moduleName: string; reached: number; stopped: string }>;
 } | null {
   if (!stored || !stored.result || typeof stored.result !== "object") return null;
 
@@ -46,6 +46,9 @@ export function readStoredDiagnostic(stored: StoredDiagnostic | null): {
         if (!moduleName) return [];
         return [
           {
+            // moduleId 是今日计划按模块取层级用的。老数据万一没这个键，
+            // 留空串——今日计划那边认不出就跳过该模块，不会错配到别的模块上。
+            moduleId: typeof entry.moduleId === "string" ? entry.moduleId : "",
             moduleName,
             reached: Number(entry.reached) || 0,
             stopped: describeStopRaw(entry.stoppedAt),

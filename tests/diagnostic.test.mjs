@@ -175,9 +175,9 @@ test("连续全对：reached 到最后一层，stoppedAt 为 null", () => {
   const paper = buildDiagnosticPaper(MODULES, makeQuestions());
   const inference = inferLevels(MODULES, paper, answerAll(paper, {}));
 
-  for (const module of inference.modules) {
-    assert.equal(module.reached, 5);
-    assert.equal(module.stoppedAt, null);
+  for (const verdict of inference.modules) {
+    assert.equal(verdict.reached, 5);
+    assert.equal(verdict.stoppedAt, null);
   }
 });
 
@@ -216,9 +216,9 @@ test("整卷都没可判分的题：结论要说「补题」，不是「你不�
 
   assert.equal(inference.total, 0);
   assert.equal(inference.gapCount, 10);
-  for (const module of inference.modules) {
-    assert.equal(module.measurable, false);
-    assert.deepEqual(module.stoppedAt, { level: 1, reason: "no-question" });
+  for (const verdict of inference.modules) {
+    assert.equal(verdict.measurable, false);
+    assert.deepEqual(verdict.stoppedAt, { level: 1, reason: "no-question" });
   }
   assert.ok(inference.headline.includes("补题目"), "结论要指向题库缺口，不是人的能力");
 });
