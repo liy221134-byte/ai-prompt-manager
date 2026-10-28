@@ -68,6 +68,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [零代码交付线 M0：设计 + 任务清单（2026-09-30，待确认）](superpowers/specs/2026-09-30-v3-m0-design-and-tasks.md)
 - [v4 学习系统 M0：数据地基设计与任务清单（2026-10-27，已执行）](superpowers/specs/2026-10-27-v4-m0-learning-foundation-design-and-tasks.md)
 - [v4 学习系统 M1：按「模块 × 层级」出题设计与任务清单（2026-10-27，已执行）](superpowers/specs/2026-10-27-v4-m1-module-level-practice-design-and-tasks.md)
+- [**v4 学习系统 M2.6：周节奏（阶段与里程碑）设计与任务清单（2026-10-28，待确认，待编码会话执行）**](superpowers/specs/2026-10-28-v4-m2-6-week-phases-design-and-tasks.md)
 - [线索 3 采集台账：当前交互路径、用户故事与 M2.2 评估（对着代码现状写）](leads/leads-3-ledger-paths-and-m2.2.md)
 - [线索 3 M2.2 需求草案：采集产出自动落库（待确认）](leads/leads-3-m2-2-requirements-draft.md)
 - [采集任务怎么回流到采集台账（产出件格式 + 实测 + 三处发现）](leads/leads-3-collection-roundtrip.md)
@@ -199,6 +200,7 @@ superpowers 来源借来的，含义是「本项目的设计文档」，不是�
 - [v4 学习系统 M2 验收清单（多学习目标，阶梯随目标走，含两个真错修复）](acceptance/v4-m2.md)
 - [v4 学习系统 M2.5 验收清单（今日计划 + 目标设置，含每周投入是否够的结论）](acceptance/v4-m25.md)
 - [v4 学习系统 M3 验收清单（知识点讲义：三入口实测，讲义不进数据库）](acceptance/v4-m3.md)
+- [v4 学习系统 M4 验收清单（诊断闭环：24 题整卷，层级由规则判、AI 只做归因）](acceptance/v4-m4.md)
 
 ### 云端部署
 

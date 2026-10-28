@@ -107,6 +107,10 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
   在 9 条不带 `if not exists` 的 `create policy` 处报错。已 insert 两行（`created_by='manual-backfill'`），
   现存 12 个文件与库内 12 条记录**双向无差异**，自动部署这条路恢复可用。
   ④ 事实：中项题库线上 **118 题**（84 单选 + 34 实操）、知识点 29、主题 1。
+- 2026-10-28（M4）：**`learning_diagnostics.kind` 只允许 `baseline` / `module_gate` / `retest`**。
+  写诊断结论时用了自己编的 `initial`，被 `learning_diagnostics_kind_check` 直接拒绝。
+  教训：查库结构不能只查列、索引和 RLS，**CHECK 约束也是结构**——
+  `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid='public.<表>'::regclass`。
 - 2026-10-28：**核实执行通道，新增 token-only 的 `scripts/db-sql.mjs`**（无库结构改动）。
   背景：M3 一度需要一次 DDL，当事人不在电脑前，本会话自己去打通。核实结论：
   ① 本机没有 `sbp_` token，也没有数据库密码（全盘搜过；本文档原「CLI + 数据库密码当前可用」
