@@ -43,6 +43,7 @@ import {
   buildPracticeMatrix,
   daysUntil,
   upcomingMilestones,
+  LEVELS,
   type AttemptInput,
   type Level,
   type MatrixRow,
@@ -1319,7 +1320,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
                 <thead>
                   <tr className="border-b-2 border-slate-300">
                     <th className="py-2 pr-3 text-left font-semibold text-slate-600">内容模块</th>
-                    {([1, 2, 3, 4, 5] as Level[]).map((lv) => (
+                    {LEVELS.map((lv) => (
                       <th key={lv} className="px-2 py-2 text-center font-semibold text-slate-600">
                         {levelLabels[lv]}
                       </th>
@@ -1336,7 +1337,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
                           {row.module.expected_gap ? ` · 预判缺口 ${row.module.expected_gap}` : ""}
                         </div>
                       </td>
-                      {([1, 2, 3, 4, 5] as Level[]).map((lv) => {
+                      {LEVELS.map((lv) => {
                         const cell = row.cells[lv];
                         if (cell.total === 0) {
                           return (

@@ -8,7 +8,8 @@
 
 import { useState } from "react";
 
-import type { DiagnosticInference, Level, StopReason } from "@/lib/learning/diagnostic";
+import type { DiagnosticInference, StopReason } from "@/lib/learning/diagnostic";
+import type { Level } from "@/lib/learning/matrix";
 import type { DiagnosticAdvice } from "@/lib/learning/diagnostic-prompt";
 
 /** 一次已保存的诊断。result 是 jsonb，形状由 diagnostic.ts 的 payload 决定 */

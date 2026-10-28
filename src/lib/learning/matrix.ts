@@ -49,7 +49,14 @@ export type MatrixRow = {
   unleveled: number;
 };
 
-const LEVELS: Level[] = [1, 2, 3, 4, 5];
+/**
+ * 五层的层号。
+ *
+ * 全项目只在这里写一次。之前 `matrix` 与 `diagnostic` 各定义一份，
+ * 另有四处直接写 `[1, 2, 3, 4, 5]` 字面量——哪天要加第六层，改不全就会
+ * 变成「矩阵显示五层、诊断抽六层」这种最难查的错。
+ */
+export const LEVELS: Level[] = [1, 2, 3, 4, 5];
 
 /**
  * 五层的显示名，按主题自带的阶梯定义来（M2 起）。
@@ -157,18 +164,24 @@ function isInvalidLevel(level: number): boolean {
 }
 
 /**
- * 两个日期之间差几个自然日（正数表示目标在未来）。
+ * 两个日期之间差几个自然日（`to - from`，正数表示后者在后）。
  *
  * 刻意不按 24 小时算：考试日、报名日都是「哪一天」，不是「多少小时后」。
  * 纯日期字符串取字面值（"2027-03-20" 就是 3 月 20 日，不受时区影响）；
  * Date 对象取本地日期。
+ *
+ * 全项目只有这一份「算差几天」。今日计划原先自己写了一份同样的取整除法，
+ * 两处的边界（跨月、跨年、夏令时）各自为政，一处改了一处没改就会算出不同的天数。
  */
+export function daysBetween(from: Date | string, to: Date | string): number {
+  const [fy, fm, fd] = toYmd(from);
+  const [ty, tm, td] = toYmd(to);
+  return Math.round((Date.UTC(ty, tm, td) - Date.UTC(fy, fm, fd)) / 86_400_000);
+}
+
+/** 目标日还有几天（负数是已经过了）。`to - now` 的简写，保持调用处读起来是句人话。 */
 export function daysUntil(target: Date | string, now: Date = new Date()): number {
-  const [ty, tm, td] = toYmd(target);
-  const [ny, nm, nd] = [now.getFullYear(), now.getMonth(), now.getDate()];
-  const targetUtc = Date.UTC(ty, tm, td);
-  const nowUtc = Date.UTC(ny, nm, nd);
-  return Math.round((targetUtc - nowUtc) / 86_400_000);
+  return daysBetween(now, target);
 }
 
 function toYmd(value: Date | string): [number, number, number] {

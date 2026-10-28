@@ -4,18 +4,12 @@ import {
   buildAiExtractionMessages,
   normalizeExtractedPrompt,
 } from "../../../../lib/prompt-ai";
+import { AiCallError, callChat } from "../../../../lib/ai-chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-type ChatCompletionResponse = {
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
-  }>;
-};
 
 function createErrorResponse(message: string, status: number) {
   return Response.json({ error: message }, { status });
@@ -54,54 +48,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiBaseUrl = process.env.AI_API_BASE_URL?.replace(/\/$/, "");
-  const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL;
-
-  if (!apiBaseUrl || !apiKey || !model) {
-    return createErrorResponse(
-      "AI 服务尚未配置，请先设置 AI_API_BASE_URL、AI_API_KEY 和 AI_MODEL。",
-      503,
-    );
-  }
-
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), 50000);
-
   try {
-    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        messages: buildAiExtractionMessages(rawText),
-      }),
-      signal: abortController.signal,
+    const content = await callChat({
+      messages: buildAiExtractionMessages(rawText),
+      temperature: 0.2,
+      label: "提示词识别",
     });
-
-    if (!response.ok) {
-      console.error("AI 服务返回错误", response.status);
-      return createErrorResponse("AI 服务调用失败，请稍后重试。", 502);
-    }
-
-    const responseBody = (await response.json()) as ChatCompletionResponse;
-    const content = responseBody.choices?.[0]?.message?.content;
-
-    if (!content) {
-      return createErrorResponse("AI 没有返回可用内容。", 502);
-    }
-
-    return Response.json({
-      draft: normalizeExtractedPrompt(content),
-    });
+    return Response.json({ draft: normalizeExtractedPrompt(content) });
   } catch (error) {
-    console.error("AI 提示词识别失败", error);
-    return createErrorResponse("AI 识别超时或网络连接失败。", 502);
-  } finally {
-    clearTimeout(timeout);
+    if (error instanceof AiCallError) {
+      return createErrorResponse(error.message, error.status);
+    }
+    console.error("AI 提示词识别结果格式错误", error);
+    return createErrorResponse("AI 识别结果格式错误，请重试。", 502);
   }
 }

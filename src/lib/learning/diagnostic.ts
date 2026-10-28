@@ -18,9 +18,10 @@
 //      - "unanswered" ——卷子没做完。同样是「没测」。
 //    把后两种当成「不会」，等于把题库的缺口算在人的头上。这是这一版最容易犯、也最伤人的错。
 
-export type Level = 1 | 2 | 3 | 4 | 5;
+// 层号与层级类型统一由 matrix 提供。这里原先自己定义了一遍 `Level` 和
+// `DIAGNOSTIC_LEVELS`，与 matrix 的 `Level` / `LEVELS` 完全同义——两份定义迟早会分叉。
 
-export const DIAGNOSTIC_LEVELS: Level[] = [1, 2, 3, 4, 5];
+import { LEVELS, type Level } from "./matrix.ts";
 
 /**
  * 能判对错的题型。
@@ -100,7 +101,7 @@ export function buildDiagnosticPaper(
   const gaps: DiagnosticPaper["gaps"] = [];
 
   for (const currentModule of ordered) {
-    for (const level of DIAGNOSTIC_LEVELS) {
+    for (const level of LEVELS) {
       const candidates = questions
         .filter(
           (question) =>
@@ -197,7 +198,7 @@ export function inferLevels(
     const repeatedLevels: Level[] = [];
     let stoppedAt: ModuleVerdict["stoppedAt"] = null;
 
-    for (const level of DIAGNOSTIC_LEVELS) {
+    for (const level of LEVELS) {
       const slot = byModuleLevel.get(`${currentModule.id}::${level}`);
       // 模块不在卷子里（例如新建了模块还没出题）：整块算没测
       if (!slot || !slot.questionId) {

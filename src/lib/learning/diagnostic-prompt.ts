@@ -6,6 +6,8 @@
 // 做不了这种地基。归因不一样——「你卡在把输入当成输出的那一步」这种判断，
 // 规则写不出来，模型写得好，而且人一看就能否掉，错了也不污染地基。
 
+import { LEVELS } from "./matrix.ts";
+
 export type LevelDefinitionItem = {
   level: number;
   name: string;
@@ -54,7 +56,7 @@ export type DiagnosticAdvice = {
 
 /** 把 level_definition 归一成可用形态；读不到就退化成 L1—L5，不硬编造判据 */
 export function normalizeLevelDefinition(definition: unknown): LevelDefinitionItem[] {
-  const fallback: LevelDefinitionItem[] = [1, 2, 3, 4, 5].map((level) => ({
+  const fallback: LevelDefinitionItem[] = LEVELS.map((level) => ({
     level,
     name: `L${level}`,
   }));

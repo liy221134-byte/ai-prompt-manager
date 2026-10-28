@@ -7,7 +7,7 @@
 //   · 练习位置——实际练到哪个模块。
 // 两者一对照就知道是落后还是超前，不用编一个假工时。
 
-import type { AttemptInput, Level, ModuleInput } from "./matrix";
+import { LEVELS, daysBetween, type AttemptInput, type Level, type ModuleInput } from "./matrix.ts";
 
 // 一天最多建议这么多道。配额按「模块剩余题 ÷ 模块剩余天数」算，
 // 落后时会算出很大的数，但不该让人一晚上面对 40 道题。
@@ -138,13 +138,6 @@ function toYmdString(value: Date | string): string {
   return `${y}-${m}-${d}`;
 }
 
-/** 两个日期差几个自然日。与 matrix.ts 的 daysUntil 同一口径，这里只接受已规范化的日期 */
-function diffDays(from: string, to: string): number {
-  const [fy, fm, fd] = from.split("-").map(Number);
-  const [ty, tm, td] = to.split("-").map(Number);
-  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
-}
-
 /**
  * 把总天数按工时占比摊给各模块，得出每个模块占第几天到第几天。
  *
@@ -186,9 +179,9 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
   const startedAt = input.startedAt ? toYmdString(input.startedAt) : today;
   const endsAt = input.endsAt ? toYmdString(input.endsAt) : null;
 
-  const totalDays = endsAt ? diffDays(startedAt, endsAt) : null;
-  const daysLeft = endsAt ? diffDays(today, endsAt) : null;
-  const dayIndex = Math.max(1, diffDays(startedAt, today) + 1);
+  const totalDays = endsAt ? daysBetween(startedAt, endsAt) : null;
+  const daysLeft = endsAt ? daysBetween(today, endsAt) : null;
+  const dayIndex = Math.max(1, daysBetween(startedAt, today) + 1);
 
   const latest = latestAttempts(input.attempts);
   const modules = input.modules.slice().sort((a, b) => a.order_index - b.order_index);
@@ -199,7 +192,7 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
   // 跳过的只是「排题」，不是「事实」——矩阵页的对错统计一概不动，
   // 这里只决定今天把哪几道题递到手上。
   const diagnosticDate = input.diagnostic ? toYmdString(input.diagnostic.takenAt) : null;
-  const rawAge = diagnosticDate ? diffDays(diagnosticDate, today) : null;
+  const rawAge = diagnosticDate ? daysBetween(diagnosticDate, today) : null;
   // 日期解析失败会得到 NaN。这里顺手归一成 null，否则后面会写出「已过 NaN 天」。
   const diagnosticAge = rawAge != null && Number.isFinite(rawAge) ? rawAge : null;
   // 日期算出来是负数（时区或手改过系统时间）说明就是刚做的，按生效处理，
@@ -312,7 +305,7 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
       ? Math.min(...owedWrongLevels)
       : startLevel) as Level;
 
-    for (const level of [1, 2, 3, 4, 5] as Level[]) {
+    for (const level of LEVELS) {
       if (level < fromLevel) continue;
       // 没标层级的题仍然不进口袋：层号是「今天在练第几层」的唯一依据，
       // 把归不进层级的题混进来，这个层号就说不清是什么了。

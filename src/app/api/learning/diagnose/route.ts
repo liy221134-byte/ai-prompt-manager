@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "../../../../lib/supabase/server";
 import { isSupabaseDataMode } from "../../../../lib/server/runtime-config";
+import { AiCallError, callChat } from "../../../../lib/ai-chat";
 import {
   buildDiagnosticMessages,
   normalizeDiagnosticAdvice,
@@ -9,14 +10,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-type ChatCompletionResponse = {
-  choices?: Array<{ message?: { content?: string } }>;
-};
-
-function createErrorResponse(message: string, status: number) {
-  return Response.json({ error: message }, { status });
-}
 
 /**
  * 诊断归因：整卷答完后调一次。
@@ -36,7 +29,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return createErrorResponse("登录状态已失效，请重新登录。", 401);
+      return Response.json({ error: "登录状态已失效，请重新登录。" }, { status: 401 });
     }
   }
 
@@ -44,71 +37,31 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return createErrorResponse("请求内容不是有效的 JSON。", 400);
+    return Response.json({ error: "请求内容不是有效的 JSON。" }, { status: 400 });
   }
 
   const validation = validateDiagnosticRequest(body);
   if (!validation.ok) {
-    return createErrorResponse(validation.error, 400);
+    return Response.json({ error: validation.error }, { status: 400 });
   }
-
-  const apiBaseUrl = process.env.AI_API_BASE_URL?.replace(/\/$/, "");
-  const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL;
-
-  if (!apiBaseUrl || !apiKey || !model) {
-    return createErrorResponse(
-      "AI 服务尚未配置，请先设置 AI_API_BASE_URL、AI_API_KEY 和 AI_MODEL。",
-      503,
-    );
-  }
-
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), 50000);
-  let content: string | undefined;
 
   try {
-    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        // 归因要的是稳定而不是创意：同一份作答跑两次，结论不该大变
-        temperature: 0.2,
-        messages: buildDiagnosticMessages(validation.value),
-      }),
-      signal: abortController.signal,
+    const content = await callChat({
+      messages: buildDiagnosticMessages(validation.value),
+      // 归因要的是稳定而不是创意：同一份作答跑两次，结论不该大变
+      temperature: 0.2,
+      label: "诊断归因",
     });
-
-    if (!response.ok) {
-      console.error("诊断归因调用 AI 失败", response.status);
-      return createErrorResponse("AI 服务调用失败，请稍后重试。", 502);
-    }
-
-    const responseBody = (await response.json()) as ChatCompletionResponse;
-    content = responseBody.choices?.[0]?.message?.content;
-  } catch (error) {
-    console.error("诊断归因调用异常", error);
-    return createErrorResponse("AI 归因超时或网络连接失败。", 502);
-  } finally {
-    clearTimeout(timeout);
-  }
-
-  if (!content) {
-    return createErrorResponse("AI 没有返回可用内容。", 502);
-  }
-
-  try {
     const advice = normalizeDiagnosticAdvice(
       content,
       validation.value.modules.map((module) => module.moduleId),
     );
     return Response.json({ advice });
   } catch (error) {
+    if (error instanceof AiCallError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     console.error("诊断归因结果格式错误", error);
-    return createErrorResponse("AI 归因结果格式错误，可以先用规则结论。", 502);
+    return Response.json({ error: "AI 归因结果格式错误，可以先用规则结论。" }, { status: 502 });
   }
 }

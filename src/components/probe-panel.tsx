@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { DrawerShell } from "@/components/drawer-shell";
 import {
   MAX_PROBE_ROUNDS,
   countMyAnswers,
@@ -135,23 +136,6 @@ export function ProbeDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Esc 关闭 + 锁背景滚动，与讲义抽屉同一套做法
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
-
   function submitAnswer() {
     const text = draft.trim();
     if (!text || busy) return;
@@ -193,28 +177,12 @@ export function ProbeDrawer({
   const remaining = Math.max(0, MAX_PROBE_ROUNDS - answered);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/30" onClick={onClose}>
-      <div
-        className="flex h-full w-full max-w-2xl flex-col border-l border-slate-200 bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">讲讲为什么错</h2>
-            <p className="mt-0.5 text-xs text-slate-400">
-              {question.title.length > 46 ? `${question.title.slice(0, 46)}…` : question.title}
-            </p>
-          </div>
-          <button
-            className="shrink-0 rounded px-2 py-1 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
-            onClick={onClose}
-            type="button"
-          >
-            关闭
-          </button>
-        </header>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+    <DrawerShell
+      onClose={onClose}
+      subtitle={question.title.length > 46 ? `${question.title.slice(0, 46)}…` : question.title}
+      title="讲讲为什么错"
+    >
+      <div className="space-y-4">
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
             {restored
               ? "这是上次的追问记录。想再问一遍就点下面的「重新追问这道题」。"
@@ -422,8 +390,7 @@ export function ProbeDrawer({
               </div>
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </DrawerShell>
   );
 }

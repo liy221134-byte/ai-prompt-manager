@@ -6,8 +6,9 @@
 // 检查结果只以清单形式摆在旁边，改不改由人在输入框里自己敲。
 // 一旦提供采纳按钮，这张纸就变成 AI 写的，也就失去「检验我会不会」的作用（PRD 第 7 条）。
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { DrawerShell } from "@/components/drawer-shell";
 import {
   SHEET_SECTIONS,
   describeProgress,
@@ -102,22 +103,6 @@ export function SheetDrawer({
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
-
   async function save() {
     setSaving(true);
     setSaveError(null);
@@ -160,29 +145,13 @@ export function SheetDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/30" onClick={onClose}>
-      <div
-        className="flex h-full w-full max-w-3xl flex-col border-l border-slate-200 bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">{moduleName}</h2>
-            <p className="mt-0.5 text-xs text-slate-400">
-              六段都空着也能存。先写你记得的，写完让 AI 看漏了没有。
-            </p>
-          </div>
-          <button
-            className="shrink-0 rounded px-2 py-1 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
-            onClick={onClose}
-            type="button"
-          >
-            关闭
-          </button>
-        </header>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <div className="space-y-4">
+    <DrawerShell
+      onClose={onClose}
+      subtitle="六段都空着也能存。先写你记得的，写完让 AI 看漏了没有。"
+      title={moduleName}
+      widthClassName="max-w-3xl"
+    >
+      <div className="space-y-4">
             {SHEET_SECTIONS.map((section) => (
               <label key={section.key} className="block">
                 <span className="flex flex-wrap items-baseline gap-2">
@@ -241,10 +210,8 @@ export function SheetDrawer({
                 <ReviewList label="建议补" items={review.suggest} emptyText="暂时没有建议" />
               </div>
             ) : null}
-          </div>
-        </div>
       </div>
-    </div>
+    </DrawerShell>
   );
 }
 
