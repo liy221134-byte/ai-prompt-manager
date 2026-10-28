@@ -178,7 +178,7 @@ level_definition:
 | `parent` | string \| null | ✅ | 上级知识点 id，可空。**只用于错题向上归因，不要求每层都填** |
 | `name` | string | ✅ | 知识点名 |
 | `ref` | string |  | 教材章节，如「第13章」 |
-| `note` | object |  | 讲义。**可选**——没写就是「讲义待补」，页面显示成灰字，不影响导入 |
+| `note` | object |  | 讲义。**可选**——没写就是「讲义待补」，页面显示成灰字，不影响导入。**只存在主题包里，不落库**（见本节末） |
 | `note.summary` | string | ✅（写 note 时） | 一句话定义，≤ 60 字。超过上限会被拒：这里放的是「一句话」，写长就是摘要 |
 | `note.body` | string | ✅（写 note 时） | 讲义正文（markdown）。**固定含三段：`### 要素` `### 例题` `### 怎么考`**，缺一段直接拒 |
 
@@ -196,6 +196,19 @@ level_definition:
 校验器只查小标题在不在，不规定每段多少字——长度交给写的人判断，机器去管它只会逼出凑字数的填充段。
 
 **讲义是渐进补的**：中项 29 个知识点现在只有 S1 的 5 份有。导入器允许 `note` 缺省，是为了不必等 29 份写完才能导一次。
+
+**讲义不进数据库**（2026-10-28 晚定，取代原先「加两列」的做法）。`knowledge_points` 表里没有 `summary` / `note_md` 列，也没打算加：
+
+| | 存数据库 | 编译成常量（现方案） |
+| --- | --- | --- |
+| 真源 | 库里一份 + 主题包一份，**两份要对齐** | 主题包一份 |
+| 改讲义后 | 要重导一次库，漏了就是页面显示旧内容且看不出异常 | 改 yaml → `npm run gen:topic-notes` → 提交 |
+| 运行时 | 一次查询（本来就要查知识点，讲义顺带） | 零请求，随 bundle 走 |
+| 迁移依赖 | 要一次 DDL | 无 |
+
+判据是「它是什么」：讲义是随主题包分发的**静态内容**，有读无写，不参与判分也不参与统计。给只读内容建副本，等于给自己多养一份必须同步的真源。
+
+实现：`scripts/build-topic-notes.mjs` 扫 `docs/learning/topics/*.yaml`，生成 `src/lib/learning/topic-notes.generated.ts`；前端经 `src/lib/learning/topic-notes.ts` 取用。生成物与主题包不一致时 `npm run check:topic-notes` 与 `tests/topic-notes.test.mjs` 都会拦下。
 
 ### 3.4 `question_policy`
 

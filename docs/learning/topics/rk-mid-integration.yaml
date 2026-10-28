@@ -10,7 +10,8 @@
 #
 schema_version: 2.1
 # 2（2026-10-28，M2 多目标）：加 topic.kind，标明这是考试型目标。
-# 2.1（2026-10-28，M3 讲义）：knowledge_points 加可选 note（summary + body）。
+# 2.1（2026-10-28，M3 讲义）：knowledge_points[] 加可选 note 字段（summary + body）。
+#    讲义只存在主题包里，不写数据库——由 scripts/build-topic-notes.mjs 编译成前端常量。
 #    S1 的五个知识点已带讲义；其余模块陆续补，导入器允许 note 缺省，
 #    所以存量知识点没有讲义不影响整份主题包导入。
 #   阶梯定义不写进本文件，按 kind 取内置 exam 模板——与 v1 的五层定义是同一套判据，
