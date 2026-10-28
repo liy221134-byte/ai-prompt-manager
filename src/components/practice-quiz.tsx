@@ -3,10 +3,17 @@
 import { useMemo, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
+import {
+  resolveMultiAnswer,
+  resolveSingleAnswer,
+  sameTerms,
+} from "@/lib/practice/answer";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 // 题库答题组件的数据结构。type 字段由迁移 20260929000000_add_practice_type 提供，
 // 取值：单选 / 多选 / 判断 / 实操。多选的 answer 存成 JSON 数组字符串（如 '["A","C"]'）。
+// answer 的写法有两套存量口径：早期主题存选项全文，中项主题存 A/B/C/D 字母。
+// 判分前一律经 lib/practice/answer.ts 归一成选项全文再比较。
 export type QuizQuestion = {
   id: string;
   asset_id?: string | null;
@@ -25,25 +32,6 @@ export type QuestionStatus = "未做" | "已做" | "错题";
 export type StatusMap = Record<string, QuestionStatus>;
 
 type AttemptRecord = { selected: string | string[] | null; correct: boolean };
-
-// 把多选题的答案（JSON 数组字符串）安全解析成字符串数组
-function parseMultiAnswer(raw: string): string[] {
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
-
-// 无序比较两个字符串数组是否集合相等（顺序无所谓）
-function setEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-  const sa = new Set(a);
-  return b.every((item) => sa.has(item));
-}
 
 // 两栏布局：左侧习题树（按分类分组、带状态色点、可点击跳转），右侧答题区。
 // questions 为本次可导航的题目集合；initialIndex 指定进入时定位到哪一道。
@@ -138,9 +126,13 @@ export function PracticeQuiz({
       // 实操题无对错，标记完成即记为已做
       correct = true;
     } else if (isMulti) {
-      correct = setEqual(selectedMulti, parseMultiAnswer(current.answer));
+      correct = sameTerms(
+        selectedMulti,
+        resolveMultiAnswer(current.answer, current.options),
+      );
     } else {
-      correct = selectedSingle === current.answer;
+      correct =
+        selectedSingle === resolveSingleAnswer(current.answer, current.options);
     }
 
     if (!isPractical && (isMulti ? selectedMulti.length === 0 : !selectedSingle)) {
@@ -254,8 +246,10 @@ export function PracticeQuiz({
     );
   }
 
-  // 多选题：正确答案集合（用于着色）
-  const correctSet = isMulti ? parseMultiAnswer(current.answer) : [];
+  // 正确答案集合（用于着色与展示）。单选也走同一套归一化，
+  // 因为单选答案可能存成字母，与选项全文永远不相等。
+  const correctSet = isMulti ? resolveMultiAnswer(current.answer, current.options) : [];
+  const correctText = isMulti ? "" : resolveSingleAnswer(current.answer, current.options);
 
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-5 px-5 py-8 sm:flex-row">
@@ -374,14 +368,12 @@ export function PracticeQuiz({
                 const isChosen = isMulti
                   ? selectedMulti.includes(option)
                   : selectedSingle === option;
-                const isCorrectOption = correctSet.includes(option);
-                const showCorrect =
-                  result !== null &&
-                  (isMulti ? isCorrectOption : option === current.answer);
+                const isCorrectOption = isMulti
+                  ? correctSet.includes(option)
+                  : option === correctText;
+                const showCorrect = result !== null && isCorrectOption;
                 const showWrong =
-                  result !== null &&
-                  isChosen &&
-                  (isMulti ? !isCorrectOption : option !== current.answer);
+                  result !== null && isChosen && !isCorrectOption;
 
                 return (
                   <label
@@ -454,10 +446,11 @@ export function PracticeQuiz({
               ].join(" ")}
             >
               {result.correct ? "回答正确" : "回答错误"}
-              {isMulti && (
-                <span className="ml-2 font-normal text-slate-500">
-                  正确答案：{correctSet.join("、")}
-                </span>
+              {/* 答错时把正确答案写出来。原来只有多选显示，单选答错只能靠选项底色猜 */}
+              {!result.correct && (
+                <p className="mt-1 font-normal text-slate-600">
+                  正确答案：{isMulti ? correctSet.join("、") : correctText}
+                </p>
               )}
             </div>
             <div className="rounded-lg border border-[#dbe7f5] bg-white p-5 shadow-sm">
