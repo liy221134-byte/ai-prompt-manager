@@ -32,7 +32,7 @@ export const OUTPUT_FILE = join(ROOT, "src/lib/learning/topic-notes.generated.ts
  * 返回 { notes, errors } 而不是直接抛：一份主题包缺 id、一份讲义少「怎么考」，
  * 都该一次性全报出来，改完一次过，别让人反复跑一遍发现下一处。
  *
- * 没写 note 的知识点不进结果表——讲义是渐进补的，29 个知识点现在只有 5 份。
+ * 没写 note 的知识点不进结果表——讲义允许渐进补，新加的知识点可以先只有骨架。
  * 空表项与「没写」在下游是两件事：前者会渲染出一个点开只有「还没有讲义」的抽屉。
  */
 export function collectTopicNotes(topicsDir = TOPICS_DIR) {

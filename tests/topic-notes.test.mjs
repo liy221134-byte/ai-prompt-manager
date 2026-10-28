@@ -39,12 +39,12 @@ test("讲义常量与主题包同步：改了 yaml 必须重新生成", () => {
   );
 });
 
-test("S1 五份讲义都进了常量，且三段齐全、一句话不超 60 字", () => {
-  const s1 = PACK.knowledge_points.filter((kp) => kp.module_id === "S1");
-  assert.equal(s1.length, 5, "S1 应当是五个知识点");
+test("主题包里写了讲义的知识点都进了常量，且三段齐全、一句话不超 60 字", () => {
+  const withNote = PACK.knowledge_points.filter((kp) => kp.note);
+  assert.ok(withNote.length > 0, "主题包里至少该有一篇讲义");
 
   const notes = getTopicNotes(TOPIC_ID);
-  for (const kp of s1) {
+  for (const kp of withNote) {
     const note = notes[kp.id];
     assert.ok(note, `${kp.id} 的讲义没进常量`);
     assert.ok([...note.summary].length <= 60, `${kp.id} 的 summary 超过 60 字`);
@@ -55,13 +55,46 @@ test("S1 五份讲义都进了常量，且三段齐全、一句话不超 60 字"
 });
 
 test("没写讲义的知识点不进常量，不留空壳", () => {
-  const notes = getTopicNotes(TOPIC_ID);
-  const blank = PACK.knowledge_points.filter((kp) => !kp.note).map((kp) => kp.id);
+  // 这条原先靠「真实主题包里有还没写讲义的知识点」做前提，2026-10-28 把 29 篇补齐后
+  // 那个前提就没了。改成用临时主题包构造：守住的是「跳过」这个行为本身，
+  // 不与内容完整度绑死——否则每次补齐内容都要回来改测试。
+  const dir = mkdtempSync(join(tmpdir(), "topic-notes-gap-"));
+  writeFileSync(
+    join(dir, "gap.yaml"),
+    [
+      "topic:",
+      "  id: gap-topic",
+      "knowledge_points:",
+      "  - id: KP-HAS",
+      "    module_id: S1",
+      "    name: 有讲义",
+      "    note:",
+      "      summary: 一句话定义",
+      "      body: |",
+      "        ### 要素",
+      "        要素。",
+      "        ### 例题",
+      "        例题。",
+      "        ### 怎么考",
+      "        怎么考。",
+      "  - id: KP-NONE",
+      "    module_id: S1",
+      "    name: 没讲义",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
 
-  // 讲义是渐进补的。若哪天补齐了全部知识点，这条测试要跟着改，而不是被删。
-  assert.ok(blank.length > 0, "主题包里应有还没写讲义的知识点");
-  for (const id of blank) {
-    assert.equal(notes[id], undefined, `${id} 没讲义，不该出现在常量里`);
+  try {
+    const { notes } = buildTopicNotesSource(dir);
+    assert.ok(notes["gap-topic"]["KP-HAS"], "写了讲义的必须进常量");
+    assert.equal(
+      notes["gap-topic"]["KP-NONE"],
+      undefined,
+      "没写讲义的不该出现在常量里——空表项会渲染出一个只有「还没有讲义」的抽屉",
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
