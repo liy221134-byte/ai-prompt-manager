@@ -10,6 +10,7 @@ import {
   type StatusMap,
 } from "@/components/practice-quiz";
 import { GoalSettingsDialog, type GoalSettingsValue } from "@/components/goal-settings-dialog";
+import { KnowledgeNoteDrawer } from "@/components/knowledge-note-drawer";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
 import { goalId } from "@/lib/learning/goal-id";
@@ -51,6 +52,23 @@ const KIND_LABELS: Record<string, string> = {
   behavior: "行为型",
 };
 
+/**
+ * 一个知识点，含讲义。
+ *
+ * summary 与 note_md 都可空：讲义是渐进补的，29 个知识点现在只有 S1 的五份。
+ * 页面要能区分「这个知识点没讲义」和「有讲义但没加载出来」——
+ * 前者显示「讲义待补」，后者不该假装没讲义。
+ */
+type KnowledgePointRow = {
+  id: string;
+  module_id: string;
+  name: string;
+  ref: string | null;
+  order_index: number | null;
+  summary: string | null;
+  note_md: string | null;
+};
+
 /** 「今天来不来得及」的结论怎么着色：紧的用琥珀，已过的用红，判断不了的用灰 */
 const STATUS_STYLE: Record<DailyPlanStatus, string> = {
   finished: "text-emerald-700",
@@ -73,7 +91,7 @@ type GoalRow = {
 };
 
 const QUESTION_COLUMNS =
-  "id, category, title, difficulty, type, body_md, options, answer, explanation_md, module_id, level";
+  "id, category, title, difficulty, type, body_md, options, answer, explanation_md, module_id, level, knowledge_point";
 
 export function LearningTopic({ topicId }: { topicId: string }) {
   const [topic, setTopic] = useState<TopicRow | null>(null);
@@ -83,9 +101,14 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   // 今日计划要用原始作答记录，所以除了 statusMap 还留一份
   const [attempts, setAttempts] = useState<AttemptInput[]>([]);
   const [goal, setGoal] = useState<GoalRow | null>(null);
+  const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePointRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+
+  // 正在读讲义的那个知识点。null 表示抽屉关着。
+  // 存整行而不是 id：抽屉里要渲染 summary 和正文，不必再从数组里查一遍。
+  const [openNote, setOpenNote] = useState<KnowledgePointRow | null>(null);
 
   const [quizQueue, setQuizQueue] = useState<QuizQuestion[] | null>(null);
   const [quizLabel, setQuizLabel] = useState("");
@@ -117,14 +140,31 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       const currentTopic = topicRow as TopicRow;
       setTopic(currentTopic);
 
-      // 2) 模块
-      const { data: moduleRows, error: moduleError } = await supabase
-        .from("learning_modules")
-        .select("id, name, order_index, weight, expected_gap, planned_hours, exit_criteria")
-        .eq("topic_id", currentTopic.id)
-        .order("order_index");
+      // 2) 模块 + 知识点：知识点带讲义（summary / note_md），供「学」区块和今日计划的讲义入口用。
+      //    两条一起发，互不依赖。
+      const [moduleResult, kpResult] = await Promise.all([
+        supabase
+          .from("learning_modules")
+          .select("id, name, order_index, weight, expected_gap, planned_hours, exit_criteria")
+          .eq("topic_id", currentTopic.id)
+          .order("order_index"),
+        supabase
+          .from("knowledge_points")
+          .select("id, module_id, name, ref, order_index, summary, note_md")
+          .eq("topic_id", currentTopic.id)
+          .order("order_index"),
+      ]);
 
-      if (moduleError) throw moduleError;
+      if (moduleResult.error) throw moduleResult.error;
+      const moduleRows = moduleResult.data;
+
+      // 讲义是附加内容，取不到就当没有——不让它拖垮矩阵与今日计划。
+      // 真会发生的场景：迁移还没执行（summary / note_md 列不存在），
+      // 这时整页报错就等于「学」区块把主功能一起带下水。
+      if (kpResult.error) {
+        console.warn("知识点或讲义取不到，按无讲义处理：", kpResult.error.message);
+      }
+      setKnowledgePoints((kpResult.data ?? []) as KnowledgePointRow[]);
 
       // 3) 题目：该主题下的全部题（含层级与所属模块）
       const { data: questionRows, error: questionError } = await supabase
@@ -242,6 +282,63 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     [rows, questions, attempts, topic, goal],
   );
 
+  /**
+   * 今日要做的题落在哪些有讲义的知识点上。
+   *
+   * 用「题目反查知识点」而不是「模块下的全部知识点」：今日配额只有几道题，
+   * 往往只落在某一个知识点上。把模块下五份讲义都摆出来让他在里面挑，
+   * 不如把当前这几道题对应的那份直接递到手上。
+   */
+  const todayNotes = useMemo(() => {
+    if (!plan.focus) return [];
+    const byId = new Map(knowledgePoints.map((kp) => [kp.id, kp]));
+    const seen = new Set<string>();
+    const result: KnowledgePointRow[] = [];
+
+    for (const questionId of plan.focus.questionIds) {
+      const question = questions.find((item) => item.id === questionId) as
+        | (QuizQuestion & { knowledge_point?: string | null })
+        | undefined;
+      const kpId = question?.knowledge_point;
+      if (!kpId || seen.has(kpId)) continue;
+      seen.add(kpId);
+      const kp = byId.get(kpId);
+      if (kp?.note_md) result.push(kp);
+    }
+
+    return result;
+  }, [plan, questions, knowledgePoints]);
+
+  /** 按模块归并知识点，顺序跟矩阵行一致。讲义写了几份，这里就显示几份。 */
+  const notesByModule = useMemo(() => {
+    const grouped = new Map<string, KnowledgePointRow[]>();
+    for (const kp of knowledgePoints) {
+      const list = grouped.get(kp.module_id) ?? [];
+      list.push(kp);
+      grouped.set(kp.module_id, list);
+    }
+    return grouped;
+  }, [knowledgePoints]);
+
+  const noteCount = useMemo(
+    () => knowledgePoints.filter((kp) => kp.note_md).length,
+    [knowledgePoints],
+  );
+
+  /**
+   * 按知识点 id 索引的讲义，给练习组件用。
+   *
+   * 只放有正文的条目：练习组件靠「这个 id 在不在表里」决定要不要显示入口，
+   * 把没讲义的也放进去就得在组件里再判一次空，两处判空早晚不一致。
+   */
+  const notesById = useMemo(() => {
+    const map: Record<string, KnowledgePointRow> = {};
+    for (const kp of knowledgePoints) {
+      if (kp.note_md) map[kp.id] = kp;
+    }
+    return map;
+  }, [knowledgePoints]);
+
   const totals = useMemo(() => {
     let questions = 0;
     let done = 0;
@@ -326,6 +423,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         questions={quizQueue}
         modeLabel={quizLabel}
         statusMap={statusMap}
+        notes={notesById}
+        onOpenNote={(kpId) => {
+          const kp = notesById[kpId];
+          if (kp) setOpenNote(kp);
+        }}
         onExit={() => {
           setQuizQueue(null);
           // 答完题回到矩阵，数字要跟着变
@@ -408,13 +510,27 @@ export function LearningTopic({ topicId }: { topicId: string }) {
                   {plan.focus.hasWrongOnes ? "，错题排前面，先复" : ""}
                   <span className="text-slate-400"> · 全主题还剩 {plan.remainingQuestions} 道</span>
                 </p>
-                <button
-                  type="button"
-                  onClick={startDaily}
-                  className="mt-3 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                >
-                  开始做题
-                </button>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={startDaily}
+                    className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                  >
+                    开始做题
+                  </button>
+                  {/* 讲义入口排在「开始做题」右边而不是左边：多数时候人是要做题的，
+                      但如果今天这几道题的知识点刚接触过、还没读过讲义，多半会先点这个。
+                      没有讲义时整个按钮不出现——给一个点了没反应的入口比不给更差。 */}
+                  {todayNotes.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setOpenNote(todayNotes[0])}
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      先看讲义：{todayNotes[0].name}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ) : (
               <p className="mt-3 text-sm text-slate-600">
@@ -584,6 +700,69 @@ export function LearningTopic({ topicId }: { topicId: string }) {
               —— 某一层题量少于 3 道时，结果只能当参考。真正的诊断在 M2。
             </p>
           </section>
+
+          {/* 讲义：矩阵说「做到哪一层」，这一块说「这块到底在讲什么」。
+              没有这一块，这个产品只能告诉你做哪几道题，答不了「这句话什么意思」——
+              那也是它此前不算能学的原因。 */}
+          <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-base font-semibold text-slate-900">知识点讲义</h2>
+              <span className="text-xs text-slate-400">
+                {knowledgePoints.length === 0
+                  ? "没取到知识点"
+                  : `${noteCount} / ${knowledgePoints.length} 个知识点已有讲义`}
+              </span>
+            </div>
+
+            {knowledgePoints.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-500">
+                知识点没加载出来。若刚执行过迁移，刷新一次试试。
+              </p>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {rows.map((row) => {
+                  const list = notesByModule.get(row.module.id) ?? [];
+                  const written = list.filter((kp) => kp.note_md);
+
+                  return (
+                    <div key={row.module.id}>
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <h3 className="text-sm font-medium text-slate-800">{row.module.name}</h3>
+                        <span className="text-xs text-slate-400">
+                          {list.length} 个知识点
+                          {written.length > 0 ? ` · 已有讲义 ${written.length}` : " · 讲义待补"}
+                        </span>
+                      </div>
+
+                      {written.length > 0 ? (
+                        <ul className="mt-1.5 space-y-1">
+                          {written.map((kp) => (
+                            <li key={kp.id}>
+                              <button
+                                type="button"
+                                onClick={() => setOpenNote(kp)}
+                                className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+                              >
+                                <span className="text-sm font-medium text-slate-800">{kp.name}</span>
+                                {kp.ref ? (
+                                  <span className="ml-1.5 text-xs text-slate-400">{kp.ref}</span>
+                                ) : null}
+                                <p className="mt-0.5 text-xs leading-5 text-slate-500">{kp.summary}</p>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-1 text-xs leading-5 text-slate-400">
+                          这一块还没写讲义，先做题——题目解析里有关键点。
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         </>
       )}
 
@@ -599,6 +778,8 @@ export function LearningTopic({ topicId }: { topicId: string }) {
           onClose={() => setShowSettings(false)}
         />
       ) : null}
+
+      {openNote ? <KnowledgeNoteDrawer note={openNote} onClose={() => setOpenNote(null)} /> : null}
     </main>
   );
 }

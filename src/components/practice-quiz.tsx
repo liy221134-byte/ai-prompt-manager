@@ -26,6 +26,17 @@ export type QuizQuestion = {
   difficulty: string;
   type: string;
   created_at?: string;
+  /** 所属知识点（v4 主题包题目才有）。用来在解析旁挂「看这个知识点的讲义」入口 */
+  knowledge_point?: string | null;
+};
+
+/** 讲义的最小形态。定义在这里而不是 import 抽屉组件，是为了让练习组件不依赖页面层的类型 */
+export type QuizNote = {
+  id: string;
+  name: string;
+  ref: string | null;
+  summary: string | null;
+  note_md: string | null;
 };
 
 export type QuestionStatus = "未做" | "已做" | "错题";
@@ -40,12 +51,17 @@ export function PracticeQuiz({
   initialIndex = 0,
   modeLabel,
   statusMap,
+  notes,
+  onOpenNote,
   onExit,
 }: {
   questions: QuizQuestion[];
   initialIndex?: number;
   modeLabel: string;
   statusMap?: StatusMap;
+  /** 按知识点 id 索引的讲义。有讲义才显示入口——点了没反应的按钮比没有更糟 */
+  notes?: Record<string, QuizNote>;
+  onOpenNote?: (kpId: string) => void;
   onExit: () => void;
 }) {
   // 内部队列（同类再抽时会往里追加），初始为传入的题目集合
@@ -454,7 +470,20 @@ export function PracticeQuiz({
               )}
             </div>
             <div className="rounded-lg border border-[#dbe7f5] bg-white p-5 shadow-sm">
-              <p className="mb-2 text-sm font-semibold text-slate-700">解析</p>
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-700">解析</p>
+                {/* 做错时真正想知道的是「这个概念到底怎么讲」，而不是再看一遍这四个选项。
+                    所以入口放在解析标题旁边，不做成二级菜单。 */}
+                {onOpenNote && current.knowledge_point && notes?.[current.knowledge_point] ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenNote(current.knowledge_point as string)}
+                    className="text-xs font-medium text-blue-600 hover:underline"
+                  >
+                    看「{notes[current.knowledge_point].name}」的讲义
+                  </button>
+                ) : null}
+              </div>
               <MarkdownContent content={current.explanation_md} />
             </div>
 
