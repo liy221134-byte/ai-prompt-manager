@@ -19,6 +19,9 @@
 20260923150000 add_project_risk_level
 20260928220000 add_practice
 20260929000000 add_practice_type
+20261027160000 add_learning_foundation
+20261028150000 add_learning_goals
+20261028233000 add_learning_probe_and_sheet
 ```
 
 `add_project_asset_foundation` 属于 2.0.0，`add_asset_prompt_storage` 属于 2.1.0，
@@ -29,7 +32,12 @@
 `add_practice_type` 是题库的交互优化，给 `practice_questions` 加一个 `type` 列（题型），
 同样只增不改。
 
-十二条迁移已全部应用到线上，迁移历史与仓库**逐条对齐**（12 个文件对 12 条记录，双向无差异），没有待应用的迁移。
+`add_learning_foundation` / `add_learning_goals` 是 v4 学习系统 M0 与 M2：前者四张表
+（主题 / 模块 / 知识点 / 诊断），后者补 `learning_topics.kind` 与 `level_definition`、新建 `learning_goals`。
+`add_learning_probe_and_sheet` 是 M5：两张个人数据表（追问会话 `learning_probes`、
+一页素材表 `learning_sheets`），不改任何既有表。
+
+十三条迁移已全部应用到线上，迁移历史与仓库**逐条对齐**（13 个文件对 13 条记录，双向无差异），没有待应用的迁移。
 
 ## 执行方式
 
@@ -38,7 +46,7 @@
 | **Management API + `scripts/db-sql.mjs`** | 本会话直接执行 | **首选**。只要 `.env.local` 里有 `SUPABASE_ACCESS_TOKEN`（`sbp_` 开头），就能执行任意 SQL，不需要数据库密码。token 在 [dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) 生成，可随时吊销 |
 | Supabase CLI（2026-10-28 已装，版本 2.122.0） | 手工 | **装了但缺凭据**。`db push` 要 `supabase login` 或 access token，`db push --db-url` 要数据库密码，本机两者都没有。CLI 本身不带凭据，装它不解决授权问题 |
 | Supabase MCP（2026-09-24 起可用过） | 会话里连上就能用 | 需要 `~/.workbuddy/mcp.json` 里配 supabase server，当前没配。配了也要 token |
-| GitHub 集成自动部署（已开启） | Supabase 自动执行 | **2026-10-28 已解除阻塞，可用**。此前两条在 SQL Editor 手动执行过的迁移不在历史表里，push 后会被重跑并在 `create policy` 处失败；已于当日补记历史，现磁盘 12 个文件与库内 12 条记录完全对齐，推送不会再重跑任何迁移 |
+| GitHub 集成自动部署（已开启） | Supabase 自动执行 | **2026-10-28 已解除阻塞，可用**。此前两条在 SQL Editor 手动执行过的迁移不在历史表里，push 后会被重跑并在 `create policy` 处失败；已于当日补记历史，现磁盘 13 个文件与库内 13 条记录完全对齐，推送不会再重跑任何迁移 |
 
 **为什么推荐 Management API 而不是数据库密码**：token 可以在 dashboard 里点几下生成、随时吊销、粒度细；数据库密码一旦存下来就是长期凭据，且改密码会连带影响所有连接串。跑几条迁移不值得换这个。
 
@@ -95,6 +103,21 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-10-28（深夜 · M5）：**应用 `20261028233000_add_learning_probe_and_sheet.sql`，并补记迁移历史**。
+  改了什么：新增两张个人数据表 —— `learning_probes`（追问会话：`transcript` / `verdict` 两个 jsonb）、
+  `learning_sheets`（一页素材表：`sections` jsonb + `unique(user_id, topic_id, module_id)`）。
+  只增不改，没有碰任何既有表。
+  为什么：v4 M5 的两个功能要存「为什么错」和「我自己写的六段」，塞进 `practice_attempts.context` 会让
+  事实（做没做对）和解释（为什么错）混在一处，且按知识点统计时查不出来。
+  怎么应用：`node scripts/db-sql.mjs --file supabase/migrations/20261028233000_add_learning_probe_and_sheet.sql`，
+  然后 **insert 一行历史**（`version='20261028233000'`，`name='add_learning_probe_and_sheet'`）——
+  走 Management API 不会自动写 `schema_migrations`，不补这一行，GitHub 自动部署会重跑。
+  回滚：`drop table public.learning_sheets; drop table public.learning_probes;` 并删掉对应历史行。
+  验完的结果：2 张表、3 个索引、8 条 RLS 策略（每表 select/insert/update/delete）、2 条显式 grant 全在；
+  `learning_sheets` 的复合外键确实是 `(topic_id, module_id) → learning_modules(topic_id, id)`；
+  库内 13 个文件对 13 条记录，双向无差异。
+  顺带核实的数据事实（口径别再猜）：`practice_questions.knowledge_point` 存的是 **`KP-0104` 这种 id**，
+  不是知识点名字；`learning_modules` 主键是复合 `(topic_id, id)`，所以引用它必须带 `topic_id`。
 - 2026-10-28（晚）：**拿到 token，通道实跑通过，并补记两条迁移历史**（库内仅改迁移历史表，未改业务结构）。
   ① 当事人给了 `sbp_` token，写进 `.env.local` 的 `SUPABASE_ACCESS_TOKEN`（该文件被 `.gitignore` 忽略）。
   `node scripts/db-sql.mjs --sql "select 1"` 返回 1 行，**执行路径不再是「只验过 dry-run」**。
