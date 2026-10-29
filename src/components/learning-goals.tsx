@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { goalId } from "@/lib/learning/goal-id";
 import { daysUntil } from "@/lib/learning/matrix";
+import { describeFallbackExam, parseFallbackExam } from "@/lib/learning/fallback";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 // 学习目标列表：一条线一个人。这里是「子系统」的入口页。
@@ -32,6 +33,8 @@ type GoalRow = {
   status: string;
   weekly_hours: number | null;
   target_date: string | null;
+  /** 保底出口，jsonb。解析在 lib/learning/fallback.ts，这里按 unknown 收 */
+  fallback: unknown;
 };
 
 const KIND_LABELS: Record<string, string> = {
@@ -66,7 +69,7 @@ export function LearningGoals() {
       // 目标只读自己的。未登录时 RLS 会返回空数组，不算错误。
       const { data: goalRows, error: goalError } = await supabase
         .from("learning_goals")
-        .select("id, topic_id, is_focus, status, weekly_hours, target_date");
+        .select("id, topic_id, is_focus, status, weekly_hours, target_date, fallback");
 
       if (goalError) throw goalError;
       setGoals((goalRows ?? []) as GoalRow[]);
@@ -176,6 +179,8 @@ export function LearningGoals() {
             const isFocus = Boolean(goal?.is_focus);
             const daysLeft = topic.deadline ? daysUntil(topic.deadline) : null;
             const isPending = pendingTopicId === topic.id;
+            // 保底出口：这一目标没达成时的下一场。没有就是没有，不占位置
+            const fallback = parseFallbackExam(goal?.fallback);
 
             return (
               <li
@@ -219,6 +224,12 @@ export function LearningGoals() {
                           : ` · 已过 ${-daysLeft} 天`
                         : " · 无截止日"}
                     </p>
+
+                    {fallback ? (
+                      <p className="mt-1 text-xs text-amber-700">
+                        保底通道 · {describeFallbackExam(fallback)}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex shrink-0 items-center gap-3 text-sm">

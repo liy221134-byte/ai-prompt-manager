@@ -27,6 +27,7 @@ import { normalizeSections, type SheetSections } from "@/lib/learning/sheet";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
 import { describePhase, parsePhases } from "@/lib/learning/phase";
+import { describeFallbackExam, parseFallbackExam } from "@/lib/learning/fallback";
 import {
   buildDiagnosticPaper,
   collectWrongAnswers,
@@ -124,6 +125,11 @@ type GoalRow = {
    * 它的解析与校验在 lib/learning/phase.ts，在这一层写一遍类型等于维护两份规则。
    */
   phases: unknown;
+  /**
+   * 保底考试出口。库里是 jsonb，这里按 unknown 收，
+   * 解析与容错统一在 lib/learning/fallback.ts——同一份规则不在组件层再写一遍。
+   */
+  fallback: unknown;
 };
 
 const QUESTION_COLUMNS =
@@ -342,7 +348,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             .eq("user_id", user.id),
           supabase
             .from("learning_goals")
-            .select("id, is_focus, status, weekly_hours, target_date, started_at, phases")
+            .select("id, is_focus, status, weekly_hours, target_date, started_at, phases, fallback")
             .eq("user_id", user.id)
             .eq("topic_id", currentTopic.id)
             .maybeSingle(),
@@ -451,6 +457,14 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       milestones.find((entry) => !entry.passed && entry.milestone.name.includes("报名")) ?? null,
     [milestones],
   );
+
+  /**
+   * 保底出口。高项一年只有 5 月一次，中项下半年还有一次——
+   * 5 月考完到 8 月报名之间，页面不会再提「还有一次机会」，
+   * 那两个月人是不学习的，很容易整年空过。所以它要一直在今日计划里露出。
+   * 只在目标上配了 fallback 时显示；没配就是没有，不占位置。
+   */
+  const fallbackExam = useMemo(() => parseFallbackExam(goal?.fallback), [goal]);
 
   // 列头跟着主题的阶梯定义走：中项显示「L3 算得出」，Python 会显示「L3 写得出」
   const levelLabels = useMemo(
@@ -1267,6 +1281,20 @@ export function LearningTopic({ topicId }: { topicId: string }) {
                 <span className="ml-2 text-slate-500">
                   {registrationMilestone.milestone.date} 开窗 · 报名时只能选高项或中项一个
                 </span>
+              </p>
+            ) : null}
+
+            {/* 保底出口。跟报名倒计时挨着放，因为两件事是连着的：
+                报名决定「这一次考哪个」，保底决定「这一次没过还有没有下一次」。
+                5 月高项一年一次，中项下半年还有一次——这条不说，考完到报名
+                之间就容易整年空过。 */}
+            {fallbackExam ? (
+              <p className="mt-1 text-sm text-slate-600">
+                <span className="font-medium text-slate-700">保底通道</span>
+                <span className="ml-2">{describeFallbackExam(fallbackExam)}</span>
+                {fallbackExam.note ? (
+                  <span className="ml-2 text-slate-500">· {fallbackExam.note}</span>
+                ) : null}
               </p>
             ) : null}
 
