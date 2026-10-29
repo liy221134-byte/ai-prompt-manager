@@ -28,6 +28,11 @@ function setEnv(values) {
   }
 }
 
+/** 明确清空三项变量 = 「没配置」。不要用 restore() 代替它。 */
+function unconfigured() {
+  setEnv({});
+}
+
 function configured() {
   setEnv({
     AI_API_BASE_URL: "https://example.test/v1/",
@@ -36,6 +41,13 @@ function configured() {
   });
 }
 
+/**
+ * 恢复到本文件被加载时的环境快照。
+ * 注意：它恢复的是「进来时的样子」。若跑测试的机器本身配了这三项
+ * （Vercel 构建会把项目环境变量注入进程），恢复出来就是「已配置」——
+ * 所以断言「没配」的用例必须用 unconfigured()，不能用 restore()。
+ * 2026-10-29 就是这条让线上构建挂了 43 秒。
+ */
 function restore() {
   for (const key of ENV_KEYS) {
     if (originalEnv[key] == null) delete process.env[key];
@@ -64,7 +76,7 @@ function okResponse(content) {
 }
 
 test("三项环境变量缺任何一项都算没配好", () => {
-  restore();
+  unconfigured();
   assert.equal(readChatConfig(), null);
 
   setEnv({ AI_API_BASE_URL: "https://example.test", AI_API_KEY: "k" });
@@ -79,7 +91,7 @@ test("三项环境变量缺任何一项都算没配好", () => {
 });
 
 test("没配置时抛 503，而不是笼统的 502", async () => {
-  restore();
+  unconfigured();
   await assert.rejects(
     () => callChat({ messages: [{ role: "user", content: "你好" }] }),
     (error) => {

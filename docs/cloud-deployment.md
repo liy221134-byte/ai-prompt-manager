@@ -226,8 +226,21 @@ gh api "repos/<owner>/<repo>/deployments/<id>/statuses" \
   --jq '.[] | "\(.state) | \(.description)"'
 ```
 
-`state=failure` 才算失败。失败时 GitHub 只给一句 "Deployment has failed"，**构建日志
-只在 Vercel 面板里**（Deployments → 那条 → Build Logs），没有 token 时拿不到。
+`state=failure` 才算失败。失败时 GitHub 只给一句 "Deployment has failed"，真正的原因
+在构建日志里。**有 token 就能自己拉，不用去面板翻**（token 存 `.env.local` 的 `VERCEL_TOKEN`）：
+
+```
+T=$(grep '^VERCEL_TOKEN=' .env.local | cut -d= -f2)
+curl -s -x http://127.0.0.1:7897 -H "Authorization: Bearer $T" \
+  "https://api.vercel.com/v13/deployments/<dpl_id>?teamId=<team_id>"     # 先看 errorCode
+curl -s -x http://127.0.0.1:7897 -H "Authorization: Bearer $T" \
+  "https://api.vercel.com/v3/deployments/<dpl_id>/events?builds=1&limit=2000&teamId=<team_id>"
+```
+
+第二条返回事件数组，**日志正文在每条事件的顶层 `text` 字段**（不在 `payload` 里），
+`type` 为 `stdout` / `stderr`。`errorCode` 先告诉你失败在哪一层，比如
+`type_error` + `Command "npm run check" exited with 1` ＝ 四道门里有一道报错，
+而不是安装失败（那会是 `build_failed` 之类）。
 
 ### 上线之前，本地要模拟 Vercel 的三件事
 
@@ -260,12 +273,30 @@ npm run check
 Node 22 的 `--test` 到点自己退，所以这个问题在本机永远看不见；换到 Node 24 就是
 构建卡到超时。`test` 脚本已加 `--test-force-exit`。
 
-### 2026-10-29 那次失败的两个原因
+**四、测试会吃到 Vercel 注入的环境变量，本机吃不到。** 这一条最阴（2026-10-29 第二次踩）：
+本机跑 `node --test` 不加载 `.env.local`，进程里没有业务变量；Vercel 却把项目环境变量
+**直接注入进程**。于是「断言没配置时应怎样」的用例本机过、线上挂——
+`readChatConfig()` 断言 `null`，线上拿到的是真配置。
+
+判据：**测试要么自己设变量，要么看到「什么都没有」，不允许取决于跑在哪台机器上。**
+两道防线都在了：`tests/setup-env.mjs` 在 `test` 脚本里用 `--import` 预加载，
+统一清掉 `AI_*` / `CRON_*` / `SUPABASE_*` / `NEXT_PUBLIC_*`（本机与 CI 看到同样的环境）；
+测试自己断言「没配」时必须显式清空，不能拿「复位到进来时的样子」当清空。
+
+复现办法：把变量导出再跑测试，线上炸什么本机就炸什么。
+
+```
+AI_API_KEY=sk-dummy AI_MODEL=x AI_API_BASE_URL=https://x npm test
+```
+
+### 2026-10-29 那次失败的三层原因（三笔提交才修完）
 
 | 现象 | 根因 | 判据 |
 | --- | --- | --- |
 | `npm ci` EUSAGE：`Missing: @emnapi/core@1.11.3` | 可选依赖只在 wasm 平台装，Windows 上 `npm install` 没写进 lock | `npm ci --dry-run` 由 exit 1 变 exit 0 |
 | 构建卡住不结束 | Node 24 下 `node --test` 等残留句柄 | 串行 50s 通过、并发 10 分钟不返回、加 `--test-force-exit` 后 8s |
+| 构建 43 秒报 `type_error`，`npm run check exited with 1` | 两条用例断言「未配 AI 变量」，而 Vercel 注入了真配置 | 导出变量后本机 10 条挂 2 条，与线上一致；修完 868/868 |
+
 
 补 lock 的正确方式是按目标平台重算，不要重生成整份（会顺带升级一批依赖）：
 

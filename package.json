@@ -26,7 +26,7 @@
     "pack:delivery": "node scripts/build-seed-pack.mjs delivery-readiness",
     "gen:topic-notes": "node scripts/build-topic-notes.mjs",
     "check:topic-notes": "node scripts/build-topic-notes.mjs --check",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-force-exit \"tests/*.test.mjs\"",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --import ./tests/setup-env.mjs --test --test-force-exit \"tests/*.test.mjs\"",
     "check:fast": "npm run check:topic-notes && npm run typecheck && npm run test",
     "check": "npm run typecheck && npm run test && npm run lint && npm run build"
   },
