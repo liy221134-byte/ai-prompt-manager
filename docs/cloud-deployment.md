@@ -207,3 +207,69 @@ CRON_SECRET=...
 
 本项目上出现过这种情况，作用域已经收窄到 Production。彻底清理的方式是删除该集成，
 删除后应用依赖的变量都不受影响。
+
+## 构建失败了怎么查
+
+推送成功不等于部署成功。两件事分开核对：
+
+```
+git rev-parse --short=7 main                      # 本地
+env -u HTTP_PROXY -u HTTPS_PROXY git ls-remote origin refs/heads/main   # 远端
+```
+
+两个 hash 一致＝推上去了。再去看 Vercel 有没有部署成功：
+
+```
+gh api "repos/<owner>/<repo>/deployments?environment=Production&per_page=1" \
+  --jq '.[0] | "\(.created_at) \(.sha[0:7]) \(.id)"'
+gh api "repos/<owner>/<repo>/deployments/<id>/statuses" \
+  --jq '.[] | "\(.state) | \(.description)"'
+```
+
+`state=failure` 才算失败。失败时 GitHub 只给一句 "Deployment has failed"，**构建日志
+只在 Vercel 面板里**（Deployments → 那条 → Build Logs），没有 token 时拿不到。
+
+### 上线之前，本地要模拟 Vercel 的三件事
+
+Vercel 的 `buildCommand` 是 `npm run check`，也就是 typecheck + 全部测试 + lint + 构建。
+本地跑通不等于线上跑通，差距集中在这三处：
+
+**一、`npm ci` 不认平台。** 本地一直用 `npm install`，它是宽松的——缺了可选依赖
+照样装得上。Vercel 用 `npm ci`，它只核对「lock 与 package.json 是否一致」，缺一条就
+在**安装阶段**退出，根本走不到构建。
+
+```
+npm ci --dry-run                                  # 本平台
+npm ci --dry-run --os=linux --cpu=x64             # Vercel 的平台
+```
+
+两条都要 exit 0。
+
+**二、Node 版本。** `package.json` 的 `engines` 写的是 `24.x`，Vercel 照办；本机装的
+可能是 22。想本地复现就真拿 24 跑，别只看 `node -v` 猜：
+
+```
+curl -sL -o /tmp/node24.zip https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip
+unzip -q /tmp/node24.zip -d /tmp/node24
+export PATH="/tmp/node24/node-v24.22.2-win-x64:$PATH"
+npm run check
+```
+
+**三、`node --test` 在 Node 24 下可能不肯退出。** 这是本项目真踩过的（2026-10-29）：
+用例全部跑完、868 项全过，进程却一直不返回，因为某个测试留下了没释放的句柄。
+Node 22 的 `--test` 到点自己退，所以这个问题在本机永远看不见；换到 Node 24 就是
+构建卡到超时。`test` 脚本已加 `--test-force-exit`。
+
+### 2026-10-29 那次失败的两个原因
+
+| 现象 | 根因 | 判据 |
+| --- | --- | --- |
+| `npm ci` EUSAGE：`Missing: @emnapi/core@1.11.3` | 可选依赖只在 wasm 平台装，Windows 上 `npm install` 没写进 lock | `npm ci --dry-run` 由 exit 1 变 exit 0 |
+| 构建卡住不结束 | Node 24 下 `node --test` 等残留句柄 | 串行 50s 通过、并发 10 分钟不返回、加 `--test-force-exit` 后 8s |
+
+补 lock 的正确方式是按目标平台重算，不要重生成整份（会顺带升级一批依赖）：
+
+```
+npm install --package-lock-only --os=linux --cpu=x64
+```
+
