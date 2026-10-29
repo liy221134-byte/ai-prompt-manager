@@ -26,6 +26,7 @@ import type { ProbeKnowledgePoint, ProbeQuestionInput } from "@/lib/learning/pro
 import { normalizeSections, type SheetSections } from "@/lib/learning/sheet";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { buildDailyPlan, type DailyPlanStatus } from "@/lib/learning/daily-plan";
+import { describePhase, parsePhases } from "@/lib/learning/phase";
 import {
   buildDiagnosticPaper,
   collectWrongAnswers,
@@ -118,6 +119,11 @@ type GoalRow = {
   target_date: string | null;
   /** 启用这个目标的那天，今日计划拿它当第 1 天 */
   started_at: string | null;
+  /**
+   * 阶段划分（M2.6）。库里是 jsonb，这里按 unknown 收——
+   * 它的解析与校验在 lib/learning/phase.ts，在这一层写一遍类型等于维护两份规则。
+   */
+  phases: unknown;
 };
 
 const QUESTION_COLUMNS =
@@ -334,7 +340,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             .eq("user_id", user.id),
           supabase
             .from("learning_goals")
-            .select("id, is_focus, status, weekly_hours, target_date, started_at")
+            .select("id, is_focus, status, weekly_hours, target_date, started_at, phases")
             .eq("user_id", user.id)
             .eq("topic_id", currentTopic.id)
             .maybeSingle(),
@@ -462,6 +468,8 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         startedAt: goal?.started_at ?? null,
         endsAt: goal?.target_date ?? topic?.deadline ?? null,
         weeklyHours: goal?.weekly_hours ?? null,
+        // 阶段只用来多显示一行，不进任何一步计算（见 daily-plan.ts 里 phases 的注释）
+        phases: goal?.phases ?? null,
         diagnostic: storedDiagnostic
           ? {
               takenAt: storedDiagnostic.takenAt,
@@ -975,6 +983,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         status: goal?.status ?? "active",
         weekly_hours: next.weeklyHours,
         target_date: next.targetDate,
+        // 阶段已经由弹窗归一化过（排序 + 校验），这里原样存。
+        // 不在这里再归一化一遍：同一套规则写两处，改一处忘一处就会
+        // 「弹窗说没问题、存进去却是另一份」。
+        phases: next.phases,
       },
       { onConflict: "user_id,topic_id" },
     );
@@ -1164,6 +1176,14 @@ export function LearningTopic({ topicId }: { topicId: string }) {
                 改设置
               </button>
             </div>
+
+            {/* 阶段行（M2.6）。没有阶段时整行不渲染——未设置是常态，不是异常，
+                不用天天提醒。它与「第 N 天」是并列的两套位置：
+                一个是按日历数的绝对天数，一个是按他自己划的阶段数的相对周次。
+                两者不一致是正常的（阶段是外框，模块窗口是按工时分的内框）。 */}
+            {plan.phase ? (
+              <p className="mt-2 text-sm text-slate-600">{describePhase(plan.phase)}</p>
+            ) : null}
 
             {plan.focus ? (
               <div className="mt-3">
@@ -1487,7 +1507,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
           initial={{
             targetDate: goal?.target_date ?? null,
             weeklyHours: goal?.weekly_hours ?? null,
+            // 库里是 jsonb，弹窗要的是结构化数组。解析在 phase.ts，
+            // 脏数据在这里回落成空数组（等于没分段），不让弹窗崩掉。
+            phases: parsePhases(goal?.phases) ?? [],
           }}
+          startedAt={goal?.started_at ?? null}
           onSubmit={saveSettings}
           onClose={() => setShowSettings(false)}
         />

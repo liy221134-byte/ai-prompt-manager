@@ -8,6 +8,7 @@
 // 两者一对照就知道是落后还是超前，不用编一个假工时。
 
 import { LEVELS, daysBetween, type AttemptInput, type Level, type ModuleInput } from "./matrix.ts";
+import { resolvePhase, parsePhases, type ResolvedPhase } from "./phase.ts";
 
 // 一天最多建议这么多道。配额按「模块剩余题 ÷ 模块剩余天数」算，
 // 落后时会算出很大的数，但不该让人一晚上面对 40 道题。
@@ -53,6 +54,14 @@ export type DailyPlanInput = {
   weeklyHours?: number | null;
   /** 上次诊断结论。没做过就不传，行为与从前一致 */
   diagnostic?: DailyDiagnostic | null;
+  /**
+   * 阶段划分（M2.6）。直接传库里读出来的原始 jsonb——解析与校验在 phase.ts，
+   * 这一层不重复实现一遍规则。不传或传空数组都等于「没设阶段」。
+   *
+   * **它只影响展示，不影响排题。** 这条是刻意设计的：
+   * 阶段日期是估算，拿估算去改题单，等于让一个猜出来的日期决定今天做几道题。
+   */
+  phases?: unknown;
   now?: Date;
 };
 
@@ -101,6 +110,12 @@ export type DailyPlan = {
   diagnosticApplied: boolean;
   /** 诊断与排题的关系，一句话。没有诊断或诊断完全没影响排题时为 null */
   diagnosticNote: string | null;
+  /**
+   * 今天站在哪个阶段的第几周。没设阶段（或配置坏了）时为 null，界面整行不渲染。
+   *
+   * 界面不显示「未设置阶段」：未设置是常态，不是异常，不用天天提醒。
+   */
+  phase: ResolvedPhase | null;
   /** 今天建议做几道 */
   dailyQuota: number;
   focus: DailyFocus | null;
@@ -415,6 +430,9 @@ export function buildDailyPlan(input: DailyPlanInput): DailyPlan {
     skippedQuestions,
     diagnosticApplied,
     diagnosticNote,
+    // 阶段只回答「今天在第几段的第几周」，不参与上面的任何一步计算。
+    // 放在返回值最前面算出来也无妨，但写在这里是为了让「它没影响排题」一眼可见。
+    phase: resolvePhase(parsePhases(input.phases), today),
     dailyQuota,
     focus,
     hoursNeeded,

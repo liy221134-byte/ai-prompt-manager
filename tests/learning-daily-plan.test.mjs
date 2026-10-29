@@ -476,3 +476,61 @@ test("已豁免的层里没做过的题不会因为低层有错题而被一起�
   assert.deepEqual(plan.focus?.questionIds, ["Q2"]);
   assert.equal(plan.skippedQuestions, 1, "Q1 仍豁免");
 });
+
+// ── M2.6 周节奏：只加一行展示，不动排题 ──────────────────────
+//
+// 这一组是 M2.6 的防回归主证据。阶段日期是估算，一旦它悄悄参与了
+// 配额或起练层的计算，题单就会随「填了什么阶段」变化——那种变化
+// 很难在界面上看出来，只能靠这里逐字段对比。
+
+const PHASES = [
+  { key: "kickoff", name: "启动期", start: "2026-10-01", end: "2026-12-22", milestone: null },
+  {
+    key: "foundation",
+    name: "基础期",
+    start: "2026-12-23",
+    end: "2027-02-15",
+    milestone: { date: "2027-01-10", label: "摸底模考" },
+  },
+  { key: "intensive", name: "强化期", start: "2027-02-16", end: "2027-04-18", milestone: null },
+  { key: "sprint", name: "冲刺期", start: "2027-04-19", end: "2027-05-22", milestone: null },
+];
+
+test("有 phases 与没有 phases，题单、配额、status、headline 完全一致", () => {
+  const withoutPhases = buildDailyPlan(BASE);
+  const withPhases = buildDailyPlan({ ...BASE, phases: PHASES });
+
+  // 排题这件事的一个字都不许变
+  assert.deepEqual(withPhases.focus, withoutPhases.focus);
+  assert.equal(withPhases.dailyQuota, withoutPhases.dailyQuota);
+  assert.equal(withPhases.status, withoutPhases.status);
+  assert.equal(withPhases.headline, withoutPhases.headline);
+  assert.equal(withPhases.remainingQuestions, withoutPhases.remainingQuestions);
+  assert.equal(withPhases.plannedModuleId, withoutPhases.plannedModuleId);
+  assert.equal(withPhases.actualModuleId, withoutPhases.actualModuleId);
+
+  // 唯一多出来的东西就是阶段本身
+  assert.equal(withoutPhases.phase, null);
+  assert.ok(withPhases.phase);
+  assert.equal(withPhases.phase.name, "启动期");
+  assert.equal(withPhases.phase.state, "inside");
+});
+
+test("诊断与阶段同时在场时，诊断仍按自己的规则排题", () => {
+  const diagnostic = { takenAt: "2026-10-27", reached: { S1: 1 } };
+  const a = buildDailyPlan({ ...BASE, diagnostic });
+  const b = buildDailyPlan({ ...BASE, diagnostic, phases: PHASES });
+
+  assert.deepEqual(b.focus, a.focus);
+  assert.equal(b.skippedQuestions, a.skippedQuestions);
+  assert.equal(b.diagnosticNote, a.diagnosticNote);
+});
+
+test("phases 是脏数据时排题照旧，phase 回落成 null", () => {
+  for (const broken of [null, "坏的", 42, [], [{ start: "2026-10-01" }]]) {
+    const plan = buildDailyPlan({ ...BASE, phases: broken });
+    assert.equal(plan.phase, null, `phases=${JSON.stringify(broken)} 应当回落成 null`);
+    // 关键：配置坏了不能让今日计划整块挂掉，题单必须还在
+    assert.deepEqual(plan.focus, buildDailyPlan(BASE).focus);
+  }
+});
