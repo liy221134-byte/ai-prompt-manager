@@ -23,6 +23,7 @@ import { SheetBoard, SheetDrawer, type SheetRow } from "@/components/sheet-panel
 import { GraphBoard, GraphDrawer } from "@/components/graph-panel";
 import { buildReferencePoints } from "@/lib/learning/graph";
 import { EssayBoard, EssayDrawer, type EssayReviewRow } from "@/components/essay-panel";
+import { TOPIC_ESSAY_PROMPTS } from "@/lib/learning/essay-prompts.generated";
 import { countEssayChars, type EssayReview } from "@/lib/learning/essay";
 import type { ProbeKnowledgePoint, ProbeQuestionInput } from "@/lib/learning/probe-prompt";
 import { normalizeSections, type SheetSections } from "@/lib/learning/sheet";
@@ -1204,6 +1205,9 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       history={essayRows}
       onClose={() => setEssayOpen(false)}
       onSave={saveEssayReview}
+      // 论文题目来自主题包编译出的常量，没有就传空数组——空数组时抽屉里不显示选择区，
+      // 他仍然可以自己贴题，功能不依赖有没有真题
+      prompts={topic ? TOPIC_ESSAY_PROMPTS[topic.id] ?? [] : []}
     />
   ) : null;
 
@@ -1564,7 +1568,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
 
           {/* 论文批改：这三件（素材表 / 图谱 / 论文）是同一层的「输出型」动作，
               论文排最后——它最长、最费时间，也最不该在做题之前做。 */}
-          <EssayBoard count={essayRows.length} onOpen={() => setEssayOpen(true)} />
+          <EssayBoard
+            count={essayRows.length}
+            onOpen={() => setEssayOpen(true)}
+            promptCount={topic ? (TOPIC_ESSAY_PROMPTS[topic.id] ?? []).length : 0}
+          />
 
           {/* 关键节点：报名是唯一不可挽回的节点，所以排在最前面 */}
           <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">

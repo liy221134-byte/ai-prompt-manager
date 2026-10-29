@@ -22,6 +22,7 @@ import {
   isCleanReview,
   type EssayReview,
 } from "@/lib/learning/essay";
+import type { EssayPromptEntry } from "@/lib/learning/essay-prompts.generated";
 
 /** 库里的一行批改记录 */
 export type EssayReviewRow = {
@@ -41,7 +42,16 @@ export type EssayReviewRow = {
  * 素材表把一个模块压成一页纸，图谱把几个模块连成一张网，论文把一整段项目经历写成一篇。
  * 论文排最后，因为它最长、最费时间，也最不该在做题之前做。
  */
-export function EssayBoard({ count, onOpen }: { count: number; onOpen: () => void }) {
+export function EssayBoard({
+  count,
+  promptCount,
+  onOpen,
+}: {
+  count: number;
+  /** 主题包里带了几套论文真题。0 就不提这件事 */
+  promptCount: number;
+  onOpen: () => void;
+}) {
   return (
     <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -54,6 +64,12 @@ export function EssayBoard({ count, onOpen }: { count: number; onOpen: () => voi
         哪条缺具体指标。
         <span className="text-slate-500">不给分，也不代写。</span>
       </p>
+      {promptCount > 0 ? (
+        <p className="mt-1.5 text-xs leading-5 text-slate-500">
+          里面存了 {promptCount} 套真题，点一下就能填进题目框，不用再去外面找。
+          <span className="text-amber-700">都是学员回忆版，界面会标明出处。</span>
+        </p>
+      ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
           className="rounded border border-[#dbe7f5] bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-300"
@@ -70,11 +86,14 @@ export function EssayBoard({ count, onOpen }: { count: number; onOpen: () => voi
 
 export function EssayDrawer({
   history,
+  prompts,
   onSave,
   onClose,
 }: {
   /** 已存的批改记录，按时间倒序 */
   history: EssayReviewRow[];
+  /** 主题包里带的论文真题。可以为空——那就不显示选择区，自己贴 */
+  prompts: EssayPromptEntry[];
   /** 写库。返回新记录的 id */
   onSave: (input: {
     promptText: string;
@@ -99,6 +118,8 @@ export function EssayDrawer({
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   /** 左边原文栏收没收起来。默认展开——他需要对照，但长文读久会想收 */
   const [essayVisible, setEssayVisible] = useState(true);
+  /** 题目是从哪套真题填进来的。只用来显示来源与考场口径，不参与批改 */
+  const [pickedPromptId, setPickedPromptId] = useState<string | null>(null);
 
   const charCount = countEssayChars(essayText);
   const canSubmit = promptText.trim().length >= 10 && essayText.trim().length >= 100 && !reviewing;
@@ -108,6 +129,12 @@ export function EssayDrawer({
   const showPrompt = activeRow ? activeRow.prompt_text : promptText;
   const showEssay = activeRow ? activeRow.essay_text : essayText;
   const showReview = activeRow ? readStoredReview(activeRow.result) : review;
+
+  // 选中的真题。只影响「显示来源与考场口径」，批改请求里传的仍是 promptText 本身——
+  // 这样他自己改过题面之后，显示的来源提示不会跟着撒谎。
+  const pickedPrompt = pickedPromptId
+    ? prompts.find((item) => item.id === pickedPromptId) ?? null
+    : null;
 
   async function runReview() {
     setReviewing(true);
@@ -186,6 +213,56 @@ export function EssayDrawer({
             </div>
           ) : (
             <div className="space-y-4">
+              {prompts.length > 0 ? (
+                <div>
+                  <span className="text-sm font-medium text-slate-700">
+                    用真题练
+                    <span className="ml-1 text-xs font-normal text-slate-400">
+                      点一下填进下面的题目框，也可以自己贴别的题
+                    </span>
+                  </span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {prompts.map((item) => {
+                      const picked = pickedPromptId === item.id;
+                      return (
+                        <button
+                          className={`rounded-lg border px-3 py-2 text-left text-xs leading-5 transition-colors ${
+                            picked
+                              ? "border-blue-400 bg-blue-50 text-slate-900"
+                              : "border-[#dbe7f5] bg-white text-slate-700 hover:border-blue-300"
+                          }`}
+                          key={item.id}
+                          onClick={() => {
+                            setPromptText(item.prompt_md);
+                            setPickedPromptId(picked ? null : item.id);
+                          }}
+                          type="button"
+                        >
+                          <span className="block text-[11px] text-slate-500">
+                            {item.year} {item.session} · {item.batch}
+                          </span>
+                          <span className="mt-0.5 block font-medium">{item.title}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {pickedPrompt ? (
+                    <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                      <p>
+                        <span className="font-medium">这题是学员回忆版，不是官方原文。</span>
+                        {pickedPrompt.source_note}
+                      </p>
+                      {pickedPrompt.extra_md ? (
+                        <p className="mt-1.5 whitespace-pre-wrap border-t border-amber-200 pt-1.5">
+                          {pickedPrompt.extra_md.replace(/\*\*/g, "")}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">
                   题目原文<span className="ml-1 text-xs font-normal text-slate-400">连子问题一起贴</span>
