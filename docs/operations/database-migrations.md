@@ -38,6 +38,7 @@
 一页素材表 `learning_sheets`），不改任何既有表。
 
 十三条迁移已全部应用到线上，迁移历史与仓库**逐条对齐**（13 个文件对 13 条记录，双向无差异），没有待应用的迁移。
+2026-10-29 追加第十四条（`20261029080000_add_goal_phases`），同样已应用并补记历史。
 
 ## 执行方式
 
@@ -103,6 +104,18 @@ MCP、数据库密码和 GitHub 自动部署都能改生产库，所以约束不
 
 ## 事实记录
 
+- 2026-10-29（M2.6 · 周节奏）：**应用 `20261029080000_add_goal_phases.sql`，并补记迁移历史**。
+  改了什么：`learning_goals` 加一列 `phases jsonb not null default '[]'`，外加一条
+  `learning_goals_phases_shape_check`（`jsonb_typeof(phases) = 'array'` 且 `jsonb_array_length <= 8`）
+  和一句列注释。只加列，没有碰既有列或既有行——存量那一行读出来是 `[]`，行为不变。
+  **没有新增 grant**：加列不改表级权限，`learning_goals` 的 4 条策略与那条 grant 仍然生效。
+  为什么：v4 M2.6 要把目标切成几段（启动期 / 基础期 / 强化期 / 冲刺期）并在今日计划上多显示一行。
+  用 jsonb 列而不是独立表，理由是一个目标最多 8 段、只读出来展示并按日期算一次，没有按段聚合查询的需求。
+  怎么应用：`node scripts/db-sql.mjs --file supabase/migrations/20261029080000_add_goal_phases.sql`，
+  然后 **insert 一行历史**（`version='20261029080000'`，`name='add_goal_phases'`）。
+  回滚：`alter table public.learning_goals drop column phases;` 并删掉对应历史行。
+  验完的结果：列 `jsonb` / 默认 `'[]'::jsonb` / `not null`；两条约束都在（`pg_constraint` 查到定义）；
+  历史表里 `20261029080000` 在列；库内 14 个文件对 14 条记录。
 - 2026-10-28（深夜 · M5）：**应用 `20261028233000_add_learning_probe_and_sheet.sql`，并补记迁移历史**。
   改了什么：新增两张个人数据表 —— `learning_probes`（追问会话：`transcript` / `verdict` 两个 jsonb）、
   `learning_sheets`（一页素材表：`sections` jsonb + `unique(user_id, topic_id, module_id)`）。
