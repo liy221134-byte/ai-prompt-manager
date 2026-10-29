@@ -40,6 +40,12 @@ export type DiagnosticModule = {
   id: string;
   name: string;
   order_index: number;
+  /**
+   * 是否参与能力诊断。缺省视为 true（存量调用方不传这个字段）。
+   * false 的模块整块不抽题、也不记「这层没题」——用于论文、纯实操这类
+   * 本来就没有 L1—L4 可判分题的模块。
+   */
+  in_diagnostic?: boolean;
 };
 
 export type DiagnosticQuestion = {
@@ -94,7 +100,13 @@ export function buildDiagnosticPaper(
   doneQuestionIds: Iterable<string> = [],
 ): DiagnosticPaper {
   const done = new Set(doneQuestionIds);
-  const ordered = modules.slice().sort((a, b) => a.order_index - b.order_index);
+  // 只看 in_diagnostic 不为 false 的模块。论文、高项新增考点这类模块在 L1—L4
+  // 没有可判分题，照常遍历会给它产出四个「这层没题」的空格子，
+  // 报告上就写成「你在论文模块 L1 就卡住了」——那是题库的形状，不是他的水平。
+  // 用显式标记而不是「有没有题」自动推断：「某格只有实操题要记缺口」是既有行为，不能被推翻。
+  const ordered = modules
+    .filter((currentModule) => currentModule.in_diagnostic !== false)
+    .sort((a, b) => a.order_index - b.order_index);
 
   const slots: PaperSlot[] = [];
   const items: DiagnosticPaper["items"] = [];
@@ -185,7 +197,12 @@ export function inferLevels(
   paper: DiagnosticPaper,
   answers: Record<string, boolean>,
 ): DiagnosticInference {
-  const ordered = modules.slice().sort((a, b) => a.order_index - b.order_index);
+  // 只判卷子覆盖到的模块：组卷时已排除 L1—L4 无可判分题的模块，
+  // 这里按 moduleOrder 再对一遍，避免调用方传进来的 modules 比卷子多。
+  const inPaper = new Set(paper.moduleOrder);
+  const ordered = modules
+    .filter((currentModule) => inPaper.has(currentModule.id))
+    .sort((a, b) => a.order_index - b.order_index);
   const byModuleLevel = new Map<string, PaperSlot>();
   for (const slot of paper.slots) {
     byModuleLevel.set(`${slot.moduleId}::${slot.level}`, slot);

@@ -281,7 +281,9 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       const [moduleResult, kpResult] = await Promise.all([
         supabase
           .from("learning_modules")
-          .select("id, name, order_index, weight, expected_gap, planned_hours, exit_criteria")
+          .select(
+            "id, name, order_index, weight, expected_gap, planned_hours, exit_criteria, in_diagnostic",
+          )
           .eq("topic_id", currentTopic.id)
           .order("order_index"),
         supabase
@@ -433,6 +435,21 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   const milestones = useMemo(
     () => upcomingMilestones(topic?.exam_facts?.milestones ?? null),
     [topic],
+  );
+
+  /**
+   * 报名节点单拎出来，因为它比考试日更紧。
+   *
+   * 报名窗口在考前两个月左右（2026 年是 3/23—3/31，考试 5/23—26），
+   * 而报名时只能选一个资格——一次考试只允许报一种（《暂行规定》），
+   * 报名窗口一过就整年白等。
+   * 页头的里程碑列表里有，但那是要往下滚才看得到的地方；
+   * 今日计划才是每天真正会看的那一块，所以这里再放一行。
+   */
+  const registrationMilestone = useMemo(
+    () =>
+      milestones.find((entry) => !entry.passed && entry.milestone.name.includes("报名")) ?? null,
+    [milestones],
   );
 
   // 列头跟着主题的阶梯定义走：中项显示「L3 算得出」，Python 会显示「L3 写得出」
@@ -591,8 +608,21 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         id: row.module.id,
         name: row.module.name,
         order_index: row.module.order_index,
+        in_diagnostic: row.module.in_diagnostic ?? true,
       })),
     [rows],
+  );
+
+  /**
+   * 真正进诊断的模块数。
+   *
+   * 不能直接用 diagnosticModules.length——论文、高项新增考点这类模块
+   * 在 L1—L4 没有可判分题，标了 in_diagnostic=false，不进卷。
+   * 入口文案上的「几个模块各抽题」要用这个数，否则会说成 8 个而卷子只有 6 块。
+   */
+  const diagnosticModuleCount = useMemo(
+    () => diagnosticModules.filter((module) => module.in_diagnostic !== false).length,
+    [diagnosticModules],
   );
 
   const questionsById = useMemo(() => {
@@ -1221,6 +1251,25 @@ export function LearningTopic({ topicId }: { topicId: string }) {
               <p className="mt-2 text-sm text-slate-600">{describePhase(plan.phase)}</p>
             ) : null}
 
+            {/* 报名倒计时。比「距考试多少天」更该被看见——
+                报名要定考哪个资格，而且过了就没补报。 */}
+            {registrationMilestone ? (
+              <p className="mt-1 text-sm">
+                <span
+                  className={
+                    registrationMilestone.daysLeft <= 30
+                      ? "font-semibold text-red-600"
+                      : "font-semibold text-amber-700"
+                  }
+                >
+                  距报名还有 {registrationMilestone.daysLeft} 天
+                </span>
+                <span className="ml-2 text-slate-500">
+                  {registrationMilestone.milestone.date} 开窗 · 报名时只能选高项或中项一个
+                </span>
+              </p>
+            ) : null}
+
             <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-start">
               {/* 左：今天做什么。这是整个页面的主操作区，模块名给到 24px、
                   按钮给足尺寸——原来它是 18px 字配一个小按钮，和下面几块卡片
@@ -1387,7 +1436,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
           ) : (
             <DiagnosticEntry
               questionCount={diagnosticPreview.items.length}
-              moduleCount={diagnosticModules.length}
+              moduleCount={diagnosticModuleCount}
               untestableLevels={untestableLevels}
               lastDiagnostic={storedDiagnostic}
               levelLabels={levelLabels}

@@ -620,6 +620,8 @@ async function importPack(supabase, pack) {
         common_mistakes: mod.common_mistakes ?? [],
         min_project: mod.min_project ?? null,
         note: mod.note ?? null,
+        // 缺省 true：存量主题包不写这个字段，行为不变
+        in_diagnostic: mod.in_diagnostic ?? true,
       })),
       { onConflict: "topic_id,id" },
     ),

@@ -18,6 +18,8 @@ export type ModuleInput = {
   expected_gap?: number | null;
   planned_hours?: number | null;
   exit_criteria?: string | null;
+  /** 是否参与能力诊断，缺省视为 true。论文这类没有 L1—L4 题的模块写 false */
+  in_diagnostic?: boolean | null;
 };
 
 export type QuestionInput = {

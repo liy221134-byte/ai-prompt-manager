@@ -142,7 +142,7 @@ export function DiagnosticEntry({
         <p className="mt-3 text-sm leading-6 text-slate-600">
           还没做过诊断。{moduleCount} 个模块按能力层级各抽题，答完能判出每块
           <strong className="font-semibold text-slate-700">卡在哪一层</strong>
-          ，知道该从哪一层往上练。六块里最薄的那块先动。
+          ，知道该从哪一层往上练。最薄的那块先动。
         </p>
       )}
 

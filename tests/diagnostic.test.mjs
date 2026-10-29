@@ -96,6 +96,46 @@ test("组卷把实操题排除在外，哪怕它在那个格子里是唯一的�
   assert.equal(s2l1?.questionId, "S2-L1-A");
 });
 
+test("in_diagnostic 为 false 的模块整块不进卷，也不记「这层没题」", () => {
+  // 论文、纯实操这类模块在 L1—L4 本来就没有可判分的题，不是题库缺口。
+  // 照常遍历会给它造出四个空 slot 和四个 gap，报告上就写成
+  // 「你在论文模块 L1 就卡住了」——那是题型决定的，不是他的水平。
+  const modules = [
+    { id: "S1", name: "项目管理框架", order_index: 1 },
+    { id: "S7", name: "论文", order_index: 7, in_diagnostic: false },
+  ];
+  const questions = makeQuestions({ modules: ["S1"] });
+
+  const paper = buildDiagnosticPaper(modules, questions);
+
+  assert.equal(paper.moduleOrder.includes("S7"), false, "论文不该出现在卷子的模块顺序里");
+  assert.equal(
+    paper.slots.some((slot) => slot.moduleId === "S7"),
+    false,
+    "不该给它造空格子",
+  );
+  assert.equal(
+    paper.gaps.some((gap) => gap.moduleId === "S7"),
+    false,
+    "更不该记成「这层没题」，那不是缺口",
+  );
+  assert.equal(paper.items.length, 5, "S1 的五个层照常抽满，行为不受影响");
+
+  // 判层级时同样跳过，否则会多出一条「论文 L1 没过」的结论
+  const inference = inferLevels(modules, paper, answerAll(paper, {}));
+  assert.deepEqual(
+    inference.modules.map((module) => module.moduleId),
+    ["S1"],
+    "结论里只该有真正测过的模块",
+  );
+});
+
+test("in_diagnostic 缺省视为 true：存量主题包不写这个字段也照常进诊断", () => {
+  const paper = buildDiagnosticPaper(MODULES, makeQuestions());
+  assert.deepEqual(paper.moduleOrder, ["S1", "S2"]);
+  assert.equal(paper.items.length, 10);
+});
+
 // ---------------------------------------------------------------- 组卷
 
 test("组卷：每个模块每层各抽一道，按模块顺序、层数升序", () => {
