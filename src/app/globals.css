@@ -150,3 +150,69 @@ body {
   color: #0f172a;
   font-weight: 600;
 }
+
+/* ── 讲义阅读档位 ───────────────────────────────────────────────
+   与 .markdown-body 叠加使用（markdown-body markdown-reading）。
+
+   为什么需要它：讲义是唯一需要「连续读十几分钟」的内容，而题目解析是
+   「扫一眼」。原来的 .markdown-body 是 14px，解析够用，讲义就偏小——
+   一份讲义里表格、加粗、列表密集，14px 在 27 寸屏上要凑近看。
+
+   数值选择：17px 正文 + 1.9 行高。中文 17px 在 1440 宽的阅读栏里约
+   42 字一行，是常见的中文长文舒适区；行高 1.9 让密集的表格与列表段落
+   之间留出呼吸。表格单独给 15px 并加大单元格内边距，因为表格里是
+   「查」不是「读」，字号可略小但空间要给够。 */
+.markdown-reading {
+  color: #1e293b;
+  font-size: 1.0625rem; /* 17px */
+  line-height: 1.9;
+}
+
+.markdown-reading h1 {
+  font-size: 1.5rem;
+  margin: 2rem 0 1rem;
+}
+
+.markdown-reading h2 {
+  font-size: 1.3rem;
+  margin: 2.25rem 0 1rem;
+}
+
+.markdown-reading h3 {
+  font-size: 1.125rem;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.markdown-reading p,
+.markdown-reading ul,
+.markdown-reading ol,
+.markdown-reading blockquote {
+  margin: 1rem 0;
+}
+
+.markdown-reading li + li {
+  margin-top: 0.45rem;
+}
+
+.markdown-reading strong {
+  color: #0b1220;
+}
+
+.markdown-reading code {
+  font-size: 0.9375rem;
+}
+
+.markdown-reading table {
+  font-size: 0.9375rem;
+  margin: 1.25rem 0;
+}
+
+.markdown-reading th,
+.markdown-reading td {
+  padding: 0.65rem 0.9rem;
+  line-height: 1.7;
+}
+
+.markdown-reading blockquote {
+  font-size: 1rem;
+}

@@ -487,6 +487,33 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   );
 
   /**
+   * 时间账的三个数：还需要多少、能投入多少、差多少。
+   *
+   * 为什么在界面里算而不让 buildDailyPlan 多返回一个 gap：gap 就是前两个数相减，
+   * 没有独立语义；多一个字段要多守一份测试，而这两个字段本来就已经返回了。
+   *
+   * 只在两个数都有值时才算：没设终点日期或没设每周投入时间时它们为 null，
+   * 此时界面回落到 headline 那句完整的话——**不能拿 0 冒充**，
+   * 那会显示成「差 0 小时，时间刚好」，是一句假话。
+   */
+  const hourGap =
+    plan.hoursNeeded != null && plan.hoursAvailable != null
+      ? plan.hoursNeeded - plan.hoursAvailable
+      : null;
+
+  /**
+   * headline 的结论词（「时间紧」「时间够」「终点已过 3 天」…）。
+   *
+   * headline 的格式是「结论：细节」，界面在数字块里已经单独呈现细节，
+   * 所以只用冒号前那一段当结论。不自己拼「时间紧」这种词：
+   * status 的判定是 hoursAvailable < hoursNeeded × 1.1，存在「余量不足 10% 但差额为正」
+   * 的中间态，界面自己判会和数据层的结论打架。
+   */
+  const headlineVerdict = plan.headline.includes("：")
+    ? plan.headline.split("：")[0]
+    : plan.headline;
+
+  /**
    * 今日要做的题落在哪些有讲义的知识点上。
    *
    * 用「题目反查知识点」而不是「模块下的全部知识点」：今日配额只有几道题，
@@ -1114,8 +1141,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     );
   }
 
+  // 页面宽度从 4xl（896px）放到 5xl（1024px）：今日计划改成左右两栏后，
+  // 896px 下两栏各自只有 400 出头，模块名与时间账的数字会挤在一起。
+  // 再宽（6xl 以上）中文正文行长就过长，读者视线回扫会累。
   return (
-    <main className="mx-auto max-w-4xl px-5 py-10">
+    <main className="mx-auto max-w-5xl px-5 py-10">
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-950">
@@ -1158,19 +1188,25 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       ) : (
         <>
           {/* 今日计划：这一块排最前。倒计时说「还有多少时间」，这一块说「今天做什么」——
-              人打开页面要的是后者。 */}
-          <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+              人打开页面要的是后者。
+
+              版式改动（2026-10-29）：原来是一条竖线往下堆——模块名 18px、按钮小、
+              时间账是 14px 灰字压在最下面。问题是**最重要的两件事都不显眼**：
+              「做哪几道题」和「时间来不来得及」被同样压成了小字。
+              现在改成左右两栏：左边是动作（模块名 24px + 主按钮），
+              右边是时间账（三个数字并排）。两件事一眼就能分开看。 */}
+          <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div className="flex items-baseline gap-x-2">
-                <h2 className="text-base font-semibold text-slate-900">今日计划</h2>
-                <span className="text-xs text-slate-400">
+              <div className="flex items-baseline gap-x-3">
+                <h2 className="text-lg font-semibold text-slate-900">今日计划</h2>
+                <span className="text-sm text-slate-400">
                   第 {plan.dayIndex} 天
                   {plan.totalDays ? ` / 共 ${plan.totalDays} 天` : ""}
                 </span>
               </div>
               <button
                 type="button"
-                className="text-xs font-medium text-blue-600 hover:underline"
+                className="text-sm font-medium text-blue-600 hover:underline"
                 onClick={() => setShowSettings(true)}
               >
                 改设置
@@ -1185,55 +1221,126 @@ export function LearningTopic({ topicId }: { topicId: string }) {
               <p className="mt-2 text-sm text-slate-600">{describePhase(plan.phase)}</p>
             ) : null}
 
-            {plan.focus ? (
-              <div className="mt-3">
-                <p className="text-lg font-semibold text-slate-900">
-                  {plan.focus.moduleName} · {levelLabels[plan.focus.level]}
-                </p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {plan.focus.questionIds.length} 道题
-                  {plan.focus.hasWrongOnes ? "，错题排前面，先复" : ""}
-                  <span className="text-slate-400"> · 全主题还剩 {plan.remainingQuestions} 道</span>
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={startDaily}
-                    className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                  >
-                    开始做题
-                  </button>
-                  {/* 讲义入口排在「开始做题」右边而不是左边：多数时候人是要做题的，
-                      但如果今天这几道题的知识点刚接触过、还没读过讲义，多半会先点这个。
-                      没有讲义时整个按钮不出现——给一个点了没反应的入口比不给更差。 */}
-                  {todayNotes.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setOpenNote(todayNotes[0])}
-                      className="text-sm font-medium text-blue-600 hover:underline"
-                    >
-                      先看讲义：{todayNotes[0].name}
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-slate-600">
-                {plan.remainingQuestions === 0 ? (
-                  "题都做完了，接下来复错题、做整套模拟。"
-                ) : (
+            <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-start">
+              {/* 左：今天做什么。这是整个页面的主操作区，模块名给到 24px、
+                  按钮给足尺寸——原来它是 18px 字配一个小按钮，和下面几块卡片
+                  的信息权重几乎一样，找不到「现在该干什么」。 */}
+              <div>
+                {plan.focus ? (
                   <>
-                    还有 {plan.remainingQuestions} 道题没归到任何模块，
-                    <Link href="/practice" className="text-blue-600 hover:underline">
-                      去题库里做
-                    </Link>
-                    。
+                    <p className="text-xs font-semibold text-slate-400">今天做</p>
+                    <p className="mt-1 text-2xl font-bold leading-9 text-slate-950">
+                      {plan.focus.moduleName}
+                    </p>
+                    <p className="mt-1 text-base font-medium text-slate-700">
+                      {levelLabels[plan.focus.level]}
+                      <span className="ml-3 text-sm font-normal text-slate-400">
+                        {plan.focus.questionIds.length} 道题
+                        {plan.focus.hasWrongOnes ? " · 错题排前面" : ""}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-slate-400">
+                      全主题还剩 {plan.remainingQuestions} 道
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={startDaily}
+                        className="rounded-lg bg-blue-600 px-5 py-2.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                      >
+                        开始做题
+                      </button>
+                      {/* 讲义入口排在「开始做题」右边而不是左边：多数时候人是要做题的，
+                          但如果今天这几道题的知识点刚接触过、还没读过讲义，多半会先点这个。
+                          没有讲义时整个按钮不出现——给一个点了没反应的入口比不给更差。 */}
+                      {todayNotes.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setOpenNote(todayNotes[0])}
+                          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                        >
+                          先读讲义：{todayNotes[0].name}
+                        </button>
+                      ) : null}
+                    </div>
                   </>
+                ) : (
+                  <p className="text-base text-slate-600">
+                    {plan.remainingQuestions === 0 ? (
+                      "题都做完了，接下来复错题、做整套模拟。"
+                    ) : (
+                      <>
+                        还有 {plan.remainingQuestions} 道题没归到任何模块，
+                        <Link href="/practice" className="text-blue-600 hover:underline">
+                          去题库里做
+                        </Link>
+                        。
+                      </>
+                    )}
+                  </p>
                 )}
-              </p>
-            )}
+              </div>
 
-            <p className={`mt-3 text-sm ${STATUS_STYLE[plan.status]}`}>{plan.headline}</p>
+              {/* 右：时间账。
+                  三个数（还需 / 可投入 / 差额）原来被压成一句 14px 的灰字，
+                  而它是这个产品唯一能给出「该改哪个参数」的地方——必须一眼看见。
+                  两个数缺任一（没设终点日期或没设每周投入）时回落到整句话，
+                  不拿 0 冒充（那会显示「差 0 小时，时间刚好」，是假话）。 */}
+              <div className="rounded-xl bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold text-slate-400">时间账</p>
+
+                {plan.hoursNeeded != null && plan.hoursAvailable != null && hourGap != null ? (
+                  <>
+                    <div className="mt-3 grid grid-cols-3 text-center">
+                      <div>
+                        <p className="text-xl font-bold tabular-nums text-slate-900">
+                          {plan.hoursNeeded}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">还需小时</p>
+                      </div>
+                      <div className="border-x border-slate-200">
+                        <p className="text-xl font-bold tabular-nums text-slate-900">
+                          {plan.hoursAvailable}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">可投入</p>
+                      </div>
+                      <div>
+                        <p
+                          className={[
+                            "text-xl font-bold tabular-nums",
+                            STATUS_STYLE[plan.status],
+                          ].join(" ")}
+                        >
+                          {hourGap > 0 ? hourGap : -hourGap}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {hourGap > 0 ? "还差" : "余量"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className={`mt-3 text-sm font-medium ${STATUS_STYLE[plan.status]}`}>
+                      {headlineVerdict}
+                    </p>
+
+                    {/* 只有真的差时间时才给「该改哪个数」。这是能直接动手的那一句。 */}
+                    {hourGap > 0 && plan.weeklyHoursNeeded != null ? (
+                      <p className="mt-1 text-sm text-slate-600">
+                        要赶上，每周得投约{" "}
+                        <span className="font-semibold text-slate-900">
+                          {plan.weeklyHoursNeeded}
+                        </span>{" "}
+                        小时
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className={`mt-3 text-sm leading-6 ${STATUS_STYLE[plan.status]}`}>
+                    {plan.headline}
+                  </p>
+                )}
+              </div>
+            </div>
 
             {/* 诊断影响排题时只说一句。不说清的话，「还剩 X 道」突然变少会像丢题。 */}
             {plan.diagnosticNote ? (
@@ -1469,19 +1576,23 @@ export function LearningTopic({ topicId }: { topicId: string }) {
                       </div>
 
                       {written.length > 0 ? (
-                        <ul className="mt-1.5 space-y-1">
+                        // 两列：29 个知识点单列铺下来要滚屏三四次，
+                        // 而他每次只找其中一个。卡片本身不宽，两列不会挤。
+                        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                           {written.map((kp) => (
                             <li key={kp.id}>
                               <button
                                 type="button"
                                 onClick={() => setOpenNote(kp)}
-                                className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                className="h-full w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
                               >
-                                <span className="text-sm font-medium text-slate-800">{kp.name}</span>
+                                <span className="text-[15px] font-medium text-slate-800">
+                                  {kp.name}
+                                </span>
                                 {kp.ref ? (
                                   <span className="ml-1.5 text-xs text-slate-400">{kp.ref}</span>
                                 ) : null}
-                                <p className="mt-0.5 text-xs leading-5 text-slate-500">{kp.summary}</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">{kp.summary}</p>
                               </button>
                             </li>
                           ))}
