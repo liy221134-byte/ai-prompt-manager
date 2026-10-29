@@ -22,6 +22,8 @@ import { readStoredProbe, type ProbeRow } from "@/lib/learning/probe";
 import { SheetBoard, SheetDrawer, type SheetRow } from "@/components/sheet-panel";
 import { GraphBoard, GraphDrawer } from "@/components/graph-panel";
 import { buildReferencePoints } from "@/lib/learning/graph";
+import { EssayBoard, EssayDrawer, type EssayReviewRow } from "@/components/essay-panel";
+import { countEssayChars, type EssayReview } from "@/lib/learning/essay";
 import type { ProbeKnowledgePoint, ProbeQuestionInput } from "@/lib/learning/probe-prompt";
 import { normalizeSections, type SheetSections } from "@/lib/learning/sheet";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -228,6 +230,11 @@ export function LearningTopic({ topicId }: { topicId: string }) {
   // 说明见 api/learning/graph-check/route.ts 顶部。
   const [graphOpen, setGraphOpen] = useState(false);
 
+  // 论文批改（M7）：已存的批改记录 + 抽屉开没开。
+  // 与图谱相反，这里**要留历史**——同一篇改到第 N 稿，得能看出上次指出的问题改了没有。
+  const [essayRows, setEssayRows] = useState<EssayReviewRow[]>([]);
+  const [essayOpen, setEssayOpen] = useState(false);
+
   // 追问记录。按时间倒序存着，打开抽屉时取这道题最新的一条带出来——
   // 只写不读的记录等于日志，人看不到「我上次是怎么说的」。
   const [probes, setProbes] = useState<ProbeRow[]>([]);
@@ -340,8 +347,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       let diagnosticRow: StoredDiagnostic | null = null;
       let sheetRows: SheetRow[] = [];
       let probeRows: ProbeRow[] = [];
+      let essayReviewRows: EssayReviewRow[] = [];
       if (user) {
-        const [attemptResult, goalResult, diagnosticResult, sheetResult, probeResult] = await Promise.all([
+        const [attemptResult, goalResult, diagnosticResult, sheetResult, probeResult, essayResult] =
+          await Promise.all([
           supabase
             .from("practice_attempts")
             .select("question_id, is_correct, created_at")
@@ -373,12 +382,22 @@ export function LearningTopic({ topicId }: { topicId: string }) {
             .eq("user_id", user.id)
             .eq("topic_id", currentTopic.id)
             .order("created_at", { ascending: false }),
+          // 论文批改记录，按时间倒序就是稿次序列。
+          // 连 essay_text 一起取：抽屉里要能回看某一稿的原文对照结论，
+          // 一篇 2500 字、一次十几篇也就几十 KB，不值得为此再开一个按需查询。
+          supabase
+            .from("learning_essay_reviews")
+            .select("id, prompt_text, essay_text, draft_label, word_count, result, created_at")
+            .eq("user_id", user.id)
+            .eq("topic_id", currentTopic.id)
+            .order("created_at", { ascending: false }),
         ]);
         attemptRows = (attemptResult.data ?? []) as AttemptInput[];
         goalRow = (goalResult.data as GoalRow | null) ?? null;
         diagnosticRow = (diagnosticResult.data as StoredDiagnostic | null) ?? null;
         sheetRows = (sheetResult.data ?? []) as SheetRow[];
         probeRows = (probeResult.data ?? []) as ProbeRow[];
+        essayReviewRows = (essayResult.data ?? []) as EssayReviewRow[];
         // 诊断取不到不该拖垮整页——它只是附加信息，与知识点的处理同一个道理
         if (diagnosticResult.error) {
           console.warn("诊断记录取不到，按没做过处理：", diagnosticResult.error.message);
@@ -391,6 +410,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         if (probeResult.error) {
           console.warn("追问记录取不到，按没追问过处理：", probeResult.error.message);
         }
+        // 论文批改同理：这张表比页面更晚建，迁移没跟上时整页要照常能用
+        if (essayResult.error) {
+          console.warn("论文批改记录取不到，按没批过处理：", essayResult.error.message);
+        }
       }
 
       setGoal(goalRow);
@@ -398,6 +421,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       setLastDiagnostic(diagnosticRow);
       setSheets(sheetRows);
       setProbes(probeRows);
+      setEssayRows(essayReviewRows);
 
       // 5) 算三样东西：矩阵统计、每题状态、今日计划
       setRows(
@@ -1036,8 +1060,49 @@ export function LearningTopic({ topicId }: { topicId: string }) {
     });
   }
 
-  async function saveSettings(next: GoalSettingsValue) {    if (!topic) throw new Error("主题还没加载完。");
+  // 论文批改的保存：一次批改一条 insert，**不是 upsert**。
+  // 素材表是一个模块一张纸（唯一约束），论文是同一篇改到第 N 稿——
+  // 每一稿都要留着，「上次指出的问题改了没」才看得出来。
+  //
+  // 不写 kp_id：现在主题里只有一个论文知识点，写死一个 id 换主题就会挂错，
+  // 留空比写一个假的准。等真需要按知识点筛批改记录时再从主题包里取。
+  async function saveEssayReview(input: {
+    promptText: string;
+    essayText: string;
+    draftLabel: string;
+    review: EssayReview;
+  }): Promise<string> {
+    if (!topic) throw new Error("主题还没加载完，等一会儿再存。");
 
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("登录状态失效，请重新登录。");
+
+    const id = `essay-${user.id}-${Date.now()}`;
+    const row = {
+      id,
+      user_id: user.id,
+      topic_id: topic.id,
+      prompt_text: input.promptText,
+      essay_text: input.essayText,
+      draft_label: input.draftLabel || null,
+      word_count: countEssayChars(input.essayText),
+      result: input.review,
+      created_at: new Date().toISOString(),
+    };
+
+    const { error: insertError } = await supabase.from("learning_essay_reviews").insert(row);
+    if (insertError) throw new Error(readErrorMessage(insertError, "这次批改没存上。"));
+
+    // 存完把这一条挂到列表最前面，不必重跑 load()——只为一条记录重查六张表不值当
+    setEssayRows((prev) => [row as EssayReviewRow, ...prev]);
+    return id;
+  }
+
+  async function saveSettings(next: GoalSettingsValue) {
+    if (!topic) throw new Error("主题还没加载完。");
     const supabase = getSupabaseBrowserClient();
     const {
       data: { user },
@@ -1129,6 +1194,16 @@ export function LearningTopic({ topicId }: { topicId: string }) {
         rows.map((row) => row.module.id),
       )}
       onClose={() => setGraphOpen(false)}
+    />
+  ) : null;
+
+  // 论文批改抽屉。和上面三个一样，**必须定义在两个 return 之前**——
+  // 练习模式与诊断模式是提前 return 的分支，挂进主 return 里就会「点了没反应」。
+  const essayDrawer = essayOpen ? (
+    <EssayDrawer
+      history={essayRows}
+      onClose={() => setEssayOpen(false)}
+      onSave={saveEssayReview}
     />
   ) : null;
 
@@ -1487,6 +1562,10 @@ export function LearningTopic({ topicId }: { topicId: string }) {
               都排在做题与诊断之后（做题是输入，这两件是检验输出）。 */}
           <GraphBoard onOpen={() => setGraphOpen(true)} />
 
+          {/* 论文批改：这三件（素材表 / 图谱 / 论文）是同一层的「输出型」动作，
+              论文排最后——它最长、最费时间，也最不该在做题之前做。 */}
+          <EssayBoard count={essayRows.length} onOpen={() => setEssayOpen(true)} />
+
           {/* 关键节点：报名是唯一不可挽回的节点，所以排在最前面 */}
           <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
@@ -1708,6 +1787,7 @@ export function LearningTopic({ topicId }: { topicId: string }) {
       {noteDrawer}
       {sheetDrawer}
       {graphDrawer}
+      {essayDrawer}
     </main>
   );
 }
