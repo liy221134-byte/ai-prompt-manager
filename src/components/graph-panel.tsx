@@ -322,7 +322,6 @@ function CheckResult({ check, notRead }: { check: GraphCheck; notRead: boolean }
         tone="amber"
         why="画在了别的模块那边"
       />
-      <ResultList items={check.wrongLinks} listTitle="连线不对" tone="rose" why="不该连的两个连在了一起" />
       <ResultList items={check.unclear} listTitle="没看清" tone="slate" why="照片上认不出来，下次拍清楚些" />
     </div>
   );
@@ -331,7 +330,6 @@ function CheckResult({ check, notRead }: { check: GraphCheck; notRead: boolean }
 const TONES = {
   blue: "border-blue-200 bg-blue-50/50 text-blue-900",
   amber: "border-amber-200 bg-amber-50/50 text-amber-900",
-  rose: "border-rose-200 bg-rose-50/50 text-rose-900",
   slate: "border-slate-200 bg-slate-50 text-slate-700",
 } as const;
 

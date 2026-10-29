@@ -126,14 +126,15 @@ const SYSTEM_PROMPT = `你是一名软考（系统集成项目管理工程师）
 5. **看不清就说看不清。** 字迹潦草、反光、拍虚了导致你没法确认的，写进 unclear，不要猜。
    猜错的代价是他跑去补一个其实已经画了的知识点。
 6. 不要评价（不说「画得挺全」「结构清晰」），不要鼓励语，不要分点套话。
-7. 每条控制在 40 字以内。四类都可以是空数组——他没有漏也没有错，就返回空的。
-8. 只输出 JSON，不要 markdown 围栏，不要任何解释文字。`;
+7. **不要判连线对不对。** 两个概念之间该不该连线，你没有依据（没给你依赖关系），
+   说了就是猜。如果连线本身让你怀疑归属，把它算进 misplaced；看不清就算进 unclear。
+8. 每条控制在 40 字以内。三类都可以是空数组——他没有漏也没有错，就返回空的。
+9. 只输出 JSON，不要 markdown 围栏，不要任何解释文字。`;
 
 const SHAPE = `输出结构：
 {
   "missing": ["参照清单里有、这张图上找不到的知识点"],
   "misplaced": ["「知识点」画在了「某模块」那边，按清单应属于「某模块」"],
-  "wrongLinks": ["「A」和「B」之间的连线不对，因为……"],
   "unclear": ["图上看不清、没法判的地方"]
 }`;
 
@@ -206,12 +207,11 @@ export function normalizeGraphCheck(raw: string, input: GraphCheckInput): GraphC
     ),
   );
 
-  // 这两类没有可核对的字面依据，只做长度与条数限制。
-  // 不能像 missing 那样卡清单：连线与看不清本来就该是清单外的信息。
-  const wrongLinks = uniqueBy(asTextArray(source.wrongLinks, MAX_PER_LIST));
+  // 这一类没有可核对的字面依据，只做长度与条数限制。
+  // 不能像 missing 那样卡清单：看不清本来就该是清单外的信息。
   const unclear = uniqueBy(asTextArray(source.unclear, MAX_PER_LIST));
 
-  return { missing, misplaced, wrongLinks, unclear };
+  return { missing, misplaced, unclear };
 }
 
 /**

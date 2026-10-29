@@ -26,43 +26,45 @@ export type GraphReferencePoint = {
 };
 
 /**
- * 一次检查的结论。四类，每一类都可能是空数组。
+ * 一次检查的结论。三类，每一类都可能是空数组。
  *
  * 为什么单开 `unclear` 而不是让模型硬判：
  *   手绘照片会糊、会反光、字会写成连笔。逼模型在「看不清」和「没画」之间二选一，
  *   它一定猜——猜错的代价是我跑去补一个其实已经画了的知识点，白费半小时。
  *   给它一个说「看不清」的出口，比逼它判要诚实。
+ *
+ * 为什么没有「连线不对」这一类（2026-10-29 撤）：
+ *   曾经有四类，第四类判「把不该连的两个概念连在了一起」。两次真图实测，
+ *   这一栏都是空的——不是他画对了，是**模型没有判断依据**：两个概念之间该不该连线，
+ *   需要一份概念依赖图，主题包里没有（29 个知识点只有 2 个填了 parent_id）。
+ *   更要紧的是，它想挑的那类错与 `misplaced` 高度重叠：手绘图上的线主要是从属线
+ *   （这个知识点属于这个模块），挂错模块就已经被前一类接住了。
+ *   空着一栏的代价不是零——它会让人以为「连线这项也查过了」。
+ *   真要做，得先有依赖关系数据，那是内容工作，不是加个字段能解决的。
  */
 export type GraphCheck = {
   /** 参照清单里有、图上找不到的 */
   missing: string[];
   /** 画错了从属关系：「知识点」挂在了错的模块下 */
   misplaced: string[];
-  /** 连线关系错：把不该连的两个概念连在了一起 */
-  wrongLinks: string[];
   /** 图上看不清、没法判的 */
   unclear: string[];
 };
 
 export function emptyGraphCheck(): GraphCheck {
-  return { missing: [], misplaced: [], wrongLinks: [], unclear: [] };
+  return { missing: [], misplaced: [], unclear: [] };
 }
 
-/** 四类都空，等于「这次没挑出毛病」 */
+/** 三类都空，等于「这次没挑出毛病」 */
 export function isCleanGraphCheck(check: GraphCheck): boolean {
   return (
-    check.missing.length === 0 &&
-    check.misplaced.length === 0 &&
-    check.wrongLinks.length === 0 &&
-    check.unclear.length === 0
+    check.missing.length === 0 && check.misplaced.length === 0 && check.unclear.length === 0
   );
 }
 
 /** 一共挑出几条。界面标题上用它 */
 export function countGraphFindings(check: GraphCheck): number {
-  return (
-    check.missing.length + check.misplaced.length + check.wrongLinks.length + check.unclear.length
-  );
+  return check.missing.length + check.misplaced.length + check.unclear.length;
 }
 
 // ── 图片 ─────────────────────────────────────────────────────────

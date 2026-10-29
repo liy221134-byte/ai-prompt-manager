@@ -236,7 +236,6 @@ test("normalizeGraphCheck 丢掉清单外的 missing", () => {
     JSON.stringify({
       missing: ["挣值分析", "沟通管理计划"],
       misplaced: [],
-      wrongLinks: [],
       unclear: [],
     }),
     INPUT,
@@ -252,7 +251,6 @@ test("normalizeGraphCheck 丢掉没点名的 misplaced，留下点名的那条",
         "有些概念挂错了地方",
         "「挣值分析」画在了 S1 项目管理框架 那边，按清单应属于 S2 五大过程组",
       ],
-      wrongLinks: [],
       unclear: [],
     }),
     INPUT,
@@ -267,7 +265,6 @@ test("normalizeGraphCheck 对同一处只说一遍，并截断过长的条目", 
     JSON.stringify({
       missing: ["挣值分析", "挣值分析 ", long],
       misplaced: [],
-      wrongLinks: ["五大过程组 与 云计算服务模式 之间不该连线"],
       unclear: ["右上角那块字太糊"],
     }),
     INPUT,
@@ -276,13 +273,29 @@ test("normalizeGraphCheck 对同一处只说一遍，并截断过长的条目", 
   assert.equal(check.missing.length, 2);
   assert.equal(check.missing[1].endsWith("…"), true);
   assert.ok(check.missing[1].length <= 60);
-  assert.equal(check.wrongLinks.length, 1);
   assert.equal(check.unclear.length, 1);
+});
+
+test("normalizeGraphCheck 忽略已撤掉的 wrongLinks 字段，不让它混进结论", () => {
+  // 这一栏 2026-10-29 撤掉了（没有依赖图，判不了）。但模型见过旧提示词、
+  // 或者自己觉得该判连线，都可能把它吐回来。吐回来不能报错，更不能当成一条结论。
+  const check = normalizeGraphCheck(
+    JSON.stringify({
+      missing: [],
+      misplaced: [],
+      wrongLinks: ["五大过程组 与 云计算服务模式 之间不该连线"],
+      unclear: [],
+    }),
+    INPUT,
+  );
+  assert.equal("wrongLinks" in check, false);
+  assert.equal(countGraphFindings(check), 0);
+  assert.equal(isCleanGraphCheck(check), true);
 });
 
 test("normalizeGraphCheck 挡住 markdown 围栏和前后废话", () => {
   const check = normalizeGraphCheck(
-    ["好的，我看了这张图：", "```json", '{"missing":["挣值分析"],"misplaced":[],"wrongLinks":[],"unclear":[]}', "```"].join(
+    ["好的，我看了这张图：", "```json", '{"missing":["挣值分析"],"misplaced":[],"unclear":[]}', "```"].join(
       "\n",
     ),
     INPUT,
@@ -297,23 +310,14 @@ test("normalizeGraphCheck 遇到空返回或非 JSON 直接报错，不返回一
 
 // ── 结论解读 ─────────────────────────────────────────────
 
-test("isCleanGraphCheck 只在四类都空时为真", () => {
-  assert.equal(
-    isCleanGraphCheck({ missing: [], misplaced: [], wrongLinks: [], unclear: [] }),
-    true,
-  );
+test("isCleanGraphCheck 只在三类都空时为真", () => {
+  assert.equal(isCleanGraphCheck({ missing: [], misplaced: [], unclear: [] }), true);
   // 只有 unclear 也算「没挑出毛病」，但它带着信息，界面仍要展示
-  assert.equal(
-    isCleanGraphCheck({ missing: [], misplaced: [], wrongLinks: [], unclear: ["看不清"] }),
-    false,
-  );
+  assert.equal(isCleanGraphCheck({ missing: [], misplaced: [], unclear: ["看不清"] }), false);
 });
 
-test("countGraphFindings 把四类加起来", () => {
-  assert.equal(
-    countGraphFindings({ missing: ["a"], misplaced: ["b", "c"], wrongLinks: [], unclear: ["d"] }),
-    4,
-  );
+test("countGraphFindings 把三类加起来", () => {
+  assert.equal(countGraphFindings({ missing: ["a"], misplaced: ["b", "c"], unclear: ["d"] }), 4);
 });
 
 test("looksLikeImageNotRead 在整张清单几乎全被判成遗漏时报警", () => {
@@ -321,7 +325,6 @@ test("looksLikeImageNotRead 在整张清单几乎全被判成遗漏时报警", (
   const check = {
     missing: Array.from({ length: 8 }, (_, index) => `知识点${index}`),
     misplaced: [],
-    wrongLinks: [],
     unclear: [],
   };
   assert.equal(looksLikeImageNotRead(check, 10), true);
@@ -330,17 +333,11 @@ test("looksLikeImageNotRead 在整张清单几乎全被判成遗漏时报警", (
   assert.equal(looksLikeImageNotRead(check, 30), false);
 
   // 参照太少时不判：3 个里有 3 个没找到，可能真的很正常
-  assert.equal(
-    looksLikeImageNotRead({ missing: ["a", "b", "c"], misplaced: [], wrongLinks: [], unclear: [] }, 3),
-    false,
-  );
+  assert.equal(looksLikeImageNotRead({ missing: ["a", "b", "c"], misplaced: [], unclear: [] }, 3), false);
 
   // 条数下限：4/5 = 80% 但只有 4 条，不值得报警去打扰他
   assert.equal(
-    looksLikeImageNotRead(
-      { missing: ["a", "b", "c", "d"], misplaced: [], wrongLinks: [], unclear: [] },
-      5,
-    ),
+    looksLikeImageNotRead({ missing: ["a", "b", "c", "d"], misplaced: [], unclear: [] }, 5),
     false,
   );
 });
