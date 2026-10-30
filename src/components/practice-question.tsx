@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
+import { resolveSingleAnswer } from "@/lib/practice/answer";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Question = {
@@ -85,7 +86,9 @@ export function PracticeQuestion({ id }: { id: string }) {
         throw new Error("未登录，无法保存答题记录。");
       }
 
-      const correct = selected === question.answer;
+      // 判分前先归一化：中项题库的 answer 存的是字母 A/B/C/D，选项传的是全文，
+      // 直接比会永远判错。归一化规则见 lib/practice/answer.ts。
+      const correct = selected === resolveSingleAnswer(question.answer, question.options);
 
       const { error: insertError } = await supabase
         .from("practice_attempts")
@@ -136,6 +139,10 @@ export function PracticeQuestion({ id }: { id: string }) {
     );
   }
 
+  // 正确答案的选项全文。answer 可能是字母也可能是全文，统一在这里展开一次，
+  // 下面「哪一项该亮绿」与判分用的是同一个值，不会出现「判对了但没亮」。
+  const correctText = resolveSingleAnswer(question.answer, question.options);
+
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
       <header className="flex items-start justify-between gap-4">
@@ -163,9 +170,9 @@ export function PracticeQuestion({ id }: { id: string }) {
         <legend className="sr-only">选项</legend>
         {question.options.map((option) => {
           const isChosen = selected === option;
-          const showCorrect = result !== null && option === question.answer;
+          const showCorrect = result !== null && option === correctText;
           const showWrong =
-            result !== null && isChosen && option !== question.answer;
+            result !== null && isChosen && option !== correctText;
 
           return (
             <label

@@ -69,3 +69,35 @@ test("同一道题：存字母和存全文，判分结果必须一致", () => {
   // 用户点选的也是选项全文，两边相等才算答对
   assert.equal(OPTIONS[1] === byLetter, true);
 });
+
+// 下面这条是「守调用点」的源码级测试，不是纯函数测试。
+// 起因（2026-10-30 实测发现）：answer.ts 修好之后，只有 practice-quiz.tsx 用了归一化，
+// practice-question.tsx（单题页 /practice/[id]）仍在用 selected === question.answer 直接比，
+// 于是中项题的答案存字母、选项传全文，永远判错，正确项也永远不亮绿。
+// 纯函数测试全绿也守不住这种「函数写对了但没人调」的漏洞，所以这里直接读源码断言。
+test("两个判分组件都必须走归一化，不能直接拿 answer 比", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const { dirname, join } = await import("node:path");
+
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+  const files = [
+    "src/components/practice-question.tsx",
+    "src/components/practice-quiz.tsx",
+  ];
+
+  for (const rel of files) {
+    const source = readFileSync(join(root, rel), "utf8");
+    assert.ok(
+      source.includes("resolveSingleAnswer"),
+      `${rel} 没引入 resolveSingleAnswer —— 中项题会永远判错`,
+    );
+    // 「选中的值 === answer」这种直接比较就是漏洞本身，任何一处都不许留下
+    const direct = source.match(/(?:selected|option)\s*===\s*(?:question|current)\.answer/);
+    assert.equal(
+      direct,
+      null,
+      `${rel} 里还有直接比较：${direct?.[0] ?? ""}，应改成与 resolveSingleAnswer 的返回值比`,
+    );
+  }
+});
